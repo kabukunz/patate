@@ -1,16 +1,21 @@
+@import url("common.css");
+
 body {
   background-color: #CCCCCC;
-}
-
-div.contents {
-  margin-top: 0px;
-  margin-left: 0px;
-  margin-right: 0px;
-  margin-bottom: 10px;
-  padding: 12px;
   margin-left: auto;
   margin-right: auto;
   width: 960px;
+  padding: 12px;
+}
+
+div#titlearea{
+  background-color: white;  
+  border-top-right-radius:8px;
+  border-top-left-radius:8px; 
+}
+
+
+div.contents {
   background-color: white;
   border-bottom-right-radius:8px;
   border-bottom-left-radius:8px; 
@@ -19,19 +24,16 @@ div.contents {
   -moz-box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
   /* webkit specific markup */
   -webkit-box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
+  padding: 12px;
+  margin: 0px;
 }
 
 div.header
 {
   /*background-image:url('nav_h.png');*/
-  background-repeat:repeat-x;
-  background-color: #FAFAFA;
+  /*background-repeat:repeat-x;*/
+  background-color: #FFFFFF;
   border-bottom: 1px solid #D5D5D5;
-  margin-left: auto;
-  margin-right: auto;
-  width: 960px;
-  padding-left: 12px;
-  padding-right: 12px;
   box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
   /* firefox specific markup */
   -moz-box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
@@ -39,9 +41,16 @@ div.header
   -webkit-box-shadow: 0px 0px 5px rgba(0, 0, 0, 0.15);
 }
 
+#MSearchBox{
+  display:block;
+  position: relative;
+  margin-left: 100px;
+}
+
+
 div.headertitle {
-  padding-left: 0px;
   font-size: 150%;
+  display: none;
 }
 
 table.pageheader {
