@@ -13,7 +13,7 @@ from pycuda.compiler import SourceModule
   
   
   
-  
+
 start_time=0.0
   
 def startTimer( funcname, quiet ):
@@ -34,11 +34,8 @@ def stopTimer(quiet):
 
 
 ################################################################################
-def loadKernel():
-  #module = SourceModule(open("_pyssGLS.cu", "r").read(), 
-  #                   include_dirs=["/home/nmellado/svn/mellado/matlab/ssgls/"],
-  #                   no_extern_c=True)
-                     
+# Load input ptx file
+def loadKernel():                   
   module = drv.module_from_file("_pyssGLS.ptx")      
   glsKernel    = module.get_function("doGLS_kernel")
   
@@ -49,6 +46,7 @@ def loadKernel():
     
  
 ################################################################################ 
+# Format data for easy access in cuda kernel
 def initInputData(imgNormPath, imgwcPath): 
   i_normals   = Image.open (imgNormPath)
   i_positions = Image.open (imgwcPath)
@@ -70,6 +68,7 @@ def initInputData(imgNormPath, imgwcPath):
     
   
 ################################################################################
+# Generate queries: In this simple example we set one query per pixel
 def initQueries(w,h):
   nbQueries = w*h
 
@@ -85,6 +84,7 @@ def initQueries(w,h):
   
   
 ################################################################################ 
+# Init the Cuda Grid sizes and the allocate the output array
 def setMemoryConf(nbQueries, blockSize):
   gx = nbQueries / blockSize;
   if ((nbQueries % blockSize) > 0):
