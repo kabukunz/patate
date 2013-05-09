@@ -1,0 +1,10 @@
+Please build the documentation using
+    doxygen Doxyfile
+
+that will generate:
+    doc/html/index.html
+
+
+
+Patate Lib Official website: https://gforge.inria.fr/projects/patate/
+Licence: MTL
