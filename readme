@@ -3,6 +3,8 @@ Please build the documentation using
 
 that will generate:
     doc/html/index.html
+    
+An online version is available at http://patate.gforge.inria.fr/doxygen/html
 
 
 
