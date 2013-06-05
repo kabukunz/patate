@@ -2,11 +2,17 @@
  This Source Code Form is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
  file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ 
+ Compile using 
+ nvcc --ptx -I ../../Patate/ -I /path/to/eigen-nvcc/ ssgls.cu
 */
 
 
 #include <cuda.h>
-#include "_functorGLS.cu"
+#include <algorithm>
+
+#include "Eigen/Core"
+#include "grenaille.h"
 
 
 //! [mypoint]
@@ -54,7 +60,7 @@ public:
   typedef MyPoint::VectorType VectorType;
 
   MULTIARCH inline ProjectWeightFunc(const Scalar& t = Scalar(1.), const float dz = 0.f)
-  : Grenaille::DistWeightFunc(t), _dz(dz) { }
+  : Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >(t), _dz(dz) { }
   
   MULTIARCH inline Scalar w(const VectorType& q, const MyPoint&  attributes) const
   {
@@ -70,7 +76,7 @@ public:
 //! [w_def]
 
 //! [fit_def]
-typedef Basket<MyPoint,ProjecteWeightFunc,Grenaille::OrientedSphereFit, Grenaille::GLSParam> Gls;
+typedef Grenaille::Basket<MyPoint,ProjectWeightFunc,Grenaille::OrientedSphereFit, Grenaille::GLSParam> Gls;
 //! [fit_def]
 
 
@@ -123,18 +129,16 @@ __global__ void doGLS_kernel(  const float* queries,
   
     int dx, dy; // neighbor offset ids
     int nx, ny; // neighbor ids
-    float dist2, w;   // squared neighbor distance to center and weight
-    float s2 = float(scale*scale);
     
     int surfaceId = ids[getId(x,y,width,height,0)];
     
     Gls gls;
-    gls.setWeightFunc(ProjectWeightFunc(tmax));
+    gls.setWeightFunc(ProjectWeightFunc(scale));
     gls.init( getVector(x,y,width,height,positions) );
                         
     int o = getId(x,y,width,height,0);   
                            
-    if ( getVector(x,y,width,height,normals) == VectorType::Zero() ){         
+    if ( getVector(x,y,width,height,normals).squaredNorm() != 0.f ){         
          result[o] = 0.0;         
     }
     else{
@@ -145,28 +149,21 @@ __global__ void doGLS_kernel(  const float* queries,
         for(dx = -scale; dx != scale; dx++){
           nx = x+dx;
           ny = y+dy;
+          
+          // Check image boundaries
           if (nx >= 0 && ny >= 0 && nx < width && ny < height){    
-            MyPoint query;
-            
-            dist2 = dx*dx + dy*dy;
-             // Check if we are in the circular screen-space neighborhood
-             // and on the same surface
-             if (dist2 < s2 /*&& surfaceId == ids[getId(x+dx,y+dy,width,height,0)]*/){
-                n = getVector(nx,ny,width,height,normals);
-                              
-                              //todo: FINISH !!  
-                if ( length(n) != 0.f ) {         
-                  w = dist2 / s2 - 1.0;
-                  w *= w;
-                  
-                  //get Neighbor properties
-                  p = make_float3(positions[getId(nx,ny,width,height,0)],
-                                  positions[getId(nx,ny,width,height,1)],
-                                  positions[getId(nx,ny,width,height,2)]); 
-                                  
-                  gls.addNeighbor(p, normalize(2.0*n - 1.0), w);
-                }
-             }
+             VectorType query;
+
+             n = getVector(nx,ny,width,height,normals);
+                          
+             // add nei only when the normal is properly defined
+             // this condition could also be included in the Weight functor
+             if ( n.squaredNorm() != 0.f ) {  
+                p = getVector(nx,ny,width,height,positions);       
+                n.normalize();
+
+                gls.addNeighbor(MyPoint(p,n,ScreenVectorType(nx,ny)));                                  
+            }
           }
        }
     }
