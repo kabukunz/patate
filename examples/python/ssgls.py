@@ -180,8 +180,6 @@ def main(argv):
           
   stopTimer(quiet)  
   
-  result = numpy.tanh(-result/20.);
-
   ################################################################################
   # Analyse results
   whereAreNaNs = numpy.isnan(result);
