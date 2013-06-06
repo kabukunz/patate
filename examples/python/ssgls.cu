@@ -82,23 +82,25 @@ typedef Grenaille::Basket<MyPoint,ProjectWeightFunc,Grenaille::OrientedSphereFit
 
 //! [data_acces]
 __device__ int getId(const int x,
-                        const int y,
-                        const int width,
-                        const int height,
-                        const int dim)
+                       const int y,
+                       const int width,
+                       const int height,
+                       const int component,
+                       const int nbComponent)
 {
-  return (dim*width*height) + (x + y * width);
+  return (component) + nbComponent*(x + y * width);
 }
+
 __device__ VectorType getVector(const int x,
                                 const int y,
                                 const int width,
                                 const int height,
-                                const unsigned char * buffer)
+                                const float * buffer)
 {
   VectorType r;
-  r << buffer[getId(x,y,width,height,0)],
-       buffer[getId(x,y,width,height,1)],
-       buffer[getId(x,y,width,height,2)];
+  r << Scalar(buffer[getId(x,y,width,height,0,3)]),
+       Scalar(buffer[getId(x,y,width,height,1,3)]),
+       Scalar(buffer[getId(x,y,width,height,2,3)]);
   return r;
 }
 
@@ -107,39 +109,36 @@ __device__ VectorType getVector(const int x,
 
 
 //! [kernel]
-__global__ void doGLS_kernel(  const float* queries,
-                               const int nbQueries,
-                               const unsigned char *positions,
-                               const unsigned char *normals,
-                               const int *ids,
-                               const int width,
-                               const int height,
-                               const int scale,
-                               double* result)
+extern "C" { 
+__global__ void doGLS_kernel(  int* params, //[w, h, scale, nbQueries]
+                               float* queries,
+                               float *positions,
+                               float *normals,
+                               float* result)
 {
 
   unsigned int ptid = blockIdx.x*blockDim.x + threadIdx.x;
 
-  if (ptid < nbQueries)
+  if (ptid < params[3])
   {
+    const int &width     = params[0];
+    const int &height    = params[1];
+    const int &scale     = params[2];
+    
     // cast float coordinates
     int x = queries[2*ptid];
-    int y = queries[2*ptid + 1];
-  
+    int y = queries[2*ptid + 1];  
   
     int dx, dy; // neighbor offset ids
     int nx, ny; // neighbor ids
     
-    int surfaceId = ids[getId(x,y,width,height,0)];
     
     Gls gls;
     gls.setWeightFunc(ProjectWeightFunc(scale));
     gls.init( getVector(x,y,width,height,positions) );
-                        
-    int o = getId(x,y,width,height,0);   
-                           
+                                                   
     if ( getVector(x,y,width,height,normals).squaredNorm() != 0.f ){         
-         result[o] = 0.0;         
+         result[getId(x,y,width,height,0,1)] = 0.0;         
     }
     else{
       VectorType p, n;
@@ -159,7 +158,10 @@ __global__ void doGLS_kernel(  const float* queries,
              // add nei only when the normal is properly defined
              // this condition could also be included in the Weight functor
              if ( n.squaredNorm() != 0.f ) {  
-                p = getVector(nx,ny,width,height,positions);       
+                p = getVector(nx,ny,width,height,positions); 
+                
+                n = 2.f * n - VectorType::Ones();
+                      
                 n.normalize();
 
                 gls.addNeighbor(MyPoint(p,n,ScreenVectorType(nx,ny)));                                  
@@ -170,8 +172,10 @@ __global__ void doGLS_kernel(  const float* queries,
 
     // closed form minimization
     gls.finalize();
-    result[o] = gls.kappa();
+    result[getId(x,y,width,height,0,1)] = gls.kappa();
   }
+
+}
 
 }
 //! [kernel]
