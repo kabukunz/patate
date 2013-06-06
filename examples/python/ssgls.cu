@@ -130,20 +130,21 @@ __global__ void doGLS_kernel(  int* params, //[w, h, scale, nbQueries]
     int y = queries[2*ptid + 1];  
   
     int dx, dy; // neighbor offset ids
-    int nx, ny; // neighbor ids
-    
+    int nx, ny; // neighbor ids    
     
     Gls gls;
     gls.setWeightFunc(ProjectWeightFunc(scale));
     gls.init( getVector(x,y,width,height,positions) );
                                                    
     if ( getVector(x,y,width,height,normals).squaredNorm() != 0.f ){         
-         result[getId(x,y,width,height,0,1)] = 0.0;         
+         result[getId(x,y,width,height,0,1)] = -1.0;         
     }
     else{
       VectorType p, n;
     
     // collect neighborhood
+    VectorType one; one << 1.f, 1.f;
+    
       for(dy = -scale; dy != scale; dy++)
         for(dx = -scale; dx != scale; dx++){
           nx = x+dx;
@@ -151,30 +152,23 @@ __global__ void doGLS_kernel(  int* params, //[w, h, scale, nbQueries]
           
           // Check image boundaries
           if (nx >= 0 && ny >= 0 && nx < width && ny < height){    
-             VectorType query;
-
              n = getVector(nx,ny,width,height,normals);
                           
              // add nei only when the normal is properly defined
              // this condition could also be included in the Weight functor
-             if ( n.squaredNorm() != 0.f ) {  
-                p = getVector(nx,ny,width,height,positions); 
-                
-                n = 2.f * n - VectorType::Ones();
-                      
+             if ( n.squaredNorm() != 0.f ) {               
+                p = getVector(nx,ny,width,height,positions);                 
+                n = 2.f * n - one;
                 n.normalize();
-
                 gls.addNeighbor(MyPoint(p,n,ScreenVectorType(nx,ny)));                                  
             }
           }
        }
-    }
-
     // closed form minimization
     gls.finalize();
     result[getId(x,y,width,height,0,1)] = gls.kappa();
+    }
   }
-
 }
 
 }
