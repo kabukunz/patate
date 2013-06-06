@@ -40,7 +40,7 @@ def stopTimer(quiet):
 ################################################################################
 # Load input ptx file
 def loadKernel():                   
-  module = drv.module_from_file("_pyssGLS.ptx")      
+  module = drv.module_from_file("ssgls.ptx")      
   glsKernel    = module.get_function("doGLS_kernel")
   
   return module, glsKernel
