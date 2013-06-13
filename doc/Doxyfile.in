@@ -1192,7 +1192,7 @@ TREEVIEW_WIDTH         = 250
 # When the EXT_LINKS_IN_WINDOW option is set to YES doxygen will open 
 # links to external symbols imported via tag files in a separate window.
 
-EXT_LINKS_IN_WINDOW    = NO
+EXT_LINKS_IN_WINDOW    = YES
 
 # Use this tag to change the font size of Latex formulas included 
 # as images in the HTML documentation. The default is 10. Note that 
