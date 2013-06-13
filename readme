@@ -4,16 +4,32 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/. 
 */
 
-
-Please build the documentation using
-    doxygen Doxyfile
-
-that will generate:
-    doc/html/index.html
-    
-An online version is available at http://patate.gforge.inria.fr/doxygen/html
+1. How to use Patate
+********************
+You don't need to compile this library to use it. Simply add the Patate/
+directory in your include path during your code compilation. Please include
+directly the top-level include files you can find in the Patate/ directory.
 
 
 
+2. Documentation and examples
+*****************************
+Use Cmake to build the documentation, some examples and tests.
+You need to create a build directory an launch CMake from it:
+  cd build
+  cmake source_dir
+
+Then, please build the documentation using
+    make doc
+to generate the documentation include
+    doc/html/
+
+An online version of the documentation is available at 
+http://patate.gforge.inria.fr/html/
+
+
+
+3. Links and Licence
+********************
 Patate Lib Official website: https://gforge.inria.fr/projects/patate/
 Licence: MTL
