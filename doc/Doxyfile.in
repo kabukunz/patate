@@ -608,7 +608,7 @@ LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/doc/layout.xml
 # of the bibliography can be controlled using LATEX_BIB_STYLE. To use this 
 # feature you need bibtex and perl available in the search path.
 
-CITE_BIB_FILES         = 
+CITE_BIB_FILES         = @CMAKE_CURRENT_SOURCE_DIR@/Patate/Grenaille/grenaille.bib
 
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
@@ -1352,7 +1352,7 @@ LATEX_SOURCE_CODE      = NO
 # bibliography, e.g. plainnat, or ieeetr. The default style is "plain". See 
 # http://en.wikipedia.org/wiki/BibTeX for more info.
 
-LATEX_BIB_STYLE        = plain
+LATEX_BIB_STYLE        = alpha
 
 #---------------------------------------------------------------------------
 # configuration options related to the RTF output
