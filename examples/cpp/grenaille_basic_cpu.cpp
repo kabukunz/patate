@@ -30,7 +30,8 @@ class MyPoint{
 public:
   enum {Dim = 3};
   typedef double Scalar;
-  typedef Eigen::Matrix<Scalar, Dim, 1> VectorType;
+  typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
+  typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
 
   MULTIARCH inline MyPoint(const VectorType &pos    = VectorType::Zero(), 
 		 const VectorType& normal = VectorType::Zero())
@@ -82,18 +83,21 @@ int main() {
     fit.addNeighbor(*it);  
   fit.finalize();
   
+  cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
   
   // Play with fitting output
-  cout << "The value of the scalar field at the initial point: " 
+  cout << "Value of the scalar field at the initial point: " 
        << p.transpose() 
-       << " is equal to " << fit.evaluate(p)
+       << " is equal to " << fit.potential(p)
        << endl;
        
-  cout << "It's gradient at this place is equal to: "
-       << fit.evaluateGradient(p).transpose()
+  cout << "It's approximated gradient at this place is equal to: "
+       << fit.approxGradient(p).transpose()
        << endl;
-
-  cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
+       
+  cout << "Approximation of the Hessian matrix: " << endl
+       << fit.approxHessian(p)
+       << endl;
        
   cout << "Fitted Sphere: " << endl
        << "\t Tau  : "      << fit.tau()             << endl
