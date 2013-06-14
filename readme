@@ -4,6 +4,8 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/. 
 */
 
+
+
 1. How to use Patate
 ********************
 You don't need to compile this library to use it. Simply add the Patate/
@@ -12,9 +14,9 @@ directly the top-level include files you can find in the Patate/ directory.
 
 
 
-2. Documentation and examples
-*****************************
-Use Cmake to build the documentation, some examples and tests.
+2. Documentation
+****************
+Please use Cmake to build the documentation.
 You need to create a build directory an launch CMake from it:
   cd build
   cmake source_dir
@@ -29,7 +31,23 @@ http://patate.gforge.inria.fr/html/
 
 
 
-3. Links and Licence
+3. Examples
+***********
+Please use Cmake to build the documentation. You need to indicate where are 
+located the Eigen (or Eigen-nvcc) headers, by setting the environment variable
+EIGEN3_INCLUDE_DIR to your/path/to/Eigen.
+
+Then compile the examples from the build dir
+  cd build
+  make examples
+
+The generated binaries will be generated in
+  build/examples
+and subfolders
+
+
+
+4. Links and Licence
 ********************
 Patate Lib Official website: https://gforge.inria.fr/projects/patate/
 Licence: MTL

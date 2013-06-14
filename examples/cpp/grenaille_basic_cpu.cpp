@@ -10,8 +10,6 @@
  \brief very brief file description
 
  \author: Nicolas Mellado
- Compile command: 
- $ g++ grenaille_basic_cpu.cpp -I ../.. -I /path/to/Eigen/
  */
 #include <cmath>
 #include <algorithm>
