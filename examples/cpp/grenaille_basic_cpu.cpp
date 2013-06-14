@@ -88,6 +88,10 @@ int main() {
        << p.transpose() 
        << " is equal to " << fit.evaluate(p)
        << endl;
+       
+  cout << "It's gradient at this place is equal to: "
+       << fit.evaluateGradient(p).transpose()
+       << endl;
 
   cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
        
