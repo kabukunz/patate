@@ -11,7 +11,7 @@
 
  \author: Nicolas Mellado
  Compile command: 
- $ g++ basic_cpu.h_cpu.cpp -I ../.. -I /path/to/Eigen/
+ $ g++ grenaille_basic_cpu.cpp -I ../.. -I /path/to/Eigen/
  */
 #include <cmath>
 #include <algorithm>
@@ -64,7 +64,7 @@ int main() {
   VectorType p = VectorType::Random();
   
   // init input data
-  int n = 1000;
+  int n = 10000;
   vector<MyPoint> vecs (n);
 
   fill(vecs.begin(), vecs.end(), MyPoint::Random());
@@ -76,26 +76,34 @@ int main() {
   fit.setWeightFunc(WeightFunc(tmax));
   fit.init(p);
   
-  for(vector<MyPoint>::iterator it = vecs.begin(); it != vecs.end(); it++)
-    fit.addNeighbor(*it);
   
+  // Fit the primitive
+  for(vector<MyPoint>::iterator it = vecs.begin(); it != vecs.end(); it++)
+    fit.addNeighbor(*it);  
   fit.finalize();
+  
+  
+  // Play with fitting output
+  cout << "The value of the scalar field at the initial point: " 
+       << p.transpose() 
+       << " is equal to " << fit.evaluate(p)
+       << endl;
 
   cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
-  
+       
   cout << "Fitted Sphere: " << endl
-       << "\t Tau  : " << fit.tau() << endl
-       << "\t Eta  : " << fit.eta().transpose() << endl
-       << "\t Kappa: " << fit.kappa() << endl;
+       << "\t Tau  : "      << fit.tau()             << endl
+       << "\t Eta  : "      << fit.eta().transpose() << endl
+       << "\t Kappa: "      << fit.kappa()           << endl;
     
-  cout << "The initial point " << p.transpose() << endl
+  cout << "The initial point " << p.transpose()              << endl
        << "Is projected at   " << fit.project(p).transpose() << endl;
 
   Fit::ScalarArray dtau = fit.dkappa_normalized();
 
   cout << "dkappa: " << dtau[0] 
-       << " , "    << dtau[1]
-       << " , "    << dtau[2]
+       << " , "      << dtau[1]
+       << " , "      << dtau[2]
        << endl;
 
   cout << "geomVar: " << fit.geomVar() << endl;
