@@ -89,12 +89,12 @@ int main() {
        << " is equal to " << fit.potential(p)
        << endl;
        
-  cout << "It's approximated gradient at this place is equal to: "
-       << fit.approxGradient(p).transpose()
+  cout << "It's gradient at this place is equal to: "
+       << fit.primitiveGradient(p).transpose()
        << endl;
        
   cout << "Approximation of the Hessian matrix: " << endl
-       << fit.approxHessian(p)
+       << fit.primitiveHessian(p)
        << endl;
        
   cout << "Fitted Sphere: " << endl
