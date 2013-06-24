@@ -16,7 +16,7 @@
 #include <iostream>
 
 #include "Patate/grenaille.h"
-#include "Eigen"
+#include "Eigen/Eigen"
 
 #include <vector>
 using namespace std;
@@ -54,7 +54,7 @@ typedef MyPoint::VectorType VectorType;
 
 // Define related structure
 typedef DistWeightFunc<MyPoint,SmoothWeightKernel<Scalar> > WeightFunc; 
-typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereScaleDer, GLSDer, GLSGeomVar> Fit;
+typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereSpaceDer, GLSDer/*, GLSGeomVar*/> Fit;
 
 
 int main() {
@@ -105,14 +105,12 @@ int main() {
   cout << "The initial point " << p.transpose()              << endl
        << "Is projected at   " << fit.project(p).transpose() << endl;
 
-  Fit::ScalarArray dtau = fit.dkappa_normalized();
+  Fit::VectorArray deta = fit.deta_normalized();
 
-  cout << "dkappa: " << dtau[0] 
-       << " , "      << dtau[1]
-       << " , "      << dtau[2]
+  cout << "dkappa: " << deta
        << endl;
 
-  cout << "geomVar: " << fit.geomVar() << endl;
+  //cout << "geomVar: " << fit.geomVar() << endl;
   
   
 }
