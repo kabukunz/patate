@@ -23,7 +23,7 @@ using namespace std;
 using namespace Grenaille;
 
 
-// This class define the input data format
+// This class defines the input data format
 class MyPoint{
 public:
   enum {Dim = 3};
@@ -126,7 +126,7 @@ int main() {
   Fit1 fit1;
   test_fit(fit1, vecs, p);
   
-  std::cout << "\n\n====================\nOrientedSphereFit:\n";
+  std::cout << "\n\n====================\nUnorientedSphereFit:\n";
   Fit2 fit2;
   test_fit(fit2, vecs, p);
   
