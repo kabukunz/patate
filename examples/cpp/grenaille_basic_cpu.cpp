@@ -41,8 +41,10 @@ public:
   MULTIARCH inline VectorType& pos()    { return _pos; }  
   MULTIARCH inline VectorType& normal() { return _normal; }
 
-  static inline MyPoint Random() { 
-    return MyPoint (VectorType::Random(), VectorType::Random());
+  static inline MyPoint Random() {
+    VectorType n = VectorType::Random().normalized();
+    VectorType p = n * Eigen::internal::random<Scalar>(0.9,1.1);
+    return MyPoint (p, (n + VectorType::Random()*0.1).normalized());
   };
 
 private:
@@ -54,32 +56,24 @@ typedef MyPoint::VectorType VectorType;
 
 // Define related structure
 typedef DistWeightFunc<MyPoint,SmoothWeightKernel<Scalar> > WeightFunc; 
-typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereSpaceDer, GLSDer/*, GLSGeomVar*/> Fit;
+typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereSpaceDer, GLSDer/*, GLSGeomVar*/> Fit1;
+typedef Basket<MyPoint,WeightFunc,UnorientedSphereFit, GLSParam> Fit2;
 
 
-int main() {
-  // set evaluation point and scale
-  Scalar tmax = 10.0;
-  VectorType p = VectorType::Random();
+template<typename Fit>
+void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
+{
+  Scalar tmax = 100.0;
   
-  // init input data
-  int n = 10000;
-  vector<MyPoint> vecs (n);
-
-  fill(vecs.begin(), vecs.end(), MyPoint::Random());
-  
-  VectorType normal; normal << 0.0 , 0.0, 1.0;
-  
-  // init Fit procedure
-  Fit fit;
   fit.setWeightFunc(WeightFunc(tmax));
   fit.init(p);
-  
   
   // Fit the primitive
   for(vector<MyPoint>::iterator it = vecs.begin(); it != vecs.end(); it++)
     fit.addNeighbor(*it);  
   fit.finalize();
+  
+  cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
   
   cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
   
@@ -105,12 +99,36 @@ int main() {
   cout << "The initial point " << p.transpose()              << endl
        << "Is projected at   " << fit.project(p).transpose() << endl;
 
-  Fit::VectorArray deta = fit.deta_normalized();
+//   Fit::VectorArray deta = fit.deta_normalized();
 
-  cout << "dkappa: " << deta
-       << endl;
+//   cout << "dkappa: " << deta
+//        << endl;
 
   //cout << "geomVar: " << fit.geomVar() << endl;
+}
+
+int main() {
+  // set evaluation point and scale
+  VectorType p = VectorType::Random();
+  
+  // init input data
+  int n = 10000;
+  vector<MyPoint> vecs (n);
+  
+  p = vecs.at(0).pos();
+
+  for(int k=0; k<n; ++k)
+    vecs[k] = MyPoint::Random();
+  
+//   VectorType normal; normal << 0.0 , 0.0, 1.0;
+  
+  std::cout << "====================\nOrientedSphereFit:\n";
+  Fit1 fit1;
+  test_fit(fit1, vecs, p);
+  
+  std::cout << "\n\n====================\nOrientedSphereFit:\n";
+  Fit2 fit2;
+  test_fit(fit2, vecs, p);
   
   
 }
