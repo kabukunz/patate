@@ -90,6 +90,14 @@ h1 { font-size: 150%; }
 h2 { font-size: 135%; }
 h3 { font-size: 120%; }
 
+/*a.el {*/
+/*  display: inline; */
+/*}*/
+
+/*a.el:after {*/
+/*  content:"\A"; white-space:pre;*/
+/*}*/
+
 a, a.el, a.elRef, a.el:visited, a.elRef:visited {
   color: #0050A0;
 }
