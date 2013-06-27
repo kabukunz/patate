@@ -6,48 +6,46 @@
 
 
 
-1. How to use Patate
-********************
-You don't need to compile this library to use it. Simply add the Patate/
-directory in your include path during your code compilation. Please include
-directly the top-level include files you can find in the Patate/ directory.
+1. Using the Patate library
+***************************
+
+There is no need to compile this library to use it. Simply add the Patate/ directory to your include path. 
+The only required dependency is on the Eigen library for linear algebra, vectors and matrices purposes.
+A significant portion of the library is also CUDA-compatible, please refer to the documentation for details.
+
+The Patate library is divided into modules (a.k.a. "patates"), and you may include each of them separately. 
+The best way to find out how to use a module is to start from tutorials provided in the documentation.
+Various examples are also documented and their source code provided in the examples/ directory.
+
+Further sections explain how to build the documentation and compile the examples.
+An online version of the documentation for the last release is also available at 
+  http://patate.gforge.inria.fr/html/
+For more information 
+
+
+2. Building the documentation
+*****************************
+
+Starting from the root directory, first create a build/ directory and launch CMake from it:
+  mkdir build && cd build && cmake ..
+
+To generate the documentation using Doxygen, use the following command from the build/ directory:
+  make doc
+
+The up-to-date documentation will then be found in the doc/html/ directory.
 
 
 
-2. Documentation
-****************
-Please use Cmake to build the documentation.
-You need to create a build directory an launch CMake from it:
-  cd build
-  cmake source_dir
+3. Compiling the examples
+*************************
 
-Then, please build the documentation using
-    make doc
-to generate the documentation include
-    doc/html/
+Make sure the EIGEN3_INCLUDE_DIR environment variable is set to your Eigen path.
+Re-launch CMake every time this variable is modified.
 
-An online version of the documentation is available at 
-http://patate.gforge.inria.fr/html/
-
-
-
-3. Examples
-***********
-Please use Cmake to build the documentation. You need to indicate where are 
-located the Eigen (or Eigen-nvcc) headers, by setting the environment variable
-EIGEN3_INCLUDE_DIR to your/path/to/Eigen.
-
-Then compile the examples from the build dir
-  cd build
+To compile examples, use the following command from the build/ directory:
   make examples
 
-The generated binaries will be generated in
-  build/examples
-and subfolders
+The example binaries will then be found in the build/examples/ directory.
 
 
 
-4. Links and Licence
-********************
-Patate Lib Official website: https://gforge.inria.fr/projects/patate/
-Licence: MTL
