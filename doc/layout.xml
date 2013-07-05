@@ -18,8 +18,8 @@
       <tab type="filelist" visible="yes" title="" intro=""/>
       <tab type="globals" visible="yes" title="" intro=""/>
     </tab>-->
-    <tab type="examples" visible="yes" title="" intro=""/>  
     <tab type="user" url="@ref patate_tutorials_page" title="Tutorials"/>
+    <tab type="examples" visible="yes" title="" intro=""/>  
     <tab type="user" visible="yes" title="Citations" url="citelist.html"/>
   </navindex>
 
