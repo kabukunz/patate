@@ -107,7 +107,7 @@ a, a.el, a.elRef, a.el:visited, a.elRef:visited {
 }
 
 .contents ul{
-  display:inline-block;
+  /*display:inline-block;*/
   margin-bottom: 0px;
   margin-top: 0px;
 }
