@@ -56,7 +56,7 @@ typedef MyPoint::VectorType VectorType;
 
 // Define related structure
 typedef DistWeightFunc<MyPoint,SmoothWeightKernel<Scalar> > WeightFunc; 
-typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam> Fit1;
+typedef Basket<MyPoint,WeightFunc,OrientedSphereFit,   GLSParam> Fit1;
 typedef Basket<MyPoint,WeightFunc,UnorientedSphereFit, GLSParam> Fit2;
 
 
@@ -65,17 +65,23 @@ void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
 {
   Scalar tmax = 100.0;
   
-  fit.setWeightFunc(WeightFunc(tmax));
+  // Set a weighting function instance
+  fit.setWeightFunc(WeightFunc(tmax));  
+  
+  // Set the evaluation position
   fit.init(p);
   
-  // Fit the primitive
+  // Iterate over samples and fit the primitive
   for(vector<MyPoint>::iterator it = vecs.begin(); it != vecs.end(); it++)
     fit.addNeighbor(*it);  
+    
+  //finalize fitting
   fit.finalize();
   
   cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
   
-  cout << "Pratt normalization" << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
+  cout << "Pratt normalization" 
+       << (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
   
   // Play with fitting output
   cout << "Value of the scalar field at the initial point: " 
@@ -98,13 +104,6 @@ void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
     
   cout << "The initial point " << p.transpose()              << endl
        << "Is projected at   " << fit.project(p).transpose() << endl;
-
-//   Fit::VectorArray deta = fit.deta_normalized();
-
-//   cout << "dkappa: " << deta
-//        << endl;
-
-  //cout << "geomVar: " << fit.geomVar() << endl;
 }
 
 int main() {
@@ -119,8 +118,6 @@ int main() {
 
   for(int k=0; k<n; ++k)
     vecs[k] = MyPoint::Random();
-  
-//   VectorType normal; normal << 0.0 , 0.0, 1.0;
   
   std::cout << "====================\nOrientedSphereFit:\n";
   Fit1 fit1;
