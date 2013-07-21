@@ -19,6 +19,7 @@
 #include "Eigen/Eigen"
 
 #include <vector>
+
 using namespace std;
 using namespace Grenaille;
 
@@ -58,6 +59,7 @@ typedef MyPoint::VectorType VectorType;
 typedef DistWeightFunc<MyPoint,SmoothWeightKernel<Scalar> > WeightFunc; 
 typedef Basket<MyPoint,WeightFunc,OrientedSphereFit,   GLSParam> Fit1;
 typedef Basket<MyPoint,WeightFunc,UnorientedSphereFit, GLSParam> Fit2;
+typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereSpaceDer, GLSDer, GLSSpatialVariation> Fit3;
 
 
 template<typename Fit>
@@ -113,11 +115,11 @@ int main() {
   // init input data
   int n = 10000;
   vector<MyPoint> vecs (n);
-  
-  p = vecs.at(0).pos();
 
   for(int k=0; k<n; ++k)
     vecs[k] = MyPoint::Random();
+    
+  p = vecs.at(0).pos();
   
   std::cout << "====================\nOrientedSphereFit:\n";
   Fit1 fit1;
@@ -127,5 +129,13 @@ int main() {
   Fit2 fit2;
   test_fit(fit2, vecs, p);
   
+  std::cout << "\n\n====================\nUnorientedSphereFit:\n";
+  Fit3 fit3;
+  test_fit(fit3, vecs, p);
+  Fit3::GLSSpatialEigenDecomposition decomp = fit3.projectedVariationDecomposition(0,1,0);
+  cout << "eigenvalues: "<< endl;
+  cout << decomp.first << endl;
+  cout << "eigenvectors: "<< endl;
+  cout << decomp.second << endl;
   
 }
