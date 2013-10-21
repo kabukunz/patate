@@ -143,7 +143,7 @@ def main(argv):
   
   
   
-  startTimer("Compile CUDA kernel ........ ", quiet)
+  startTimer("Load CUDA kernel ........... ", quiet)
   module, glsKernel = loadKernel()
   stopTimer(quiet)  
   

@@ -112,19 +112,19 @@ a, a.el, a.elRef, a.el:visited, a.elRef:visited {
   margin-top: 0px;
 }
 
-div.image > img{
-  float: left;
-  clear:both;
+/*div.image > img{*/
+/*  float: left;*/
+/*  clear:both;*/
 
-  padding: 5px;
-/*  margin-left: 5px;*/
-  margin-right: 10px;
-  margin-bottom: 1px;
-  
-  border-color: rgb(213, 213, 213);
-  border-style: solid;
-  border-width: 1px;
+/*  padding: 5px;*/
+/*/*  margin-left: 5px;*/*/
+/*  margin-right: 10px;*/
+/*  margin-bottom: 1px;*/
+/*  */
+/*  border-color: rgb(213, 213, 213);*/
+/*  border-style: solid;*/
+/*  border-width: 1px;*/
 
-  background-color: rgb(252, 252, 252);
-}
+/*  background-color: rgb(252, 252, 252);*/
+/*}*/
 

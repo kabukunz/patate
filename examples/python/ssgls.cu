@@ -22,6 +22,7 @@ class MyPoint
   enum {Dim = 3};
   typedef float Scalar;
   typedef Eigen::Matrix<Scalar, Dim, 1> VectorType;
+  typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
   typedef Eigen::Matrix<Scalar, 2, 1>   ScreenVectorType;
 
   MULTIARCH inline MyPoint(const VectorType &pos        = VectorType::Zero(), 
@@ -49,28 +50,35 @@ class MyPoint
 };
 //! [mypoint]
 
-//! [w_def]
 typedef MyPoint::Scalar Scalar;
 typedef MyPoint::VectorType VectorType;
 typedef MyPoint::ScreenVectorType ScreenVectorType;
 
+//! [w_def]
 class ProjectWeightFunc: public Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >{
 public:
   typedef MyPoint::Scalar Scalar;
   typedef MyPoint::VectorType VectorType;
 
-  MULTIARCH inline ProjectWeightFunc(const Scalar& t = Scalar(1.), const float dz = 0.f)
-  : Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >(t), _dz(dz) { }
+  /*
+    Default constructor (needed by Grenaille). Note that the screenspace 
+    evaluation position is specified as parameter
+  */
+  MULTIARCH inline ProjectWeightFunc(const Scalar& t                = 1.f, 
+                                     const ScreenVectorType &refPos = ScreenVectorType::Zero(), 
+                                     const Scalar &dz               = 0.f)
+  : Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >(t), _refPos(refPos), _dz(dz) { }
   
   MULTIARCH inline Scalar w(const VectorType& q, const MyPoint&  attributes) const
   {
-    Scalar d  = attributes.spos().norm();
-    const float dz = attributes.dz();
+    Scalar d  = (attributes.spos()-_refPos).norm();
+    const Scalar dz = attributes.dz();
     if (d > _t || dz > _dz)
       return Scalar(0.);
     return _wk.f(d/_t);
   }
   private:
+  ScreenVectorType _refPos;
   float _dz;
 };
 //! [w_def]
@@ -128,39 +136,50 @@ __global__ void doGLS_kernel(  int* params, //[w, h, scale, nbQueries]
     // cast float coordinates
     int x = queries[2*ptid];
     int y = queries[2*ptid + 1];  
+    
+    ScreenVectorType refPos;
+    refPos << x, y;
+    
   
     int dx, dy; // neighbor offset ids
     int nx, ny; // neighbor ids    
     
     Gls gls;
-    gls.setWeightFunc(ProjectWeightFunc(scale));
+    gls.setWeightFunc(ProjectWeightFunc(scale, refPos));
     gls.init( getVector(x,y,width,height,positions) );
                                                    
-    if ( getVector(x,y,width,height,normals).squaredNorm() != 0.f ){         
-         result[getId(x,y,width,height,0,1)] = -1.0;         
+    if ( getVector(x,y,width,height,normals).squaredNorm() == 0.f ){         
+      result[getId(x,y,width,height,0,1)] = -1.0;         
     }
-    else{
+    else{     
+      //result[getId(x,y,width,height,0,1)] = getVector(x,y,width,height,normals)(0);
       VectorType p, n;
     
-    // collect neighborhood
-    VectorType one; one << 1.f, 1.f;
-    
+      // collect neighborhood
+      VectorType one = VectorType::Zero();
+      
       for(dy = -scale; dy != scale; dy++)
         for(dx = -scale; dx != scale; dx++){
           nx = x+dx;
           ny = y+dy;
           
+          
           // Check image boundaries
-          if (nx >= 0 && ny >= 0 && nx < width && ny < height){    
-             n = getVector(nx,ny,width,height,normals);
+          if (nx >= 0 && ny >= 0 && nx < width && ny < height){   
+             n = getVector(nx,ny,width,height,normals);    
                           
              // add nei only when the normal is properly defined
-             // this condition could also be included in the Weight functor
-             if ( n.squaredNorm() != 0.f ) {               
-                p = getVector(nx,ny,width,height,positions);                 
-                n = 2.f * n - one;
+             // need to use an explicit floating point comparison with pycuda
+             if ( n.squaredNorm() != 0.f ) {   
+             
+                // RGB to XYZ remapping                          
+                n =  2.f * n - one; 
                 n.normalize();
-                gls.addNeighbor(MyPoint(p,n,ScreenVectorType(nx,ny)));                                  
+                
+                // GLS computation
+                gls.addNeighbor(MyPoint(getVector(nx,ny,width,height,positions),
+                                        n,
+                                        ScreenVectorType(nx,ny)));                                  
             }
           }
        }
