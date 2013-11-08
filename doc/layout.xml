@@ -11,6 +11,7 @@
 			</tab>
 			<tab type="usergroup" url="@ref grenaille_example_cxx_page" title="Examples C++">
 				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_basic_page" title="Basic example"/>
+				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_ssc_page" title="C++/CUDA screen space curvature"/>
 			</tab>
 			<tab type="usergroup" url="@ref grenaille_example_python_page" title="Examples Python">
 				<tab type="user" visible="yes" url="@ref grenaille_example_python_ssc_page" title="Python/CUDA screen space curvature"/>
