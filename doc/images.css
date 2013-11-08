@@ -15,3 +15,7 @@ div.dessin {
 div.clear {
 	clear: both;
 }
+
+#nav-sync {
+	display : none;
+}
