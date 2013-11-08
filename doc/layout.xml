@@ -9,9 +9,11 @@
 				<tab type="user" visible="yes" url="@ref grenaille_tutorial1" title="Grenaille first tutorial"/>
 				<tab type="user" visible="yes" url="@ref grenaille_tutorial2" title="Grenaille curvature tutorial"/>
 			</tab>
-			<tab type="usergroup" url="@ref grenaille_example_page" title="Examples">
-				<tab type="user" visible="yes" url="@ref grenaille_example1_page" title="Basic example"/>
-				<tab type="user" visible="yes" url="@ref grenaille_example2_page" title="Python/CUDA screen space curvature"/>
+			<tab type="usergroup" url="@ref grenaille_example_cxx_page" title="Examples C++">
+				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_basic_page" title="Basic example"/>
+			</tab>
+			<tab type="usergroup" url="@ref grenaille_example_python_page" title="Examples Python">
+				<tab type="user" visible="yes" url="@ref grenaille_example_python_ssc_page" title="Python/CUDA screen space curvature"/>
 			</tab>
 		</tab>
 	</tab>
