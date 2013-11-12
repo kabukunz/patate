@@ -5,7 +5,7 @@
 	<tab type="user" visible="yes" url="@ref patate_getting_started_page" title="Getting Started"/>
 	<tab type="usergroup" url="@ref patate_overview_page" title="Patates">
 		<tab type="usergroup" url="@ref Grenaille" title="Grenaille">
-			<tab type="usergroup" url="@ref grenaille_tutorials_page" title="Tutorials">
+			<tab type="usergroup" url="@ref grenaille_tutorials_page" title="User Manual">
 				<tab type="user" visible="yes" url="@ref grenaille_tutorial1" title="Grenaille first tutorial"/>
 				<tab type="user" visible="yes" url="@ref grenaille_tutorial2" title="Grenaille curvature tutorial"/>
 			</tab>
