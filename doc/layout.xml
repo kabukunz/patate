@@ -30,8 +30,7 @@
       <tab type="filelist" visible="yes" title="" intro=""/>
       <tab type="globals" visible="yes" title="" intro=""/>
     </tab>
-    <tab type="examples" visible="yes" title="" intro=""/> --> 
-    <tab type="user" url="@ref patate_gallery_page" title="Gallery"/>
+    <tab type="examples" visible="yes" title="" intro=""/> -->
 	<tab type="namespaces" visible="yes" title="Reference">
       <tab type="namespacelist" visible="yes" title="" intro=""/>
       <tab type="namespacemembers" visible="yes" title="" intro=""/>
