@@ -25,14 +25,14 @@ using namespace Grenaille;
 
 #define DIMENSION 3
 
-/*!
- * \brief Variant of the MyPointRef class allowing to work only with references.
- *
- * Using this approach, ones can use the patate library with already existing
- * data-structures and without any data-duplication.
- * 
- * In this example, we use this class to map an interlaced raw array containing
- * both point normals and coordinates.
+/*
+   \brief Variant of the MyPoint class allowing to work with external raw data.
+  
+   Using this approach, ones can use the patate library with already existing
+   data-structures and without any data-duplication.
+   
+   In this example, we use this class to map an interlaced raw array containing
+   both point normals and coordinates.
  */
 class MyPoint
 {
@@ -145,8 +145,8 @@ int main()
 	// set evaluation point and scale at the first coordinate
 	VectorType p (interlacedArray);
 
-  // Here we now perform the fit, starting from a raw interlaced buffer, without
-  // any data duplication
+	// Here we now perform the fit, starting from a raw interlaced buffer, without
+	// any data duplication
 	Fit fit;
 	test_fit(fit, interlacedArray, n, p);
 }

@@ -9,8 +9,8 @@ set(grenaille_basic_SRCS
 )
 add_executable(grenaille_basic_cpu ${grenaille_basic_SRCS})
 
-set(grenaille_reference_SRCS 
-    grenaille_reference.cpp 
+set(grenaille_binding_SRCS 
+    grenaille_binding.cpp 
 )
-add_executable(grenaille_reference ${grenaille_reference_SRCS})
-add_dependencies(examples grenaille_reference)
+add_executable(grenaille_binding ${grenaille_binding_SRCS})
+add_dependencies(examples grenaille_binding)
