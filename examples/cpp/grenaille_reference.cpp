@@ -23,50 +23,51 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 using namespace std;
 using namespace Grenaille;
 
+#define DIMENSION 3
+
 /*!
  * \brief Variant of the MyPointRef class allowing to work only with references.
  *
  * Using this approach, ones can use the patate library with already existing
  * data-structures and without any data-duplication.
  * 
- * In this example, we use this class to bind raw arrays containing existing
- * point normals and coordinates.
+ * In this example, we use this class to map an interlaced raw array containing
+ * both point normals and coordinates.
  */
-class MyPointRef
+class MyPoint
 {
 public:
-	enum {Dim = 3};
+	enum {Dim = DIMENSION};
 	typedef double Scalar;
 	typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
 	typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
 
-	MULTIARCH inline MyPointRef(const VectorType &pos, const VectorType& normal)
-		: _pos(pos), _normal(normal) {}
+	MULTIARCH inline MyPoint(Scalar* interlacedArray, int pId)
+		: _pos   (Eigen::Map< const VectorType >(interlacedArray + DIMENSION*2*pId  )), 
+		  _normal(Eigen::Map< const VectorType >(interlacedArray + DIMENSION*2*pId+DIMENSION)) {
+		  }
 
-	MULTIARCH inline const VectorType& pos()    const { return _pos; }  
-	MULTIARCH inline const VectorType& normal() const { return _normal; }
+	MULTIARCH inline const Eigen::Map< const VectorType >& pos()    const { return _pos; }  
+	MULTIARCH inline const Eigen::Map< const VectorType >& normal() const { return _normal; }
 
 private:
-	const VectorType &_pos, &_normal;
+  Eigen::Map< const VectorType > _pos, _normal;
 };
 
-typedef MyPointRef::Scalar Scalar;
-typedef MyPointRef::VectorType VectorType;
+typedef MyPoint::Scalar Scalar;
+typedef MyPoint::VectorType VectorType;
 
 // Define related structure
-typedef DistWeightFunc<MyPointRef,SmoothWeightKernel<Scalar> > WeightFunc; 
-typedef Basket<MyPointRef,WeightFunc,OrientedSphereFit,   GLSParam> Fit;
+typedef DistWeightFunc<MyPoint,SmoothWeightKernel<Scalar> > WeightFunc; 
+typedef Basket<MyPoint,WeightFunc,OrientedSphereFit,   GLSParam> Fit;
 
 
 template<typename Fit>
 void test_fit(Fit& fit, 
-              vector<VectorType>& positions, 
-              vector<VectorType>& normals, 
+              Scalar* interlacedArray, 
+              int n,
               const VectorType& p)
 {
-  if(positions.size() != normals.size())
-    return;
-
 	Scalar tmax = 100.0;
 
 	// Set a weighting function instance
@@ -76,11 +77,10 @@ void test_fit(Fit& fit,
 	fit.init(p);
 
 	// Iterate over samples and fit the primitive
-	// A MyPointRef instance is generated on the fly to bind the raw arrays to the
-	// library representation. No copy is done at this step, since we use constant
-	// references.
-	for(unsigned int i = 0; i!= positions.size(); i++){
-	  fit.addNeighbor(MyPointRef(positions[i], normals[i]));
+	// A MyPoint instance is generated on the fly to bind the raw arrays to the
+	// library representation. No copy is done at this step.
+	for(int i = 0; i!= n; i++){
+	  fit.addNeighbor(MyPoint(interlacedArray, i));
 	}
 
 	//finalize fitting
@@ -116,7 +116,27 @@ void test_fit(Fit& fit,
 		cout << "The initial point " << p.transpose()              << endl
 			<< "Is projected at   " << fit.project(p).transpose() << endl;
 	}
+}
 
+// Build an interlaced array containing n position and normal vectors
+Scalar* buildInterlacedArray(int n){
+	Scalar* interlacedArray = new Scalar[2*DIMENSION*n];
+
+	for(int k=0; k<n; ++k){
+
+  	// For the simplicity of this example, we use Eigen Vectors to compute 
+  	// both coordinates and normals, and then copy the raw values to an 
+  	// interlaced array, discarding the Eigen representation.
+	  Eigen::Matrix<Scalar, DIMENSION, 1> nvec = Eigen::Matrix<Scalar, DIMENSION, 1>::Random().normalized();
+	  Eigen::Matrix<Scalar, DIMENSION, 1> pvec = nvec * Eigen::internal::random<Scalar>(0.9,1.1);
+	  
+	  // Grab coordinates and store them as raw buffer
+	  memcpy(interlacedArray+2*DIMENSION*k,           pvec.data(), DIMENSION*sizeof(Scalar));
+	  memcpy(interlacedArray+2*DIMENSION*k+DIMENSION, nvec.data(), DIMENSION*sizeof(Scalar));
+	  
+	}
+
+  return interlacedArray;
 }
 
 int main()
@@ -124,24 +144,14 @@ int main()
 
 	// Build arrays containing normals and positions, simulating data coming from
 	// outside the library.
-	// 
-	// For the simplicity of this example, we use the same datatype to represent
-	// 3D vectors in these arrays and in MyPointRef. Note that you could use
-	// different types such as Scalar*, since we rely on Eigen to define vectors.
-	int n = 10000;
-	vector<VectorType> positions(n);
-	vector<VectorType> normals(n);
+	int n = 1000;
+	Scalar *interlacedArray = buildInterlacedArray(n);
 
-	for(int k=0; k<n; ++k){
-	  VectorType n = VectorType::Random().normalized();
-	  
-	  normals[k]   = n;
-	  positions[k] = n * Eigen::internal::random<Scalar>(0.9,1.1);
-	}
+	// set evaluation point and scale at the first coordinate
+	VectorType p (interlacedArray);
 
-	// set evaluation point and scale
-	VectorType p = positions[0];
-
+  // Here we now perform the fit, starting from a raw interlaced buffer, without
+  // any data duplication
 	Fit fit;
-	test_fit(fit, positions, normals, p);
+	test_fit(fit, interlacedArray, n, p);
 }
