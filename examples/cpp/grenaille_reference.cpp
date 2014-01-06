@@ -43,8 +43,8 @@ public:
 	typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
 
 	MULTIARCH inline MyPoint(Scalar* interlacedArray, int pId)
-		: _pos   (Eigen::Map< const VectorType >(interlacedArray + DIMENSION*2*pId  )), 
-		  _normal(Eigen::Map< const VectorType >(interlacedArray + DIMENSION*2*pId+DIMENSION)) {
+		: _pos   (Eigen::Map< const VectorType >(interlacedArray + Dim*2*pId  )), 
+		  _normal(Eigen::Map< const VectorType >(interlacedArray + Dim*2*pId+Dim)) {
 		  }
 
 	MULTIARCH inline const Eigen::Map< const VectorType >& pos()    const { return _pos; }  
