@@ -99,10 +99,6 @@ void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
 			<< fit.primitiveGradient(p).transpose()
 			<< endl;
 
-		cout << "Approximation of the Hessian matrix: " << endl
-			<< fit.primitiveHessian(p)
-			<< endl;
-
 		cout << "Fitted Sphere: " << endl
 			<< "\t Tau  : "      << fit.tau()             << endl
 			<< "\t Eta  : "      << fit.eta().transpose() << endl
