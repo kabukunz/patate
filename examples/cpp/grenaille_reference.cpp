@@ -40,7 +40,6 @@ public:
 	enum {Dim = DIMENSION};
 	typedef double Scalar;
 	typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
-	typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
 
 	MULTIARCH inline MyPoint(Scalar* interlacedArray, int pId)
 		: _pos   (Eigen::Map< const VectorType >(interlacedArray + DIMENSION*2*pId  )), 
@@ -102,10 +101,6 @@ void test_fit(Fit& fit,
 
 		cout << "It's gradient at this place is equal to: "
 			<< fit.primitiveGradient(p).transpose()
-			<< endl;
-
-		cout << "Approximation of the Hessian matrix: " << endl
-			<< fit.primitiveHessian(p)
 			<< endl;
 
 		cout << "Fitted Sphere: " << endl
