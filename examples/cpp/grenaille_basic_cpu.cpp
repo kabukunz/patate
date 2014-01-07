@@ -82,7 +82,7 @@ void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
 	fit.finalize();
 
 	//Test if the fitting ended without errors
-	if(fit.isReady())
+	if(fit.isStable())
 	{
 		cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
 

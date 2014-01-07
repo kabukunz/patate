@@ -86,7 +86,7 @@ void test_fit(Fit& fit,
 	fit.finalize();
 
 	//Test if the fitting ended without errors
-	if(fit.isReady())
+	if(fit.isStable())
 	{
 		cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
 
