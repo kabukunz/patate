@@ -136,7 +136,7 @@ int main()
 	Fit3 fit3;
 	test_fit(fit3, vecs, p);
 
-	if(fit3.isReady())
+	if(fit3.isStable())
 	{
 		cout << "eigen values: "<< endl;
 		cout << fit3.GLSk1() << endl;
