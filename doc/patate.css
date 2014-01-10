@@ -1,7 +1,7 @@
-div.contents {
-  max-width:60em;
+/*div.contents {
+  max-width:100%;
   text-align:justify;
-}
+}*/
 
 div.dessin:hover {
 	border-color:#fbeac1 #c89f4e #8c6916;
@@ -22,5 +22,9 @@ div.clear {
 }
 
 #nav-sync {
-	display : none;
+	display:none;
+}
+
+a {
+	font-weight:bold;
 }
