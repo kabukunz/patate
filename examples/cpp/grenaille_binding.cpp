@@ -37,20 +37,20 @@ using namespace Grenaille;
 class MyPoint
 {
 public:
-	enum {Dim = DIMENSION};
-	typedef double Scalar;
-	typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
+    enum {Dim = DIMENSION};
+    typedef double Scalar;
+    typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
 
-	MULTIARCH inline MyPoint(Scalar* interlacedArray, int pId)
-		: _pos   (Eigen::Map< const VectorType >(interlacedArray + Dim*2*pId  )), 
-		  _normal(Eigen::Map< const VectorType >(interlacedArray + Dim*2*pId+Dim)) {
-		  }
+    MULTIARCH inline MyPoint(Scalar* _interlacedArray, int _pId)
+        : m_pos   (Eigen::Map< const VectorType >(_interlacedArray + Dim*2*_pId  )), 
+        m_normal(Eigen::Map< const VectorType >(_interlacedArray + Dim*2*_pId+Dim))
+    {}
 
-	MULTIARCH inline const Eigen::Map< const VectorType >& pos()    const { return _pos; }  
-	MULTIARCH inline const Eigen::Map< const VectorType >& normal() const { return _normal; }
+    MULTIARCH inline const Eigen::Map< const VectorType >& pos()    const { return m_pos; }  
+    MULTIARCH inline const Eigen::Map< const VectorType >& normal() const { return m_normal; }
 
 private:
-  Eigen::Map< const VectorType > _pos, _normal;
+    Eigen::Map< const VectorType > m_pos, m_normal;
 };
 
 typedef MyPoint::Scalar Scalar;
@@ -62,91 +62,92 @@ typedef Basket<MyPoint,WeightFunc,OrientedSphereFit,   GLSParam> Fit;
 
 
 template<typename Fit>
-void test_fit(Fit& fit, 
-              Scalar* interlacedArray, 
-              int n,
-              const VectorType& p)
+void test_fit(Fit& _fit, 
+              Scalar* _interlacedArray, 
+              int _n,
+              const VectorType& _p)
 {
-	Scalar tmax = 100.0;
+    Scalar tmax = 100.0;
 
-	// Set a weighting function instance
-	fit.setWeightFunc(WeightFunc(tmax));  
+    // Set a weighting function instance
+    _fit.setWeightFunc(WeightFunc(tmax));  
 
-	// Set the evaluation position
-	fit.init(p);
+    // Set the evaluation position
+    _fit.init(_p);
 
-	// Iterate over samples and fit the primitive
-	// A MyPoint instance is generated on the fly to bind the raw arrays to the
-	// library representation. No copy is done at this step.
-	for(int i = 0; i!= n; i++){
-	  fit.addNeighbor(MyPoint(interlacedArray, i));
-	}
+    // Iterate over samples and _fit the primitive
+    // A MyPoint instance is generated on the fly to bind the raw arrays to the
+    // library representation. No copy is done at this step.
+    for(int i = 0; i!= _n; i++)
+    {
+        _fit.addNeighbor(MyPoint(_interlacedArray, i));
+    }
 
-	//finalize fitting
-	fit.finalize();
+    //finalize fitting
+    _fit.finalize();
 
-	//Test if the fitting ended without errors
-	if(fit.isStable())
-	{
-		cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
+    //Test if the fitting ended without errors
+    if(_fit.isStable())
+    {
+        cout << "Center: [" << _fit.center().transpose() << "] ;  radius: " << _fit.radius() << endl;
 
-		cout << "Pratt normalization" 
-			<< (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
+        cout << "Pratt normalization" 
+            << (_fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
 
-		// Play with fitting output
-		cout << "Value of the scalar field at the initial point: " 
-			<< p.transpose() 
-			<< " is equal to " << fit.potential(p)
-			<< endl;
+        // Play with fitting output
+        cout << "Value of the scalar field at the initial point: " 
+            << _p.transpose() 
+            << " is equal to " << _fit.potential(_p)
+            << endl;
 
-		cout << "It's gradient at this place is equal to: "
-			<< fit.primitiveGradient(p).transpose()
-			<< endl;
+        cout << "It's gradient at this place is equal to: "
+            << _fit.primitiveGradient(_p).transpose()
+            << endl;
 
-		cout << "Fitted Sphere: " << endl
-			<< "\t Tau  : "      << fit.tau()             << endl
-			<< "\t Eta  : "      << fit.eta().transpose() << endl
-			<< "\t Kappa: "      << fit.kappa()           << endl;
+        cout << "Fitted Sphere: " << endl
+            << "\t Tau  : "      << _fit.tau()             << endl
+            << "\t Eta  : "      << _fit.eta().transpose() << endl
+            << "\t Kappa: "      << _fit.kappa()           << endl;
 
-		cout << "The initial point " << p.transpose()              << endl
-			<< "Is projected at   " << fit.project(p).transpose() << endl;
-	}
+        cout << "The initial point " << _p.transpose()              << endl
+            << "Is projected at   " << _fit.project(_p).transpose() << endl;
+    }
 }
 
-// Build an interlaced array containing n position and normal vectors
-Scalar* buildInterlacedArray(int n){
-	Scalar* interlacedArray = new Scalar[2*DIMENSION*n];
+// Build an interlaced array containing _n position and normal vectors
+Scalar* buildInterlacedArray(int _n)
+{
+    Scalar* interlacedArray = new Scalar[2*DIMENSION*_n];
 
-	for(int k=0; k<n; ++k){
+    for(int k=0; k<_n; ++k)
+    {
+        // For the simplicity of this example, we use Eigen Vectors to compute 
+        // both coordinates and normals, and then copy the raw values to an 
+        // interlaced array, discarding the Eigen representation.
+        Eigen::Matrix<Scalar, DIMENSION, 1> nvec = Eigen::Matrix<Scalar, DIMENSION, 1>::Random().normalized();
+        Eigen::Matrix<Scalar, DIMENSION, 1> pvec = nvec * Eigen::internal::random<Scalar>(0.9,1.1);
 
-  	// For the simplicity of this example, we use Eigen Vectors to compute 
-  	// both coordinates and normals, and then copy the raw values to an 
-  	// interlaced array, discarding the Eigen representation.
-	  Eigen::Matrix<Scalar, DIMENSION, 1> nvec = Eigen::Matrix<Scalar, DIMENSION, 1>::Random().normalized();
-	  Eigen::Matrix<Scalar, DIMENSION, 1> pvec = nvec * Eigen::internal::random<Scalar>(0.9,1.1);
-	  
-	  // Grab coordinates and store them as raw buffer
-	  memcpy(interlacedArray+2*DIMENSION*k,           pvec.data(), DIMENSION*sizeof(Scalar));
-	  memcpy(interlacedArray+2*DIMENSION*k+DIMENSION, nvec.data(), DIMENSION*sizeof(Scalar));
-	  
-	}
+        // Grab coordinates and store them as raw buffer
+        memcpy(interlacedArray+2*DIMENSION*k,           pvec.data(), DIMENSION*sizeof(Scalar));
+        memcpy(interlacedArray+2*DIMENSION*k+DIMENSION, nvec.data(), DIMENSION*sizeof(Scalar));
 
-  return interlacedArray;
+    }
+
+    return interlacedArray;
 }
 
 int main()
 {
+    // Build arrays containing normals and positions, simulating data coming from
+    // outside the library.
+    int n = 1000;
+    Scalar *interlacedArray = buildInterlacedArray(n);
 
-	// Build arrays containing normals and positions, simulating data coming from
-	// outside the library.
-	int n = 1000;
-	Scalar *interlacedArray = buildInterlacedArray(n);
+    // set evaluation point and scale at the first coordinate
+    VectorType p (interlacedArray);
 
-	// set evaluation point and scale at the first coordinate
-	VectorType p (interlacedArray);
-
-	// Here we now perform the fit, starting from a raw interlaced buffer, without
-	// any data duplication
-	Fit fit;
-	test_fit(fit, interlacedArray, n, p);
+    // Here we now perform the fit, starting from a raw interlaced buffer, without
+    // any data duplication
+    Fit fit;
+    test_fit(fit, interlacedArray, n, p);
 }

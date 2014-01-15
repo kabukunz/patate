@@ -33,24 +33,25 @@ public:
 	typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
 	typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
 
-	MULTIARCH inline MyPoint(const VectorType &pos    = VectorType::Zero(), 
-		const VectorType& normal = VectorType::Zero())
-		: _pos(pos), _normal(normal) {}
+	MULTIARCH inline MyPoint(const VectorType& _pos    = VectorType::Zero(), 
+		const VectorType& _normal = VectorType::Zero())
+		: m_pos(_pos), m_normal(_normal) {}
 
-	MULTIARCH inline const VectorType& pos()    const { return _pos; }  
-	MULTIARCH inline const VectorType& normal() const { return _normal; }
+	MULTIARCH inline const VectorType& pos()    const { return m_pos; }  
+	MULTIARCH inline const VectorType& normal() const { return m_normal; }
 
-	MULTIARCH inline VectorType& pos()    { return _pos; }  
-	MULTIARCH inline VectorType& normal() { return _normal; }
+	MULTIARCH inline VectorType& pos()    { return m_pos; }  
+	MULTIARCH inline VectorType& normal() { return m_normal; }
 
-	static inline MyPoint Random() {
+	static inline MyPoint Random()
+    {
 		VectorType n = VectorType::Random().normalized();
 		VectorType p = n * Eigen::internal::random<Scalar>(0.9,1.1);
 		return MyPoint (p, (n + VectorType::Random()*0.1).normalized());
 	};
 
 private:
-	VectorType _pos, _normal;
+	VectorType m_pos, m_normal;
 };
 
 typedef MyPoint::Scalar Scalar;
@@ -64,48 +65,50 @@ typedef Basket<MyPoint,WeightFunc,OrientedSphereFit, GLSParam, OrientedSphereSpa
 
 
 template<typename Fit>
-void test_fit(Fit& fit, vector<MyPoint>& vecs, const VectorType& p)
+void test_fit(Fit& _fit, vector<MyPoint>& _vecs, const VectorType& _p)
 {
 	Scalar tmax = 100.0;
 
 	// Set a weighting function instance
-	fit.setWeightFunc(WeightFunc(tmax));  
+	_fit.setWeightFunc(WeightFunc(tmax));  
 
 	// Set the evaluation position
-	fit.init(p);
+	_fit.init(_p);
 
-	// Iterate over samples and fit the primitive
-	for(vector<MyPoint>::iterator it = vecs.begin(); it != vecs.end(); it++)
-		fit.addNeighbor(*it);  
+	// Iterate over samples and _fit the primitive
+	for(vector<MyPoint>::iterator it = _vecs.begin(); it != _vecs.end(); it++)
+    {
+		_fit.addNeighbor(*it);  
+    }
 
 	//finalize fitting
-	fit.finalize();
+	_fit.finalize();
 
 	//Test if the fitting ended without errors
-	if(fit.isStable())
+	if(_fit.isStable())
 	{
-		cout << "Center: [" << fit.center().transpose() << "] ;  radius: " << fit.radius() << endl;
+		cout << "Center: [" << _fit.center().transpose() << "] ;  radius: " << _fit.radius() << endl;
 
 		cout << "Pratt normalization" 
-			<< (fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
+			<< (_fit.applyPrattNorm() ? " is now done." : " has already been applied.") << endl;
 
 		// Play with fitting output
 		cout << "Value of the scalar field at the initial point: " 
-			<< p.transpose() 
-			<< " is equal to " << fit.potential(p)
+			<< _p.transpose() 
+			<< " is equal to " << _fit.potential(_p)
 			<< endl;
 
 		cout << "It's gradient at this place is equal to: "
-			<< fit.primitiveGradient(p).transpose()
+			<< _fit.primitiveGradient(_p).transpose()
 			<< endl;
 
 		cout << "Fitted Sphere: " << endl
-			<< "\t Tau  : "      << fit.tau()             << endl
-			<< "\t Eta  : "      << fit.eta().transpose() << endl
-			<< "\t Kappa: "      << fit.kappa()           << endl;
+			<< "\t Tau  : "      << _fit.tau()             << endl
+			<< "\t Eta  : "      << _fit.eta().transpose() << endl
+			<< "\t Kappa: "      << _fit.kappa()           << endl;
 
-		cout << "The initial point " << p.transpose()              << endl
-			<< "Is projected at   " << fit.project(p).transpose() << endl;
+		cout << "The initial point " << _p.transpose()              << endl
+			<< "Is projected at   " << _fit.project(_p).transpose() << endl;
 	}
 
 }
@@ -120,7 +123,9 @@ int main()
 	vector<MyPoint> vecs (n);
 
 	for(int k=0; k<n; ++k)
+    {
 		vecs[k] = MyPoint::Random();
+    }
 
 	p = vecs.at(0).pos();
 
