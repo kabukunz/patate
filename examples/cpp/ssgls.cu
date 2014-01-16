@@ -90,10 +90,10 @@ public:
         Scalar d  = (_attributes.spos()-m_refPos).norm();
         const Scalar dz = _attributes.dz();
 
-        if (d > _t || dz > m_dz)
+        if (d > m_t || dz > m_dz)
             return Scalar(0.);
 
-        return _wk.f(d/_t);
+        return m_wk.f(d/m_t);
     }
 private:
     ScreenVectorType m_refPos;
