@@ -1,14 +1,12 @@
 /*
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 /*!
 \file examples/Grenaille/ssgls.cu
 \brief Screen space GLS using c++/CUDA
-
-\author: Nicolas Mellado, Gautier Ciaudo
 */
 
 #include <stdio.h>
@@ -22,87 +20,70 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #include "Eigen/Core"
 #include "Patate/grenaille.h"
 
-#define CUDA_CHECK_RETURN(_value) {											\
-    cudaError_t _m_cudaStat = _value;										\
-    if (_m_cudaStat != cudaSuccess) {										\
-        fprintf(stderr, "Error %s at line %d in file %s\n",					\
-        cudaGetErrorString(_m_cudaStat), __LINE__, __FILE__);		        \
-        exit(1);															\
-    } }
-
 //! [mypoint]
-class MyPoint
+class ScreenSpacePoint
 {
 public:
     enum {Dim = 3};
     typedef float Scalar;
-    typedef Eigen::Matrix<Scalar, Dim, 1> VectorType;
+    typedef Eigen::Matrix<Scalar, Dim, 1>   VectorType;
+    typedef Eigen::Matrix<Scalar, 2,   1>   ScreenVectorType;
     typedef Eigen::Matrix<Scalar, Dim, Dim> MatrixType;
-    typedef Eigen::Matrix<Scalar, 2, 1>   ScreenVectorType;
 
-    MULTIARCH inline MyPoint(   const VectorType& _pos        = VectorType::Zero(),
-                                const VectorType& _normal     = VectorType::Zero(),
-                                const ScreenVectorType& _spos = ScreenVectorType::Zero(),
-                                const Scalar _dz = 0.f)
-        : m_pos(_pos), m_normal(_normal), m_spos(_spos), m_dz(_dz){}
+    MULTIARCH inline ScreenSpacePoint(const VectorType       &_pos    = VectorType::Zero(),
+                                      const VectorType       &_normal = VectorType::Zero(),
+                                      const ScreenVectorType &_spos   = ScreenVectorType::Zero())
+        : m_pos(_pos), m_normal(_normal), m_spos(_spos){}
 
     MULTIARCH inline const VectorType& pos()	const { return m_pos; }
     MULTIARCH inline const VectorType& normal()	const { return m_normal; }
     MULTIARCH inline const ScreenVectorType& spos() const { return m_spos; }
-    MULTIARCH inline const float & dz()	const { return m_dz; }
-
 
     MULTIARCH inline VectorType& pos()	 { return m_pos; }
     MULTIARCH inline VectorType& normal()	 { return m_normal; }
     MULTIARCH inline ScreenVectorType& spos() { return m_spos; }
-    MULTIARCH inline float& dz()	 { return m_dz; }
-
 
 private:
     ScreenVectorType m_spos;
     VectorType	m_pos, m_normal;
-    float m_dz; // depth threshold
 };
 //! [mypoint]
 
-typedef MyPoint::Scalar Scalar;
-typedef MyPoint::VectorType VectorType;
-typedef MyPoint::ScreenVectorType ScreenVectorType;
+typedef ScreenSpacePoint::Scalar Scalar;
+typedef ScreenSpacePoint::VectorType VectorType;
+typedef ScreenSpacePoint::ScreenVectorType ScreenVectorType;
 
 //! [w_def]
-class ProjectWeightFunc: public Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >
+class ProjectedWeightFunc: public Grenaille::DistWeightFunc<ScreenSpacePoint,Grenaille::SmoothWeightKernel<Scalar> >
 {
 public:
-    typedef MyPoint::Scalar Scalar;
-    typedef MyPoint::VectorType VectorType;
+    typedef ScreenSpacePoint::Scalar Scalar;
+    typedef ScreenSpacePoint::VectorType VectorType;
 
-    /*
-    Default constructor (needed by Grenaille). Note that the screenspace
-    evaluation position is specified as parameter
-    */
-    MULTIARCH inline ProjectWeightFunc( const Scalar& _t                = 1.f,
-                                        const ScreenVectorType& _refPos = ScreenVectorType::Zero(),
-                                        const Scalar& _dz               = 0.f)
-        : Grenaille::DistWeightFunc<MyPoint, Grenaille::SmoothWeightKernel<Scalar> >(_t), m_refPos(_refPos), m_dz(_dz) {}
+    MULTIARCH inline ProjectedWeightFunc(const Scalar& _t = Scalar(1.), const Scalar _dz = 0.f)
+        : Grenaille::DistWeightFunc<ScreenSpacePoint,Grenaille::SmoothWeightKernel<Scalar> >(_t),
+          m_dz(_dz) {}
 
-    MULTIARCH inline Scalar w(const VectorType& _q, const MyPoint&  _attributes) const
+    MULTIARCH inline Scalar w(const VectorType& _relativePos, const ScreenSpacePoint&  _attributes) const
     {
-        Scalar d  = (_attributes.spos()-m_refPos).norm();
-        const Scalar dz = _attributes.dz();
-
-        if (d > m_t || dz > m_dz)
+        Scalar d  = _attributes.spos().norm();
+        const float dz = abs(_relativePos[2]);
+        if (d > m_t || (m_dz != Scalar(0) && dz > m_dz))
+        {
             return Scalar(0.);
-
+        }
         return m_wk.f(d/m_t);
     }
 private:
-    ScreenVectorType m_refPos;
     float m_dz;
 };
 //! [w_def]
 
 //! [fit_def]
-typedef Grenaille::Basket<MyPoint,ProjectWeightFunc,Grenaille::OrientedSphereFit, Grenaille::GLSParam> Gls;
+typedef Grenaille::Basket< ScreenSpacePoint,
+                           ProjectedWeightFunc,
+                           Grenaille::OrientedSphereFit,
+                           Grenaille::GLSParam> ScreenSpaceFit;
 //! [fit_def]
 
 //! [data_acces]
@@ -128,89 +109,82 @@ __device__ VectorType getVector(const int _x,
         Scalar(_buffer[getId(_x,_y,_width,_height,2,3)]);
     return r;
 }
-
-
 //! [data_acces]
 
-
 //! [kernel]
-__global__ void doGLS_kernel(int* _params, //[w, h, scale, _nbQueries]
-                             float* _queries,
-                             float* _positions,
-                             float* _normals,
-                             float* _result)
+__global__ void doGLS_kernel(	int _imgw, int _imgh, int _scale,
+								float _maxDepthDiff, float* _positions, float* _normals,
+								float* _result)
 {
+	int tx = threadIdx.x;
+	int ty = threadIdx.y;
+	int bw = blockDim.x;
+	int bh = blockDim.y;
+	int x = blockIdx.x * bw + tx;
+	int y = blockIdx.y * bh + ty;
 
-    unsigned int ptid = blockIdx.x*blockDim.x + threadIdx.x;
+	int idx = y * _imgw + x;
 
-    if (ptid < _params[3])
-    {
-        const int &width     = _params[0];
-        const int &height    = _params[1];
-        const int &scale     = _params[2];
+	if((x >= _imgw || y >= _imgh))
+	{
+		return;
+	}
+	else if(getVector(x, y, _imgw, _imgh, _normals).squaredNorm() == 0.f)
+	{
+        _result[idx] = 0.f;
+		return;
+	}
 
-        // cast float coordinates
-        int x = _queries[2*ptid];
-        int y = _queries[2*ptid + 1];
+	VectorType one = VectorType::Ones();
+	const float scale2 = float(_scale * _scale);
 
-        ScreenVectorType refPos;
-        refPos << x, y;
+	ScreenSpaceFit fit;
+	fit.init(getVector(x, y, _imgw, _imgh, _positions) * 2.f - one);
+	fit.setWeightFunc(ProjectedWeightFunc(_scale, _maxDepthDiff));
 
+	_result[idx] = 0.f;
 
-        int dx, dy; // neighbor offset ids
-        int nx, ny; // neighbor ids
+	// collect neighborhood
+	for(int dy = -_scale; dy != _scale + 1; dy++)
+	{
+		for(int dx = -_scale; dx != _scale + 1; dx++)
+		{
+			float dist2 = dy*dy + dx*dx;
+			// Check if we are in the circular screen-space neighborhood
+			if (dist2 < scale2)
+			{
+				int nx, ny; // neighbor ids
 
-        Gls gls;
-        gls.setWeightFunc(ProjectWeightFunc(scale, refPos));
-        gls.init( getVector(x,y,width,height,_positions) );
+				nx = x + dx;
+				ny = y + dy;
 
-        if (getVector(x,y,width,height,_normals).squaredNorm() == 0.f )
-        {
-            _result[getId(x,y,width,height,0,1)] = -1.0;
-        }
-        else
-        {
-            //_result[getId(x,y,width,height,0,1)] = getVector(x,y,width,height,_normals)(0);
-            VectorType p, n;
+				// Check image boundaries
+				if(nx >= 0 && ny >= 0 && nx < _imgw && ny < _imgh)
+				{
+					ScreenSpacePoint::VectorType n = getVector(nx, ny, _imgw, _imgh, _normals);
+					// add nei only when the normal is properly defined
+					if(n.squaredNorm() != 0.f)
+					{
+						// RGB to XYZ remapping
+						n =  2.f * n - one;
+						n.normalize();
 
-            // collect neighborhood
-            VectorType one = VectorType::Zero();
+						ScreenSpacePoint::ScreenVectorType xyCoord;
+						xyCoord[0] = dx;
+						xyCoord[1] = dy;
 
-            for(dy = -scale; dy != scale; dy++)
-            {
-                for(dx = -scale; dx != scale; dx++)
-                {
-                    nx = x+dx;
-                    ny = y+dy;
+						ScreenSpacePoint::VectorType p = getVector(nx, ny, _imgw, _imgh, _positions) * 2.f - one;
+						// GLS computation
+						fit.addNeighbor(ScreenSpacePoint(p, n, xyCoord));
+					}
+				}
+			}
+		}
+	}
 
-
-                    // Check image boundaries
-                    if (nx >= 0 && ny >= 0 && nx < width && ny < height)
-                    {
-                        n = getVector(nx,ny,width,height,_normals);
-
-                        // add nei only when the _normal is properly defined
-                        // need to use an explicit floating point comparison with pycuda
-                        if (n.squaredNorm() != 0.f )
-                        {
-
-                            // RGB to XYZ remapping
-                            n =  2.f * n - one;
-                            n.normalize();
-
-                            // GLS computation
-                            gls.addNeighbor(MyPoint(getVector(nx,ny,width,height,_positions),
-                                n,
-                                ScreenVectorType(nx,ny)));
-                        }
-                    }
-                }
-            }
-            // closed form minimization
-            gls.finalize();
-            _result[getId(x,y,width,height,0,1)] = gls.kappa();
-        }
-    }
+	// closed form minimization
+	fit.finalize();
+	_result[idx] = fit.kappa();
 }
 //! [kernel]
 
@@ -225,13 +199,13 @@ typedef struct
 /**
 * \brief Return Color corresponding to the _value param. Simulating a "seismic" like color map
 */
-__host__ Color getColor(double _value, double _valueMin, double _valueMax)
+__host__ Color getColor(float _value, float _valueMin, float _valueMax)
 {
     Color c = {1.0, 1.0, 1.0};
     double dv;
 
     // Unknown values in our kernel
-    if(_value == -1.)
+    if(_value == 0.)
     {
         return c;
     }
@@ -340,29 +314,6 @@ __host__ bool initInputDatas(const fipImage& _positions, const fipImage& _normal
     return 1;
 }
 
-bool initQueries(const unsigned int& _width, const unsigned int& _height, float** _queries, int& _nbQueries)
-{
-    _nbQueries = _width * _height;
-    (*_queries) = new float[_width*_height*2];
-
-    if(!*_queries)
-    {
-        fprintf(stderr, "Cannot alloc memory in initQueries\n");
-        return 0;
-    }
-
-    for(int y = 0; y < _height; ++y)
-    {
-        for(int x = 0; x < _width; ++x)
-        {
-            (*_queries)[2 * (x + y * _width)] = x;
-            (*_queries)[2 * (x + y * _width) + 1] = y;
-        }
-    }
-
-    return 1;
-}
-
 /**
 * \brief Save _results into png image
 */
@@ -418,6 +369,12 @@ __host__ bool saveResult(float* _results, const unsigned int& _width, const unsi
     return 1;
 }
 
+__host__ int adjust(int n, int blockSize)
+{
+   if (n < blockSize) { return n; }
+   return (n / blockSize + (n % blockSize == 0 ? 0 : 1)) * blockSize;
+}
+
 int main()
 {
     std::string positionsFilename = "./data/ssgls_sample_wc.png";
@@ -432,6 +389,7 @@ int main()
     }
 
     float fScale = 10.f;
+    float fMaxDepthDiff = 0.f;
     unsigned int width = 0;
     unsigned int height = 0;
     float* positionsInfos = 0;
@@ -444,15 +402,6 @@ int main()
 
     std::cout << "Image size : " << width << "*" << height << std::endl;
 
-    float *queries = 0;
-    int nbQueries;
-    if(!initQueries(width, height, &queries, nbQueries))
-    {
-        return 0;
-    }
-
-    std::cout << "Nb queries : " << nbQueries << std::endl;
-
     /*********** Init Output ************/
     float *results = new float[width*height];
     for(int i = 0; i < width * height; ++i)
@@ -463,67 +412,51 @@ int main()
     /************* Init device mem *************/
     size_t sizeResults = width * height * sizeof(float);
     size_t sizeImg = width * height * 3 * sizeof(float);
-    int *params = new int[4];
-    params[0] = width;
-    params[1] = height;
-    params[2] = (int)fScale;
-    params[3] = nbQueries;
 
     float* positionsInfos_device;
     float* normalsInfos_device;
     float* results_device;
-    float* queries_device;
-    int* params_device;
 
-    CUDA_CHECK_RETURN( cudaMalloc(&positionsInfos_device, sizeImg) );
-    CUDA_CHECK_RETURN( cudaMemcpy(positionsInfos_device, positionsInfos, sizeImg, cudaMemcpyHostToDevice) );
+    cudaMalloc(&positionsInfos_device, sizeImg);
+    cudaMemcpy(positionsInfos_device, positionsInfos, sizeImg, cudaMemcpyHostToDevice);
 
-    CUDA_CHECK_RETURN( cudaMalloc(&normalsInfos_device, sizeImg) );
-    CUDA_CHECK_RETURN( cudaMemcpy(normalsInfos_device, normalsInfos, sizeImg, cudaMemcpyHostToDevice) );
+    cudaMalloc(&normalsInfos_device, sizeImg);
+    cudaMemcpy(normalsInfos_device, normalsInfos, sizeImg, cudaMemcpyHostToDevice);
 
-    CUDA_CHECK_RETURN( cudaMalloc(&queries_device, sizeResults*2) );
-    CUDA_CHECK_RETURN( cudaMemcpy(queries_device, queries, sizeResults*2, cudaMemcpyHostToDevice) );
+    cudaMalloc(&results_device, sizeResults);
+    cudaMemcpy(results_device, results, sizeResults, cudaMemcpyHostToDevice);
 
-    CUDA_CHECK_RETURN( cudaMalloc(&params_device, 4 * sizeof(int)) );
-    CUDA_CHECK_RETURN( cudaMemcpy(params_device, params, 4 * sizeof(int), cudaMemcpyHostToDevice) );
-
-    CUDA_CHECK_RETURN( cudaMalloc(&results_device, sizeResults) );
-    CUDA_CHECK_RETURN( cudaMemcpy(results_device, results, sizeResults, cudaMemcpyHostToDevice) );
-
+    cudaError_t err = cudaGetLastError();
     /************* Memory conf *************/
 
-    int numThreadsPerBlock = 128;
-    int numBlocks = nbQueries / numThreadsPerBlock;
-    if((nbQueries % numThreadsPerBlock) > 0)
-    {
-        numBlocks += 1;
-    }
-
-    dim3 dimGrid(numBlocks, 1);
-    dim3 dimBlock(numThreadsPerBlock, 1, 1);
+    // calculate grid size
+    dim3 block(16, 16, 1);
+    dim3 grid(adjust(width, block.x) / block.x, adjust(height, block.y) / block.y, 1);
 
     /************* Kernel Call *************/
 
     std::cout << "ssCurvature running..." << std::endl;
 
-    doGLS_kernel<<<dimGrid, dimBlock>>>(params_device, queries_device, positionsInfos_device, normalsInfos_device, results_device);
+    doGLS_kernel<<<grid, block>>>(width, height, fScale, fMaxDepthDiff, positionsInfos_device, normalsInfos_device, results_device);
 
-    CUDA_CHECK_RETURN(cudaThreadSynchronize());	// Wait for the GPU launched work to complete
-    CUDA_CHECK_RETURN(cudaGetLastError());
+    cudaThreadSynchronize();	// Wait for the GPU launched work to complete
+    err = cudaGetLastError();
 
     std::cout << "ssCurvature completed..." << std::endl;
 
     /************* Get Results *************/
-    CUDA_CHECK_RETURN( cudaMemcpy(results, results_device, sizeResults, cudaMemcpyDeviceToHost) );
+    cudaMemcpy(results, results_device, sizeResults, cudaMemcpyDeviceToHost);
+
+    err = cudaGetLastError();
 
     std::cout << "Finalizing..." << std::endl;
 
     /********** Cuda Free ************/
-    CUDA_CHECK_RETURN( cudaFree(positionsInfos_device) );
-    CUDA_CHECK_RETURN( cudaFree(normalsInfos_device) );
-    CUDA_CHECK_RETURN( cudaFree(results_device) );
-    CUDA_CHECK_RETURN( cudaFree(queries_device) );
-    CUDA_CHECK_RETURN( cudaFree(params_device) );
+    cudaFree(positionsInfos_device);
+    cudaFree(normalsInfos_device);
+    cudaFree(results_device);
+
+    err = cudaGetLastError();
 
     /********** Saving _result ************/
     if(!saveResult(results, width, height, positionsFilename.c_str(), resultFilename.c_str()))
@@ -537,13 +470,13 @@ int main()
 
     delete [] positionsInfos;
     delete [] normalsInfos;
-    delete [] queries;
     delete [] results;
-    delete [] params;
 
-    CUDA_CHECK_RETURN(cudaDeviceReset());
+    cudaDeviceReset();
+    err = cudaGetLastError();
 
     std::cout << "Finished !" << std::endl;
 
     return 0;
 }
+
