@@ -120,28 +120,24 @@ __device__ VectorType getVector(const int _x,
 
 //! [kernel]
 extern "C" { 
-__global__ void doGLS_kernel(int* _params, //[w, h, scale, _nbQueries]
-                             float* _queries,
+__global__ void doGLS_kernel(int* _params, //[w, h, scale]
                              float* _positions,
                              float* _normals,
                              float* _result)
 {
+    
+    uint x = (blockIdx.x * blockDim.x) + threadIdx.x;
+    uint y = (blockIdx.y * blockDim.y) + threadIdx.y;
+    
+    const int &width     = _params[0];
+    const int &height    = _params[1];
 
-    unsigned int ptid = blockIdx.x*blockDim.x + threadIdx.x;
-
-    if (ptid < _params[3])
+    if (x < width && y < height)
     {
-        const int &width     = _params[0];
-        const int &height    = _params[1];
-        const int &scale     = _params[2];
-
-        // cast float coordinates
-        int x = _queries[2*ptid];
-        int y = _queries[2*ptid + 1];
+        const int &scale = _params[2];
 
         ScreenVectorType refPos;
         refPos << x, y;
-
 
         int dx, dy; // neighbor offset ids
         int nx, ny; // neighbor ids

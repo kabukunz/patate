@@ -62,7 +62,6 @@ def initInputData(imgNormPath, imgwcPath):
   normals   = numpy.array(i_normals.getdata()).reshape(3*length,1).astype(numpy.float32) / 255.0;
   positions = numpy.array(i_positions.getdata()).reshape(3*length,1).astype(numpy.float32) / 255.0;
   
-  #normals   = normals * 2.0 - 1.0;
   positions = positions * 2.0 - 1.0;
     
   return w, h, normals, positions
@@ -82,26 +81,6 @@ def initQueries(w,h):
           queries[2*(i + j*w)] = i
           queries[2*(i + j*w)+1] = j
   return nbQueries, queries
-  
-  
-  
-  
-  
-################################################################################ 
-# Init the Cuda Grid sizes and the allocate the output array
-def setMemoryConf(nbQueries, blockSize):
-  gx = nbQueries / blockSize;
-  if ((nbQueries % blockSize) > 0):
-    gx = gx + 1;      
-      
-  result = numpy.zeros(nbQueries).astype(numpy.float32)
-  
-  return gx, result
-
-
-
-
-
 
 
 
@@ -112,7 +91,6 @@ def main(argv):
   scale       = 10 # neighborhood size in pixels
   imgNormPath = ''
   imgwcPath   = ''
-  blockSize   = 128
   quiet       = False
   outputPath  = ''
   
@@ -139,8 +117,7 @@ def main(argv):
       quiet = True
       
   
-  
-  
+   
   
   
   startTimer("Load CUDA kernel ........... ", quiet)
@@ -149,34 +126,34 @@ def main(argv):
   
   startTimer("Init Input data ............ ", quiet)
   w, h, normals, positions = initInputData (imgNormPath, imgwcPath)
-  stopTimer(quiet)  
+  stopTimer(quiet)    
   
-  startTimer("Init queries ............... ", quiet)
-  nbQueries, queries = initQueries (w,h)
-  stopTimer(quiet)
-  
-  startTimer("Set memory configuration ... ", quiet)
-  gx, result = setMemoryConf(nbQueries, blockSize)
+  nbQueries  = w*h
+    
+  startTimer("Init result array memory ... ", quiet)
+  result = numpy.zeros(nbQueries).astype(numpy.float32)
   stopTimer(quiet)
 
 
 
   ################################################################################
   # Launch kernel
-
-  nbQueries = numpy.int32(nbQueries)
-  w         = numpy.int32(w)
-  h         = numpy.int32(h)
-  scale     = numpy.int32(scale)
+  blockSize  = 32
+  gridWidth  = w/blockSize
+  gridHeight = h/blockSize
+  
+  w          = numpy.int32(w)
+  h          = numpy.int32(h)
+  scale      = numpy.int32(scale)
 
   startTimer("Launch kernel .............. ", quiet)
   glsKernel(
-          drv.In(numpy.array([w, h, scale, nbQueries])),
-          drv.In(queries),
+          drv.In(numpy.array([w, h, scale])),
           drv.In(positions),
           drv.In(normals),
           drv.Out(result),
-          block=(blockSize,1,1), grid=(gx,1))
+          block = (blockSize,  blockSize,  1), 
+          grid  = (gridWidth,gridHeight))
           
   stopTimer(quiet)  
   
