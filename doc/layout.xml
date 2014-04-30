@@ -28,6 +28,7 @@
 				<tab type="user" visible="yes" url="@ref grenaille_example_opengl_circle_page" title="Basket classes using OpenGL"/>
 				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_ssc_page" title="C++/CUDA screen space curvature"/>
 				<tab type="user" visible="yes" url="@ref grenaille_example_python_ssc_page" title="Python/CUDA screen space curvature"/>
+				<tab type="user" visible="yes" url="@ref grenaille_example_pcl_page" title="PCL Wrapper for surface curvature"/>
 			</tab>
 		</tab>
 	</tab>
