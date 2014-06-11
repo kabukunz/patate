@@ -10,6 +10,12 @@ set(grenaille_basic_SRCS
 add_executable(grenaille_basic_cpu ${grenaille_basic_SRCS})
 add_dependencies(examples grenaille_basic_cpu)
 
+set(grenaille_fit_plane_SRCS 
+    grenaille_fit_plane.cpp 
+)
+add_executable(grenaille_fit_plane ${grenaille_fit_plane_SRCS})
+add_dependencies(examples grenaille_fit_plane)
+
 set(grenaille_binding_SRCS 
     grenaille_binding.cpp 
 )
