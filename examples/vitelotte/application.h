@@ -28,7 +28,8 @@
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <stdlib.h>
+#include <cstdlib>
+#include <cstdio>
 #include <Eigen/Dense>
 
 class QMesh;
@@ -104,7 +105,7 @@ public:
     void OnMouseMove(double _x, double _y);
     void OnMouseWheel(double _xOffset, double _yOffset);
     void OnError(int _error, const char* _description);
-    void OnDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message);
+    void OnDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message) const;
 
     //Accessors
     static void GetMousePosition(GLFWwindow& _window, double& _x, double& _y)
@@ -159,9 +160,9 @@ private:
         m_pApp->OnError(_error, _description);
     }
 
-    static void APIENTRY DebugCallback(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message, GLvoid* _userParam)
+    static void APIENTRY DebugCallback(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message, const GLvoid* _userParam)
     {
-        reinterpret_cast<Application *>(_userParam)->OnDebugMessage(_source, _type, _id, _severity, _length, _message);
+        reinterpret_cast<const Application *>(_userParam)->OnDebugMessage(_source, _type, _id, _severity, _length, _message);
     }
 
 private:

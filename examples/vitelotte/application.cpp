@@ -148,7 +148,7 @@ void Application::InitVars()
 {
     m_pWindow = NULL;
 
-    strcpy_s(m_info.title, "Vitelotte Viewer");
+    strcpy(m_info.title, "Vitelotte Viewer");
     m_info.windowWidth = 800;
     m_info.windowHeight = 600;
     m_info.majorVersion = 4;
@@ -347,7 +347,7 @@ void Application::OnError(int _error, const char* _description)
     fprintf(stderr, "Error Message : %s \n", _description);
 }
 
-void Application::OnDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message)
+void Application::OnDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message) const
 {
     fprintf(stderr, "Debug Message : %s \n", _message);
 }

@@ -164,10 +164,10 @@ public:
         m_fNodes[_f].array[m_singularIndex] = _node;
     }
     
-    inline surface_mesh::Surface_mesh::Vertex getCcwVertex(Face& _f, Vertex& _vx) const;
-    inline surface_mesh::Surface_mesh::Vertex getCwVertex(Face& _f, Vertex& _vx) const;
+    inline surface_mesh::Surface_mesh::Vertex getCcwVertex(const Face& _f, const Vertex& _vx) const;
+    inline surface_mesh::Surface_mesh::Vertex getCwVertex(const Face& _f, const Vertex& _vx) const;
 
-    inline int getVertexIdxInFace(Face& _f, Vertex& _vx) const;
+    inline int getVertexIdxInFace(const Face& _f, const Vertex& _vx) const;
 
 public:
     static const size_t m_nodePerElement = 10;
@@ -200,7 +200,7 @@ FemInMesh::FemInMesh(Type _facesType)
 }
 
 //Get the ccw vertex of the face from vx
-surface_mesh::Surface_mesh::Vertex FemInMesh::getCcwVertex(Face& _f, Vertex& _vx) const
+surface_mesh::Surface_mesh::Vertex FemInMesh::getCcwVertex(const Face& _f, const Vertex& _vx) const
 {
     Surface_mesh::Vertex_around_face_circulator fvit= vertices(_f), fvend = fvit;
 
@@ -219,7 +219,7 @@ surface_mesh::Surface_mesh::Vertex FemInMesh::getCcwVertex(Face& _f, Vertex& _vx
 }
 
 //Get the cw vertex of the face from vx
-surface_mesh::Surface_mesh::Vertex FemInMesh::getCwVertex(Face& _f, Vertex& _vx) const
+surface_mesh::Surface_mesh::Vertex FemInMesh::getCwVertex(const Face& _f, const Vertex& _vx) const
 {
     Surface_mesh::Vertex_around_face_circulator fvit= vertices(_f), fvend = fvit;
     do 
@@ -236,7 +236,7 @@ surface_mesh::Surface_mesh::Vertex FemInMesh::getCwVertex(Face& _f, Vertex& _vx)
     while(fvit != fvend);
 }
 
-int FemInMesh::getVertexIdxInFace(Face& _f, Vertex& _vx) const
+int FemInMesh::getVertexIdxInFace(const Face& _f, const Vertex& _vx) const
 {
     Surface_mesh::Vertex_around_face_circulator fvit= vertices(_f), fvend = fvit;
 

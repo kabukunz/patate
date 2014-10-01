@@ -7,7 +7,7 @@
 class NodeList
 {
 public:
-    typedef std::vector<FemColor, Eigen::aligned_allocator<FemColor>> ValueVector;
+    typedef std::vector<FemColor, Eigen::aligned_allocator<FemColor> > ValueVector;
 
     typedef ValueVector::iterator ValueIterator;
     typedef ValueVector::const_iterator ConstValueIterator;
