@@ -126,7 +126,7 @@ void FemSolver::initMatrices()
     // 'Magic' initialization of base matrices for quadratic elements.
     // See Paul Tsipouras, Compact representation of triangular finite
     //	elements for Poisson's equation, International Journal for
-    //	Numerical Methods in Engineering, Volume 11, Issue 3, pages 419–430,
+    //	Numerical Methods in Engineering, Volume 11, Issue 3, pages 419-430,
     //	1977
 
     const FemScalar _1_6 = 1. / 6.;

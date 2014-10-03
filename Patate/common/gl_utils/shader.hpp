@@ -1,43 +1,4 @@
-#ifndef _TECHNIQUE_H_
-#define	_TECHNIQUE_H_
 
-#include <list>
-#include <GL/glew.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
-
-#include "macros.h"
-
-class Technique
-{
-public:
-
-    inline Technique();
-    inline ~Technique();
-
-    inline virtual bool Init();
-
-    inline void Enable();
-
-    inline bool AddShaderFromFile(GLenum _ShaderType, const char* _pFilename);
-    inline bool AddShader(GLenum _ShaderType, const char* _pShaderText);
-    inline bool Finalize();
-
-    GLuint GetShaderId() { return m_shaderProg; }
-
-    inline GLint GetUniformLocation(const char* _pUniformName);
-    inline GLint GetProgramParam(GLint _param);
-  
-protected:
-    GLuint m_shaderProg;
-    
-private:
-    typedef std::list<GLuint> ShaderObjList;
-    ShaderObjList m_shaderObjList;
-};
-
-#define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 static const char* pVSName = "VS";
 static const char* pTessCSName = "TessCS";
@@ -66,13 +27,13 @@ const char* ShaderType2ShaderName(GLuint _Type)
     return NULL;
 }
 
-Technique::Technique()
+Shader::Shader()
 {
     m_shaderProg = 0;
 }
 
 
-Technique::~Technique()
+Shader::~Shader()
 {
     for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
     {
@@ -87,7 +48,7 @@ Technique::~Technique()
 }
 
 
-bool Technique::Init()
+bool Shader::Init()
 {
     m_shaderProg = glCreateProgram();
 
@@ -100,7 +61,7 @@ bool Technique::Init()
     return true;
 }
 
-bool Technique::AddShader(GLenum _ShaderType, const char* _pShaderText)
+bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
 {
     GLuint ShaderObj = glCreateShader(_ShaderType);
 
@@ -133,10 +94,10 @@ bool Technique::AddShader(GLenum _ShaderType, const char* _pShaderText)
 
     glAttachShader(m_shaderProg, ShaderObj);
 
-    return GLCheckError();
+    return PATATE_GLCheckError();
 }
 
-bool Technique::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
+bool Shader::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
 {
     FILE* fp;
     size_t filesize;
@@ -170,7 +131,7 @@ bool Technique::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
     return res;
 }
 
-bool Technique::Finalize()
+bool Shader::Finalize()
 {
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
@@ -201,21 +162,21 @@ bool Technique::Finalize()
 
     m_shaderObjList.clear();
 
-    return GLCheckError();
+    return PATATE_GLCheckError();
 }
 
 
-void Technique::Enable()
+void Shader::Enable()
 {
     glUseProgram(m_shaderProg);
 }
 
 
-GLint Technique::GetUniformLocation(const char* _pUniformName)
+GLint Shader::GetUniformLocation(const char* _pUniformName)
 {
     GLuint Location = glGetUniformLocation(m_shaderProg, _pUniformName);
 
-    if (Location == INVALID_OGL_VALUE)
+    if (Location == PATATE_INVALID_OGL_VALUE)
     {
         fprintf(stderr, "Warning! Unable to get the location of uniform '%s'\n", _pUniformName);
     }
@@ -223,12 +184,10 @@ GLint Technique::GetUniformLocation(const char* _pUniformName)
     return Location;
 }
 
-GLint Technique::GetProgramParam(GLint _param)
+GLint Shader::GetProgramParam(GLint _param)
 {
     GLint ret;
     glGetProgramiv(m_shaderProg, _param, &ret);
     return ret;
 }
-
-#endif
 

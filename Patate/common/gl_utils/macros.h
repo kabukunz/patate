@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#define INVALID_OGL_VALUE 0xFFFFFFFF
+#define PATATE_INVALID_OGL_VALUE 0xFFFFFFFF
 
-#define SAFE_DELETE(p) if (p) { delete p; p = NULL; }
+#define PATATE_SAFE_DELETE(p) if (p) { delete p; p = NULL; }
 
-#define GLExitIfError()                                                          \
+#define PATATE_GLExitIfError()                                                          \
 {                                                                               \
     GLenum Error = glGetError();                                                \
                                                                                 \
@@ -19,7 +19,7 @@
     }                                                                           \
 }
 
-#define GLCheckError() (glGetError() == GL_NO_ERROR)
+#define PATATE_GLCheckError() (glGetError() == GL_NO_ERROR)
 
 #endif
 

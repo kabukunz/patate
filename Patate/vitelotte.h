@@ -15,8 +15,4 @@
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/qMesh.h"
 
-#ifdef _RENDERING_
-#include "Vitelotte/Core/qMeshRenderer.h"
-#endif
-
 #endif
