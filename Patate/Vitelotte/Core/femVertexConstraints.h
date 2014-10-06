@@ -3,6 +3,11 @@
 
 #include "femUtils.h"
 
+
+namespace Vitelotte
+{
+
+
 class VertexConstraint
 {
 public:
@@ -28,5 +33,8 @@ private:
     bool m_constraintGradient;
     FemColor m_gradient;
 };
+
+
+} // namespace Vitelotte
 
 #endif

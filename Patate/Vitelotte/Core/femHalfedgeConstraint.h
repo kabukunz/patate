@@ -6,6 +6,11 @@
 #include "femUtils.h"
 #include "defines.h"
 
+
+namespace Vitelotte
+{
+
+
 class HalfedgeConstraint
 {
 public:
@@ -16,10 +21,7 @@ public:
     };
 
 public:
-    HalfedgeConstraint() :
-        m_tear(false), m_tearGradient(false),
-        m_diffuse(false), m_contour(false), m_constraintGradient(false)
-    {}
+    HalfedgeConstraint();
 
     /*HalfedgeConstraint(const EdgeConstraint& _ec, size_t _side) :
         m_tear(_ec.tear()), m_tearGradient(_ec.tearGradient()),
@@ -43,33 +45,15 @@ public:
 
     inline bool contour() const { return m_contour; }
     inline void setContour(bool _contour) { m_contour = _contour; }
+    inline const FemColor& color(size_t _i) const;
 
-    inline const FemColor& color(size_t _i) const
-    {
-        assert(_i < CONSTRAINT_ARRAY_SIZE_2);
-        return m_color[_i];
-    }
-
-    inline void setColor(size_t _i, const FemColor& _color)
-    {
-        assert(_i < CONSTRAINT_ARRAY_SIZE_2);
-        m_color[_i] = _color;
-    }
+    inline void setColor(size_t _i, const FemColor& _color);
 
     inline bool constraintGradient() const { return m_constraintGradient; }
     inline void setConstraintGradient(bool _constraintGradient) { m_constraintGradient = _constraintGradient; }
 
-    inline const FemColor& gradient(size_t _i) const
-    {
-        assert(_i < CONSTRAINT_ARRAY_SIZE_2);
-        return m_gradient[_i];
-    }
-
-    inline void setGradient(size_t _i, const FemColor& _gradient)
-    {
-        assert(_i < CONSTRAINT_ARRAY_SIZE_2);
-        m_gradient[_i] = _gradient;
-    }
+    inline const FemColor& gradient(size_t _i) const;
+    inline void setGradient(size_t _i, const FemColor& _gradient);
 
 private:
 
@@ -83,5 +67,10 @@ private:
     bool m_constraintGradient;              // Is the gradient constrained ?
     FemColor m_gradient[CONSTRAINT_ARRAY_SIZE_2];	// Gradient constraints.
 };
+
+
+#include "femHalfedgeConstraint.hpp"
+
+} // namespace Vitelotte
 
 #endif

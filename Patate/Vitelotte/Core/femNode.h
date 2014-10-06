@@ -5,6 +5,10 @@
 #include "femUtils.h"
 
 
+namespace Vitelotte
+{
+
+
 class Node
 {
 public:
@@ -17,32 +21,16 @@ public:
 
 public:
     inline Node() : m_index(m_invalidIndex) {}
-
-    inline Node(NodeType _type, int _index) :
-    m_index((_type == ConstraintNode) ? -1 - _index : _index)
-    {
-        assert(_index != m_invalidIndex && _type != InvalidNode);
-    }
+    inline Node(NodeType _type, int _index) ;
 
     inline bool isValid() const { return m_index != m_invalidIndex; }
     inline bool isConstraint() const { return m_index < 0; }
     inline bool isUnknown() const { return !isConstraint(); }
 
-    inline size_t index() const
-    {
-        assert(isValid());
-        return isConstraint()? -1 - m_index : m_index;
-    }
+    inline size_t index() const;
 
-    bool operator<(const Node& _other) const
-    {
-        return m_index < _other.m_index;
-    }
-
-    bool operator==(const Node& _other) const
-    {
-        return m_index == _other.m_index;
-    }
+    bool operator<(const Node& _other) const;
+    bool operator==(const Node& _other) const;
 
 public:
     static const int m_invalidIndex = INT_MIN;
@@ -52,5 +40,10 @@ private:
 };
 
 //const int Node::m_invalidIndex = std::numeric_limits<int>::min();
+
+
+#include "femNode.hpp"
+
+} // namespace Vitelotte
 
 #endif
