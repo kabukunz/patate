@@ -82,6 +82,7 @@ bool GLViewer::init()
 
     glfwMakeContextCurrent(m_pWindow);
 
+    glfwSetWindowRefreshCallback(m_pWindow, onRefreshCallback);
     glfwSetWindowSizeCallback(m_pWindow, onResizeCallback);
     glfwSetKeyCallback(m_pWindow, onKeyCallback);
     glfwSetMouseButtonCallback(m_pWindow, onMouseButtonCallback);
@@ -118,21 +119,20 @@ bool GLViewer::init()
 void GLViewer::run(const std::string& filename)
 {
     bool bRunning = true;
-    static float fElapsedTime = 0.f;
-    static float fLastTime = 0.f;
 
     startup(filename);
 
+    render();
+    glfwSwapBuffers(m_pWindow);
     while(bRunning)
     {
-        float fCurrentTime = (float)glfwGetTime();
-        fElapsedTime = fCurrentTime - fLastTime;
-        fLastTime = fCurrentTime;
+        glfwWaitEvents();
 
-        render(fElapsedTime);
-
-        glfwSwapBuffers(m_pWindow);
-        glfwPollEvents();
+        if(m_needRefresh) {
+            render();
+            glfwSwapBuffers(m_pWindow);
+            m_needRefresh = false;
+        }
 
         bRunning &= (glfwGetKey(m_pWindow, GLFW_KEY_ESCAPE) == GLFW_RELEASE);
         bRunning &= (!glfwWindowShouldClose(m_pWindow));
@@ -160,6 +160,7 @@ void GLViewer::initVars()
     m_info.flags.debug = 1;
 #endif
 
+    m_needRefresh = false;
     m_viewCenter = Eigen::Vector2f::Zero();
     m_zoom = 1.f;
     m_pointRadius = 2.f;
@@ -212,7 +213,7 @@ void GLViewer::startup(const std::string& filename)
     m_pQMeshRenderer->init(m_pQvg);
 }
 
-void GLViewer::render(float _dTime)
+void GLViewer::render()
 {
     PATATE_GLCheckError();
 
@@ -233,6 +234,10 @@ void GLViewer::render(float _dTime)
     PATATE_GLCheckError();
 }
 
+void GLViewer::onRefresh() {
+    m_needRefresh = true;
+}
+
 void GLViewer::onResize(int _w, int _h)
 {
     m_info.windowWidth = _w;
@@ -242,6 +247,8 @@ void GLViewer::onResize(int _w, int _h)
     {
         glViewport(0, 0, _w, _h);
     }
+
+    m_needRefresh = true;
 }
 
 void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
@@ -252,22 +259,27 @@ void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
         {
         case GLFW_KEY_KP_ADD:
             m_lineWidth += .5f;
+            m_needRefresh = true;
             break;
 
         case GLFW_KEY_KP_SUBTRACT:
             m_lineWidth = std::max(.5f, m_lineWidth - .5f);
+            m_needRefresh = true;
             break;
         
         case GLFW_KEY_KP_MULTIPLY:
             m_pointRadius += .5f;
+            m_needRefresh = true;
             break;
 
         case GLFW_KEY_KP_DIVIDE:
             m_pointRadius = std::max(.5f, m_pointRadius - .5f);
+            m_needRefresh = true;
             break;
 
         case GLFW_KEY_S:
             m_showShaderWireframe = !m_showShaderWireframe;
+            m_needRefresh = true;
             std::cout << "Shader wireframe : " << (m_showShaderWireframe ? "enabled" : "disabled") << std::endl;
             break;
 
@@ -281,6 +293,7 @@ void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
             {
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
+            m_needRefresh = true;
             std::cout << "Wireframe : " << (m_wireframe ? "enabled" : "disabled") << std::endl;
             break;
 
@@ -309,12 +322,14 @@ void GLViewer::onMouseMove(double _x, double _y)
     {
         Eigen::Vector2f pos = screen2scene((float)_x, (float)_y);
         m_viewCenter += m_lastMousePos - pos;
+        m_needRefresh = true;
     }
 }
 
 void GLViewer::onMouseWheel(double _xOffset, double _yOffset)
 {
     m_zoom *= (_yOffset > 0.) ? 1.1f : 1.f/1.1f; 
+    m_needRefresh = true;
 }
 
 void GLViewer::onError(int _error, const char* _description)
@@ -339,6 +354,14 @@ Eigen::Vector2f GLViewer::scene2screen(const float& _x, const float& _y)
     return Eigen::Vector2f(v.x() + .5f, m_info.windowHeight - int(v.y() + .5f) - 1);
 }
 
+
+void usage(char* progName)
+{
+    std::cout << "usage: " << progName << " qvg_filename\n";
+    exit(1);
+}
+
+
 int main(int argc, char** argv)
 {
 #ifdef WIN32
@@ -346,10 +369,17 @@ int main(int argc, char** argv)
     _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 #endif
-    fprintf(stderr, "*************** Let the program begin ***************\n");
 
     // TODO: Wiser argument processing
-    assert(argc == 2);
+    std::string qvgFilename;
+    if(argc == 2)
+    {
+        qvgFilename = argv[1];
+    }
+    else
+    {
+        usage(argv[0]);
+    }
 
     GLViewer *pApp = GLViewer::getAppSingleton();
 
@@ -360,8 +390,6 @@ int main(int argc, char** argv)
         GLViewer::killAppSingleton();
     }
     
-
-    fprintf(stderr, "*************** Let it end ***************\n");
 
     return EXIT_SUCCESS;
 }

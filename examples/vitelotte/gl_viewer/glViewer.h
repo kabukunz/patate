@@ -101,6 +101,7 @@ public:
     void startup(const std::string& filename);
 
     //Events
+    void onRefresh();
     void onResize(int _w, int _h);
     void onKey(int _key, int _scancode, int _action, int _mods);
     void onMouseButton(int _button, int _action, int _mods);
@@ -125,12 +126,17 @@ private:
     void initVars();
     void setVsync(bool _bEnable);
 
-    void render(float _dTime);
+    void render();
 
     Eigen::Vector2f screen2scene(const float& _x, const float& _y);
     Eigen::Vector2f scene2screen(const float& _x, const float& _y);
 
 private:
+    static void onRefreshCallback(GLFWwindow* /*_pWindow*/)
+    {
+        m_pApp->onRefresh();
+    }
+
     static void onResizeCallback(GLFWwindow* /*_pWindow*/, int _w, int _h)
     {
         m_pApp->onResize(_w, _h);
@@ -175,6 +181,7 @@ private:
     APPINFO             m_info;
     GLFWwindow*         m_pWindow;
 
+    bool m_needRefresh;
     Eigen::Matrix4f m_viewMatrix;
     Eigen::Vector2f m_viewCenter;
     Eigen::Vector2f m_lastMousePos;

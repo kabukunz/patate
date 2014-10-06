@@ -22,7 +22,7 @@ inline bool QMeshRenderer::loadShaders()
 {
     PATATE_GLCheckError();
 
-    m_pTriangleProgram = new Shader();
+    m_pTriangleProgram = new Patate::Shader();
     if(!m_pTriangleProgram->Init())
     {
         return false;
@@ -40,7 +40,7 @@ inline bool QMeshRenderer::loadShaders()
     assert(bRes);
 
 
-    m_pSingularProgram = new Shader();
+    m_pSingularProgram = new Patate::Shader();
     if(!m_pSingularProgram->Init())
     {
         return false;
@@ -193,7 +193,7 @@ inline void QMeshRenderer::render(Eigen::Matrix4f& _viewMatrix, float _zoom, flo
 {
     for(int pass = 0; pass < 2; ++pass)
     {
-        Shader* program = (pass == 0) ? m_pTriangleProgram : m_pSingularProgram;
+        Patate::Shader* program = (pass == 0) ? m_pTriangleProgram : m_pSingularProgram;
 
         if(program)
         {

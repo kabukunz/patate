@@ -275,8 +275,8 @@ private:
 
     QMesh* m_pQMesh;
 
-    Shader* m_pTriangleProgram;
-    Shader* m_pSingularProgram;
+    Patate::Shader* m_pTriangleProgram;
+    Patate::Shader* m_pSingularProgram;
 };
 
 
