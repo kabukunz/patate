@@ -1,9 +1,11 @@
 #include <Eigen/Geometry>
 #include <iostream>
+#include <fstream>
 
 #include "glViewer.h"
-#include "Patate/vitelotte.h"
 #include "Patate/vitelotte_gl.h"
+#include "Patate/Vitelotte/Utils/qvgReader.h"
+#include "Patate/Vitelotte/Utils/qvgWriter.h"
 
 
 Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float _top, float _near, float _far)
@@ -185,14 +187,17 @@ void GLViewer::shutdown()
 void GLViewer::startup(const std::string& filename)
 {
     m_pQvg = new Vitelotte::QMesh();
+    Vitelotte::QVGReader reader;
 
     try
     {
-        m_pQvg->loadQvgFromFile(filename);
+        std::ifstream in(filename.c_str());
+        reader.read(*m_pQvg, in);
     }
-    catch (Vitelotte::QvgParseError& e)
+    catch (Vitelotte::QVGReadError& e)
     {
         fprintf(stderr, "error reading .qvg : %s\n", e.what());
+        abort();
     }
 
     assert(m_pQvg->isValid());

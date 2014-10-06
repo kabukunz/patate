@@ -12,14 +12,6 @@
 namespace Vitelotte
 {
 
-class QvgParseError : public std::runtime_error
-{
-public:
-    inline QvgParseError(const std::string& _what)
-        : std::runtime_error(_what)
-    {}
-};
-
 struct QuadraticTriangle
 {
     inline const unsigned& vertex(unsigned _i) const
@@ -136,15 +128,13 @@ public:
 
 public:
     QMesh() : 
-        m_valid(false), m_vertices(), m_nodes(), /*m_curves(),*/
-        m_triangles(), m_boundingBox(), m_singularTriangles()
+        m_valid(true), m_vertices(), m_nodes(), m_curves(),
+        m_triangles(), m_singularTriangles(), m_boundingBox()
     {}
 
     ~QMesh() {}
 
-    void loadQvgFromFile(const std::string& _filename);
     void dumpQvg(std::ostream& _out);
-    unsigned parseIndicesList(const std::string& _list, unsigned* _indices, unsigned _maxSize);
 
 public:
     const bool& isValid() const { return m_valid; }
@@ -175,6 +165,9 @@ public:
 
     const Eigen::AlignedBox2f& getBoundingBox() const { return m_boundingBox; }
     Eigen::AlignedBox2f& getBoundingBox() { return m_boundingBox; }
+
+public:
+    void clear();
 
 protected:
     bool m_valid;
