@@ -24,30 +24,32 @@
 //== INCLUDES =================================================================
 
 
+#include <cassert>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <typeinfo>
+#include <iostream>
 
 
 //== NAMESPACE ================================================================
 
 
-namespace surface_mesh {
+namespace Patate {
 
 
 //== CLASS DEFINITION =========================================================
 
 
-class Base_property_array
+class BasePropertyArray
 {
 public:
 
     /// Default constructor
-    Base_property_array(const std::string& name) : name_(name) {}
+    BasePropertyArray(const std::string& name) : name_(name) {}
 
     /// Destructor.
-    virtual ~Base_property_array() {}
+    virtual ~BasePropertyArray() {}
 
     /// Reserve memory for n elements.
     virtual void reserve(size_t n) = 0;
@@ -56,16 +58,16 @@ public:
     virtual void resize(size_t n) = 0;
 
     /// Free unused memory.
-    virtual void free_memory() = 0;
+    virtual void freeMemory() = 0;
 
     /// Extend the number of elements by one.
-    virtual void push_back() = 0;
+    virtual void pushBack() = 0;
 
     /// Let two elements swap their storage place.
     virtual void swap(size_t i0, size_t i1) = 0;
 
     /// Return a deep copy of self.
-    virtual Base_property_array* clone () const = 0;
+    virtual BasePropertyArray* clone () const = 0;
 
     /// Return the type_info of the property
     virtual const std::type_info& type() = 0;
@@ -85,19 +87,19 @@ protected:
 
 
 template <class T>
-class Property_array : public Base_property_array
+class PropertyArray : public BasePropertyArray
 {
 public:
 
-    typedef T                                       value_type;
-    typedef std::vector<value_type>                 vector_type;
-    typedef typename vector_type::reference         reference;
-    typedef typename vector_type::const_reference   const_reference;
+    typedef T                                       ValueType;
+    typedef std::vector<ValueType>                  VectorType;
+    typedef typename VectorType::reference          Reference;
+    typedef typename VectorType::const_reference    ConstReference;
 
-    Property_array(const std::string& name, T t=T()) : Base_property_array(name), value_(t) {}
+    PropertyArray(const std::string& name, T t=T()) : BasePropertyArray(name), value_(t) {}
 
 
-public: // virtual interface of Base_property_array
+public: // virtual interface of BasePropertyArray
 
     virtual void reserve(size_t n)
     {
@@ -109,14 +111,14 @@ public: // virtual interface of Base_property_array
         data_.resize(n, value_);
     }
 
-    virtual void push_back()
+    virtual void pushBack()
     {
         data_.push_back(value_);
     }
 
-    virtual void free_memory()
+    virtual void freeMemory()
     {
-        vector_type(data_).swap(data_);
+        VectorType(data_).swap(data_);
     }
 
     virtual void swap(size_t i0, size_t i1)
@@ -126,9 +128,9 @@ public: // virtual interface of Base_property_array
         data_[i1]=d;
     }
 
-    virtual Base_property_array* clone() const
+    virtual BasePropertyArray* clone() const
     {
-        Property_array<T>* p = new Property_array<T>(name_, value_);
+        PropertyArray<T>* p = new PropertyArray<T>(name_, value_);
         p->data_ = data_;
         return p;
     }
@@ -153,14 +155,14 @@ public:
 
 
     /// Access the i'th element. No range check is performed!
-    reference operator[](int _idx)
+    Reference operator[](int _idx)
     {
         assert( size_t(_idx) < data_.size() );
         return data_[_idx];
     }
 
     /// Const access to the i'th element. No range check is performed!
-    const_reference operator[](int _idx) const
+    ConstReference operator[](int _idx) const
     {
         assert( size_t(_idx) < data_.size());
         return data_[_idx];
@@ -169,15 +171,15 @@ public:
 
 
 private:
-    vector_type data_;
-    value_type  value_;
+    VectorType data_;
+    ValueType  value_;
 };
 
 
 // specialization for bool properties
 template <>
 inline const bool*
-Property_array<bool>::data() const
+PropertyArray<bool>::data() const
 {
     assert(false);
     return NULL;
@@ -193,16 +195,16 @@ class Property
 {
 public:
 
-    typedef typename Property_array<T>::reference reference;
-    typedef typename Property_array<T>::const_reference const_reference;
+    typedef typename PropertyArray<T>::Reference Reference;
+    typedef typename PropertyArray<T>::ConstReference ConstReference;
 
-    friend class Property_container;
-    friend class Surface_mesh;
+    friend class PropertyContainer;
+    friend class SurfaceMesh;
 
 
 public:
 
-    Property(Property_array<T>* p=NULL) : parray_(p) {}
+    Property(PropertyArray<T>* p=NULL) : parray_(p) {}
 
     void reset()
     {
@@ -214,13 +216,13 @@ public:
         return parray_ != NULL;
     }
 
-    reference operator[](int i)
+    Reference operator[](int i)
     {
         assert(parray_ != NULL);
         return (*parray_)[i];
     }
 
-    const_reference operator[](int i) const
+    ConstReference operator[](int i) const
     {
         assert(parray_ != NULL);
         return (*parray_)[i];
@@ -242,13 +244,13 @@ public:
 
 private:
 
-    Property_array<T>& array()
+    PropertyArray<T>& array()
     {
         assert(parray_ != NULL);
         return *parray_;
     }
 
-    const Property_array<T>& array() const
+    const PropertyArray<T>& array() const
     {
         assert(parray_ != NULL);
         return *parray_;
@@ -256,7 +258,7 @@ private:
 
 
 private:
-    Property_array<T>* parray_;
+    PropertyArray<T>* parray_;
 };
 
 
@@ -264,26 +266,26 @@ private:
 //== CLASS DEFINITION =========================================================
 
 
-class Property_container
+class PropertyContainer
 {
 public:
 
     // default constructor
-    Property_container() : size_(0) {}
+    PropertyContainer() : size_(0) {}
 
     // destructor (deletes all property arrays)
-    virtual ~Property_container() { clear(); }
+    virtual ~PropertyContainer() { clear(); }
 
     // copy constructor: performs deep copy of property arrays
-    Property_container(const Property_container& _rhs) { operator=(_rhs); }
+    PropertyContainer(const PropertyContainer& _rhs) { operator=(_rhs); }
 
     // assignment: performs deep copy of property arrays
-    Property_container& operator=(const Property_container& _rhs)
+    PropertyContainer& operator=(const PropertyContainer& _rhs)
     {
         if (this != &_rhs)
         {
             clear();
-            parrays_.resize(_rhs.n_properties());
+            parrays_.resize(_rhs.nProperties());
             size_ = _rhs.size();
             for (unsigned int i=0; i<parrays_.size(); ++i)
                 parrays_[i] = _rhs.parrays_[i]->clone();
@@ -295,7 +297,7 @@ public:
     size_t size() const { return size_; }
 
     // returns the number of property arrays
-    size_t n_properties() const { return parrays_.size(); }
+    size_t nProperties() const { return parrays_.size(); }
 
     // returns a vector of all property names
     std::vector<std::string> properties() const
@@ -315,14 +317,14 @@ public:
         {
             if (parrays_[i]->name() == name)
             {
-                std::cerr << "[Property_container] A property with name \""
+                std::cerr << "[PropertyContainer] A property with name \""
                           << name << "\" already exists. Returning invalid property.\n";
                 return Property<T>();
             }
         }
 
         // otherwise add the property
-        Property_array<T>* p = new Property_array<T>(name, t);
+        PropertyArray<T>* p = new PropertyArray<T>(name, t);
         p->resize(size_);
         parrays_.push_back(p);
         return Property<T>(p);
@@ -334,13 +336,13 @@ public:
     {
         for (unsigned int i=0; i<parrays_.size(); ++i)
             if (parrays_[i]->name() == name)
-                return Property<T>(dynamic_cast<Property_array<T>*>(parrays_[i]));
+                return Property<T>(dynamic_cast<PropertyArray<T>*>(parrays_[i]));
         return Property<T>();
     }
 
 
     // returns a property if it exists, otherwise it creates it first.
-    template <class T> Property<T> get_or_add(const std::string& name, const T t=T())
+    template <class T> Property<T> getOrAdd(const std::string& name, const T t=T())
     {
         Property<T> p = get<T>(name);
         if (!p) p = add<T>(name, t);
@@ -349,7 +351,7 @@ public:
 
 
     // get the type of property by its name. returns typeid(void) if it does not exist.
-    const std::type_info& get_type(const std::string& name)
+    const std::type_info& getType(const std::string& name)
     {
         for (unsigned int i=0; i<parrays_.size(); ++i)
             if (parrays_[i]->name() == name)
@@ -361,7 +363,7 @@ public:
     // delete a property
     template <class T> void remove(Property<T>& h)
     {
-        std::vector<Base_property_array*>::iterator it=parrays_.begin(), end=parrays_.end();
+        std::vector<BasePropertyArray*>::iterator it=parrays_.begin(), end=parrays_.end();
         for (; it!=end; ++it)
         {
             if (*it == h.parray_)
@@ -401,17 +403,17 @@ public:
     }
 
     // free unused space in all arrays
-    void free_memory() const
+    void freeMemory() const
     {
         for (unsigned int i=0; i<parrays_.size(); ++i)
-            parrays_[i]->free_memory();
+            parrays_[i]->freeMemory();
     }
 
     // add a new element to each vector
-    void push_back()
+    void pushBack()
     {
         for (unsigned int i=0; i<parrays_.size(); ++i)
-            parrays_[i]->push_back();
+            parrays_[i]->pushBack();
         ++size_;
     }
 
@@ -424,13 +426,13 @@ public:
 
 
 private:
-    std::vector<Base_property_array*>  parrays_;
+    std::vector<BasePropertyArray*>  parrays_;
     size_t  size_;
 };
 
 
 //=============================================================================
-} // namespace surface_mesh
+} // namespace Patate
 //=============================================================================
 #endif // SURFACE_MESH_PROPERTIES_H
 //=============================================================================
