@@ -61,10 +61,12 @@ public:
  * and can not be mixed.
  *
  * \todo Support 3D coordinates
+ *
  * The vertex bloc is composed of simple declaration of the form `v x y` where
  * `x` and `y` are the coordinate of the vertex.
  *
  * \todo Specify / create a syntax to specify coloc space ?
+ *
  * The node bloc is similar to the vertex bloc `n r g b a`, where `r`, `g`, `b`
  * and `a` are the red, green, blue and alpha color component. A node is simply
  * a color, so the same one can be used for two completly unrelated vectices if
