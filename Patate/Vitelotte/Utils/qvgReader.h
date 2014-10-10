@@ -9,7 +9,8 @@
 #include <string>
 #include <sstream>
 
-#include "../Core/qMesh.h"
+#include "../../common/surface_mesh/objReader.h"
+#include "../Core/quadraticMesh.h"
 
 
 namespace Vitelotte
@@ -95,27 +96,38 @@ public:
  *
  * \see QMesh QVGWriter
  */
-class QVGReader
+template < typename _Mesh >
+class QVGReader: public Patate::OBJReader<typename _Mesh::Vector>
 {
+public:
+    typedef _Mesh Mesh;
+    typedef Patate::OBJReader<typename _Mesh::Vector> Base;
+
+    typedef typename Mesh::Vector Vector;
+    typedef typename Mesh::NodeValue NodeValue;
+
 public:
 
     /**
      * \brief Default constructor
      */
-    inline QVGReader() {}
+    inline QVGReader(Mesh& mesh);
 
-    /**
-     * \brief Read a QMesh from a `.qvg` file.
-     * \param mesh A QMesh where to store the content of the `.qvg`.
-     * \param in The input stream.
-     * \throw QvgReadError if something goes wrong while reading input.
-     */
-    void read(QMesh& _mesh, std::istream& _in) const;
+    using Base::error;
+    using Base::parseIndiceList;
 
-private:
-    unsigned parseIndicesList(
-            const std::string& _list, unsigned* _indices, unsigned _maxSize) const;
+protected:
+    virtual void parseHeader(std::istream& in);
+    virtual bool parseDefinition(const std::string& spec,
+                                 std::istream& def);
 
+protected:
+
+    using Base::m_mesh;
+    using Base::m_fVertices;
+
+    std::string m_tmp;
+    std::vector<int> m_faceIndices;
 };
 
 

@@ -6,6 +6,10 @@ OBJBaseReader::read(std::istream& in)
     std::istringstream def;
     std::string spec;
 
+    in.imbue(std::locale::classic());
+
+    parseHeader(in);
+
     while(std::getline(in, m_line))
     {
         ++m_lineNb;
@@ -22,10 +26,28 @@ OBJBaseReader::read(std::istream& in)
 }
 
 void
-OBJBaseReader::parseIndiceList(const std::string& _list, unsigned* _indices,
-                               unsigned _maxSize) const
+OBJBaseReader::parseIndiceList(const std::string& _list,
+                               std::vector<int>& _indices)
 {
+    _indices.clear();
+    m_indicesStream.str(_list);
+    m_indicesStream.seekg(0);
+    while(m_indicesStream.good())
+    {
+        int i;
+        if(m_indicesStream.peek() == '/')
+            i = -1;
+        else
+            m_indicesStream >> i;
+        _indices.push_back(i);
 
+        if(m_indicesStream.good() && m_indicesStream.peek() == '/')
+            m_indicesStream.get();
+        else if(!m_indicesStream.eof())
+            error("Unexpected character in indices list");
+    }
+    if(!m_indicesStream)
+        error("Failed to read indices list");
 }
 
 void

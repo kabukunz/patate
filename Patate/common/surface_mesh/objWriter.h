@@ -20,14 +20,14 @@ public:
     typedef _Point Point;
 
 public:
-    inline OBJWriter(SurfaceMesh& mesh,
-                     SurfaceMesh::VertexProperty<Point> positions);
+    inline OBJWriter(const SurfaceMesh& mesh,
+                     const SurfaceMesh::VertexProperty<Point>& positions);
 
     void write(std::ostream& out);
 
 private:
-    SurfaceMesh& m_mesh;
-    SurfaceMesh::VertexProperty<Point> m_vPos;
+    const SurfaceMesh& m_mesh;
+    const SurfaceMesh::VertexProperty<Point>& m_vPos;
 };
 
 

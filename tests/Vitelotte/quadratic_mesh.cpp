@@ -1,7 +1,10 @@
 #include <cstdio>
 #include <iostream>
+#include <fstream>
 
 #include <Patate/Vitelotte/Core/quadraticMesh.h>
+#include <Patate/Vitelotte/Utils/qvgWriter.h>
+#include <Patate/Vitelotte/Utils/qvgReader.h>
 
 
 typedef double Scalar;
@@ -18,6 +21,9 @@ typedef Mesh::Face Face;
 
 typedef Mesh::VertexIterator VertexIterator;
 typedef Mesh::FaceIterator FaceIterator;
+
+typedef Vitelotte::QVGWriter<Mesh> Writer;
+typedef Vitelotte::QVGReader<Mesh> Reader;
 
 void printMesh(const Mesh& mesh, std::ostream& out)
 {
@@ -136,8 +142,21 @@ int main(int argc, char** argv)
     std::cout << "Clean mesh:\n";
     printMesh(mesh, std::cout);
 
+    std::ofstream out("test.qvg");
+    Writer writer(mesh);
+    writer.write(out);
+    out.close();
+
     std::cout << "Original copy:\n";
     printMesh(copy, std::cout);
+
+    std::ifstream in("test.qvg");
+    Reader reader(mesh);
+    reader.read(in);
+    in.close();
+
+    std::cout << "Read:\n";
+    printMesh(mesh, std::cout);
 
     return EXIT_SUCCESS;
 }

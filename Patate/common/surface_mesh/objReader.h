@@ -25,17 +25,19 @@ public:
     void read(std::istream& in);
 
 protected:
+    virtual void parseHeader(std::istream& /*in*/) {}
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def) = 0;
 
-    void parseIndiceList(const std::string& _list, unsigned* _indices,
-                         unsigned _maxSize) const;
+    void parseIndiceList(const std::string& _list,
+                         std::vector<int>& _indices);
 
     void error(const std::string& msg);
 
 private:
     unsigned m_lineNb;
     std::string m_line;
+    std::istringstream m_indicesStream;
 };
 
 
@@ -53,7 +55,7 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
-private:
+protected:
     SurfaceMesh& m_mesh;
     SurfaceMesh::VertexProperty<Point> m_vPos;
 

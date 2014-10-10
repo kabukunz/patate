@@ -91,10 +91,17 @@ public: //--- Nodes -----------------------------------------------------------
     void sortAndCompactNodes();
 
 
+public: //--- Quadratic patches -----------------------------------------------
+
+    inline bool isSingular(Halfedge h) const;
+    inline bool isSingular(Face f) const;
+
+
 public: //--- Utility ---------------------------------------------------------
 
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
+    inline void clear();
     inline Vertex addVertex(const Vector& pos);
 
 
@@ -132,6 +139,9 @@ public: //--- Attributes accessors --------------------------------------------
     inline NodeID midNode(Halfedge h) const { return m_hMidNode[h]; }
     inline NodeID& midNode(Halfedge h) { return m_hMidNode[h]; }
 
+    inline VertexProperty<Vector>& vPosProperty() { return m_vPos; }
+    inline const VertexProperty<Vector>& vPosProperty() const
+    { return m_vPos; }
 
 protected:
     NodeVector m_nodes;

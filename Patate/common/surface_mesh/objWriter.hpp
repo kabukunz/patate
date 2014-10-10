@@ -1,7 +1,7 @@
 
 template < typename _Point >
-OBJWriter<_Point>::OBJWriter(SurfaceMesh& mesh,
-                             SurfaceMesh::VertexProperty<Point> positions)
+OBJWriter<_Point>::OBJWriter(const SurfaceMesh& mesh,
+                             const SurfaceMesh::VertexProperty<Point>& positions)
     : m_mesh(mesh), m_vPos(positions)
 {
 }
@@ -10,6 +10,8 @@ template < typename _Point >
 void
 OBJWriter<_Point>::write(std::ostream& out)
 {
+    out.imbue(std::locale::classic());
+
     //vertices
     for (SurfaceMesh::VertexIterator vit = m_mesh.verticesBegin();
          vit != m_mesh.verticesEnd(); ++vit)

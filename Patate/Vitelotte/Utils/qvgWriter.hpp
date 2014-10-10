@@ -1,28 +1,38 @@
 
-inline void QVGWriter::write(const QMesh& _mesh, std::ostream& _out) const
+template < typename _Mesh >
+void
+QVGWriter<_Mesh>::write(std::ostream& _out) const
 {
+    typedef typename Mesh::NodeID NodeID;
+    typedef typename Mesh::VertexIterator VertexIterator;
+    typedef typename Mesh::FaceIterator FaceIterator;
+    typedef typename Mesh::HalfedgeAroundFaceCirculator
+            HalfedgeAroundFaceCirculator;
+
     assert(m_version == Version1_0);
 
-    const QMesh::VertexList& vertices = _mesh.getVertices();
-    const QMesh::NodeList& nodes = _mesh.getNodes();
-    const QMesh::CurveList& curves = _mesh.getCurves();
-    const QMesh::TriangleList& triangles = _mesh.getTriangles();
-    const QMesh::SingularTriangleList& singularTriangles = _mesh.getSingularTriangles();
+    _out.imbue(std::locale::classic());
+
+    int iOffset = 0;
 
     _out << "qvg 1.0\n";
-    _out << _mesh.nbVertices() << " "
-         << _mesh.nbNodes() << " "
-         << _mesh.nbCurves() << " "
-         << _mesh.nbTriangles() + _mesh.nbSingularTriangles() << "\n";
+    _out << m_mesh.nVertices() << " "
+         << m_mesh.nNodes() << " "
+         << "0 "  // << m_mesh.nCurves() << " "
+         << m_mesh.nFaces() << "\n";
 
-    for(unsigned i = 0; i < _mesh.nbVertices(); ++i)
+    for(VertexIterator vit = m_mesh.verticesBegin();
+        vit != m_mesh.verticesEnd(); ++vit)
     {
-        _out << "v " << vertices[i].transpose() << "\n";
+        _out << "v " << m_mesh.position(*vit).transpose() << "\n";
     }
 
-    for(unsigned i = 0; i < _mesh.nbNodes(); ++i)
+    for(unsigned i = 0; i < m_mesh.nNodes(); ++i)
     {
-        _out << "n " << nodes[i].transpose() << "\n";
+        if(m_mesh.isConstraint(i))
+            _out << "n " << m_mesh.nodeValue(i).transpose() << "\n";
+        else
+            _out << "n void\n";
     }
 
     // TODO: Curve output.
@@ -31,32 +41,32 @@ inline void QVGWriter::write(const QMesh& _mesh, std::ostream& _out) const
 //        _out << "  " << getCurves()[i].first.transpose() << " / " << getCurves()[i].second.transpose() << "\n";
 //    }
 
-    for(unsigned i = 0; i < _mesh.nbTriangles(); ++i)
+    for(FaceIterator fit = m_mesh.facesBegin();
+         fit != m_mesh.facesEnd(); ++fit)
     {
-        _out << "f "
-             << triangles[i].vertex(0) << "/"
-             << triangles[i].vxNode(0) << " "
-             << triangles[i].vertex(1) << "/"
-             << triangles[i].vxNode(1) << " "
-             << triangles[i].vertex(2) << "/"
-             << triangles[i].vxNode(2) << " "
-             << triangles[i].edgeNode(0) << " "
-             << triangles[i].edgeNode(1) << " "
-             << triangles[i].edgeNode(2) << "\n";
-    }
+        _out << (m_mesh.isSingular(*fit)? "fs": "f");
 
-    for(unsigned i = 0; i < _mesh.nbSingularTriangles(); ++i)
-    {
-        _out << "fs "
-             << singularTriangles[i].vertex(0) << "/"
-             << singularTriangles[i].vxNode(0) << "/"
-             << singularTriangles[i].vxNode(3) << " "
-             << singularTriangles[i].vertex(1) << "/"
-             << singularTriangles[i].vxNode(1) << " "
-             << singularTriangles[i].vertex(2) << "/"
-             << singularTriangles[i].vxNode(2) << " "
-             << singularTriangles[i].edgeNode(0) << " "
-             << singularTriangles[i].edgeNode(1) << " "
-             << singularTriangles[i].edgeNode(2) << "\n";
+        HalfedgeAroundFaceCirculator
+                hit  = m_mesh.halfedges(*fit),
+                hend = hit;
+        do
+        {
+            NodeID to = m_mesh.toNode(*hit);
+            NodeID from = m_mesh.fromNode(m_mesh.nextHalfedge(*hit));
+            _out << " " << m_mesh.toVertex(*hit).idx() + iOffset
+            << "/" << to + iOffset;
+            if(from != to)
+                _out << "/" << from + iOffset;
+        }
+        while(++hit != hend);
+
+        ++hit; hend = hit;
+        do
+        {
+            _out << " " << m_mesh.midNode(*hit) + iOffset;
+        }
+        while(++hit != hend);
+
+        _out << "\n";
     }
 }
