@@ -1,12 +1,12 @@
 
 template < typename _Scalar, int _Dim, int _Chan >
-const typename ElementMesh<_Scalar, _Dim, _Chan>::NodeValue
-    ElementMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
-        ElementMesh<_Scalar, _Dim, _Chan>::NodeValue::Constant(
+const typename FVMesh<_Scalar, _Dim, _Chan>::NodeValue
+    FVMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
+        FVMesh<_Scalar, _Dim, _Chan>::NodeValue::Constant(
             std::numeric_limits<Scalar>::quiet_NaN());
 
 template < typename _Scalar, int _Dim, int _Chan >
-ElementMesh<_Scalar, _Dim, _Chan>::ElementMesh()
+FVMesh<_Scalar, _Dim, _Chan>::FVMesh()
 {
     m_vPos      = addVertexProperty<Vector>("v:position", Vector::Zero());
     m_vFlatGrad = addVertexProperty<bool>("v:flatGrad", false);
@@ -19,9 +19,9 @@ ElementMesh<_Scalar, _Dim, _Chan>::ElementMesh()
 
 template < typename _Scalar, int _Dim, int _Chan >
 template < typename OtherScalar >
-ElementMesh<_Scalar, _Dim, _Chan>&
-ElementMesh<_Scalar, _Dim, _Chan>::operator=(
-        const ElementMesh<OtherScalar, _Dim, _Chan>& rhs)
+FVMesh<_Scalar, _Dim, _Chan>&
+FVMesh<_Scalar, _Dim, _Chan>::operator=(
+        const FVMesh<OtherScalar, _Dim, _Chan>& rhs)
 {
     if(&rhs != this)
     {
@@ -42,8 +42,8 @@ ElementMesh<_Scalar, _Dim, _Chan>::operator=(
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename ElementMesh<_Scalar, _Dim, _Chan>::NodeID
-ElementMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
+typename FVMesh<_Scalar, _Dim, _Chan>::NodeID
+FVMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 {
     m_nodes.push_back(nodeValue);
     return m_nodes.size() - 1;
@@ -51,25 +51,21 @@ ElementMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-ElementMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
+FVMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
 {
     std::vector<NodeID> buf(m_nodes.size(), 0);
 
     // Find used node ids
-    FaceIterator fBegin = facesBegin(),
-                 fEnd   = facesEnd();
-    for(FaceIterator fIt = fBegin; fIt != fEnd; ++fIt)
+    HalfedgeIterator hBegin = halfedgesBegin(),
+                     hEnd   = halfedgesEnd();
+    for(HalfedgeIterator hIt = hBegin; hIt != hEnd; ++hIt)
     {
-        HalfedgeAroundFaceCirculator hBegin = halfedges(*fIt),
-                                     hIt    = hBegin;
-        do
-        {
-            buf[fromNode(*hIt)]     = 1;
-            buf[toNode(*hIt)]       = 1;
-            buf[midNode(*hIt)]      = 1;
-            buf[gradientNode(*hIt)] = 1;
-            ++hIt;
-        } while(hIt != hBegin);
+        if(isBoundary(*hIt))
+            continue;
+        buf[fromNode(*hIt)]     = 1;
+        buf[toNode(*hIt)]       = 1;
+        buf[midNode(*hIt)]      = 1;
+        buf[gradientNode(*hIt)] = 1;
     }
 
     // Compute remapping
@@ -99,24 +95,20 @@ ElementMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
     m_nodes.swap(reord);
 
     // Remap nodes in mesh
-    for(FaceIterator fIt = fBegin; fIt != fEnd; ++fIt)
+    for(HalfedgeIterator hIt = hBegin; hIt != hEnd; ++hIt)
     {
-        HalfedgeAroundFaceCirculator hBegin = halfedges(*fIt),
-                                     hIt    = hBegin;
-        do
-        {
-            fromNode(*hIt)     = map[fromNode(*hIt)];
-            toNode(*hIt)       = map[toNode(*hIt)];
-            midNode(*hIt)      = map[midNode(*hIt)];
-            gradientNode(*hIt) = map[gradientNode(*hIt)];
-            ++hIt;
-        } while(hIt != hBegin);
+        if(isBoundary(*hIt))
+            continue;
+        fromNode(*hIt)     = map[fromNode(*hIt)];
+        toNode(*hIt)       = map[toNode(*hIt)];
+        midNode(*hIt)      = map[midNode(*hIt)];
+        gradientNode(*hIt) = map[gradientNode(*hIt)];
     }
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
 Patate::SurfaceMesh::Vertex
-ElementMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+FVMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
 {
     Vertex v = Patate::SurfaceMesh::addVertex();
     m_vPos[v] = pos;
@@ -125,7 +117,7 @@ ElementMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-ElementMesh<_Scalar, _Dim, _Chan>::reserve(
+FVMesh<_Scalar, _Dim, _Chan>::reserve(
         unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
 {
     Patate::SurfaceMesh::reserve(nvertices, nedges, nfaces);

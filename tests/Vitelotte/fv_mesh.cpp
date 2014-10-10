@@ -1,11 +1,11 @@
 #include <cstdio>
 #include <iostream>
 
-#include <Patate/Vitelotte/Core/elementMesh.h>
+#include <Patate/Vitelotte/Core/fvMesh.h>
 
 
 typedef double Scalar;
-typedef Vitelotte::ElementMesh<Scalar> Mesh;
+typedef Vitelotte::FVMesh<Scalar> Mesh;
 
 typedef Mesh::Vector Vector;
 typedef Mesh::NodeValue NodeValue;

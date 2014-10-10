@@ -1,6 +1,6 @@
 
-#ifndef ELEMENTMESH_H
-#define ELEMENTMESH_H
+#ifndef FVMESH_H
+#define FVMESH_H
 
 
 #include <cassert>
@@ -18,7 +18,7 @@ namespace Vitelotte
 
 
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
-class ElementMesh: public Patate::SurfaceMesh
+class FVMesh: public Patate::SurfaceMesh
 {
 public:
     typedef _Scalar Scalar;
@@ -43,7 +43,7 @@ public:
 
     struct NodeCompare
     {
-        inline NodeCompare(const ElementMesh& em) : em(em) {}
+        inline NodeCompare(const FVMesh& em) : em(em) {}
         inline bool operator()(NodeID lhs, NodeID rhs)
         {
             bool lCons = em.isConstraint(lhs);
@@ -52,19 +52,19 @@ public:
         }
 
     private:
-        const ElementMesh& em;
+        const FVMesh& em;
     };
 
 public:
-    ElementMesh();
-    virtual ~ElementMesh() {}
+    FVMesh();
+    virtual ~FVMesh() {}
 
     template < typename OtherScalar >
-    ElementMesh(const ElementMesh<OtherScalar, _Dim, _Chan>& other)
+    FVMesh(const FVMesh<OtherScalar, _Dim, _Chan>& other)
     { operator=(other); }
 
     template < typename OtherScalar >
-    ElementMesh& operator=(const ElementMesh<OtherScalar, _Dim, _Chan>& rhs);
+    FVMesh& operator=(const FVMesh<OtherScalar, _Dim, _Chan>& rhs);
 
 
 public: //--- Nodes -----------------------------------------------------------
@@ -139,7 +139,7 @@ public: //--- Attributes accessors --------------------------------------------
     inline NodeID& gradientNode(Halfedge h) { return m_hGradNode[h]; }
 
 
-private:
+protected:
     NodeVector m_nodes;
 
     VertexProperty<Vector> m_vPos;
@@ -152,9 +152,9 @@ private:
 };
 
 
-#include "elementMesh.hpp"
+#include "fvMesh.hpp"
 
 } // namespace Vitelotte
 
-#endif // ELEMENTMESH_H
+#endif // FVMESH_H
 
