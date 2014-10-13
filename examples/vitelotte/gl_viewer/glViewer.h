@@ -34,7 +34,9 @@
 
 
 namespace Vitelotte {
-    class QMesh;
+    template < typename _Scalar, int _Dim, int _Chan >
+    class QuadraticMesh;
+    template < typename _Mesh >
     class QMeshRenderer;
 }
 
@@ -63,6 +65,13 @@ public:
             unsigned int        all;
         } flags;
     };
+
+    typedef float Scalar;
+
+    typedef Vitelotte::QuadraticMesh<Scalar, 2, 4> Mesh;
+    typedef Vitelotte::QMeshRenderer<Mesh> Renderer;
+
+    typedef Eigen::AlignedBox<Scalar, 2> Box;
 
 public:
 
@@ -190,8 +199,10 @@ private:
     float m_pointRadius;
     float m_lineWidth;
 
-    Vitelotte::QMesh*          m_pQvg;
-    Vitelotte::QMeshRenderer*  m_pQMeshRenderer;
+    Mesh*     m_pQvg;
+    Box       m_boundingBox;
+
+    Renderer* m_pQMeshRenderer;
 
     bool m_wireframe;
     bool m_showShaderWireframe;

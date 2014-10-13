@@ -125,6 +125,19 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
+unsigned
+QuadraticMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
+{
+    unsigned nSingulars = 0;
+    for(FaceIterator fit = facesBegin();
+        fit != facesEnd(); ++fit)
+    {
+        nSingulars += isSingular(*fit);
+    }
+    return nSingulars;
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
 void
 QuadraticMesh<_Scalar, _Dim, _Chan>::reserve(
         unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
@@ -148,4 +161,11 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
     Vertex v = Patate::SurfaceMesh::addVertex();
     m_vPos[v] = pos;
     return v;
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+QuadraticMesh<_Scalar, _Dim, _Chan>::isValid(NodeID n) const
+{
+    return 0 <= n && n < m_nodes.size();
 }

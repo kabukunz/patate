@@ -96,6 +96,8 @@ public: //--- Quadratic patches -----------------------------------------------
     inline bool isSingular(Halfedge h) const;
     inline bool isSingular(Face f) const;
 
+    inline unsigned nSingularFaces() const;
+
 
 public: //--- Utility ---------------------------------------------------------
 
@@ -103,6 +105,8 @@ public: //--- Utility ---------------------------------------------------------
                         unsigned nnodes);
     inline void clear();
     inline Vertex addVertex(const Vector& pos);
+
+    inline bool isValid(NodeID n) const;
 
 
 protected: //--- Topological operations ---------------------------------------

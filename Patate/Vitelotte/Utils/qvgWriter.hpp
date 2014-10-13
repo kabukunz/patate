@@ -60,7 +60,7 @@ QVGWriter<_Mesh>::write(std::ostream& _out) const
         }
         while(++hit != hend);
 
-        ++hit; hend = hit;
+        --hit; hend = hit;
         do
         {
             _out << " " << m_mesh.midNode(*hit) + iOffset;

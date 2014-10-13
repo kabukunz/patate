@@ -186,35 +186,43 @@ void GLViewer::shutdown()
 
 void GLViewer::startup(const std::string& filename)
 {
-    m_pQvg = new Vitelotte::QMesh();
-    Vitelotte::QVGReader reader;
+    m_pQvg = new Mesh;
+    Vitelotte::QVGReader<Mesh> reader(*m_pQvg);
 
     try
     {
         std::ifstream in(filename.c_str());
-        reader.read(*m_pQvg, in);
+        reader.read(in);
     }
-    catch (Vitelotte::QVGReadError& e)
+    catch(std::runtime_error& e)
     {
         fprintf(stderr, "error reading .qvg : %s\n", e.what());
         abort();
     }
 
-    assert(m_pQvg->isValid());
-    std::cout << "Nb vertices : " << m_pQvg->nbVertices() << "\n";
-    std::cout << "Nb nodes : " << m_pQvg->nbNodes() << "\n";
-    std::cout << "Nb curves : " << m_pQvg->nbCurves() << "\n";
-    std::cout << "Nb triangles : " << m_pQvg->nbTriangles() << "\n";
-    std::cout << "Nb singular : " << m_pQvg->nbSingularTriangles() << "\n";
+    //assert(m_pQvg->isValid());
+    unsigned nSingular = m_pQvg->nSingularFaces();
+    std::cout << "Nb vertices : " << m_pQvg->nVertices() << "\n";
+    std::cout << "Nb nodes : " << m_pQvg->nNodes() << "\n";
+    //std::cout << "Nb curves : " << m_pQvg->nbCurves() << "\n";
+    std::cout << "Nb triangles : " << m_pQvg->nFaces()-nSingular << "\n";
+    std::cout << "Nb singular : " << nSingular << "\n";
     std::cout << std::flush;
 
-    m_viewCenter = m_pQvg->getBoundingBox().center();
-    m_zoom = 550.f / m_pQvg->getBoundingBox().sizes().maxCoeff();
+    m_boundingBox.setEmpty();
+    for(Mesh::VertexIterator vit = m_pQvg->verticesBegin();
+        vit != m_pQvg->verticesEnd(); ++vit)
+    {
+        m_boundingBox.extend(m_pQvg->position(*vit));
+    }
+
+    m_viewCenter = m_boundingBox.center();
+    m_zoom = 550.f / m_boundingBox.sizes().maxCoeff();
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glEnable(GL_DEPTH_TEST);
 
-    m_pQMeshRenderer = new Vitelotte::QMeshRenderer();
+    m_pQMeshRenderer = new Renderer;
     m_pQMeshRenderer->init(m_pQvg);
 }
 
@@ -256,7 +264,7 @@ void GLViewer::onResize(int _w, int _h)
     m_needRefresh = true;
 }
 
-void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
+void GLViewer::onKey(int _key, int /*_scancode*/, int _action, int /*_mods*/)
 {
     if(_action == GLFW_PRESS || _action == GLFW_REPEAT)
     {
@@ -308,7 +316,7 @@ void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
     }
 }
 
-void GLViewer::onMouseButton(int _button, int _action, int _mods)
+void GLViewer::onMouseButton(int _button, int _action, int /*_mods*/)
 {
     if(_button == GLFW_MOUSE_BUTTON_LEFT)
     {
@@ -331,18 +339,20 @@ void GLViewer::onMouseMove(double _x, double _y)
     }
 }
 
-void GLViewer::onMouseWheel(double _xOffset, double _yOffset)
+void GLViewer::onMouseWheel(double /*_xOffset*/, double _yOffset)
 {
     m_zoom *= (_yOffset > 0.) ? 1.1f : 1.f/1.1f; 
     m_needRefresh = true;
 }
 
-void GLViewer::onError(int _error, const char* _description)
+void GLViewer::onError(int /*_error*/, const char* _description)
 {
     fprintf(stderr, "Error Message : %s \n", _description);
 }
 
-void GLViewer::onDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message) const
+void GLViewer::onDebugMessage(GLenum /*_source*/, GLenum /*_type*/,
+                              GLuint /*_id*/, GLenum /*_severity*/,
+                              GLsizei /*_length*/, const GLchar* _message) const
 {
     fprintf(stderr, "Debug Message : %s \n", _message);
 }

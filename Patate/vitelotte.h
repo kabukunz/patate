@@ -9,10 +9,10 @@
 
 #include <Eigen/Core>
 
-#include "common/surface_mesh/Surface_mesh.h"
+#include "common/surface_mesh/surfaceMesh.h"
 
-#include "Vitelotte/Core/femInMesh.h"
-#include "Vitelotte/Core/femSolver.h"
-#include "Vitelotte/Core/qMesh.h"
+//#include "Vitelotte/Core/femInMesh.h"
+//#include "Vitelotte/Core/femSolver.h"
+#include "Vitelotte/Core/quadraticMesh.h"
 
 #endif

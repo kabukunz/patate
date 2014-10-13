@@ -1,24 +1,137 @@
 
 
-inline bool QMeshRenderer::init(QMesh* _qMesh)
+template < class _Mesh >
+inline bool QMeshRenderer<_Mesh>::init(Mesh* _mesh)
 {
-    setQMesh(_qMesh);
-
-    if(m_pQMesh && m_pQMesh->isValid())
+    if(!loadShaders())
     {
-        if(loadShaders())
-        {
-            glGenVertexArrays(1, &m_vao);
-            glBindVertexArray(m_vao);
+        return false;
+    }
 
-            return initGl();
+    if(!initGl())
+        return false;
+
+    setMesh(_mesh);
+
+    return true;
+}
+
+template < class _Mesh >
+inline void QMeshRenderer<_Mesh>::updateMesh()
+{
+    m_vertices.clear();
+    m_triangleIndices.clear();
+    m_singularIndices.clear();
+    m_triangleNodes.clear();
+    m_singularNodes.clear();
+
+    if(!m_pMesh) return;
+
+    // Compute number of singular and normal triangles
+    unsigned nSingulars = m_pMesh->nSingularFaces();
+    unsigned nTriangles = m_pMesh->nFaces() - nSingulars;
+
+    // Reserve buffers
+    m_vertices.reserve(m_pMesh->nVertices());
+    m_triangleIndices.reserve(nTriangles * 3);
+    m_singularIndices.reserve(nSingulars * 3);
+    m_triangleNodes.reserve(nTriangles * 6);
+    m_singularNodes.reserve(nSingulars * 7);
+
+    // Push vertices positions
+    for(typename Mesh::VertexIterator vit = m_pMesh->verticesBegin();
+        vit != m_pMesh->verticesEnd(); ++vit)
+    {
+        m_vertices.push_back(m_pMesh->position(*vit));
+    }
+
+    // Push faces indices and nodes
+    for(typename Mesh::FaceIterator fit = m_pMesh->facesBegin();
+        fit != m_pMesh->facesEnd(); ++fit)
+    {
+        // Ensure we work with triangles
+        assert(m_pMesh->valence(*fit) == 3);
+        typename Mesh::Halfedge h = m_pMesh->halfedge(*fit);
+
+        if(m_pMesh->isSingular(*fit))
+        {
+            // The first vertex must be the singular one
+            while(!m_pMesh->isSingular(h)) { h = m_pMesh->nextHalfedge(h); }
+
+            // Push vertices nodes
+            for(int ei = 0; ei < 3; ++ei)
+            {
+                m_singularIndices.push_back(m_pMesh->toVertex(h).idx());
+                h = m_pMesh->nextHalfedge(h);
+                m_singularNodes.push_back(
+                            m_pMesh->nodeValue(m_pMesh->fromNode(h)));
+            }
+            m_singularNodes.push_back(
+                        m_pMesh->nodeValue(m_pMesh->toNode(h)));
+
+            // Push edge nodes
+            h = m_pMesh->prevHalfedge(h);
+            for(int ei = 0; ei < 3; ++ei)
+            {
+                m_singularNodes.push_back(
+                            m_pMesh->nodeValue(m_pMesh->midNode(h)));
+                h = m_pMesh->nextHalfedge(h);
+            }
+        }
+        else
+        {
+            // Push vertices nodes
+            for(int ei = 0; ei < 3; ++ei)
+            {
+                m_triangleIndices.push_back(m_pMesh->toVertex(h).idx());
+                m_triangleNodes.push_back(
+                            m_pMesh->nodeValue(m_pMesh->toNode(h)));
+                h = m_pMesh->nextHalfedge(h);
+            }
+
+            // Push edge nodes
+            h = m_pMesh->prevHalfedge(h);
+            for(int ei = 0; ei < 3; ++ei)
+            {
+                m_triangleNodes.push_back(
+                            m_pMesh->nodeValue(m_pMesh->midNode(h)));
+                h = m_pMesh->nextHalfedge(h);
+            }
         }
     }
 
-    return false;
+    // Create and upload buffers
+    createAndUploadBuffer(m_verticesBuffer, GL_ARRAY_BUFFER,
+                          m_vertices);
+
+    createAndUploadBuffer(m_triangleIndicesBuffer, GL_ELEMENT_ARRAY_BUFFER,
+                          m_triangleIndices);
+    createAndUploadBuffer(m_triangleNodesBuffer, GL_ARRAY_BUFFER,
+                          m_triangleNodes);
+
+    createAndUploadBuffer(m_singularIndicesBuffer, GL_ELEMENT_ARRAY_BUFFER,
+                          m_singularIndices);
+    createAndUploadBuffer(m_singularNodesBuffer, GL_ARRAY_BUFFER,
+                          m_singularNodes);
+
+    // Create and setup texture buffers
+    if(!m_triangleNodesTexture)
+    {
+        glGenTextures(1, &m_triangleNodesTexture);
+    }
+    glBindTexture(GL_TEXTURE_BUFFER, m_triangleNodesTexture);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_triangleNodesBuffer);
+
+    if(!m_singularNodesTexture)
+    {
+        glGenTextures(1, &m_singularNodesTexture);
+    }
+    glBindTexture(GL_TEXTURE_BUFFER, m_singularNodesTexture);
+    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_singularNodesBuffer);
 }
 
-inline bool QMeshRenderer::loadShaders()
+template < class _Mesh >
+inline bool QMeshRenderer<_Mesh>::loadShaders()
 {
     PATATE_GLCheckError();
 
@@ -58,138 +171,54 @@ inline bool QMeshRenderer::loadShaders()
     return PATATE_GLCheckError();;
 }
 
-inline bool QMeshRenderer::initGl()
+template < class _Mesh >
+inline bool QMeshRenderer<_Mesh>::initGl()
 {
-    std::vector<unsigned> triangleIndices;
-    std::vector<unsigned> singularIndices;
-    QMesh::NodeList triangleNodes;
-    QMesh::NodeList singularNodes;
-
-    triangleIndices.reserve(m_pQMesh->nbTriangles() * 3);
-    singularIndices.reserve(m_pQMesh->nbSingularTriangles() * 3);
-    triangleNodes.reserve(m_pQMesh->nbTriangles() * 6);
-    singularNodes.reserve(m_pQMesh->nbSingularTriangles() * 7);
-
-    for(unsigned i = 0; i < m_pQMesh->nbTriangles(); ++i)
-    {
-        for(int j = 0; j < 3; ++j)
-        {
-            triangleIndices.push_back(m_pQMesh->getTriangles()[i].m_vertices[j]);
-        }
-        for(int j = 0; j < 6; ++j)
-        {
-            triangleNodes.push_back(m_pQMesh->getNodes()[m_pQMesh->getTriangles()[i].m_nodes[j]]);
-        }
-    }
-
-    for(unsigned i = 0; i < m_pQMesh->nbSingularTriangles(); ++i)
-    {
-        for(int j = 0; j < 3; ++j)
-        {
-            singularIndices.push_back(m_pQMesh->getSingularTriangles()[i].m_vertices[j]);
-        }
-        for(int j = 0; j < 7; ++j)
-        {
-            singularNodes.push_back(m_pQMesh->getNodes()[m_pQMesh->getSingularTriangles()[i].m_nodes[j]]);
-        }
-    }
-
-    if(!m_verticesBuffer)
-    {
-        glGenBuffers(1, &m_verticesBuffer);
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
-    glBufferData(GL_ARRAY_BUFFER, m_pQMesh->nbVertices() * sizeof(Eigen::Vector2f), &(m_pQMesh->getVertices()[0]), GL_STATIC_DRAW);
-
-    if(!m_triangleIndicesBuffer)
-    {
-        glGenBuffers(1, &m_triangleIndicesBuffer);
-    }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_triangleIndicesBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_pQMesh->nbTriangles() * 3 * sizeof(unsigned), &triangleIndices[0], GL_STATIC_DRAW);
-
-    if(m_pQMesh->nbSingularTriangles() > 0)
-    {
-        if(!m_singularIndicesBuffer)
-        {
-            glGenBuffers(1, &m_singularIndicesBuffer);
-        }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_singularIndicesBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, m_pQMesh->nbSingularTriangles() * 3 * sizeof(unsigned), &singularIndices[0], GL_STATIC_DRAW);
-    }
-
-    if(!m_triangleNodesBuffer)
-    {
-        glGenBuffers(1, &m_triangleNodesBuffer);
-    }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_triangleNodesBuffer);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, triangleNodes.size() * sizeof(Eigen::Vector4f), &triangleNodes[0], GL_STATIC_DRAW);
-
-    if(singularNodes.size() > 0)
-    {
-        if(!m_singularNodesBuffer)
-        {
-            glGenBuffers(1, &m_singularNodesBuffer);
-        }
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_singularNodesBuffer);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, singularNodes.size() * sizeof(Eigen::Vector4f), &singularNodes[0], GL_STATIC_DRAW);
-    }
-
-    if(!m_triangleNodesTexture)
-    {
-        glGenTextures(1, &m_triangleNodesTexture);
-    }
-    glBindTexture(GL_TEXTURE_BUFFER, m_triangleNodesTexture);
-    glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_triangleNodesBuffer);
-
-    if(m_singularNodesBuffer)
-    {
-        if(!m_singularNodesTexture)
-        {
-            glGenTextures(1, &m_singularNodesTexture);
-        }
-        glBindTexture(GL_TEXTURE_BUFFER, m_singularNodesTexture);
-        glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_singularNodesBuffer);
-    }
-
-    return (glGetError() == GL_NO_ERROR);
+    glGenVertexArrays(1, &m_vao);
+    glBindVertexArray(m_vao);
+    return true;
 }
 
-inline void QMeshRenderer::renderTriangles(GLuint _shader, bool _singular)
+template < class _Mesh >
+inline void QMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular)
 {
-    if(m_pQMesh && m_pQMesh->isValid())
+    const IndicesVector& indices = _singular?
+                m_singularIndices: m_triangleIndices;
+
+    if(indices.size() == 0)
     {
-        if(_singular && !(m_pQMesh->nbSingularTriangles() > 0))
-        {
-            return;
-        }
+        return;
+    }
 
-        glUseProgram(_shader);
+    glUseProgram(_shader);
 
-        GLint verticesLoc = glGetAttribLocation(_shader, "vx_position");
+    GLint verticesLoc = glGetAttribLocation(_shader, "vx_position");
 
-        if(verticesLoc >= 0)
-        {
-            glEnableVertexAttribArray(verticesLoc);
-            glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
-            glVertexAttribPointer(verticesLoc, 2, GL_FLOAT, false, sizeof(Eigen::Vector2f), 0);
-        }
+    if(verticesLoc >= 0)
+    {
+        glEnableVertexAttribArray(verticesLoc);
+        glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
+        glVertexAttribPointer(verticesLoc, Vector::SizeAtCompileTime, GL_FLOAT,
+                              false, sizeof(Vector), 0);
+    }
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_BUFFER, _singular ? m_singularNodesTexture : m_triangleNodesTexture);
-        glUniform1i(glGetUniformLocation(_shader, "nodes"), 0);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_BUFFER,
+                  _singular ? m_singularNodesTexture : m_triangleNodesTexture);
+    glUniform1i(glGetUniformLocation(_shader, "nodes"), 0);
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _singular ? m_singularIndicesBuffer : m_triangleIndicesBuffer);
-        glDrawElements(GL_TRIANGLES, m_pQMesh->nbTriangles() * 3, GL_UNSIGNED_INT, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,
+                 _singular ? m_singularIndicesBuffer : m_triangleIndicesBuffer);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
-        if(verticesLoc >= 0)
-        {
-            glDisableVertexAttribArray(verticesLoc);
-        }
+    if(verticesLoc >= 0)
+    {
+        glDisableVertexAttribArray(verticesLoc);
     }
 }
 
-inline void QMeshRenderer::render(Eigen::Matrix4f& _viewMatrix, float _zoom, float _pointRadius, float _lineWidth, bool _showShaderWireframe)
+template < class _Mesh >
+inline void QMeshRenderer<_Mesh>::render(Eigen::Matrix4f& _viewMatrix, float _zoom, float _pointRadius, float _lineWidth, bool _showShaderWireframe)
 {
     for(int pass = 0; pass < 2; ++pass)
     {
@@ -241,3 +270,18 @@ inline void QMeshRenderer::render(Eigen::Matrix4f& _viewMatrix, float _zoom, flo
         }
     }
 }
+
+template < class _Mesh >
+template < typename T >
+void QMeshRenderer<_Mesh>::createAndUploadBuffer(
+        GLuint& glId, GLenum type, const std::vector<T>& data, GLenum usage)
+{
+    if(!glId)
+    {
+        glGenBuffers(1, &glId);
+    }
+    glBindBuffer(type, glId);
+    glBufferData(type, data.size() * sizeof(T),
+                 &(data[0]), usage);
+}
+

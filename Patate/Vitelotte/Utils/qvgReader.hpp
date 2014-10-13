@@ -63,8 +63,7 @@ QVGReader<_Mesh>::parseDefinition(const std::string& spec,
         m_fVertices.clear();
 
         def >> std::ws;
-        int nodes[6];
-        int singular = 0;
+        int nodes[9];
 
         for(int i = 0; i < 3; ++i)
         {
@@ -75,22 +74,26 @@ QVGReader<_Mesh>::parseDefinition(const std::string& spec,
 
             m_fVertices.push_back(
                         typename Mesh::Vertex(m_faceIndices[0] - iOffset));
+
             nodes[2*i] = m_faceIndices[1];
             nodes[2*i + 1] = m_faceIndices.back();
         }
 
-        typename Mesh::Face f = m.addFace(m_fVertices);
-
-        typename Mesh::HalfedgeAroundFaceCirculator hit  = m.halfedges(f);
+        // mid nodes
         for(int i = 0; i < 3; ++i)
         {
-            int mid;
-            def >> mid;
+            def >> nodes[6+i];
             if(!def) error("Missing edge node");
+        }
 
+        typename Mesh::Face f = m.addFace(m_fVertices);
+
+        typename Mesh::HalfedgeAroundFaceCirculator hit = m.halfedges(f);
+        for(int i = 0; i < 3; ++i)
+        {
             m.toNode(*hit) = nodes[2*i] - iOffset;
             ++hit;
-            m.midNode(*hit) = mid - iOffset;
+            m.midNode(*hit) = nodes[6 + (i+2)%3] - iOffset;
             m.fromNode(*hit) = nodes[2*i + 1] - iOffset;
         }
     }
