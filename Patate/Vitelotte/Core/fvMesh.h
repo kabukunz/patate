@@ -91,11 +91,23 @@ public: //--- Nodes -----------------------------------------------------------
     void sortAndCompactNodes();
 
 
+public: //--- Quadratic patches -----------------------------------------------
+
+    inline bool isSingular(Halfedge h) const;
+    inline bool isSingular(Face f) const;
+
+    inline unsigned nSingularFaces() const;
+
+
 public: //--- Utility ---------------------------------------------------------
 
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
+    inline void clear();
+
     inline Vertex addVertex(const Vector& pos);
+
+    inline bool isValid(NodeID n) const;
 
 
 protected: //--- Topological operations ---------------------------------------
@@ -137,6 +149,10 @@ public: //--- Attributes accessors --------------------------------------------
 
     inline NodeID gradientNode(Halfedge h) const { return m_hGradNode[h]; }
     inline NodeID& gradientNode(Halfedge h) { return m_hGradNode[h]; }
+
+    inline VertexProperty<Vector>& vPosProperty() { return m_vPos; }
+    inline const VertexProperty<Vector>& vPosProperty() const
+    { return m_vPos; }
 
 
 protected:

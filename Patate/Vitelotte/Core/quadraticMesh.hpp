@@ -117,7 +117,7 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
     do
     {
         if(isSingular(*hit))
-        return true;
+            return true;
     }
     while(++hit != hend);
 

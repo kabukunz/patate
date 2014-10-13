@@ -104,6 +104,7 @@ public: //--- Utility ---------------------------------------------------------
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
     inline void clear();
+
     inline Vertex addVertex(const Vector& pos);
 
     inline bool isValid(NodeID n) const;
@@ -146,6 +147,7 @@ public: //--- Attributes accessors --------------------------------------------
     inline VertexProperty<Vector>& vPosProperty() { return m_vPos; }
     inline const VertexProperty<Vector>& vPosProperty() const
     { return m_vPos; }
+
 
 protected:
     NodeVector m_nodes;

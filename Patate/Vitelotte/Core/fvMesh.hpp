@@ -107,12 +107,40 @@ FVMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
-Patate::SurfaceMesh::Vertex
-FVMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+bool
+FVMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {
-    Vertex v = Patate::SurfaceMesh::addVertex();
-    m_vPos[v] = pos;
-    return v;
+    return m_hToNode[h] != m_hFromNode[nextHalfedge(h)];
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+FVMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
+{
+    HalfedgeAroundFaceCirculator
+            hit  = halfedges(f),
+            hend = hit;
+    do
+    {
+        if(isSingular(*hit))
+            return true;
+    }
+    while(++hit != hend);
+
+    return false;
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+unsigned
+FVMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
+{
+    unsigned nSingulars = 0;
+    for(FaceIterator fit = facesBegin();
+        fit != facesEnd(); ++fit)
+    {
+        nSingulars += isSingular(*fit);
+    }
+    return nSingulars;
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
@@ -122,4 +150,21 @@ FVMesh<_Scalar, _Dim, _Chan>::reserve(
 {
     Patate::SurfaceMesh::reserve(nvertices, nedges, nfaces);
     m_nodes.reserve(nnodes);
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+FVMesh<_Scalar, _Dim, _Chan>::clear()
+{
+    Patate::SurfaceMesh::clear();
+    m_nodes.clear();
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+Patate::SurfaceMesh::Vertex
+FVMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+{
+    Vertex v = Patate::SurfaceMesh::addVertex();
+    m_vPos[v] = pos;
+    return v;
 }
