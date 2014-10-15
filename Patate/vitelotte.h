@@ -12,7 +12,9 @@
 #include "common/surface_mesh/surfaceMesh.h"
 
 //#include "Vitelotte/Core/femInMesh.h"
-//#include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/quadraticMesh.h"
+#include "Vitelotte/Core/fvMesh.h"
+#include "Vitelotte/Core/femSolver.h"
+#include "Vitelotte/Core/quadraticElement.h"
 
 #endif

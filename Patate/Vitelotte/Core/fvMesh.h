@@ -115,18 +115,21 @@ protected: //--- Topological operations ---------------------------------------
     inline void triangulate() { assert(false); }
     inline void triangulate(Face /*f*/) { assert(false); }
 
-    inline bool isCollapseOk(Halfedge h) { assert(false); }
+    inline bool isCollapseOk(Halfedge h) { assert(false); return false; }
     inline void collapse(Halfedge h) { assert(false); }
 
     inline void split(Face f, Vertex v) { assert(false); }
     inline void split(Edge e, Vertex v) { assert(false); }
 
-    inline Halfedge insertVertex(Edge e, Vertex v) { assert(false); }
-    inline Halfedge insertVertex(Halfedge h, Vertex v) { assert(false); }
+    inline Halfedge insertVertex(Edge e, Vertex v)
+        { assert(false); return Halfedge(); }
+    inline Halfedge insertVertex(Halfedge h, Vertex v)
+        { assert(false); return Halfedge(); }
 
-    inline Halfedge insertEdge(Halfedge h0, Halfedge h1) { assert(false); }
+    inline Halfedge insertEdge(Halfedge h0, Halfedge h1)
+        { assert(false); return Halfedge(); }
 
-    inline bool isFlipOk(Edge e) const { assert(false); }
+    inline bool isFlipOk(Edge e) const { assert(false); return false; }
     inline void flip(Edge e) { assert(false); }
 
 
