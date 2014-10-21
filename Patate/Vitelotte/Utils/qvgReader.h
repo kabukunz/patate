@@ -127,7 +127,7 @@ protected:
     using Base::m_fVertices;
 
     std::string m_tmp;
-    std::vector<int> m_faceIndices;
+    std::vector<unsigned> m_faceIndices;
 };
 
 

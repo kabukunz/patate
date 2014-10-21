@@ -101,6 +101,187 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::initializeUnconstrained()
+{
+    for(VertexIterator vit = verticesBegin();
+        vit != verticesEnd(); ++vit)
+    {
+        NodeID node = addNode();
+        HalfedgeAroundVertexCirculator hit = halfedges(*vit),
+                                       hEnd = hit;
+        do
+        {
+            if(isValid(*hit))
+                fromNode(*hit) = node;
+            if(isValid(oppositeHalfedge(*hit)))
+                toNode(oppositeHalfedge(*hit)) = node;
+            ++hit;
+        }
+        while(hit != hEnd && !isBoundary(*hit));
+    }
+
+    for(EdgeIterator eit = edgesBegin();
+        eit != edgesEnd(); ++eit)
+    {
+        NodeID node = addNode();
+        Halfedge h = halfedge(*eit, 0);
+        if(isValid(h))
+            midNode(h) = node;\
+        if(isValid(oppositeHalfedge(h)))
+            midNode(oppositeHalfedge(h)) = node;
+    }
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::setConstraint(
+        Halfedge h, NodeID from, NodeID mid, NodeID to)
+{
+    fromNode(h) = from;
+    midNode(h) = mid;
+    toNode(h) = to;
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+QuadraticMesh<_Scalar, _Dim, _Chan>::isConstraint(Edge e) const
+{
+    Halfedge h0 = halfedge(e, 0);
+    Halfedge h1 = halfedge(e, 1);
+    bool b0 = isBoundary(h0);
+    bool b1 = isBoundary(h1);
+    return
+        (!b0 && !b1 &&
+            (fromNode(h0) != toNode(h1) ||
+             midNode(h0) != midNode(h1) ||
+             toNode(h0) != fromNode(h1))) ||
+        (!b0 &&
+            (isConstraint(fromNode(h0)) ||
+             isConstraint( midNode(h0)) ||
+             isConstraint(  toNode(h0)))) ||
+        (!b1 &&
+            (isConstraint(fromNode(h1)) ||
+             isConstraint( midNode(h1)) ||
+             isConstraint(  toNode(h1))));
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::propagateConstraints()
+{
+    std::vector<Halfedge> consEdges;
+    consEdges.reserve(8);
+
+    EdgeProperty<bool> constraintMap = edgeProperty("e:isConstraint", false);
+    for(EdgeIterator eit = edgesBegin();
+        eit != edgesEnd(); ++eit)\
+    {
+        constraintMap[*eit] = isConstraint(*eit);
+    }
+
+    for(VertexIterator vit = verticesBegin();
+        vit != verticesEnd(); ++vit)
+    {
+        consEdges.clear();
+        HalfedgeAroundVertexCirculator hit = halfedges(*vit),
+                                       hEnd = hit;
+        do
+        {
+            if(constraintMap[edge(*hit)])
+                consEdges.push_back(*hit);
+            ++hit;
+        }
+        while(hit != hEnd);
+
+        if(consEdges.empty())
+        {
+            consEdges.push_back(*hit);
+            consEdges.push_back(*hit);
+        }
+        consEdges.push_back(consEdges.front());
+
+        while(*hit != consEdges.front()) ++hit;
+
+        std::vector<Halfedge>::iterator cit = consEdges.begin();
+        Halfedge prev = *cit;
+        for(++cit; cit != consEdges.end(); ++cit)
+        {
+            assert(prev == *hit);
+            Halfedge next = oppositeHalfedge(*cit);
+            NodeID n0 = fromNode(prev);
+            NodeID n1 = toNode(next);
+            bool n0c = isConstraint(n0);
+            bool n1c = isConstraint(n1);
+
+            NodeID n = InvalidNodeID;
+            if(!n0c && !n1c)
+                n = n0;  // Free nodes, choose one arbitrarily
+            else if(n0c != n1c)
+                n = n0c? n0: n1;  // One constraint, choose it
+            else if(n0 == n1)
+                n = n0;  // Same constraints, choice is obvious
+
+            // The remaining option is a singularity, that require special
+            // processing.
+            if(isValid(n))
+            {
+                do
+                {
+                    if(isValid(*hit))
+                        fromNode(*hit) = n;
+                    ++hit;
+                    if(isValid(oppositeHalfedge(*hit)))
+                    toNode(oppositeHalfedge(*hit)) = n;
+                }
+                while(*hit != *cit);
+            }
+            else
+                processSingularity(hit, *cit);
+
+            prev = *cit;
+        }
+    }
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::
+    processSingularity(HalfedgeAroundVertexCirculator& hit, Halfedge end)
+{
+    NodeValue from = nodeValue(fromNode(*hit));
+    NodeValue to = nodeValue(toNode(oppositeHalfedge(end)));
+
+    Vector fromVec = position(toVertex(*hit)) - position(fromVertex(*hit));
+    Vector   toVec = position(toVertex( end)) - position(fromVertex( end));
+
+    Scalar fromAngle = std::atan2(fromVec.y(), fromVec.x());
+    Scalar toAngle   = std::atan2(  toVec.y(),   toVec.x());
+    Scalar totalAngle = toAngle - fromAngle;
+    if(totalAngle < 1.e-8) totalAngle += 2.*M_PI;
+
+    NodeID n = fromNode(*hit);
+    do
+    {
+        if(isValid(*hit))
+            fromNode(*hit) = n;
+        ++hit;
+
+        if(*hit != end)
+        {
+            Vector vec = position(toVertex(*hit)) - position(fromVertex(*hit));
+            Scalar angle = std::atan2(vec.y(), vec.x()) - fromAngle;
+            if(angle < 1.e-8) angle += 2.*M_PI;
+            Scalar a = angle / totalAngle;
+            n = addNode((1.-a) * from + a * to);
+            if(isValid(oppositeHalfedge(*hit)))
+                toNode(oppositeHalfedge(*hit)) = n;
+        }
+    }
+    while(*hit != end);
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
 bool
 QuadraticMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {

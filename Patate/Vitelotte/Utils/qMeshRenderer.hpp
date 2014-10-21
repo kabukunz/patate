@@ -63,18 +63,15 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             {
                 m_singularIndices.push_back(m_pMesh->toVertex(h).idx());
                 h = m_pMesh->nextHalfedge(h);
-                m_singularNodes.push_back(
-                            m_pMesh->nodeValue(m_pMesh->fromNode(h)));
+                m_singularNodes.push_back(nodeValue(m_pMesh->fromNode(h)));
             }
-            m_singularNodes.push_back(
-                        m_pMesh->nodeValue(m_pMesh->toNode(h)));
+            m_singularNodes.push_back(nodeValue(m_pMesh->toNode(h)));
 
             // Push edge nodes
             h = m_pMesh->prevHalfedge(h);
             for(int ei = 0; ei < 3; ++ei)
             {
-                m_singularNodes.push_back(
-                            m_pMesh->nodeValue(m_pMesh->midNode(h)));
+                m_singularNodes.push_back(nodeValue(m_pMesh->midNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
         }
@@ -84,8 +81,7 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             for(int ei = 0; ei < 3; ++ei)
             {
                 m_triangleIndices.push_back(m_pMesh->toVertex(h).idx());
-                m_triangleNodes.push_back(
-                            m_pMesh->nodeValue(m_pMesh->toNode(h)));
+                m_triangleNodes.push_back(nodeValue(m_pMesh->toNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
 
@@ -93,8 +89,7 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             h = m_pMesh->prevHalfedge(h);
             for(int ei = 0; ei < 3; ++ei)
             {
-                m_triangleNodes.push_back(
-                            m_pMesh->nodeValue(m_pMesh->midNode(h)));
+                m_triangleNodes.push_back(nodeValue(m_pMesh->midNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
         }
@@ -215,6 +210,15 @@ inline void QMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular
     {
         glDisableVertexAttribArray(verticesLoc);
     }
+}
+
+template < class _Mesh >
+inline typename QMeshRenderer<_Mesh>::NodeValue
+QMeshRenderer<_Mesh>::nodeValue(NodeID node) const
+{
+    if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
+        return m_pMesh->nodeValue(node);
+    return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 
 template < class _Mesh >

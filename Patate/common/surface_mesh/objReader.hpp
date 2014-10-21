@@ -27,7 +27,7 @@ OBJBaseReader::read(std::istream& in)
 
 void
 OBJBaseReader::parseIndiceList(const std::string& _list,
-                               std::vector<int>& _indices)
+                               std::vector<unsigned>& _indices)
 {
     _indices.clear();
     m_indicesStream.str(_list);

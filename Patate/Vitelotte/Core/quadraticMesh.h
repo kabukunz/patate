@@ -91,6 +91,24 @@ public: //--- Nodes -----------------------------------------------------------
     void sortAndCompactNodes();
 
 
+public: //--- Constraints edition ---------------------------------------------
+
+    void initializeUnconstrained();
+
+    void setConstraint(Halfedge h, NodeID from, NodeID mid, NodeID to);
+    void setContinuousConstraint(Halfedge h,
+                                 NodeID from, NodeID mid, NodeID to)
+        { setConstraint(h, from, mid, to);
+          setConstraint(oppositeHalfedge(h), to, mid, from); }
+
+    bool isConstraint(Edge e) const;
+
+    void propagateConstraints();
+
+protected:
+    void processSingularity(HalfedgeAroundVertexCirculator& hit, Halfedge end);
+
+
 public: //--- Quadratic patches -----------------------------------------------
 
     inline bool isSingular(Halfedge h) const;
@@ -106,6 +124,11 @@ public: //--- Utility ---------------------------------------------------------
     inline void clear();
 
     inline Vertex addVertex(const Vector& pos);
+
+    inline bool isValid(Vertex v) const { return Patate::SurfaceMesh::isValid(v); }
+    inline bool isValid(Halfedge h) const { return Patate::SurfaceMesh::isValid(h); }
+    inline bool isValid(Edge e) const { return Patate::SurfaceMesh::isValid(e); }
+    inline bool isValid(Face f) const { return Patate::SurfaceMesh::isValid(f); }
 
     inline bool isValid(NodeID n) const;
 

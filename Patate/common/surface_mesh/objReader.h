@@ -30,7 +30,7 @@ protected:
                                  std::istream& def) = 0;
 
     void parseIndiceList(const std::string& _list,
-                         std::vector<int>& _indices);
+                         std::vector<unsigned>& _indices);
 
     void error(const std::string& msg);
 

@@ -238,6 +238,7 @@ class QMeshRenderer
 public:
     typedef _Mesh Mesh;
 
+    typedef typename Mesh::NodeID NodeID;
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::NodeValue NodeValue;
 
@@ -278,6 +279,8 @@ private:
     bool loadShaders();
     bool initGl();
     void renderTriangles(GLuint _shader, bool _singular = false);
+
+    NodeValue nodeValue(NodeID node) const;
 
     template < typename T >
     void createAndUploadBuffer(GLuint& glId, GLenum type,
