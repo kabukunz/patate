@@ -10,7 +10,7 @@
 
 #include <Eigen/Core>
 
-#include "../../common/surface_mesh/surfaceMesh.h"
+#include "quadraticMesh.h"
 
 
 namespace Vitelotte
@@ -18,41 +18,48 @@ namespace Vitelotte
 
 
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
-class FVMesh: public Patate::SurfaceMesh
+class FVMesh: public QuadraticMesh<_Scalar, _Dim, _Chan>
 {
 public:
-    typedef _Scalar Scalar;
+    typedef QuadraticMesh<_Scalar, _Dim, _Chan> Base;
+    typedef FVMesh<_Scalar, _Dim, _Chan> Self;
+
+    typedef typename Base::Scalar Scalar;
+
+    typedef typename Base::Vertex Vertex;
+    typedef typename Base::Halfedge Halfedge;
+    typedef typename Base::Edge Edge;
+    typedef typename Base::Face Face;
+
+//    typedef typename Base::VertexProperty VertexProperty;
+//    typedef typename Base::HalfedgeProperty HalfedgeProperty;
+//    typedef typename Base::EdgeProperty EdgeProperty;
+//    typedef typename Base::FaceProperty FaceProperty;
+
+    typedef typename Base::VertexIterator VertexIterator;
+    typedef typename Base::HalfedgeIterator HalfedgeIterator;
+    typedef typename Base::EdgeIterator EdgeIterator;
+    typedef typename Base::FaceIterator FaceIterator;
+
+    typedef typename Base::VertexAroundVertexCirculator VertexAroundVertexCirculator;
+    typedef typename Base::HalfedgeAroundVertexCirculator HalfedgeAroundVertexCirculator;
+    typedef typename Base::FaceAroundVertexCirculator FaceAroundVertexCirculator;
+    typedef typename Base::VertexAroundFaceCirculator VertexAroundFaceCirculator;
+    typedef typename Base::HalfedgeAroundFaceCirculator HalfedgeAroundFaceCirculator;
 
     enum {
-        Dim = _Dim,
-        Chan = _Chan
+        Dim = Base::Dim,
+        Chan = Base::Chan
     };
 
-    typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
-    typedef Eigen::Matrix<Scalar, Chan, 1> NodeValue;
+    typedef typename Base::Vector Vector;
+    typedef typename Base::NodeValue NodeValue;
 
-    typedef std::vector<NodeValue> NodeVector;
-    typedef unsigned NodeID;
-    //typedef typename NodeVector::size_type NodeID;
+    typedef typename Base::NodeVector NodeVector;
+    typedef typename Base::NodeID NodeID;
 
     enum {
-        InvalidNodeID = UINT_MAX // std::numeric_limits<NodeID>::max()
-    };
-
-    static const NodeValue UnconstrainedNode;
-
-    struct NodeCompare
-    {
-        inline NodeCompare(const FVMesh& em) : em(em) {}
-        inline bool operator()(NodeID lhs, NodeID rhs)
-        {
-            bool lCons = em.isConstraint(lhs);
-            bool rCons = em.isConstraint(rhs);
-            return !lCons && rCons;
-        }
-
-    private:
-        const FVMesh& em;
+        InvalidNodeID = Base::InvalidNodeID
     };
 
 public:
@@ -67,107 +74,31 @@ public:
     FVMesh& operator=(const FVMesh<OtherScalar, _Dim, _Chan>& rhs);
 
 
-public: //--- Nodes -----------------------------------------------------------
+    void compactNodes();
 
-    inline typename NodeVector::size_type nNodes() const
-    { return m_nodes.size(); }
+protected:
+    template < typename Marked >
+    void markNodes(Halfedge h, Marked& marked) const;
 
-    inline bool isConstraint(NodeID node) const
-    { return !isnan(nodeValue(node)[0]); }
-
-    inline const NodeValue& nodeValue(NodeID node) const
-    { return m_nodes.at(node); }
-
-    inline NodeValue& nodeValue(NodeID node) { return m_nodes.at(node); }
-
-    inline NodeID addNode(const NodeValue& nodeValue=UnconstrainedNode);
-
-    /**
-     * \brief Sort node so that unconstrained nodes have lower IDs than
-     * constrained ones, and remove unused nodes.
-     *
-     * \warning As it reorder nodes, all previous NodeID are invalidated.
-     */
-    void sortAndCompactNodes();
-
-
-public: //--- Quadratic patches -----------------------------------------------
-
-    inline bool isSingular(Halfedge h) const;
-    inline bool isSingular(Face f) const;
-
-    inline unsigned nSingularFaces() const;
-
-
-public: //--- Utility ---------------------------------------------------------
-
-    inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
-                        unsigned nnodes);
-    inline void clear();
-
-    inline Vertex addVertex(const Vector& pos);
-
-    inline bool isValid(NodeID n) const;
-
-
-protected: //--- Topological operations ---------------------------------------
-
-    inline void triangulate() { assert(false); }
-    inline void triangulate(Face /*f*/) { assert(false); }
-
-    inline bool isCollapseOk(Halfedge h) { assert(false); return false; }
-    inline void collapse(Halfedge h) { assert(false); }
-
-    inline void split(Face f, Vertex v) { assert(false); }
-    inline void split(Edge e, Vertex v) { assert(false); }
-
-    inline Halfedge insertVertex(Edge e, Vertex v)
-        { assert(false); return Halfedge(); }
-    inline Halfedge insertVertex(Halfedge h, Vertex v)
-        { assert(false); return Halfedge(); }
-
-    inline Halfedge insertEdge(Halfedge h0, Halfedge h1)
-        { assert(false); return Halfedge(); }
-
-    inline bool isFlipOk(Edge e) const { assert(false); return false; }
-    inline void flip(Edge e) { assert(false); }
+    template < typename Map >
+    void remapNodes(Halfedge h, Map& map);
 
 
 public: //--- Attributes accessors --------------------------------------------
 
-    inline const Vector& position(Vertex v) const { return m_vPos[v]; }
-    inline Vector& position(Vertex v) { return m_vPos[v]; }
-
     inline bool hasFlatGradient(Vertex v) const { return m_vFlatGrad[v]; }
     inline void setFlatGradient(Vertex v, bool flat) { m_vFlatGrad[v] = flat; }
-
-    inline NodeID fromNode(Halfedge h) const { return m_hFromNode[h]; }
-    inline NodeID& fromNode(Halfedge h) { return m_hFromNode[h]; }
-
-    inline NodeID toNode(Halfedge h) const { return m_hToNode[h]; }
-    inline NodeID& toNode(Halfedge h) { return m_hToNode[h]; }
-
-    inline NodeID midNode(Halfedge h) const { return m_hMidNode[h]; }
-    inline NodeID& midNode(Halfedge h) { return m_hMidNode[h]; }
 
     inline NodeID gradientNode(Halfedge h) const { return m_hGradNode[h]; }
     inline NodeID& gradientNode(Halfedge h) { return m_hGradNode[h]; }
 
-    inline VertexProperty<Vector>& vPosProperty() { return m_vPos; }
-    inline const VertexProperty<Vector>& vPosProperty() const
-    { return m_vPos; }
-
 
 protected:
-    NodeVector m_nodes;
+    Patate::SurfaceMesh::VertexProperty<bool> m_vFlatGrad;
 
-    VertexProperty<Vector> m_vPos;
-    VertexProperty<bool> m_vFlatGrad;
+    Patate::SurfaceMesh::HalfedgeProperty<NodeID> m_hGradNode;
 
-    HalfedgeProperty<NodeID> m_hFromNode;
-    HalfedgeProperty<NodeID> m_hToNode;
-    HalfedgeProperty<NodeID> m_hMidNode;
-    HalfedgeProperty<NodeID> m_hGradNode;
+    friend void internal::compactNodes<Self>(Self&);
 };
 
 

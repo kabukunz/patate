@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 
     Mesh copy(mesh);
 
-    mesh.sortAndCompactNodes();
+    mesh.compactNodes();
 
     std::cout << "Clean mesh:\n";
     printMesh(mesh, std::cout);

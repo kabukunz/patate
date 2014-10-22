@@ -1,4 +1,58 @@
 
+namespace internal
+{
+
+template < typename Mesh >
+void
+compactNodes(Mesh& mesh)
+{
+    typedef typename Mesh::NodeID NodeID;
+    typedef typename Mesh::HalfedgeIterator HalfedgeIterator;
+    typedef typename Mesh::NodeVector NodeVector;
+
+    std::vector<NodeID> buf(mesh.nNodes(), 0);
+
+    // Find used node ids
+    HalfedgeIterator hBegin = mesh.halfedgesBegin(),
+                     hEnd   = mesh.halfedgesEnd();
+    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
+    {
+        if(!mesh.isBoundary(*hit))
+            mesh.markNodes(*hit, buf);
+    }
+
+    // Compute remapping
+    NodeID size=0;
+    for(NodeID i = 0; i < buf.size(); ++i)
+    {
+        if(buf[i])
+        {
+            buf[size] = i;
+            ++size;
+        }
+    }
+
+    // Update node vector and fill remapping vector
+    std::vector<NodeID> map(mesh.nNodes(), Mesh::InvalidNodeID);
+    NodeVector reord(size);
+    for(NodeID i = 0; i < size; ++i)
+    {
+        reord[i] = mesh.nodeValue(buf[i]);
+        map[buf[i]] = i;
+    }
+    mesh.m_nodes.swap(reord);
+
+    // Remap nodes in mesh
+    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
+    {
+        if(!mesh.isBoundary(*hit))
+            mesh.remapNodes(*hit, map);
+    }
+}
+
+} // namespace internal
+
+
 template < typename _Scalar, int _Dim, int _Chan >
 const typename QuadraticMesh<_Scalar, _Dim, _Chan>::NodeValue
     QuadraticMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
@@ -47,57 +101,29 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-QuadraticMesh<_Scalar, _Dim, _Chan>::sortAndCompactNodes()
+QuadraticMesh<_Scalar, _Dim, _Chan>::compactNodes()
 {
-    std::vector<NodeID> buf(m_nodes.size(), 0);
+    internal::compactNodes(*this);
+}
 
-    // Find used node ids
-    HalfedgeIterator hBegin = halfedgesBegin(),
-                     hEnd   = halfedgesEnd();
-    for(HalfedgeIterator hIt = hBegin; hIt != hEnd; ++hIt)
-    {
-        if(isBoundary(*hIt))
-            continue;
-        buf[fromNode(*hIt)]     = 1;
-        buf[toNode(*hIt)]       = 1;
-        buf[midNode(*hIt)]      = 1;
-    }
+template < typename _Scalar, int _Dim, int _Chan >
+template < typename Marked >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::markNodes(Halfedge h, Marked& marked) const
+{
+    marked[fromNode(h)]     = 1;
+    marked[toNode(h)]       = 1;
+    marked[midNode(h)]      = 1;
+}
 
-    // Compute remapping
-    NodeID size=0;
-    for(NodeID i = 0; i < buf.size(); ++i)
-    {
-        if(buf[i])
-        {
-            buf[size] = i;
-            ++size;
-        }
-    }
-
-    // Sort remaining nodes
-    buf.resize(size);
-    NodeCompare cmp(*this);
-    std::sort(buf.begin(), buf.end(), cmp);
-
-    // Update node vector and fill remapping vector
-    std::vector<NodeID> map(m_nodes.size(), InvalidNodeID);
-    NodeVector reord(size);
-    for(NodeID i = 0; i < size; ++i)
-    {
-        reord[i] = nodeValue(buf[i]);
-        map[buf[i]] = i;
-    }
-    m_nodes.swap(reord);
-
-    // Remap nodes in mesh
-    for(HalfedgeIterator hIt = hBegin; hIt != hEnd; ++hIt)
-    {
-        if(isBoundary(*hIt))
-            continue;
-        fromNode(*hIt)     = map[fromNode(*hIt)];
-        toNode(*hIt)       = map[toNode(*hIt)];
-        midNode(*hIt)      = map[midNode(*hIt)];
-    }
+template < typename _Scalar, int _Dim, int _Chan >
+template < typename Map >
+void
+QuadraticMesh<_Scalar, _Dim, _Chan>::remapNodes(Halfedge h, Map& map)
+{
+    fromNode(h)     = map[fromNode(h)];
+    toNode(h)       = map[toNode(h)];
+    midNode(h)      = map[midNode(h)];
 }
 
 template < typename _Scalar, int _Dim, int _Chan >

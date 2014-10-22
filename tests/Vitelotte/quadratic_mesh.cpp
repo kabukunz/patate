@@ -169,6 +169,10 @@ int main(int argc, char** argv)
     writer.write(out);
     out.close();
 
+    std::cout << "nNodes before: " << mesh.nNodes() << "\n";
+    mesh.compactNodes();
+    std::cout << "nNodes after: " << mesh.nNodes() << "\n";
+
 //    std::cout << "UnconstrainedNode = "
 //              << Mesh::UnconstrainedNode.transpose()
 //              << "\n";

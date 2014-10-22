@@ -16,6 +16,14 @@
 namespace Vitelotte
 {
 
+namespace internal
+{
+
+template < typename Mesh >
+void compactNodes(Mesh& mesh);
+
+}
+
 
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
 class QuadraticMesh: public Patate::SurfaceMesh
@@ -27,6 +35,8 @@ public:
         Dim = _Dim,
         Chan = _Chan
     };
+
+    typedef QuadraticMesh<Scalar, Dim, Chan> Self;
 
     typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
     typedef Eigen::Matrix<Scalar, Chan, 1> NodeValue;
@@ -41,19 +51,6 @@ public:
 
     static const NodeValue UnconstrainedNode;
 
-    struct NodeCompare
-    {
-        inline NodeCompare(const QuadraticMesh& em) : em(em) {}
-        inline bool operator()(NodeID lhs, NodeID rhs)
-        {
-            bool lCons = em.isConstraint(lhs);
-            bool rCons = em.isConstraint(rhs);
-            return !lCons && rCons;
-        }
-
-    private:
-        const QuadraticMesh& em;
-    };
 
 public:
     QuadraticMesh();
@@ -82,14 +79,14 @@ public: //--- Nodes -----------------------------------------------------------
 
     inline NodeID addNode(const NodeValue& nodeValue=UnconstrainedNode);
 
-    /**
-     * \brief Sort node so that unconstrained nodes have lower IDs than
-     * constrained ones, and remove unused nodes.
-     *
-     * \warning As it reorder nodes, all previous NodeID are invalidated.
-     */
-    void sortAndCompactNodes();
+    void compactNodes();
 
+protected:
+    template < typename Marked >
+    void markNodes(Halfedge h, Marked& marked) const;
+
+    template < typename Map >
+    void remapNodes(Halfedge h, Map& map);
 
 public: //--- Constraints edition ---------------------------------------------
 
@@ -183,6 +180,8 @@ protected:
     HalfedgeProperty<NodeID> m_hFromNode;
     HalfedgeProperty<NodeID> m_hToNode;
     HalfedgeProperty<NodeID> m_hMidNode;
+
+    friend void internal::compactNodes<Self>(Self&);
 };
 
 
