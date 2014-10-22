@@ -105,13 +105,13 @@ int main(int argc, char** argv)
         }
     }
 
-    mesh.initializeUnconstrained();
+    mesh.initializeValueConstraints();
 
     for(EdgeIterator eit = mesh.edgesBegin();
         eit != mesh.edgesEnd(); ++eit)\
     {
         Halfedge h = mesh.halfedge(*eit, 0);
-        if(mesh.isConstraint(*eit))
+        if(mesh.isValueConstraint(*eit))
         {
             std::cerr << mesh.fromVertex(h).idx() << " - " << mesh.toVertex(h).idx() << (mesh.isBoundary(h)? " B": "")
                       << " = " << mesh.fromNode(h) << (mesh.isConstraint(mesh.fromNode(h))? " C": " U")
@@ -139,12 +139,12 @@ int main(int argc, char** argv)
     NodeID n2r = mesh.addNode(NodeValue(1, 1, 0, 1));
 
     Halfedge h1 = mesh.findHalfedge(Vertex(5), Vertex(6));
-    mesh.setConstraint(h1, n1l, na, nb);
-    mesh.setConstraint(mesh.oppositeHalfedge(h1), nb, na, n1r);
+    mesh.setValueConstraint(h1, n1l, na, nb);
+    mesh.setValueConstraint(mesh.oppositeHalfedge(h1), nb, na, n1r);
 
     Halfedge h2 = mesh.findHalfedge(Vertex(5), Vertex(9));
-    mesh.setConstraint(h2, n2r, nc, nd);
-    mesh.setConstraint(mesh.oppositeHalfedge(h2), nd, nc, n2l);
+    mesh.setValueConstraint(h2, n2r, nc, nd);
+    mesh.setValueConstraint(mesh.oppositeHalfedge(h2), nd, nc, n2l);
 
 //    Halfedge h = mesh.findHalfedge(Vertex(5), Vertex(6));
 //    mesh.setContinuousConstraint(h,

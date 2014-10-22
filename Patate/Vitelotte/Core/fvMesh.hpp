@@ -48,3 +48,18 @@ FVMesh<_Scalar, _Dim, _Chan>::remapNodes(Halfedge h, Map& map)
     gradientNode(h) = map[gradientNode(h)];
 }
 
+template < typename _Scalar, int _Dim, int _Chan >
+void
+FVMesh<_Scalar, _Dim, _Chan>::initializeGradientConstraints()
+{
+    for(EdgeIterator eit = Base::edgesBegin();
+        eit != Base::edgesEnd(); ++eit)
+    {
+        NodeID node = Base::addNode();
+        Halfedge h = halfedge(*eit, 0);
+        if(isValid(h))
+            gradientNode(h) = node;
+        if(isValid(oppositeHalfedge(h)))
+            gradientNode(oppositeHalfedge(h)) = node;
+    }
+}

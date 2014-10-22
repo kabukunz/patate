@@ -74,6 +74,8 @@ public:
     FVMesh& operator=(const FVMesh<OtherScalar, _Dim, _Chan>& rhs);
 
 
+public: //--- Nodes -----------------------------------------------------------
+
     void compactNodes();
 
 protected:
@@ -83,6 +85,16 @@ protected:
     template < typename Map >
     void remapNodes(Halfedge h, Map& map);
 
+
+public: //--- Gradient constraints --------------------------------------------
+
+    void initializeGradientConstraints();
+
+    void setGradientConstraint(Halfedge h, NodeID node)
+        { gradientNode(h) = node; }
+    void setContinuousGradientConstraint(Halfedge h, NodeID node)
+        { setGradientConstraint(h, node);
+          setGradientConstraint(oppositeHalfedge(h), node); }
 
 public: //--- Attributes accessors --------------------------------------------
 

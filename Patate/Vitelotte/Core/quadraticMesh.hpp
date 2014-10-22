@@ -128,7 +128,7 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::remapNodes(Halfedge h, Map& map)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-QuadraticMesh<_Scalar, _Dim, _Chan>::initializeUnconstrained()
+QuadraticMesh<_Scalar, _Dim, _Chan>::initializeValueConstraints()
 {
     for(VertexIterator vit = verticesBegin();
         vit != verticesEnd(); ++vit)
@@ -153,7 +153,7 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::initializeUnconstrained()
         NodeID node = addNode();
         Halfedge h = halfedge(*eit, 0);
         if(isValid(h))
-            midNode(h) = node;\
+            midNode(h) = node;
         if(isValid(oppositeHalfedge(h)))
             midNode(oppositeHalfedge(h)) = node;
     }
@@ -161,7 +161,7 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::initializeUnconstrained()
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-QuadraticMesh<_Scalar, _Dim, _Chan>::setConstraint(
+QuadraticMesh<_Scalar, _Dim, _Chan>::setValueConstraint(
         Halfedge h, NodeID from, NodeID mid, NodeID to)
 {
     fromNode(h) = from;
@@ -171,7 +171,7 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::setConstraint(
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
-QuadraticMesh<_Scalar, _Dim, _Chan>::isConstraint(Edge e) const
+QuadraticMesh<_Scalar, _Dim, _Chan>::isValueConstraint(Edge e) const
 {
     Halfedge h0 = halfedge(e, 0);
     Halfedge h1 = halfedge(e, 1);
@@ -199,11 +199,12 @@ QuadraticMesh<_Scalar, _Dim, _Chan>::propagateConstraints()
     std::vector<Halfedge> consEdges;
     consEdges.reserve(8);
 
+    // TODO: Destroy this property ?
     EdgeProperty<bool> constraintMap = edgeProperty("e:isConstraint", false);
     for(EdgeIterator eit = edgesBegin();
         eit != edgesEnd(); ++eit)\
     {
-        constraintMap[*eit] = isConstraint(*eit);
+        constraintMap[*eit] = isValueConstraint(*eit);
     }
 
     for(VertexIterator vit = verticesBegin();

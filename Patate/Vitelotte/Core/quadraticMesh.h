@@ -90,15 +90,15 @@ protected:
 
 public: //--- Constraints edition ---------------------------------------------
 
-    void initializeUnconstrained();
+    void initializeValueConstraints();
 
-    void setConstraint(Halfedge h, NodeID from, NodeID mid, NodeID to);
-    void setContinuousConstraint(Halfedge h,
-                                 NodeID from, NodeID mid, NodeID to)
-        { setConstraint(h, from, mid, to);
-          setConstraint(oppositeHalfedge(h), to, mid, from); }
+    void setValueConstraint(Halfedge h, NodeID from, NodeID mid, NodeID to);
+    void setContinuousValueConstraint(Halfedge h,
+                                      NodeID from, NodeID mid, NodeID to)
+        { setValueConstraint(h, from, mid, to);
+          setValueConstraint(oppositeHalfedge(h), to, mid, from); }
 
-    bool isConstraint(Edge e) const;
+    bool isValueConstraint(Edge e) const;
 
     void propagateConstraints();
 
