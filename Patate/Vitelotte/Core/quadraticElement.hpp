@@ -58,10 +58,10 @@ QuadraticElement<_Mesh, _Scalar>::
 
 
 template < class _Mesh, typename _Scalar >
+template < typename InIt >
 void
 QuadraticElement<_Mesh, _Scalar>::
-    addCoefficients(TripletVectorIterator& it,
-                    const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
 {
     assert(mesh.valence(element) == 3);
 
