@@ -1,5 +1,5 @@
-#ifndef _QUADRATIC_ELEMENT_H_
-#define _QUADRATIC_ELEMENT_H_
+#ifndef _FV_ELEMENT_BUILDER_H_
+#define _FV_ELEMENT_BUILDER_H_
 
 
 #include <vector>
@@ -13,7 +13,7 @@ namespace Vitelotte
 
 
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class QuadraticElement
+class FVElementBuilder
 {
 public:
     typedef _Scalar Scalar;
@@ -24,13 +24,16 @@ public:
     typedef Eigen::Triplet<Scalar> Triplet;
     typedef Eigen::SparseMatrix<Scalar> StiffnessMatrx;
 
+    typedef std::vector<Triplet> TripletVector;
+    typedef typename TripletVector::iterator TripletVectorIterator;
+
     typedef typename Mesh::Face Face;
 
 public:
     static void initializeMatrices();
 
 public:
-    inline QuadraticElement();
+    inline FVElementBuilder(Scalar sigma = Scalar(.5));
 
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
@@ -38,14 +41,18 @@ public:
     void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
 
 private:
-    static bool m_matricesInitialized;
-    static ElementStiffnessMatrix m_quadM1;
-    static ElementStiffnessMatrix m_quadM2;
-    static ElementStiffnessMatrix m_quadM3;
+    template < typename InIt >
+    void processFV1Element(InIt& it, const Mesh& mesh, Face element) const;
+
+    template < typename InIt >
+    void processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const;
+
+private:
+    Scalar m_sigma;
 };
 
 
-#include "quadraticElement.hpp"
+#include "fvElementBuilder.hpp"
 
 } // namespace Vitelotte
 
