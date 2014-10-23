@@ -12,7 +12,9 @@ typedef Vitelotte::QuadraticMesh<float> Mesh;
 typedef Vitelotte::QVGReader<Mesh> Reader;
 typedef Vitelotte::QVGWriter<Mesh> Writer;
 
-typedef Vitelotte::QuadraticElement<Mesh, double> Element;
+//typedef Vitelotte::QuadraticElement<Mesh, double> Element;
+typedef Vitelotte::QuadraticElement<Mesh, double> QuadraticElement;
+typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
 typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
 void usage(char* progName)

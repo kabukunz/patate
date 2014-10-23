@@ -22,7 +22,7 @@ public:
     typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
     typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
     typedef Eigen::Triplet<Scalar> Triplet;
-    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrx;
+    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrix;
 
     typedef std::vector<Triplet> TripletVector;
     typedef typename TripletVector::iterator TripletVectorIterator;

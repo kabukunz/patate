@@ -569,21 +569,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
 
-    std::cout << "Stiffness matrix:\n" << Eigen::MatrixXd(m_stiffnessMatrix) << "\n";
-
     sort();
-
-    for(int i = 0; i < m_ranges.size()-1; ++i)
-        std::cout << "range " << m_ranges[i] << " -> " << m_ranges[i+1] << "\n";
-    for(int i = 0; i < m_mesh->nNodes(); ++i)
-        std::cout << "perm " << i << " -> " << m_perm[i] << "\n";
-
-    Eigen::PermutationMatrix<Eigen::Dynamic> perm(m_perm);
-    StiffnessMatrix sorted(m_mesh->nNodes(), m_mesh->nNodes());
-    sorted.template selfadjointView<Eigen::Lower>() =
-            m_stiffnessMatrix.template selfadjointView<Eigen::Lower>().twistedBy(perm.inverse());
-    std::cout << "Stiffness matrix (sorted):\n"
-              << Eigen::MatrixXd(sorted) << "\n";
 
     ///////////////////////////////////////////////////////////////////////////
     // Old stuff
@@ -757,17 +743,17 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     m_x.resize(nUnknowns, Mesh::Chan);
     m_x = mat.topRightCorner(nUnknowns, nConstraints) * constraints;
 
-    std::cerr << "constraints:\n" << constraints << "\n";
-    std::cerr << "rhs:\n" << m_x << "\n";
+//    std::cerr << "constraints:\n" << constraints << "\n";
+//    std::cerr << "rhs:\n" << m_x << "\n";
 
     unsigned nbRanges = m_ranges.size()-1;
 
-    std::cerr << "Split in " << nbRanges << " ranges:";
-    for(unsigned k=0; k<nbRanges; ++k)
-    {
-        std::cerr << " " << m_ranges[k+1] - m_ranges[k];
-    }
-    std::cerr << "\n";
+//    std::cerr << "Split in " << nbRanges << " ranges:";
+//    for(unsigned k=0; k<nbRanges; ++k)
+//    {
+//        std::cerr << " " << m_ranges[k+1] - m_ranges[k];
+//    }
+//    std::cerr << "\n";
 
 #ifdef _OPENMP
     bool msg = false;
@@ -802,7 +788,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         m_x.middleRows(start,size) = ldlt.solve(m_x.middleRows(start, size));
     }
 
-    std::cout << "Result:\n" << m_x << "\n";
+//    std::cout << "Result:\n" << m_x << "\n";
 
     for(unsigned i = 0; i < nUnknowns; ++i)
     {

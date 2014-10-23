@@ -53,7 +53,7 @@ unsigned
 QuadraticElement<_Mesh, _Scalar>::
     nCoefficients(const Mesh& mesh, Face element) const
 {
-    return mesh.isSingular(element)? 47: 36;
+    return 36;
 }
 
 
@@ -67,8 +67,6 @@ QuadraticElement<_Mesh, _Scalar>::
 
     Vector v[3];
     unsigned nodes[6];
-    int singularIndex = -1;  // -1 means that there is no singularity
-    unsigned singularNode = Mesh::InvalidNodeID;
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     --hit;
@@ -76,21 +74,10 @@ QuadraticElement<_Mesh, _Scalar>::
     {
         v[i] = (mesh.position(mesh.toVertex(*hit)) -
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
-        std::cout << "v" << i << " = " << v[i].transpose() << "\n";
         nodes[3+i] = mesh.midNode(*hit);
         ++hit;
         nodes[i] = mesh.toNode(*hit);
-        if(mesh.isSingular(*hit))
-        {
-            assert(singularIndex == -1);  // Multiple singularities not supported
-            singularIndex = i;
-            singularNode = mesh.fromNode(mesh.nextHalfedge(*hit));
-        }
     }
-
-    for(int i = 0; i < 6; ++i) std::cout << "n" << i << " = " << nodes[i] << "\n";
-    std::cout << "si: " << singularIndex << "\n";
-    std::cout << "sn: " << singularNode << "\n";
 
     FemScalar inv4A = 1. / (2. * det2(v[0], v[1]));
 
@@ -100,31 +87,11 @@ QuadraticElement<_Mesh, _Scalar>::
                                      m_quadM2 * v[1].squaredNorm() +
                                      m_quadM3 * v[2].squaredNorm()) * inv4A;
 
-    std::cout << "Elenent stiffness matrix:\n" << matrix << "\n";
-
     for(int i = 0; i < 6; ++i)
     {
         for(int j = 0; j < 6; ++j)
         {
-            // Singular elements are in facts two overlapped elements. So we
-            // just multiply common triplets by 2.
-            Scalar mult = (singularIndex == -1 ||
-                           i == singularIndex ||
-                           j == singularIndex)? Scalar(1): Scalar(2);
-            *(it++) = Triplet(nodes[i], nodes[j], matrix(i, j) * mult);
-        }
-    }
-
-    if(singularIndex != -1)
-    {
-        // Add triplets for the overlapped element that are not already here
-        for(int i = 0; i < 6; ++i)
-        {
-            *(it++) = Triplet(nodes[i], singularNode,
-                              matrix(i, singularIndex));
-            if(i != singularIndex)
-                *(it++) = Triplet(singularNode, nodes[i],
-                                  matrix(singularIndex, i));
+            *(it++) = Triplet(nodes[i], nodes[j], matrix(i, j));
         }
     }
 }
