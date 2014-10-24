@@ -9,18 +9,19 @@ SingularElementDecorator<_Element>::nCoefficients(
 }
 
 template < typename _Element >
+template < typename InIt >
 void
 SingularElementDecorator<_Element>::addCoefficients(
-        TripletVectorIterator& it, const Mesh& mesh, Face element) const
+        InIt& it, const Mesh& mesh, Face element) const
 {
     typedef typename Element::Mesh Mesh;
     typedef typename Mesh::NodeID NodeID;
 
-    TripletVectorIterator begin = it;
+    InIt begin = it;
     m_element.addCoefficients(it, mesh, element);
 
     if(mesh.isSingular(element)) {
-        TripletVectorIterator end = it;
+        InIt end = it;
         NodeID from, to;
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
         while(true)
@@ -34,7 +35,7 @@ SingularElementDecorator<_Element>::addCoefficients(
             ++hit;
         }
 
-        for(TripletVectorIterator tit=begin; tit != end; ++tit)
+        for(InIt tit=begin; tit != end; ++tit)
         {
             int r = tit->row() == from? to: tit->row();
             int c = tit->col() == from? to: tit->col();

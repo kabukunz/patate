@@ -20,11 +20,13 @@ public:
     typedef _Mesh Mesh;
 
     typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
     typedef Eigen::Triplet<Scalar> Triplet;
-    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrix;
 
     typedef typename Mesh::Face Face;
+
+
+protected:
+    typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
 
 public:
     static void initializeMatrices();

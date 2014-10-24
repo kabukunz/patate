@@ -23,12 +23,8 @@ public:
 
     typedef typename Element::Vector Vector;
     typedef typename Element::Triplet Triplet;
-    typedef typename Element::StiffnessMatrix StiffnessMatrx;
 
-    typedef typename Element::TripletVector TripletVector;
-    typedef typename Element::TripletVectorIterator TripletVectorIterator;
-
-    typedef typename Mesh::Face Face;
+    typedef typename Element::Face Face;
 
 
 public:
@@ -36,8 +32,9 @@ public:
         : m_element(element) {}
 
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
-    void addCoefficients(TripletVectorIterator& it,
-                         const Mesh& mesh, Face element) const;
+
+    template < typename InIt >
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
 
     Element& element() { return m_element; }
     const Element& element() const { return m_element; }

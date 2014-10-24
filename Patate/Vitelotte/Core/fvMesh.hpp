@@ -56,10 +56,10 @@ FVMesh<_Scalar, _Dim, _Chan>::initializeGradientConstraints()
         eit != Base::edgesEnd(); ++eit)
     {
         NodeID node = Base::addNode();
-        Halfedge h = halfedge(*eit, 0);
-        if(isValid(h))
+        Halfedge h = Base::halfedge(*eit, 0);
+        if(Base::isValid(h))
             gradientNode(h) = node;
-        if(isValid(oppositeHalfedge(h)))
-            gradientNode(oppositeHalfedge(h)) = node;
+        if(Base::isValid(Base::oppositeHalfedge(h)))
+            gradientNode(Base::oppositeHalfedge(h)) = node;
     }
 }

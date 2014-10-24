@@ -20,17 +20,12 @@ public:
     typedef _Mesh Mesh;
 
     typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
     typedef Eigen::Triplet<Scalar> Triplet;
-    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrx;
 
-    typedef std::vector<Triplet> TripletVector;
-    typedef typename TripletVector::iterator TripletVectorIterator;
-
+protected:
+    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
+    typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
     typedef typename Mesh::Face Face;
-
-public:
-    static void initializeMatrices();
 
 public:
     inline FVElementBuilder(Scalar sigma = Scalar(.5));

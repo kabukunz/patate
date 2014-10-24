@@ -3,7 +3,6 @@ template < class _Mesh, typename _Scalar >
 FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
   : m_sigma(sigma)
 {
-    initializeMatrices();
 }
 
 template < class _Mesh, typename _Scalar >
@@ -11,7 +10,7 @@ unsigned
 FVElementBuilder<_Mesh, _Scalar>::
     nCoefficients(const Mesh& mesh, Face element) const
 {
-    return mesh.isSingular(element)? 47: 36;
+    return 81;
 }
 
 
@@ -23,68 +22,24 @@ FVElementBuilder<_Mesh, _Scalar>::
 {
     assert(mesh.valence(element) == 3);
 
-    Vector v[3];
-    unsigned nodes[6];
-    int singularIndex = -1;  // -1 means that there is no singularity
-    unsigned singularNode = Mesh::InvalidNodeID;
-
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
-    --hit;
+
+    // TODO: remove some code duplication by moving stuff here
+    bool flat = false;
     for(int i = 0; i < 3; ++i)
     {
-        v[i] = (mesh.position(mesh.toVertex(*hit)) -
-                mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
-        std::cout << "v" << i << " = " << v[i].transpose() << "\n";
-        nodes[3+i] = mesh.midNode(*hit);
+        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
+        {
+            flat = true;
+            break;
+        }
         ++hit;
-        nodes[i] = mesh.toNode(*hit);
-        if(mesh.isSingular(*hit))
-        {
-            assert(singularIndex == -1);  // Multiple singularities not supported
-            singularIndex = i;
-            singularNode = mesh.fromNode(mesh.nextHalfedge(*hit));
-        }
     }
 
-    for(int i = 0; i < 6; ++i) std::cout << "n" << i << " = " << nodes[i] << "\n";
-    std::cout << "si: " << singularIndex << "\n";
-    std::cout << "sn: " << singularNode << "\n";
-
-    FemScalar inv4A = 1. / (2. * det2(v[0], v[1]));
-
-    assert(inv4A > 0);
-
-    ElementStiffnessMatrix matrix = (m_quadM1 * v[0].squaredNorm() +
-                                     m_quadM2 * v[1].squaredNorm() +
-                                     m_quadM3 * v[2].squaredNorm()) * inv4A;
-
-    std::cout << "Elenent stiffness matrix:\n" << matrix << "\n";
-
-    for(int i = 0; i < 6; ++i)
-    {
-        for(int j = 0; j < 6; ++j)
-        {
-            // Singular elements are in facts two overlapped elements. So we
-            // just multiply common triplets by 2.
-            Scalar mult = (singularIndex == -1 ||
-                           i == singularIndex ||
-                           j == singularIndex)? Scalar(1): Scalar(2);
-            *(it++) = Triplet(nodes[i], nodes[j], matrix(i, j) * mult);
-        }
-    }
-
-    if(singularIndex != -1)
-    {
-        // Add triplets for the overlapped element that are not already here
-        for(int i = 0; i < 6; ++i)
-        {
-            *(it++) = Triplet(nodes[i], singularNode,
-                              matrix(i, singularIndex));
-            if(i != singularIndex)
-                *(it++) = Triplet(singularNode, nodes[i],
-                                  matrix(singularIndex, i));
-        }
-    }
+    if(flat)
+        processFV1ElementFlat(it, mesh, element);
+    else
+        processFV1Element(it, mesh, element);
 }
 
 template < class _Mesh, typename _Scalar >
@@ -95,36 +50,34 @@ FVElementBuilder<_Mesh, _Scalar>::
 {
     assert(mesh.valence(element) == 3);
 
-//    FemMatrix1010 m;
-
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
     bool orient[3];
-    FemVector v[3];
+    Vector v[3];
     unsigned nodes[9];
     --hit;
     for(int i = 0; i < 3; ++i)
     {
-        v[i] = mesh.position(mesh.toVertex(*hit)) -
-                mesh.position(mesh.fromVertex(*hit));
-        orient[i] = mesh.fromVertex(*hit).idx() < mesh.toVertex(*hit).idx();
+        v[i] = (mesh.position(mesh.toVertex(*hit)) -
+                mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
+        orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
         nodes[3+i] = mesh.midNode(*hit);
         nodes[6+i] = mesh.gradientNode(*hit);
         ++hit;
         nodes[i] = mesh.toNode(*hit);
     }
 
-    FemVector p[] = {
+    Vector p[] = {
         FemVector::Zero(),
         v[2],
         -v[1]
     };
 
-    FemScalar area = det2(v[0], v[1]) / 2.;
+    Scalar area = det2(v[0], v[1]) / 2.;
 
     assert(area > 0);
 
-    FemVector3 a, b, c, d, l;
+    Vector3 a, b, c, d, l;
     for(size_t i0 = 0; i0 < 3; ++i0)
     {
         size_t i1 = (i0+1)%3;
@@ -151,9 +104,9 @@ FVElementBuilder<_Mesh, _Scalar>::
         }
 #endif*/
 
-    FemVector3 dx2[9];
-    FemVector3 dy2[9];
-    FemVector3 dxy[9];
+    Vector3 dx2[9];
+    Vector3 dy2[9];
+    Vector3 dxy[9];
 
     for(size_t i = 0; i < 3; ++i)
     {
@@ -175,7 +128,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         {
             EIGEN_ASM_COMMENT("MYBEGIN");
 
-            FemVector6 basis = multBasis(dx2[i]+dy2[i], dx2[j]+dy2[j])
+            Vector6 basis = multBasis(dx2[i]+dy2[i], dx2[j]+dy2[j])
                                     + (1.-m_sigma) * (2. * multBasis(dxy[i], dxy[j])
                                                     - multBasis(dx2[i], dy2[j])
                     - multBasis(dy2[i], dx2[j]));
@@ -189,9 +142,9 @@ FVElementBuilder<_Mesh, _Scalar>::
                 value *= -1;
             }
 
-            // FIXME: Is it ok to have diagonal elements added 2 times ?
-            *(it++) = Triplet(node[i], node[j], value);
-            *(it++) = Triplet(node[j], node[i], value);
+            *(it++) = Triplet(nodes[i], nodes[j], value);
+            if(i != j)
+                *(it++) = Triplet(nodes[j], nodes[i], value);
 //            _elemStiffness(i, j) = value;
 //            _elemStiffness(j, i) = value;
         }
@@ -204,9 +157,29 @@ void
 FVElementBuilder<_Mesh, _Scalar>::
     processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const
 {
-    assert(m_inMesh->type() == FemInMesh::Fraeijs);
+    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
-    FemScalar area = det2(_v[0], _v[1]) / 2.;
+    // FIXME: This implementation assume that the element is equilateral.
+
+    bool orient[3];
+    Vector v[3];
+    unsigned nodes[9];
+    --hit;
+    unsigned flatVertex;
+    for(int i = 0; i < 3; ++i)
+    {
+        v[i] = (mesh.position(mesh.toVertex(*hit)) -
+                mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
+        orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
+        nodes[3+i] = mesh.midNode(*hit);
+        nodes[6+i] = mesh.gradientNode(*hit);
+        ++hit;
+        nodes[i] = mesh.toNode(*hit);
+        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
+            flatVertex = i;
+    }
+
+    FemScalar area = det2(v[0], v[1]) / 2.;
     assert(area > 0);
 
     FemScalar sqrtArea = std::sqrt(area);
@@ -223,7 +196,9 @@ FVElementBuilder<_Mesh, _Scalar>::
     FemScalar hhd = 6.928203230275509;
     FemScalar hho = 0.;
 
-    _elemStiffness <<
+    typedef Eigen::Matrix<Scalar, 9, 9> StiffnessMatrix;
+    StiffnessMatrix elemStiffness;
+    elemStiffness <<
         ffd, ffo, ffo,	fgd, fgo, fgo,	fhd, fho, fho,
         ffo, ffd, ffo,	fgo, fgd, fgo,	fho, fhd, fho,
         ffo, ffo, ffd,	fgo, fgo, fgd,	fho, fho, fhd,
@@ -236,53 +211,53 @@ FVElementBuilder<_Mesh, _Scalar>::
         fho, fhd, fho,	gho, ghd, gho,	hho, hhd, hho,
         fho, fho, fhd, 	gho, gho, ghd,	hho, hho, hhd;
 
-    typedef Eigen::Matrix<FemScalar, 9, 1> FemVector9;
+    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
 
-    static const FemVector9 u8_1((FemVector9()
+    static const Vector9 u8_1((Vector9()
             <<  -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,                        0.,
                  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
                                          1.,                       -1.,                        0.).finished());
-    static const FemVector9 u9_1((FemVector9()
+    static const Vector9 u9_1((Vector9()
             << -2.659424899780574/sqrtArea,                        0., -0.3799178428258/sqrtArea,
                 -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
                                         1.,                        0.,                       -1.).finished());
-    static const FemVector9 u7_2((FemVector9()
+    static const Vector9 u7_2((Vector9()
             << -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,                        0.,
                3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
                                      -1.,                          1.,                        0.).finished());
-    static const FemVector9 u9_2((FemVector9()
+    static const Vector9 u9_2((Vector9()
             <<                        0., -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,
                3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
                                       0.,                          1.,                       -1.).finished());
-    static const FemVector9 u7_3((FemVector9()
+    static const Vector9 u7_3((Vector9()
             << -0.3799178428258/sqrtArea,                        0., -2.659424899780574/sqrtArea,
                3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
                                      -1.,                         0,                          1.).finished());
-    static const FemVector9 u8_3((FemVector9()
+    static const Vector9 u8_3((Vector9()
             <<                        0., -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,
                3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
                                       0.,                       -1.,                          1.).finished());
 
-    if(m_inMesh->flatVertex(_elem) == 0)
+    if(flatVertex == 0)
     {
-        _elemStiffness.row(7) = u8_1;
-        _elemStiffness.col(7) = u8_1;
-        _elemStiffness.row(8) = u9_1;
-        _elemStiffness.col(8) = u9_1;
+        elemStiffness.row(7) = u8_1;
+        elemStiffness.col(7) = u8_1;
+        elemStiffness.row(8) = u9_1;
+        elemStiffness.col(8) = u9_1;
     }
-    else if(m_inMesh->flatVertex(_elem) == 1)
+    else if(flatVertex == 1)
     {
-        _elemStiffness.row(6) = u7_2;
-        _elemStiffness.col(6) = u7_2;
-        _elemStiffness.row(8) = u9_2;
-        _elemStiffness.col(8) = u9_2;
+        elemStiffness.row(6) = u7_2;
+        elemStiffness.col(6) = u7_2;
+        elemStiffness.row(8) = u9_2;
+        elemStiffness.col(8) = u9_2;
     }
     else
     {
-        _elemStiffness.row(6) = u7_3;
-        _elemStiffness.col(6) = u7_3;
-        _elemStiffness.row(7) = u8_3;
-        _elemStiffness.col(7) = u8_3;
+        elemStiffness.row(6) = u7_3;
+        elemStiffness.col(6) = u7_3;
+        elemStiffness.row(7) = u8_3;
+        elemStiffness.col(7) = u8_3;
     }
 
     // Flip gradient sign where needed.
@@ -290,11 +265,15 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         for(size_t j = i; j < 9; ++j)
         {
-            if((i < 6 || _orient[i % 3]) != (j < 6 || _orient[j % 3]))
+            Scalar sign = 1;
+            if((i < 6 || orient[i % 3]) != (j < 6 || orient[j % 3]))
             {
-                _elemStiffness(i, j) *= -1;
-                _elemStiffness(j, i) *= -1;
+                sign = -1;
             }
+
+            *(it++) = Triplet(nodes[i], nodes[j], elemStiffness(i, j) * sign);
+            if(i != j)
+                *(it++) = Triplet(nodes[j], nodes[i], elemStiffness(j, i) * sign);
         }
     }
 }

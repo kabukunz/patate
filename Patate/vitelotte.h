@@ -15,6 +15,7 @@
 #include "Vitelotte/Core/fvMesh.h"
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/quadraticElement.h"
+#include "Vitelotte/Core/fvElementBuilder.h"
 #include "Vitelotte/Core/singularElementDecorator.h"
 
 #endif
