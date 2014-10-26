@@ -2,8 +2,6 @@
 #define _QUADRATIC_ELEMENT_H_
 
 
-#include <vector>
-
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
@@ -28,7 +26,7 @@ public:
 protected:
     typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
 
-public:
+protected:
     static void initializeMatrices();
 
 public:

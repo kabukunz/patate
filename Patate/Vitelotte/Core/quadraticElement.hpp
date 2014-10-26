@@ -79,7 +79,7 @@ QuadraticElement<_Mesh, _Scalar>::
         nodes[i] = mesh.toNode(*hit);
     }
 
-    FemScalar inv4A = 1. / (2. * det2(v[0], v[1]));
+    Scalar inv4A = 1. / (2. * det2(v[0], v[1]));
 
     assert(inv4A > 0);
 

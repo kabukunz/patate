@@ -68,7 +68,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     }
 
     Vector p[] = {
-        FemVector::Zero(),
+        Vector::Zero(),
         v[2],
         -v[1]
     };
@@ -95,8 +95,8 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
                 for(size_t j = 0; j < 3; ++j)
         {
-                        FemScalar v = a(i) + b(i) * p[j](0) + c(i) * p[j](1);
-                        FemScalar r = (i==j)? 2.*area: 0.;
+                        Scalar v = a(i) + b(i) * p[j](0) + c(i) * p[j](1);
+                        Scalar r = (i==j)? 2.*area: 0.;
                         assert(std::abs(v - r) < 1.e-8);
                 }
 
@@ -133,7 +133,7 @@ FVElementBuilder<_Mesh, _Scalar>::
                                                     - multBasis(dx2[i], dy2[j])
                     - multBasis(dy2[i], dx2[j]));
 
-            FemScalar value = integrateQuadTriangle(v, basis, area);
+            Scalar value = integrateQuadTriangle(v, basis, area);
 
             EIGEN_ASM_COMMENT("MYEND");
 
@@ -179,22 +179,22 @@ FVElementBuilder<_Mesh, _Scalar>::
             flatVertex = i;
     }
 
-    FemScalar area = det2(v[0], v[1]) / 2.;
+    Scalar area = det2(v[0], v[1]) / 2.;
     assert(area > 0);
 
-    FemScalar sqrtArea = std::sqrt(area);
-    FemScalar ffd = (14.-12.*m_sigma)/(3.*area);
-    FemScalar ffo = (5.-6.*m_sigma)/(3.*area);
-    FemScalar fgd = (12.*m_sigma+4.)/(3.*area);
-    FemScalar fgo = (6.*m_sigma-14.)/(3.*area);
-    FemScalar fhd = -1.754765350603323/sqrtArea;
-    FemScalar fho = (0.43869133765083*(6.*m_sigma-4.))/sqrtArea;
-    FemScalar ggd = (24.*m_sigma+104.)/(3.*area);
-    FemScalar ggo = -(24.*m_sigma+40.)/(3.*area);
-    FemScalar ghd = -(5.264296051809969*m_sigma+8.773826753016614)/sqrtArea;
-    FemScalar gho = 7.019061402413293/sqrtArea;
-    FemScalar hhd = 6.928203230275509;
-    FemScalar hho = 0.;
+    Scalar sqrtArea = std::sqrt(area);
+    Scalar ffd = (14.-12.*m_sigma)/(3.*area);
+    Scalar ffo = (5.-6.*m_sigma)/(3.*area);
+    Scalar fgd = (12.*m_sigma+4.)/(3.*area);
+    Scalar fgo = (6.*m_sigma-14.)/(3.*area);
+    Scalar fhd = -1.754765350603323/sqrtArea;
+    Scalar fho = (0.43869133765083*(6.*m_sigma-4.))/sqrtArea;
+    Scalar ggd = (24.*m_sigma+104.)/(3.*area);
+    Scalar ggo = -(24.*m_sigma+40.)/(3.*area);
+    Scalar ghd = -(5.264296051809969*m_sigma+8.773826753016614)/sqrtArea;
+    Scalar gho = 7.019061402413293/sqrtArea;
+    Scalar hhd = 6.928203230275509;
+    Scalar hho = 0.;
 
     typedef Eigen::Matrix<Scalar, 9, 9> StiffnessMatrix;
     StiffnessMatrix elemStiffness;
@@ -276,4 +276,124 @@ FVElementBuilder<_Mesh, _Scalar>::
                 *(it++) = Triplet(nodes[j], nodes[i], elemStiffness(j, i) * sign);
         }
     }
+}
+
+template < class _Mesh, typename _Scalar >
+typename FVElementBuilder<_Mesh, _Scalar>::Vector3
+FVElementBuilder<_Mesh, _Scalar>::funcVertexBasis(
+        const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
+        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Scalar _area) const
+{
+    const size_t i2 = (_i1+1)%3;
+    const size_t i3 = (_i1+2)%3;
+
+    const Vector3 d1 = (_deriv&Deriv_0_Y)? _c: _b;
+    const Vector3 d2 = (_deriv&Deriv_1_Y)? _c: _b;
+
+    Scalar factorA = d1(_i1)*d2(_i1)/(4.*_area*_area*_area);
+    Scalar factorB = 3./(8.*_area*_area*_area);
+
+    Scalar factorC = -3.*_d(i2)*d1(i2)*d2(i2)/(2.*_area*_area*_area);
+    Scalar factorD = 3.*_d(i3)*d1(i3)*d2(i3)/(2.*_area*_area*_area);
+
+    Vector3 comb(d1(i2)*d2(i3) + d1(i3)*d2(i2),
+                    d1(_i1)*d2(i3) + d1(i3)*d2(_i1),
+                    d1(_i1)*d2(i2) + d1(i2)*d2(_i1));
+
+    return factorA * Vector3(3.*_a(_i1) + _area, 3.*_b(_i1), 3.*_c(_i1))
+            +  factorB * Vector3(
+            (_a(_i1)*comb(0) + _a(i2)*comb(1) + _a(i3)*comb(2)),
+            (_b(_i1)*comb(0) + _b(i2)*comb(1) + _b(i3)*comb(2)),
+            (_c(_i1)*comb(0) + _c(i2)*comb(1) + _c(i3)*comb(2)))
+            +  factorC * Vector3(_a(i2) - _area, _b(i2), _c(i2))
+            +  factorD * Vector3(_a(i3) - _area, _b(i3), _c(i3));
+}
+
+template < class _Mesh, typename _Scalar >
+typename FVElementBuilder<_Mesh, _Scalar>::Vector3
+FVElementBuilder<_Mesh, _Scalar>::funcMidpointBasis(
+        const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
+        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Scalar _area) const
+{
+    const size_t i2 = (_i1+1)%3;
+    const size_t i3 = (_i1+2)%3;
+
+    const Vector3 d1 = (_deriv&Deriv_0_Y)? _c: _b;
+    const Vector3 d2 = (_deriv&Deriv_1_Y)? _c: _b;
+
+    Scalar factorA = 6.*d1(_i1)*d2(_i1)/(_area*_area*_area);
+    Scalar factorB = -3./(2.*_area*_area*_area);
+
+    Vector3 comb(d1(i2)*d2(i3) + d1(i3)*d2(i2),
+                    d1(_i1)*d2(i3) + d1(i3)*d2(_i1),
+                    d1(_i1)*d2(i2) + d1(i2)*d2(_i1));
+
+    return Vector3(comb(0) / (_area*_area), 0., 0.)
+            +  factorA * Vector3(_a(_i1) - _area, _b(_i1), _c(_i1))
+            +  factorB * Vector3(
+            (_a(_i1)*comb(0) + _a(i2)*comb(1) + _a(i3)*comb(2)),
+            (_b(_i1)*comb(0) + _b(i2)*comb(1) + _b(i3)*comb(2)),
+            (_c(_i1)*comb(0) + _c(i2)*comb(1) + _c(i3)*comb(2)));
+}
+
+template < class _Mesh, typename _Scalar >
+typename FVElementBuilder<_Mesh, _Scalar>::Vector3
+FVElementBuilder<_Mesh, _Scalar>::funcMidpointDerivBasis(
+        const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
+        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Scalar _area) const
+{
+    const Vector3& d1 = (_deriv & Deriv_0_Y) ? _c : _b;
+    const Vector3& d2 = (_deriv & Deriv_1_Y) ? _c : _b;
+
+    Scalar factorA = -3. * d1(_i1) * d2(_i1) / (_l(_i1) * _area * _area);
+
+    return factorA * Vector3(_a(_i1) - _area, _b(_i1), _c(_i1));
+}
+
+template < class _Mesh, typename _Scalar >
+typename FVElementBuilder<_Mesh, _Scalar>::Scalar
+FVElementBuilder<_Mesh, _Scalar>::integrateQuadTriangle(
+        const Vector* _v, const Vector6& _f, Scalar _area) const
+{
+    return +(
+                +_f(0)
+                +(
+                    +_f(1)*_v[2](0)
+                    +_f(2)*_v[2](1)
+                ) / 3.
+                +(
+                    -_f(1)*_v[1](0)
+                    -_f(2)*_v[1](1)
+                ) / 3.
+                +(
+                    +_f(3)*_v[2](0)*_v[2](0)
+                    +_f(4)*_v[2](0)*_v[2](1)
+                    +_f(5)*_v[2](1)*_v[2](1)
+                ) / 6.
+                +(
+                    -2.*_f(3)*_v[2](0)*_v[1](0)
+                    -_f(4)*_v[2](0)*_v[1](1)
+                    -_f(4)*_v[2](1)*_v[1](0)
+                    -2.*_f(5)*_v[2](1)*_v[1](1)
+                ) / 12.
+                +(
+                    +_f(3)*_v[1](0)*_v[1](0)
+                    +_f(4)*_v[1](0)*_v[1](1)
+                    +_f(5)*_v[1](1)*_v[1](1)
+                ) / 6.
+        ) * _area;
+}
+
+template < class _Mesh, typename _Scalar >
+typename FVElementBuilder<_Mesh, _Scalar>::Vector6
+FVElementBuilder<_Mesh, _Scalar>::
+    multBasis(const Vector3& _a, const Vector3& _b) const
+{
+    return  (
+        Vector6() << _a(0)*_b(0), _a(0)*_b(1) + _a(1)*_b(0), _a(0)*_b(2) + _a(2)*_b(0),
+                     _a(1)*_b(1), _a(1)*_b(2) + _a(2)*_b(1), _a(2)*_b(2)
+    ).finished();
 }
