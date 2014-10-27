@@ -30,10 +30,10 @@ inline bool QMeshRenderer::loadShaders()
 
     bool bRes = true;
 
-    bRes &= m_pTriangleProgram->AddShader(GL_VERTEX_SHADER, vert_common);
-    bRes &= m_pTriangleProgram->AddShader(GL_GEOMETRY_SHADER, geom_common);
-    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_common);
-    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_triangle);
+    bRes &= m_pTriangleProgram->AddShader(GL_VERTEX_SHADER, vert_common_glsl);
+    bRes &= m_pTriangleProgram->AddShader(GL_GEOMETRY_SHADER, geom_common_glsl);
+    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_common_glsl);
+    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_triangle_glsl);
     assert(bRes);
 
     bRes &= m_pTriangleProgram->Finalize();
@@ -46,10 +46,10 @@ inline bool QMeshRenderer::loadShaders()
         return false;
     }
 
-    bRes &= m_pSingularProgram->AddShader(GL_VERTEX_SHADER, vert_common);
-    bRes &= m_pSingularProgram->AddShader(GL_GEOMETRY_SHADER, geom_common);
-    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_common);
-    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_singular);
+    bRes &= m_pSingularProgram->AddShader(GL_VERTEX_SHADER, vert_common_glsl);
+    bRes &= m_pSingularProgram->AddShader(GL_GEOMETRY_SHADER, geom_common_glsl);
+    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_common_glsl);
+    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_singular_glsl);
     assert(bRes);
 
     bRes &= m_pSingularProgram->Finalize();
