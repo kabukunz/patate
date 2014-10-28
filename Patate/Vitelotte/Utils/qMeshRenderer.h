@@ -1,10 +1,10 @@
 #ifndef _QMESH_RENDERER_BASE_H_
 #define _QMESH_RENDERER_BASE_H_
 
-#include <GL/glew.h>
 
-#include "../Core/quadraticMesh.h"
+#include "../../common/gl/glcorearb.h"
 #include "../../common/gl_utils/shader.h"
+#include "../Core/quadraticMesh.h"
 
 
 namespace Vitelotte {

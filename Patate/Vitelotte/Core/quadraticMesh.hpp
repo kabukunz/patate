@@ -130,6 +130,8 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 QuadraticMesh<_Scalar, _Dim, _Chan>::initializeValueConstraints()
 {
+    m_nodes.clear();
+
     for(VertexIterator vit = verticesBegin();
         vit != verticesEnd(); ++vit)
     {

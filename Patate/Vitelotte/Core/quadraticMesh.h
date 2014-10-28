@@ -19,12 +19,22 @@ namespace Vitelotte
 namespace internal
 {
 
+/**
+ * \internal
+ * \brief The implementation of QuadricMesh::compactNodes().
+ *
+ * This allow to share the implementation of the algorithm among `*Mesh`
+ * classes without having recourse to the CRTP.
+ */
 template < typename Mesh >
 void compactNodes(Mesh& mesh);
 
 }
 
 
+/**
+ * \brief A triangular mesh with quadratic parameter interpolation over faces.
+ */
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
 class QuadraticMesh: public Patate::SurfaceMesh
 {
