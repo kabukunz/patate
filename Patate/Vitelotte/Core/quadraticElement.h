@@ -45,8 +45,9 @@ private:
 };
 
 
+} // namespace Vitelotte
+
 #include "quadraticElement.hpp"
 
-} // namespace Vitelotte
 
 #endif

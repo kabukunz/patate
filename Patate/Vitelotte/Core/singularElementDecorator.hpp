@@ -1,3 +1,9 @@
+#include "singularElementDecorator.h"
+
+
+namespace Vitelotte
+{
+
 
 template < typename _Element >
 unsigned
@@ -15,21 +21,20 @@ SingularElementDecorator<_Element>::addCoefficients(
         InIt& it, const Mesh& mesh, Face element) const
 {
     typedef typename Element::Mesh Mesh;
-    typedef typename Mesh::NodeID NodeID;
 
     InIt begin = it;
     m_element.addCoefficients(it, mesh, element);
 
     if(mesh.isSingular(element)) {
         InIt end = it;
-        NodeID from, to;
+        int from, to;
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
         while(true)
         {
             if(mesh.isSingular(*hit))
             {
-                from = mesh.toNode(*hit);
-                to = mesh.fromNode(mesh.nextHalfedge(*hit));
+                from = mesh.vertexValueNode(*hit).idx();
+                to = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit)).idx();
                 break;
             }
             ++hit;
@@ -43,4 +48,7 @@ SingularElementDecorator<_Element>::addCoefficients(
             *(it++) = Triplet(r, c, tit->value());
         }
     }
+}
+
+
 }

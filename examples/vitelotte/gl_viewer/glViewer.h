@@ -35,9 +35,9 @@
 
 namespace Vitelotte {
     template < typename _Scalar, int _Dim, int _Chan >
-    class QuadraticMesh;
+    class FemMesh;
     template < typename _Mesh >
-    class QMeshRenderer;
+    class VGMeshRenderer;
 }
 
 class GLViewer
@@ -68,8 +68,8 @@ public:
 
     typedef float Scalar;
 
-    typedef Vitelotte::QuadraticMesh<Scalar, 2, 4> Mesh;
-    typedef Vitelotte::QMeshRenderer<Mesh> Renderer;
+    typedef Vitelotte::FemMesh<Scalar, 2, 4> Mesh;
+    typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;
 

@@ -1,7 +1,12 @@
+#include "vgMeshRenderer.h"
+
+
+namespace Vitelotte
+{
 
 
 template < class _Mesh >
-inline bool QMeshRenderer<_Mesh>::init(Mesh* _mesh)
+inline bool VGMeshRenderer<_Mesh>::init(Mesh* _mesh)
 {
     if(!loadShaders())
     {
@@ -17,8 +22,10 @@ inline bool QMeshRenderer<_Mesh>::init(Mesh* _mesh)
 }
 
 template < class _Mesh >
-inline void QMeshRenderer<_Mesh>::updateMesh()
+inline void VGMeshRenderer<_Mesh>::updateMesh()
 {
+    assert(m_pMesh->getAttributes() & Mesh::Quadratic == Mesh::Quadratic);
+
     m_vertices.clear();
     m_triangleIndices.clear();
     m_singularIndices.clear();
@@ -63,15 +70,15 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             {
                 m_singularIndices.push_back(m_pMesh->toVertex(h).idx());
                 h = m_pMesh->nextHalfedge(h);
-                m_singularNodes.push_back(nodeValue(m_pMesh->fromNode(h)));
+                m_singularNodes.push_back(nodeValue(m_pMesh->vertexFromValueNode(h)));
             }
-            m_singularNodes.push_back(nodeValue(m_pMesh->toNode(h)));
+            m_singularNodes.push_back(nodeValue(m_pMesh->vertexValueNode(h)));
 
             // Push edge nodes
             h = m_pMesh->prevHalfedge(h);
             for(int ei = 0; ei < 3; ++ei)
             {
-                m_singularNodes.push_back(nodeValue(m_pMesh->midNode(h)));
+                m_singularNodes.push_back(nodeValue(m_pMesh->edgeValueNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
         }
@@ -81,7 +88,7 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             for(int ei = 0; ei < 3; ++ei)
             {
                 m_triangleIndices.push_back(m_pMesh->toVertex(h).idx());
-                m_triangleNodes.push_back(nodeValue(m_pMesh->toNode(h)));
+                m_triangleNodes.push_back(nodeValue(m_pMesh->vertexValueNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
 
@@ -89,7 +96,7 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
             h = m_pMesh->prevHalfedge(h);
             for(int ei = 0; ei < 3; ++ei)
             {
-                m_triangleNodes.push_back(nodeValue(m_pMesh->midNode(h)));
+                m_triangleNodes.push_back(nodeValue(m_pMesh->edgeValueNode(h)));
                 h = m_pMesh->nextHalfedge(h);
             }
         }
@@ -126,7 +133,7 @@ inline void QMeshRenderer<_Mesh>::updateMesh()
 }
 
 template < class _Mesh >
-inline bool QMeshRenderer<_Mesh>::loadShaders()
+inline bool VGMeshRenderer<_Mesh>::loadShaders()
 {
     PATATE_GLCheckError();
 
@@ -167,7 +174,7 @@ inline bool QMeshRenderer<_Mesh>::loadShaders()
 }
 
 template < class _Mesh >
-inline bool QMeshRenderer<_Mesh>::initGl()
+inline bool VGMeshRenderer<_Mesh>::initGl()
 {
     glGenVertexArrays(1, &m_vao);
     glBindVertexArray(m_vao);
@@ -175,7 +182,7 @@ inline bool QMeshRenderer<_Mesh>::initGl()
 }
 
 template < class _Mesh >
-inline void QMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular)
+inline void VGMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular)
 {
     const IndicesVector& indices = _singular?
                 m_singularIndices: m_triangleIndices;
@@ -213,8 +220,8 @@ inline void QMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular
 }
 
 template < class _Mesh >
-inline typename QMeshRenderer<_Mesh>::NodeValue
-QMeshRenderer<_Mesh>::nodeValue(NodeID node) const
+inline typename VGMeshRenderer<_Mesh>::NodeValue
+VGMeshRenderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
         return m_pMesh->nodeValue(node);
@@ -222,7 +229,7 @@ QMeshRenderer<_Mesh>::nodeValue(NodeID node) const
 }
 
 template < class _Mesh >
-inline void QMeshRenderer<_Mesh>::render(Eigen::Matrix4f& _viewMatrix, float _zoom, float _pointRadius, float _lineWidth, bool _showShaderWireframe)
+inline void VGMeshRenderer<_Mesh>::render(Eigen::Matrix4f& _viewMatrix, float _zoom, float _pointRadius, float _lineWidth, bool _showShaderWireframe)
 {
     for(int pass = 0; pass < 2; ++pass)
     {
@@ -277,7 +284,7 @@ inline void QMeshRenderer<_Mesh>::render(Eigen::Matrix4f& _viewMatrix, float _zo
 
 template < class _Mesh >
 template < typename T >
-void QMeshRenderer<_Mesh>::createAndUploadBuffer(
+void VGMeshRenderer<_Mesh>::createAndUploadBuffer(
         GLuint& glId, GLenum type, const std::vector<T>& data, GLenum usage)
 {
     if(!glId)
@@ -289,3 +296,4 @@ void QMeshRenderer<_Mesh>::createAndUploadBuffer(
                  &(data[0]), usage);
 }
 
+}

@@ -13,17 +13,9 @@ add_executable(surface_mesh ${surface_mesh_SRCS})
 #add_test(deta_orthogonal_derivatives deta_orthogonal_derivatives)
 
 #############################################
-set(quadratic_mesh_SRCS
-    quadratic_mesh.cpp
+set(fem_mesh_SRCS
+    fem_mesh.cpp
 )
-add_executable(quadratic_mesh ${quadratic_mesh_SRCS})
-#add_dependencies(buildtests deta_orthogonal_derivatives)
-#add_test(deta_orthogonal_derivatives deta_orthogonal_derivatives)
-
-#############################################
-set(fv_mesh_SRCS
-    fv_mesh.cpp
-)
-add_executable(fv_mesh ${fv_mesh_SRCS})
+add_executable(fem_mesh ${fem_mesh_SRCS})
 #add_dependencies(buildtests deta_orthogonal_derivatives)
 #add_test(deta_orthogonal_derivatives deta_orthogonal_derivatives)

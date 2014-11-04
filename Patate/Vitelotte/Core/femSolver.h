@@ -7,7 +7,7 @@
 #include <Eigen/Sparse>
 
 #include "femUtils.h"
-#include "quadraticMesh.h"
+#include "femMesh.h"
 
 
 namespace Vitelotte
@@ -31,6 +31,7 @@ public:
     typedef std::vector<Triplet> TripletVector;
     typedef typename TripletVector::iterator TripletVectorIterator;
 
+    typedef typename Mesh::Node Node;
     typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Face Face;
     typedef typename Mesh::FaceIterator FaceIterator;
@@ -69,8 +70,9 @@ protected:
 };
 
 
+} // namespace Vitelotte
+
 #include "femSolver.hpp"
 
-} // namespace Vitelotte
 
 #endif

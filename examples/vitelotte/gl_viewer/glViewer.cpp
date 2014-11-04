@@ -4,8 +4,8 @@
 
 #include "glViewer.h"
 #include "Patate/vitelotte_gl.h"
-#include "Patate/Vitelotte/Utils/qvgReader.h"
-#include "Patate/Vitelotte/Utils/qvgWriter.h"
+#include "Patate/Vitelotte/Utils/mvgReader.h"
+#include "Patate/Vitelotte/Utils/mvgWriter.h"
 
 
 Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float _top, float _near, float _far)
@@ -187,12 +187,10 @@ void GLViewer::shutdown()
 void GLViewer::startup(const std::string& filename)
 {
     m_pQvg = new Mesh;
-    Vitelotte::QVGReader<Mesh> reader(*m_pQvg);
 
     try
     {
-        std::ifstream in(filename.c_str());
-        reader.read(in);
+        Vitelotte::readMvgFromFile(filename, *m_pQvg);
     }
     catch(std::runtime_error& e)
     {

@@ -9,7 +9,7 @@
 
 #include <Eigen/Core>
 
-#include "Vitelotte/Core/quadraticMesh.h"
-#include "Vitelotte/Utils/qMeshRenderer.h"
+#include "Vitelotte/Core/femMesh.h"
+#include "Vitelotte/Utils/vgMeshRenderer.h"
 
 #endif

@@ -1,11 +1,12 @@
 #ifndef _SHADER_H_
 #define	_SHADER_H_
 
+#include <cstdio>
+#include <cstring>
+#include <cassert>
 #include <list>
-#include <GL/glew.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+
+//#include "../gl/glcorearb.h"
 
 #include "macros.h"
 

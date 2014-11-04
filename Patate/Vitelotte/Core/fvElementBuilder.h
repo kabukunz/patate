@@ -76,8 +76,9 @@ private:
 };
 
 
+} // namespace Vitelotte
+
 #include "fvElementBuilder.hpp"
 
-} // namespace Vitelotte
 
 #endif

@@ -6,7 +6,7 @@ static const char* pTessESName = "TessES";
 static const char* pGSName = "GS";
 static const char* pFSName = "FS";
 
-const char* ShaderType2ShaderName(GLuint _Type)
+inline const char* ShaderType2ShaderName(GLuint _Type)
 {
     switch (_Type)
     {

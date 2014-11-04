@@ -29,14 +29,17 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def) = 0;
 
+    bool readLine(std::istream& in);
     void parseIndiceList(const std::string& _list,
                          std::vector<unsigned>& _indices);
 
     void error(const std::string& msg);
 
-private:
+protected:
     unsigned m_lineNb;
+
     std::string m_line;
+    std::istringstream m_lineStream;
     std::istringstream m_indicesStream;
 };
 

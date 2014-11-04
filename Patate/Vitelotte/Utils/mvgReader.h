@@ -1,6 +1,6 @@
 
-#ifndef _QVGREADER_H_
-#define _QVGREADER_H_
+#ifndef _MVGREADER_H_
+#define _MVGREADER_H_
 
 
 #include <cassert>
@@ -10,20 +10,20 @@
 #include <sstream>
 
 #include "../../common/surface_mesh/objReader.h"
-#include "../Core/quadraticMesh.h"
+#include "../Core/femMesh.h"
 
 
 namespace Vitelotte
 {
 
 
-class QVGReadError : public std::runtime_error
-{
-public:
-    inline QVGReadError(const std::string& _what)
-        : std::runtime_error(_what)
-    {}
-};
+//class QVGReadError : public std::runtime_error
+//{
+//public:
+//    inline QVGReadError(const std::string& _what)
+//        : std::runtime_error(_what)
+//    {}
+//};
 
 
 /**
@@ -97,7 +97,7 @@ public:
  * \see QMesh QVGWriter
  */
 template < typename _Mesh >
-class QVGReader: public Patate::OBJReader<typename _Mesh::Vector>
+class MVGReader: public Patate::OBJReader<typename _Mesh::Vector>
 {
 public:
     typedef _Mesh Mesh;
@@ -111,7 +111,7 @@ public:
     /**
      * \brief Default constructor
      */
-    inline QVGReader(Mesh& mesh);
+    inline MVGReader(Mesh& mesh);
 
     using Base::error;
     using Base::parseIndiceList;
@@ -131,10 +131,17 @@ protected:
 };
 
 
-#include "qvgReader.hpp"
+template < typename Mesh >
+void readMvg(std::istream& in, Mesh& mesh);
+
+template < typename Mesh >
+void readMvgFromFile(const std::string& filename, Mesh& mesh);
+
 
 } // namespace Vitelotte
 
+#include "mvgReader.hpp"
 
-#endif // _QVGREADER_H_
+
+#endif // _MVGREADER_H_
 

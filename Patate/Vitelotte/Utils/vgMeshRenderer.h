@@ -1,10 +1,10 @@
-#ifndef _QMESH_RENDERER_BASE_H_
-#define _QMESH_RENDERER_BASE_H_
+#ifndef _VG_MESH_RENDERER_BASE_H_
+#define _VG_MESH_RENDERER_BASE_H_
 
 
-#include "../../common/gl/glcorearb.h"
 #include "../../common/gl_utils/shader.h"
-#include "../Core/quadraticMesh.h"
+
+#include "../Core/femMesh.h"
 
 
 namespace Vitelotte {
@@ -12,17 +12,17 @@ namespace Vitelotte {
 #include "shaders.hpp"
 
 template < class _Mesh >
-class QMeshRenderer
+class VGMeshRenderer
 {
 public:
     typedef _Mesh Mesh;
 
-    typedef typename Mesh::NodeID NodeID;
+    typedef typename Mesh::Node Node;
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::NodeValue NodeValue;
 
 public:
-    QMeshRenderer() :
+    VGMeshRenderer() :
         m_verticesBuffer(0), m_triangleIndicesBuffer(0),
         m_singularIndicesBuffer(0), m_triangleNodesBuffer(0),
         m_singularNodesBuffer(0), m_triangleNodesTexture(0),
@@ -30,7 +30,7 @@ public:
         m_pSingularProgram(0),  m_vao(0), m_pMesh(0)
     {}
 
-    ~QMeshRenderer()
+    ~VGMeshRenderer()
     {
         PATATE_SAFE_DELETE(m_pSingularProgram);
         PATATE_SAFE_DELETE(m_pTriangleProgram);
@@ -59,7 +59,7 @@ private:
     bool initGl();
     void renderTriangles(GLuint _shader, bool _singular = false);
 
-    NodeValue nodeValue(NodeID node) const;
+    NodeValue nodeValue(Node node) const;
 
     template < typename T >
     void createAndUploadBuffer(GLuint& glId, GLenum type,
@@ -92,8 +92,9 @@ private:
 };
 
 
-#include "qMeshRenderer.hpp"
-
 }
+
+#include "vgMeshRenderer.hpp"
+
 
 #endif

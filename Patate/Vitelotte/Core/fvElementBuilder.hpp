@@ -1,3 +1,9 @@
+#include "fvElementBuilder.h"
+
+
+namespace Vitelotte
+{
+
 
 template < class _Mesh, typename _Scalar >
 FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
@@ -25,20 +31,20 @@ FVElementBuilder<_Mesh, _Scalar>::
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
     // TODO: remove some code duplication by moving stuff here
-    bool flat = false;
-    for(int i = 0; i < 3; ++i)
-    {
-        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
-        {
-            flat = true;
-            break;
-        }
-        ++hit;
-    }
+//    bool flat = false;
+//    for(int i = 0; i < 3; ++i)
+//    {
+//        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
+//        {
+//            flat = true;
+//            break;
+//        }
+//        ++hit;
+//    }
 
-    if(flat)
-        processFV1ElementFlat(it, mesh, element);
-    else
+//    if(flat)
+//        processFV1ElementFlat(it, mesh, element);
+//    else
         processFV1Element(it, mesh, element);
 }
 
@@ -61,10 +67,10 @@ FVElementBuilder<_Mesh, _Scalar>::
         v[i] = (mesh.position(mesh.toVertex(*hit)) -
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
         orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
-        nodes[3+i] = mesh.midNode(*hit);
-        nodes[6+i] = mesh.gradientNode(*hit);
+        nodes[3+i] = mesh.edgeValueNode(*hit).idx();
+        nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.toNode(*hit);
+        nodes[i] = mesh.vertexValueNode(*hit).idx();
     }
 
     Vector p[] = {
@@ -151,132 +157,132 @@ FVElementBuilder<_Mesh, _Scalar>::
     }
 }
 
-template < class _Mesh, typename _Scalar >
-template < typename InIt >
-void
-FVElementBuilder<_Mesh, _Scalar>::
-    processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const
-{
-    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
+//template < class _Mesh, typename _Scalar >
+//template < typename InIt >
+//void
+//FVElementBuilder<_Mesh, _Scalar>::
+//    processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const
+//{
+//    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
-    // FIXME: This implementation assume that the element is equilateral.
+//    // FIXME: This implementation assume that the element is equilateral.
 
-    bool orient[3];
-    Vector v[3];
-    unsigned nodes[9];
-    --hit;
-    unsigned flatVertex;
-    for(int i = 0; i < 3; ++i)
-    {
-        v[i] = (mesh.position(mesh.toVertex(*hit)) -
-                mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
-        orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
-        nodes[3+i] = mesh.midNode(*hit);
-        nodes[6+i] = mesh.gradientNode(*hit);
-        ++hit;
-        nodes[i] = mesh.toNode(*hit);
-        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
-            flatVertex = i;
-    }
+//    bool orient[3];
+//    Vector v[3];
+//    unsigned nodes[9];
+//    --hit;
+//    unsigned flatVertex;
+//    for(int i = 0; i < 3; ++i)
+//    {
+//        v[i] = (mesh.position(mesh.toVertex(*hit)) -
+//                mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
+//        orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
+//        nodes[3+i] = mesh.edgeValueNode(*hit).idx();
+//        nodes[6+i] = mesh.gradientNode(*hit);
+//        ++hit;
+//        nodes[i] = mesh.toNode(*hit);
+//        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
+//            flatVertex = i;
+//    }
 
-    Scalar area = det2(v[0], v[1]) / 2.;
-    assert(area > 0);
+//    Scalar area = det2(v[0], v[1]) / 2.;
+//    assert(area > 0);
 
-    Scalar sqrtArea = std::sqrt(area);
-    Scalar ffd = (14.-12.*m_sigma)/(3.*area);
-    Scalar ffo = (5.-6.*m_sigma)/(3.*area);
-    Scalar fgd = (12.*m_sigma+4.)/(3.*area);
-    Scalar fgo = (6.*m_sigma-14.)/(3.*area);
-    Scalar fhd = -1.754765350603323/sqrtArea;
-    Scalar fho = (0.43869133765083*(6.*m_sigma-4.))/sqrtArea;
-    Scalar ggd = (24.*m_sigma+104.)/(3.*area);
-    Scalar ggo = -(24.*m_sigma+40.)/(3.*area);
-    Scalar ghd = -(5.264296051809969*m_sigma+8.773826753016614)/sqrtArea;
-    Scalar gho = 7.019061402413293/sqrtArea;
-    Scalar hhd = 6.928203230275509;
-    Scalar hho = 0.;
+//    Scalar sqrtArea = std::sqrt(area);
+//    Scalar ffd = (14.-12.*m_sigma)/(3.*area);
+//    Scalar ffo = (5.-6.*m_sigma)/(3.*area);
+//    Scalar fgd = (12.*m_sigma+4.)/(3.*area);
+//    Scalar fgo = (6.*m_sigma-14.)/(3.*area);
+//    Scalar fhd = -1.754765350603323/sqrtArea;
+//    Scalar fho = (0.43869133765083*(6.*m_sigma-4.))/sqrtArea;
+//    Scalar ggd = (24.*m_sigma+104.)/(3.*area);
+//    Scalar ggo = -(24.*m_sigma+40.)/(3.*area);
+//    Scalar ghd = -(5.264296051809969*m_sigma+8.773826753016614)/sqrtArea;
+//    Scalar gho = 7.019061402413293/sqrtArea;
+//    Scalar hhd = 6.928203230275509;
+//    Scalar hho = 0.;
 
-    typedef Eigen::Matrix<Scalar, 9, 9> StiffnessMatrix;
-    StiffnessMatrix elemStiffness;
-    elemStiffness <<
-        ffd, ffo, ffo,	fgd, fgo, fgo,	fhd, fho, fho,
-        ffo, ffd, ffo,	fgo, fgd, fgo,	fho, fhd, fho,
-        ffo, ffo, ffd,	fgo, fgo, fgd,	fho, fho, fhd,
+//    typedef Eigen::Matrix<Scalar, 9, 9> StiffnessMatrix;
+//    StiffnessMatrix elemStiffness;
+//    elemStiffness <<
+//        ffd, ffo, ffo,	fgd, fgo, fgo,	fhd, fho, fho,
+//        ffo, ffd, ffo,	fgo, fgd, fgo,	fho, fhd, fho,
+//        ffo, ffo, ffd,	fgo, fgo, fgd,	fho, fho, fhd,
 
-        fgd, fgo, fgo,	ggd, ggo, ggo,	ghd, gho, gho,
-        fgo, fgd, fgo,	ggo, ggd, ggo,	gho, ghd, gho,
-        fgo, fgo, fgd,	ggo, ggo, ggd,	gho, gho, ghd,
+//        fgd, fgo, fgo,	ggd, ggo, ggo,	ghd, gho, gho,
+//        fgo, fgd, fgo,	ggo, ggd, ggo,	gho, ghd, gho,
+//        fgo, fgo, fgd,	ggo, ggo, ggd,	gho, gho, ghd,
 
-        fhd, fho, fho,	ghd, gho, gho,	hhd, hho, hho,
-        fho, fhd, fho,	gho, ghd, gho,	hho, hhd, hho,
-        fho, fho, fhd, 	gho, gho, ghd,	hho, hho, hhd;
+//        fhd, fho, fho,	ghd, gho, gho,	hhd, hho, hho,
+//        fho, fhd, fho,	gho, ghd, gho,	hho, hhd, hho,
+//        fho, fho, fhd, 	gho, gho, ghd,	hho, hho, hhd;
 
-    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+//    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
 
-    static const Vector9 u8_1((Vector9()
-            <<  -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,                        0.,
-                 -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
-                                         1.,                       -1.,                        0.).finished());
-    static const Vector9 u9_1((Vector9()
-            << -2.659424899780574/sqrtArea,                        0., -0.3799178428258/sqrtArea,
-                -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
-                                        1.,                        0.,                       -1.).finished());
-    static const Vector9 u7_2((Vector9()
-            << -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,                        0.,
-               3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
-                                     -1.,                          1.,                        0.).finished());
-    static const Vector9 u9_2((Vector9()
-            <<                        0., -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,
-               3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
-                                      0.,                          1.,                       -1.).finished());
-    static const Vector9 u7_3((Vector9()
-            << -0.3799178428258/sqrtArea,                        0., -2.659424899780574/sqrtArea,
-               3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
-                                     -1.,                         0,                          1.).finished());
-    static const Vector9 u8_3((Vector9()
-            <<                        0., -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,
-               3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
-                                      0.,                       -1.,                          1.).finished());
+//    static const Vector9 u8_1((Vector9()
+//            <<  -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,                        0.,
+//                 -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
+//                                         1.,                       -1.,                        0.).finished());
+//    static const Vector9 u9_1((Vector9()
+//            << -2.659424899780574/sqrtArea,                        0., -0.3799178428258/sqrtArea,
+//                -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
+//                                        1.,                        0.,                       -1.).finished());
+//    static const Vector9 u7_2((Vector9()
+//            << -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,                        0.,
+//               3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
+//                                     -1.,                          1.,                        0.).finished());
+//    static const Vector9 u9_2((Vector9()
+//            <<                        0., -2.659424899780574/sqrtArea, -0.3799178428258/sqrtArea,
+//               3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,
+//                                      0.,                          1.,                       -1.).finished());
+//    static const Vector9 u7_3((Vector9()
+//            << -0.3799178428258/sqrtArea,                        0., -2.659424899780574/sqrtArea,
+//               3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
+//                                     -1.,                         0,                          1.).finished());
+//    static const Vector9 u8_3((Vector9()
+//            <<                        0., -0.3799178428258/sqrtArea, -2.659424899780574/sqrtArea,
+//               3.03934274260637/sqrtArea, 3.03934274260637/sqrtArea,  -3.03934274260637/sqrtArea,
+//                                      0.,                       -1.,                          1.).finished());
 
-    if(flatVertex == 0)
-    {
-        elemStiffness.row(7) = u8_1;
-        elemStiffness.col(7) = u8_1;
-        elemStiffness.row(8) = u9_1;
-        elemStiffness.col(8) = u9_1;
-    }
-    else if(flatVertex == 1)
-    {
-        elemStiffness.row(6) = u7_2;
-        elemStiffness.col(6) = u7_2;
-        elemStiffness.row(8) = u9_2;
-        elemStiffness.col(8) = u9_2;
-    }
-    else
-    {
-        elemStiffness.row(6) = u7_3;
-        elemStiffness.col(6) = u7_3;
-        elemStiffness.row(7) = u8_3;
-        elemStiffness.col(7) = u8_3;
-    }
+//    if(flatVertex == 0)
+//    {
+//        elemStiffness.row(7) = u8_1;
+//        elemStiffness.col(7) = u8_1;
+//        elemStiffness.row(8) = u9_1;
+//        elemStiffness.col(8) = u9_1;
+//    }
+//    else if(flatVertex == 1)
+//    {
+//        elemStiffness.row(6) = u7_2;
+//        elemStiffness.col(6) = u7_2;
+//        elemStiffness.row(8) = u9_2;
+//        elemStiffness.col(8) = u9_2;
+//    }
+//    else
+//    {
+//        elemStiffness.row(6) = u7_3;
+//        elemStiffness.col(6) = u7_3;
+//        elemStiffness.row(7) = u8_3;
+//        elemStiffness.col(7) = u8_3;
+//    }
 
-    // Flip gradient sign where needed.
-    for(size_t i = 0; i < 9; ++i)
-    {
-        for(size_t j = i; j < 9; ++j)
-        {
-            Scalar sign = 1;
-            if((i < 6 || orient[i % 3]) != (j < 6 || orient[j % 3]))
-            {
-                sign = -1;
-            }
+//    // Flip gradient sign where needed.
+//    for(size_t i = 0; i < 9; ++i)
+//    {
+//        for(size_t j = i; j < 9; ++j)
+//        {
+//            Scalar sign = 1;
+//            if((i < 6 || orient[i % 3]) != (j < 6 || orient[j % 3]))
+//            {
+//                sign = -1;
+//            }
 
-            *(it++) = Triplet(nodes[i], nodes[j], elemStiffness(i, j) * sign);
-            if(i != j)
-                *(it++) = Triplet(nodes[j], nodes[i], elemStiffness(j, i) * sign);
-        }
-    }
-}
+//            *(it++) = Triplet(nodes[i], nodes[j], elemStiffness(i, j) * sign);
+//            if(i != j)
+//                *(it++) = Triplet(nodes[j], nodes[i], elemStiffness(j, i) * sign);
+//        }
+//    }
+//}
 
 template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
@@ -396,4 +402,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         Vector6() << _a(0)*_b(0), _a(0)*_b(1) + _a(1)*_b(0), _a(0)*_b(2) + _a(2)*_b(0),
                      _a(1)*_b(1), _a(1)*_b(2) + _a(2)*_b(1), _a(2)*_b(2)
     ).finished();
+}
+
+
 }

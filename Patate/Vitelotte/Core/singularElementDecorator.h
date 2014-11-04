@@ -24,7 +24,8 @@ public:
     typedef typename Element::Vector Vector;
     typedef typename Element::Triplet Triplet;
 
-    typedef typename Element::Face Face;
+protected:
+    typedef typename Mesh::Face Face;
 
 
 public:
@@ -44,8 +45,9 @@ private:
 };
 
 
+} // namespace Vitelotte
+
 #include "singularElementDecorator.hpp"
 
-} // namespace Vitelotte
 
 #endif

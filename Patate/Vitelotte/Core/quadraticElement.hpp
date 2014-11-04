@@ -1,3 +1,9 @@
+#include "quadraticElement.h"
+
+
+namespace Vitelotte
+{
+
 
 template < class _Mesh, typename _Scalar >
 void
@@ -74,9 +80,9 @@ QuadraticElement<_Mesh, _Scalar>::
     {
         v[i] = (mesh.position(mesh.toVertex(*hit)) -
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
-        nodes[3+i] = mesh.midNode(*hit);
+        nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.toNode(*hit);
+        nodes[i] = mesh.vertexValueNode(*hit).idx();
     }
 
     Scalar inv4A = 1. / (2. * det2(v[0], v[1]));
@@ -110,3 +116,6 @@ typename QuadraticElement<_Mesh, _Scalar>::ElementStiffnessMatrix
 template < class _Mesh, typename _Scalar >
 typename QuadraticElement<_Mesh, _Scalar>::ElementStiffnessMatrix
     QuadraticElement<_Mesh, _Scalar>::m_quadM3;
+
+
+}

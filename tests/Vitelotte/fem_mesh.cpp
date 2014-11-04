@@ -2,18 +2,18 @@
 #include <iostream>
 #include <fstream>
 
-#include <Patate/Vitelotte/Core/quadraticMesh.h>
-#include <Patate/Vitelotte/Utils/qvgWriter.h>
-#include <Patate/Vitelotte/Utils/qvgReader.h>
+#include <Patate/Vitelotte/Core/femMesh.h>
+#include <Patate/Vitelotte/Utils/mvgWriter.h>
+#include <Patate/Vitelotte/Utils/mvgReader.h>
 
 
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 2, 2> Matrix;
-typedef Vitelotte::QuadraticMesh<Scalar> Mesh;
+typedef Vitelotte::FemMesh<Scalar> Mesh;
 
 typedef Mesh::Vector Vector;
 typedef Mesh::NodeValue NodeValue;
-typedef Mesh::NodeID NodeID;
+typedef Mesh::Node Node;
 
 typedef Mesh::Vertex Vertex;
 typedef Mesh::Halfedge Halfedge;
@@ -24,57 +24,13 @@ typedef Mesh::VertexIterator VertexIterator;
 typedef Mesh::EdgeIterator EdgeIterator;
 typedef Mesh::FaceIterator FaceIterator;
 
-typedef Vitelotte::QVGWriter<Mesh> Writer;
-typedef Vitelotte::QVGReader<Mesh> Reader;
-
-void printMesh(const Mesh& mesh, std::ostream& out)
-{
-    out << "Nodes (" << mesh.nNodes() << "):\n";
-    for(int i = 0; i < mesh.nNodes(); ++i)
-    {
-        out << "  n" << i
-            << ": " << mesh.nodeValue(i).transpose()
-            << " - " << (mesh.isConstraint(i)? "C": "N")
-            << "\n";
-    }
-
-    out << "Vertices (" << mesh.nVertices() << "):\n";
-    size_t count = 0;
-    for(VertexIterator vIt = mesh.verticesBegin();
-        vIt != mesh.verticesEnd(); ++vIt, ++count)
-    {
-        out << "  v" << count
-            << ": " << mesh.position(*vIt).transpose()
-            << "\n";
-    }
-
-    out << "Faces (" << mesh.nFaces() << "):\n";
-    count = 0;
-    for(FaceIterator fIt = mesh.facesBegin();
-        fIt != mesh.facesEnd(); ++fIt, ++count)
-    {
-        assert(mesh.valence(*fIt) == 3);
-        Halfedge h0 = mesh.halfedge(*fIt);
-        Halfedge h1 = mesh.nextHalfedge(h0);
-        Halfedge h2 = mesh.nextHalfedge(h1);
-        out << "  f" << count << ":\n"
-            << "    v0: " << mesh.position(mesh.toVertex(h0)).transpose() << "\n"
-            << "        " << mesh.toNode(h0) << " - " << mesh.fromNode(h1) << "\n"
-            << "    v1: " << mesh.position(mesh.toVertex(h1)).transpose() << "\n"
-            << "        " << mesh.toNode(h1) << " - " << mesh.fromNode(h2) << "\n"
-            << "    v2: " << mesh.position(mesh.toVertex(h2)).transpose() << "\n"
-            << "        " << mesh.toNode(h2) << " - " << mesh.fromNode(h0) << "\n"
-            << "    v0-v1: " << mesh.midNode(h1) << "\n"
-            << "    v1-v2: " << mesh.midNode(h2) << "\n"
-            << "    v2-v0: " << mesh.midNode(h0) << "\n";
-    }
-
-}
+typedef Vitelotte::MVGWriter<Mesh> Writer;
+typedef Vitelotte::MVGReader<Mesh> Reader;
 
 
 int main(int argc, char** argv)
 {
-    Mesh mesh;
+    Mesh mesh(Mesh::FV);
 
     Matrix t;
     t << 1, -0.5,
@@ -105,46 +61,70 @@ int main(int argc, char** argv)
         }
     }
 
-    mesh.initializeValueConstraints();
+    Node n0 = mesh.addNode(NodeValue(0., 1., 0., 1.));
+    Node n0_5 = mesh.addNode(NodeValue(.5, .5, 0., 1.));
+    Node n1 = mesh.addNode(NodeValue(1., 0., 0., 1.));
 
-    for(EdgeIterator eit = mesh.edgesBegin();
-        eit != mesh.edgesEnd(); ++eit)\
-    {
-        Halfedge h = mesh.halfedge(*eit, 0);
-        if(mesh.isValueConstraint(*eit))
-        {
-            std::cerr << mesh.fromVertex(h).idx() << " - " << mesh.toVertex(h).idx() << (mesh.isBoundary(h)? " B": "")
-                      << " = " << mesh.fromNode(h) << (mesh.isConstraint(mesh.fromNode(h))? " C": " U")
-                      << ", " << mesh.midNode(h) << (mesh.isConstraint(mesh.midNode(h))? " C": " U")
-                      << ", " << mesh.toNode(h) << (mesh.isConstraint(mesh.toNode(h))? " C": " U")
-                      << "\n";
-            h = mesh.halfedge(*eit, 1);
-            std::cerr << mesh.fromVertex(h).idx() << " - " << mesh.toVertex(h).idx() << (mesh.isBoundary(h)? " B": "")
-                      << " = " << mesh.fromNode(h) << (mesh.isConstraint(mesh.fromNode(h))? " C": " U")
-                      << ", " << mesh.midNode(h) << (mesh.isConstraint(mesh.midNode(h))? " C": " U")
-                      << ", " << mesh.toNode(h) << (mesh.isConstraint(mesh.toNode(h))? " C": " U")
-                      << "\n";
-            abort();
-        }
-    }
+    Halfedge from = mesh.findHalfedge(Vertex(5),  Vertex(6));
+//    Halfedge to = mesh.findHalfedge(Vertex(5),  Vertex(9));
+//    mesh.setVertexNode(n0, from, to);
+//    mesh.setSingularity(n0, n1, to, from);
 
-    NodeID na = mesh.addNode();
-    NodeID nb = mesh.addNode();
-    NodeID nc = mesh.addNode();
-    NodeID nd = mesh.addNode();
+    mesh.vertexFromValueNode(from) = n0;
+    mesh.edgeValueNode(from) = n0_5;
+    mesh.vertexValueNode(from) = n1;
 
-    NodeID n1l = mesh.addNode(NodeValue(1, 0, 0, 1));
-    NodeID n2l = mesh.addNode(NodeValue(0, 1, 0, 1));
-    NodeID n1r = mesh.addNode(NodeValue(0, 0, 1, 1));
-    NodeID n2r = mesh.addNode(NodeValue(1, 1, 0, 1));
+    Halfedge opp = mesh.oppositeHalfedge(from);
 
-    Halfedge h1 = mesh.findHalfedge(Vertex(5), Vertex(6));
-    mesh.setValueConstraint(h1, n1l, na, nb);
-    mesh.setValueConstraint(mesh.oppositeHalfedge(h1), nb, na, n1r);
+    mesh.vertexValueNode(opp) = n0;
+    mesh.edgeValueNode(opp) = n0_5;
+    mesh.vertexFromValueNode(opp) = n1;
 
-    Halfedge h2 = mesh.findHalfedge(Vertex(5), Vertex(9));
-    mesh.setValueConstraint(h2, n2r, nc, nd);
-    mesh.setValueConstraint(mesh.oppositeHalfedge(h2), nd, nc, n2l);
+//    mesh.setEdgeConstraintFlag(true);
+//    mesh.isEdgeConstrained(mesh.edge(from)) = true;
+
+    mesh.finalize();
+
+//    mesh.initializeValueConstraints();
+
+//    for(EdgeIterator eit = mesh.edgesBegin();
+//        eit != mesh.edgesEnd(); ++eit)
+//    {
+//        Halfedge h = mesh.halfedge(*eit, 0);
+//        if(mesh.isValueConstraint(*eit))
+//        {
+//            std::cerr << mesh.fromVertex(h).idx() << " - " << mesh.toVertex(h).idx() << (mesh.isBoundary(h)? " B": "")
+//                      << " = " << mesh.fromNode(h) << (mesh.isConstraint(mesh.fromNode(h))? " C": " U")
+//                      << ", " << mesh.midNode(h) << (mesh.isConstraint(mesh.midNode(h))? " C": " U")
+//                      << ", " << mesh.toNode(h) << (mesh.isConstraint(mesh.toNode(h))? " C": " U")
+//                      << "\n";
+//            h = mesh.halfedge(*eit, 1);
+//            std::cerr << mesh.fromVertex(h).idx() << " - " << mesh.toVertex(h).idx() << (mesh.isBoundary(h)? " B": "")
+//                      << " = " << mesh.fromNode(h) << (mesh.isConstraint(mesh.fromNode(h))? " C": " U")
+//                      << ", " << mesh.midNode(h) << (mesh.isConstraint(mesh.midNode(h))? " C": " U")
+//                      << ", " << mesh.toNode(h) << (mesh.isConstraint(mesh.toNode(h))? " C": " U")
+//                      << "\n";
+//            abort();
+//        }
+//    }
+
+//    NodeID na = mesh.addNode();
+//    NodeID nb = mesh.addNode();
+//    NodeID nc = mesh.addNode();
+//    NodeID nd = mesh.addNode();
+
+//    NodeID n1l = mesh.addNode(NodeValue(1, 0, 0, 1));
+//    NodeID n2l = mesh.addNode(NodeValue(0, 1, 0, 1));
+//    NodeID n1r = mesh.addNode(NodeValue(0, 0, 1, 1));
+//    NodeID n2r = mesh.addNode(NodeValue(1, 1, 0, 1));
+
+//    Halfedge h1 = mesh.findHalfedge(Vertex(5), Vertex(6));
+//    mesh.setValueConstraint(h1, n1l, na, nb);
+//    mesh.setValueConstraint(mesh.oppositeHalfedge(h1), nb, na, n1r);
+
+//    Halfedge h2 = mesh.findHalfedge(Vertex(5), Vertex(9));
+//    mesh.setValueConstraint(h2, n2r, nc, nd);
+//    mesh.setValueConstraint(mesh.oppositeHalfedge(h2), nd, nc, n2l);
 
 //    Halfedge h = mesh.findHalfedge(Vertex(5), Vertex(6));
 //    mesh.setContinuousConstraint(h,
@@ -162,16 +142,25 @@ int main(int argc, char** argv)
 //        mesh.addNode(NodeValue(1, 0, .5, 1)),
 //        mesh.fromNode(h));
 
-    mesh.propagateConstraints();
+//    mesh.propagateConstraints();
 
-    std::ofstream out("test.qvg");
-    Writer writer(mesh);
-    writer.write(out);
-    out.close();
+//    std::ofstream out("test.mvg");
+//    Writer writer(mesh);
+//    writer.write(out);
+//    out.close();
+    Vitelotte::writeMvgToFile("test.mvg", mesh);
 
-    std::cout << "nNodes before: " << mesh.nNodes() << "\n";
-    mesh.compactNodes();
-    std::cout << "nNodes after: " << mesh.nNodes() << "\n";
+    Mesh mesh2(0);
+    std::ifstream in("test.mvg");
+    Reader reader(mesh2);
+    reader.read(in);
+    in.close();
+
+    Vitelotte::writeMvgToFile("test2.mvg", mesh2);
+
+//    std::cout << "nNodes before: " << mesh.nNodes() << "\n";
+//    mesh.compactNodes();
+//    std::cout << "nNodes after: " << mesh.nNodes() << "\n";
 
 //    std::cout << "UnconstrainedNode = "
 //              << Mesh::UnconstrainedNode.transpose()

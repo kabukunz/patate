@@ -1,3 +1,9 @@
+#include "femSolver.h"
+
+
+namespace Vitelotte
+{
+
 
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& elementBuilder)
@@ -35,6 +41,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     sort();
 }
 
+
 template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::sort()
@@ -53,7 +60,7 @@ FemSolver<_Mesh, _ElementBuilder>::sort()
     int count = 0;  // nb items in stack
     int nUnk = 0;   // nb found unknown nodes
 
-    while(sPos < n && m_mesh->isConstraint(sPos)) ++sPos;
+    while(sPos < n && m_mesh->isConstraint(Node(sPos))) ++sPos;
     if(sPos < n)
     {
         m_ranges.push_back(nUnk);
@@ -68,7 +75,7 @@ FemSolver<_Mesh, _ElementBuilder>::sort()
 
         for(typename StiffnessMatrix::InnerIterator it(m_stiffnessMatrix, col); it ;++it)
         {
-            if(mask[it.index()] && !m_mesh->isConstraint(it.index()))
+            if(mask[it.index()] && !m_mesh->isConstraint(Node(it.index())))
             {
                 stack[count++] = it.index();
                 mask[it.index()] = false;
@@ -77,7 +84,7 @@ FemSolver<_Mesh, _ElementBuilder>::sort()
 
         if(count == 0)
         {
-            while(sPos < n && (!mask[sPos] || m_mesh->isConstraint(sPos))) ++sPos;
+            while(sPos < n && (!mask[sPos] || m_mesh->isConstraint(Node(sPos)))) ++sPos;
             if(sPos < n)
             {
                 m_ranges.push_back(nUnk);
@@ -91,11 +98,12 @@ FemSolver<_Mesh, _ElementBuilder>::sort()
 
     for(int col = 0; col < n; ++col)
     {
-        assert(m_mesh->isConstraint(col) == mask[col]);
+        assert(m_mesh->isConstraint(Node(col)) == mask[col]);
         if(mask[col])
             m_perm[nUnk++] = col;
     }
 }
+
 
 template < class _Mesh, class _ElementBuilder >
 void
@@ -116,10 +124,10 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     unsigned count = 0;
     for(unsigned i = 0; i < m_mesh->nNodes(); ++i)
     {
-        if(m_mesh->isConstraint(i))
+        if(m_mesh->isConstraint(Node(i)))
         {
             constraints.row(count++) =
-                    m_mesh->nodeValue(i).template cast<Scalar>();
+                    m_mesh->nodeValue(Node(i)).template cast<Scalar>();
         }
     }
     assert(count == nConstraints);
@@ -128,7 +136,6 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     m_x = mat.topRightCorner(nUnknowns, nConstraints) * constraints;
 
     unsigned nbRanges = m_ranges.size()-1;
-
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static,1)
@@ -157,10 +164,13 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
     for(unsigned i = 0; i < nUnknowns; ++i)
     {
-        assert(!m_mesh->isConstraint(m_perm[i]));
-        m_mesh->nodeValue(m_perm[i]) = -m_x.row(i).
+        assert(!m_mesh->isConstraint(Node(m_perm[i])));
+        m_mesh->nodeValue(Node(m_perm[i])) = -m_x.row(i).
                     template cast<typename Mesh::Scalar>();
     }
 
     m_solved = true;
 }
+
+
+}  // namespace Vitelotte

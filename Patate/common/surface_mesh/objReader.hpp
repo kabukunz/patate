@@ -3,27 +3,38 @@ OBJBaseReader::read(std::istream& in)
 {
     m_lineNb = 0;
     m_line.reserve(200);
-    std::istringstream def;
     std::string spec;
 
     in.imbue(std::locale::classic());
 
-    parseHeader(in);
+    readLine(in);
+    if(in.good())
+        parseHeader(in);
 
-    while(std::getline(in, m_line))
+    while(in.good())
     {
-        ++m_lineNb;
-
         // comment
         if(m_line.empty() || m_line[0] == '#' || std::isspace(m_line[0]))
             continue;
 
-        def.str(m_line);
-        def.seekg(0);
-        def >> spec;
-        parseDefinition(spec, def);
+        m_lineStream >> spec;
+        parseDefinition(spec, m_lineStream);
+
+        readLine(in);
     }
 }
+
+
+bool
+OBJBaseReader::readLine(std::istream& in)
+{
+    bool ok = std::getline(in, m_line);
+    ++m_lineNb;
+    m_lineStream.str(m_line);
+    m_lineStream.seekg(0);
+    return ok;
+}
+
 
 void
 OBJBaseReader::parseIndiceList(const std::string& _list,
@@ -50,6 +61,7 @@ OBJBaseReader::parseIndiceList(const std::string& _list,
         error("Failed to read indices list");
 }
 
+
 void
 OBJBaseReader::error(const std::string& msg)
 {
@@ -66,6 +78,7 @@ OBJReader<_Point>::OBJReader(SurfaceMesh& mesh,
     : m_mesh(mesh), m_vPos(positions)
 {
 }
+
 
 template < typename _Point >
 bool
@@ -123,5 +136,3 @@ OBJReader<_Point>::parseDefinition(const std::string& spec,
         return false;
     return true;
 }
-
-
