@@ -1,5 +1,5 @@
-#ifndef _QUADRATIC_ELEMENT_H_
-#define _QUADRATIC_ELEMENT_H_
+#ifndef _QUADRATIC_ELEMENT_BUILDER_H_
+#define _QUADRATIC_ELEMENT_BUILDER_H_
 
 
 #include <Eigen/Core>
@@ -11,7 +11,7 @@ namespace Vitelotte
 
 
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class QuadraticElement
+class QuadraticElementBuilder
 {
 public:
     typedef _Scalar Scalar;
@@ -30,7 +30,7 @@ protected:
     static void initializeMatrices();
 
 public:
-    inline QuadraticElement();
+    inline QuadraticElementBuilder();
 
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
@@ -47,7 +47,7 @@ private:
 
 } // namespace Vitelotte
 
-#include "quadraticElement.hpp"
+#include "quadraticElementBuilder.hpp"
 
 
 #endif

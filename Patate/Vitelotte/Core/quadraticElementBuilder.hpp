@@ -1,4 +1,4 @@
-#include "quadraticElement.h"
+#include "quadraticElementBuilder.h"
 
 
 namespace Vitelotte
@@ -7,7 +7,7 @@ namespace Vitelotte
 
 template < class _Mesh, typename _Scalar >
 void
-QuadraticElement<_Mesh, _Scalar>::initializeMatrices()
+QuadraticElementBuilder<_Mesh, _Scalar>::initializeMatrices()
 {
     if(m_matricesInitialized)
         return;
@@ -49,14 +49,14 @@ QuadraticElement<_Mesh, _Scalar>::initializeMatrices()
 }
 
 template < class _Mesh, typename _Scalar >
-QuadraticElement<_Mesh, _Scalar>::QuadraticElement()
+QuadraticElementBuilder<_Mesh, _Scalar>::QuadraticElementBuilder()
 {
     initializeMatrices();
 }
 
 template < class _Mesh, typename _Scalar >
 unsigned
-QuadraticElement<_Mesh, _Scalar>::
+QuadraticElementBuilder<_Mesh, _Scalar>::
     nCoefficients(const Mesh& mesh, Face element) const
 {
     return 36;
@@ -66,7 +66,7 @@ QuadraticElement<_Mesh, _Scalar>::
 template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
-QuadraticElement<_Mesh, _Scalar>::
+QuadraticElementBuilder<_Mesh, _Scalar>::
     addCoefficients(InIt& it, const Mesh& mesh, Face element) const
 {
     assert(mesh.valence(element) == 3);
@@ -103,19 +103,19 @@ QuadraticElement<_Mesh, _Scalar>::
 }
 
 template < class _Mesh, typename _Scalar >
-bool QuadraticElement<_Mesh, _Scalar>::m_matricesInitialized = false;
+bool QuadraticElementBuilder<_Mesh, _Scalar>::m_matricesInitialized = false;
 
 template < class _Mesh, typename _Scalar >
-typename QuadraticElement<_Mesh, _Scalar>::ElementStiffnessMatrix
-    QuadraticElement<_Mesh, _Scalar>::m_quadM1;
+typename QuadraticElementBuilder<_Mesh, _Scalar>::ElementStiffnessMatrix
+    QuadraticElementBuilder<_Mesh, _Scalar>::m_quadM1;
 
 template < class _Mesh, typename _Scalar >
-typename QuadraticElement<_Mesh, _Scalar>::ElementStiffnessMatrix
-    QuadraticElement<_Mesh, _Scalar>::m_quadM2;
+typename QuadraticElementBuilder<_Mesh, _Scalar>::ElementStiffnessMatrix
+    QuadraticElementBuilder<_Mesh, _Scalar>::m_quadM2;
 
 template < class _Mesh, typename _Scalar >
-typename QuadraticElement<_Mesh, _Scalar>::ElementStiffnessMatrix
-    QuadraticElement<_Mesh, _Scalar>::m_quadM3;
+typename QuadraticElementBuilder<_Mesh, _Scalar>::ElementStiffnessMatrix
+    QuadraticElementBuilder<_Mesh, _Scalar>::m_quadM3;
 
 
 }

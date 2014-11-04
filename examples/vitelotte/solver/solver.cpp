@@ -23,7 +23,7 @@ void usage(char* progName)
 void solveHarmonic(Mesh& mesh)
 {
     //typedef Vitelotte::QuadraticElement<Mesh, double> Element;
-    typedef Vitelotte::QuadraticElement<Mesh, double> QuadraticElement;
+    typedef Vitelotte::QuadraticElementBuilder<Mesh, double> QuadraticElement;
     typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
