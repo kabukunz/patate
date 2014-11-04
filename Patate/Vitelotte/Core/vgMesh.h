@@ -1,6 +1,6 @@
 
-#ifndef FEMMESH_H
-#define FEMMESH_H
+#ifndef VGMESH_H
+#define VGMESH_H
 
 
 #include <cassert>
@@ -17,7 +17,7 @@ namespace Vitelotte
 {
 
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
-class FemMesh: public Patate::SurfaceMesh
+class VGMesh: public Patate::SurfaceMesh
 {
 public:
     typedef _Scalar Scalar;
@@ -27,7 +27,7 @@ public:
         Chan = _Chan
     };
 
-    typedef FemMesh<Scalar, Dim, Chan> Self;
+    typedef VGMesh<Scalar, Dim, Chan> Self;
 
     typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
     typedef Eigen::Matrix<Scalar, Chan, 1> NodeValue;
@@ -62,15 +62,15 @@ public:
 
 
 public:
-    explicit FemMesh(unsigned attributes = 0);
-    virtual ~FemMesh() {}
+    explicit VGMesh(unsigned attributes = 0);
+    virtual ~VGMesh() {}
 
     template < typename OtherScalar >
-    FemMesh(const FemMesh<OtherScalar, _Dim, _Chan>& other)
+    VGMesh(const VGMesh<OtherScalar, _Dim, _Chan>& other)
     { operator=(other); }
 
     template < typename OtherScalar >
-    FemMesh& operator=(const FemMesh<OtherScalar, _Dim, _Chan>& rhs);
+    VGMesh& operator=(const VGMesh<OtherScalar, _Dim, _Chan>& rhs);
 
     unsigned getAttributes() const { return m_attributes; }
     void setAttributes(unsigned attributes);
@@ -223,8 +223,8 @@ protected:
 
 } // namespace Vitelotte
 
-#include "femMesh.hpp"
+#include "vgMesh.hpp"
 
 
-#endif // FEMMESH_H
+#endif // VGMESH_H
 

@@ -2,14 +2,14 @@
 #include <iostream>
 #include <fstream>
 
-#include <Patate/Vitelotte/Core/femMesh.h>
+#include <Patate/Vitelotte/Core/vgMesh.h>
 #include <Patate/Vitelotte/Utils/mvgWriter.h>
 #include <Patate/Vitelotte/Utils/mvgReader.h>
 
 
 typedef double Scalar;
 typedef Eigen::Matrix<Scalar, 2, 2> Matrix;
-typedef Vitelotte::FemMesh<Scalar> Mesh;
+typedef Vitelotte::VGMesh<Scalar> Mesh;
 
 typedef Mesh::Vector Vector;
 typedef Mesh::NodeValue NodeValue;

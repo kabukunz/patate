@@ -11,7 +11,7 @@
 
 #include "common/surface_mesh/surfaceMesh.h"
 
-#include "Vitelotte/Core/femMesh.h"
+#include "Vitelotte/Core/vgMesh.h"
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/quadraticElement.h"
 #include "Vitelotte/Core/fvElementBuilder.h"

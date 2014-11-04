@@ -8,7 +8,7 @@
 #include "Patate/Vitelotte/Utils/mvgWriter.h"
 
 
-typedef Vitelotte::FemMesh<float> Mesh;
+typedef Vitelotte::VGMesh<float> Mesh;
 typedef Vitelotte::MVGReader<Mesh> Reader;
 typedef Vitelotte::MVGWriter<Mesh> Writer;
 

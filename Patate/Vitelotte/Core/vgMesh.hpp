@@ -1,4 +1,4 @@
-#include "femMesh.h"
+#include "vgMesh.h"
 
 
 namespace Vitelotte
@@ -6,14 +6,14 @@ namespace Vitelotte
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-const typename FemMesh<_Scalar, _Dim, _Chan>::NodeValue
-    FemMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
-        FemMesh<_Scalar, _Dim, _Chan>::NodeValue::Constant(
+const typename VGMesh<_Scalar, _Dim, _Chan>::NodeValue
+    VGMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
+        VGMesh<_Scalar, _Dim, _Chan>::NodeValue::Constant(
             std::numeric_limits<Scalar>::quiet_NaN());
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-FemMesh<_Scalar, _Dim, _Chan>::FemMesh(unsigned attributes)
+VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
     : m_attributes(0)
 {
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
@@ -24,9 +24,9 @@ FemMesh<_Scalar, _Dim, _Chan>::FemMesh(unsigned attributes)
 
 template < typename _Scalar, int _Dim, int _Chan >
 template < typename OtherScalar >
-FemMesh<_Scalar, _Dim, _Chan>&
-FemMesh<_Scalar, _Dim, _Chan>::operator=(
-        const FemMesh<OtherScalar, _Dim, _Chan>& rhs)
+VGMesh<_Scalar, _Dim, _Chan>&
+VGMesh<_Scalar, _Dim, _Chan>::operator=(
+        const VGMesh<OtherScalar, _Dim, _Chan>& rhs)
 {
     if(&rhs != this)
     {
@@ -47,7 +47,7 @@ FemMesh<_Scalar, _Dim, _Chan>::operator=(
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-void FemMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
+void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 {
 #define PATATE_FEM_MESH_SET_ATTRIBUTE(_bit, _field, _name) do {\
         if(!(m_attributes & _bit) && (attributes & _bit))\
@@ -76,7 +76,7 @@ void FemMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::setEdgeConstraintFlag(bool on)
+VGMesh<_Scalar, _Dim, _Chan>::setEdgeConstraintFlag(bool on)
 {
     if(on && !hasEdgeConstraintFlag())
         m_edgeConstraintFlag = edgeProperty("e:constraintFlag", false);
@@ -86,8 +86,8 @@ FemMesh<_Scalar, _Dim, _Chan>::setEdgeConstraintFlag(bool on)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename FemMesh<_Scalar, _Dim, _Chan>::Node
-FemMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
+typename VGMesh<_Scalar, _Dim, _Chan>::Node
+VGMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 {
     m_nodes.push_back(nodeValue);
     return Node(m_nodes.size() - 1);
@@ -96,7 +96,7 @@ FemMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::compactNodes()
+VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
 {
     std::vector<Node> buf(nNodes(), 0);
 
@@ -198,7 +198,7 @@ FemMesh<_Scalar, _Dim, _Chan>::compactNodes()
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::
+VGMesh<_Scalar, _Dim, _Chan>::
     setVertexNode(Node node, Halfedge from, Halfedge to)
 {
     assert(fromVertex(from) == fromVertex(to));
@@ -223,7 +223,7 @@ FemMesh<_Scalar, _Dim, _Chan>::
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::
+VGMesh<_Scalar, _Dim, _Chan>::
     setSingularity(Node fromNode, Node toNode, Halfedge from, Halfedge to)
 {
     assert(fromVertex(from) == fromVertex(to));
@@ -275,7 +275,7 @@ FemMesh<_Scalar, _Dim, _Chan>::
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::finalize()
+VGMesh<_Scalar, _Dim, _Chan>::finalize()
 {
     assert(hasVertexValue());
 
@@ -379,7 +379,7 @@ FemMesh<_Scalar, _Dim, _Chan>::finalize()
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
-FemMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
+VGMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {
     return hasVertexFromValue() &&
             vertexValueNode(h) != vertexFromValueNode(nextHalfedge(h));
@@ -388,7 +388,7 @@ FemMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
-FemMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
+VGMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
 {
     HalfedgeAroundFaceCirculator
             hit  = halfedges(f),
@@ -406,7 +406,7 @@ FemMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
 
 template < typename _Scalar, int _Dim, int _Chan >
 unsigned
-FemMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
+VGMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
 {
     unsigned nSingulars = 0;
     for(FaceIterator fit = facesBegin();
@@ -420,7 +420,7 @@ FemMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::reserve(
+VGMesh<_Scalar, _Dim, _Chan>::reserve(
         unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
 {
     Patate::SurfaceMesh::reserve(nvertices, nedges, nfaces);
@@ -430,7 +430,7 @@ FemMesh<_Scalar, _Dim, _Chan>::reserve(
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-FemMesh<_Scalar, _Dim, _Chan>::clear()
+VGMesh<_Scalar, _Dim, _Chan>::clear()
 {
     Patate::SurfaceMesh::clear();
     m_nodes.clear();
@@ -439,7 +439,7 @@ FemMesh<_Scalar, _Dim, _Chan>::clear()
 
 template < typename _Scalar, int _Dim, int _Chan >
 Patate::SurfaceMesh::Vertex
-FemMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
 {
     Vertex v = Patate::SurfaceMesh::addVertex();
     position(v) = pos;
@@ -449,7 +449,7 @@ FemMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
-FemMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
+VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
 {
     return 0 <= n.idx() && n.idx() < m_nodes.size();
 }

@@ -7,7 +7,7 @@
 #include <Eigen/Sparse>
 
 #include "femUtils.h"
-#include "femMesh.h"
+#include "vgMesh.h"
 
 
 namespace Vitelotte

@@ -10,7 +10,6 @@
 #include <sstream>
 
 #include "../../common/surface_mesh/objReader.h"
-#include "../Core/femMesh.h"
 
 
 namespace Vitelotte

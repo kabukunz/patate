@@ -9,7 +9,7 @@
 
 #include <Eigen/Core>
 
-#include "Vitelotte/Core/femMesh.h"
+#include "Vitelotte/Core/vgMesh.h"
 #include "Vitelotte/Utils/vgMeshRenderer.h"
 
 #endif

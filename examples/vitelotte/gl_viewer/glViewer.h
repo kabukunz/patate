@@ -35,7 +35,7 @@
 
 namespace Vitelotte {
     template < typename _Scalar, int _Dim, int _Chan >
-    class FemMesh;
+    class VGMesh;
     template < typename _Mesh >
     class VGMeshRenderer;
 }
@@ -68,7 +68,7 @@ public:
 
     typedef float Scalar;
 
-    typedef Vitelotte::FemMesh<Scalar, 2, 4> Mesh;
+    typedef Vitelotte::VGMesh<Scalar, 2, 4> Mesh;
     typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;

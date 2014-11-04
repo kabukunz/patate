@@ -4,8 +4,6 @@
 
 #include "../../common/gl_utils/shader.h"
 
-#include "../Core/femMesh.h"
-
 
 namespace Vitelotte {
 
