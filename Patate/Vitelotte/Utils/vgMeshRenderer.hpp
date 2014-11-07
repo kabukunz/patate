@@ -5,26 +5,165 @@ namespace Vitelotte
 {
 
 
-template < class _Mesh >
-inline bool VGMeshRenderer<_Mesh>::init(Mesh* _mesh)
+Eigen::Vector4f linearToSrgb(const Eigen::Vector4f& linear)
 {
-    if(!loadShaders())
+    Eigen::Vector4f srgb = linear;
+    for(int i=0; i<3; ++i)
+        srgb(i) = linear(i) > 0.0031308?
+                    1.055 * std::pow(linear(i), 1/2.4):
+                    12.92 * linear(i);
+    return srgb;
+}
+
+
+Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb)
+{
+    Eigen::Vector4f linear = srgb;
+    for(int i=0; i<3; ++i)
+        linear(i) = linear(i) > 0.04045?
+                    std::pow((linear(i)+0.055) / 1.055, 2.4):
+                    linear(i) / 12.92;
+    return linear;
+}
+
+
+VGMeshRendererDefaultShaders::VGMeshRendererDefaultShaders()
+    : m_viewMatrix(Eigen::Matrix4f::Identity()),
+      m_showWireframe(false),
+      m_zoom(1),
+      m_pointRadius(0),
+      m_lineWidth(1)
+{
+}
+
+
+GLuint VGMeshRendererDefaultShaders::triangleShader()
+{
+    if(m_triangleShader.status() == Patate::Shader::Uninitialized)
     {
-        return false;
+        m_triangleShader.create();
+
+        bool bRes = true;
+
+        bRes &= bRes && m_triangleShader.addShader(GL_VERTEX_SHADER,
+                                                   shader::vert_common_glsl);
+        bRes &= bRes && m_triangleShader.addShader(GL_GEOMETRY_SHADER,
+                                                   shader::geom_common_glsl);
+        bRes &= bRes && m_triangleShader.addShader(GL_FRAGMENT_SHADER,
+                                                   shader::frag_common_glsl);
+        bRes &= bRes && m_triangleShader.addShader(GL_FRAGMENT_SHADER,
+                                                   shader::frag_triangle_glsl);
+
+        bRes &= bRes && m_triangleShader.finalize();
+
+        if(bRes)
+            getUniforms(m_triangleShader, m_triangleUniforms);
     }
 
-    if(!initGl())
-        return false;
+    bool ok = m_triangleShader.status() == Patate::Shader::CompilationSuccessful;
+    if(ok)
+    {
+        m_triangleShader.use();
+        setupUniforms(m_triangleUniforms);
+    }
+
+    return ok? m_triangleShader.getShaderId(): 0;
+}
+
+
+GLuint VGMeshRendererDefaultShaders::singularShader()
+{
+    if(m_singularShader.status() == Patate::Shader::Uninitialized)
+    {
+        m_singularShader.create();
+
+        bool bRes = true;
+
+        bRes &= bRes && m_singularShader.addShader(GL_VERTEX_SHADER,
+                                                   shader::vert_common_glsl);
+        bRes &= bRes && m_singularShader.addShader(GL_GEOMETRY_SHADER,
+                                                   shader::geom_common_glsl);
+        bRes &= bRes && m_singularShader.addShader(GL_FRAGMENT_SHADER,
+                                                   shader::frag_common_glsl);
+        bRes &= bRes && m_singularShader.addShader(GL_FRAGMENT_SHADER,
+                                                   shader::frag_singular_glsl);
+
+        bRes &= bRes && m_singularShader.finalize();
+
+        if(bRes)
+            getUniforms(m_singularShader, m_triangleUniforms);
+    }
+
+    bool ok = m_singularShader.status() == Patate::Shader::CompilationSuccessful;
+    if(ok)
+    {
+        m_singularShader.use();
+        setupUniforms(m_triangleUniforms);
+    }
+
+    return ok? m_singularShader.getShaderId(): 0;
+}
+
+
+void
+VGMeshRendererDefaultShaders::
+    getUniforms(Patate::Shader& shader, Uniforms& uniforms)
+{
+    uniforms.viewMatrixLoc =
+            shader.getUniformLocation("viewMatrix");
+    uniforms.showWireframeLoc =
+            shader.getUniformLocation("showWireframe");
+    uniforms.zoomLoc =
+            shader.getUniformLocation("zoom");
+    uniforms.pointRadiusLoc =
+            shader.getUniformLocation("pointRadius");
+    uniforms.halfLineWidthLoc =
+            shader.getUniformLocation("halfLineWidth");
+    uniforms.wireframeColorLoc =
+            shader.getUniformLocation("wireframeColor");
+    uniforms.pointColorLoc =
+            shader.getUniformLocation("pointColor");
+}
+
+void
+VGMeshRendererDefaultShaders::
+    setupUniforms(const Uniforms& uniforms)
+{
+    if(uniforms.viewMatrixLoc >= 0)
+        glUniformMatrix4fv(uniforms.viewMatrixLoc, 1, false, m_viewMatrix.data());
+
+    if(uniforms.showWireframeLoc >= 0)
+        glUniform1i(uniforms.showWireframeLoc, m_showWireframe);
+
+    if(uniforms.zoomLoc >= 0)
+        glUniform1f(uniforms.zoomLoc, m_zoom);
+
+    if(uniforms.pointRadiusLoc >= 0)
+        glUniform1f(uniforms.pointRadiusLoc, m_pointRadius);
+
+    if(uniforms.halfLineWidthLoc >= 0)
+        glUniform1f(uniforms.halfLineWidthLoc, m_lineWidth / 2.f);
+
+    if(uniforms.wireframeColorLoc >= 0)
+        glUniform4fv(uniforms.wireframeColorLoc, 1, m_wireframeColor.data());
+
+    if(uniforms.pointColorLoc >= 0)
+        glUniform4fv(uniforms.pointColorLoc, 1, m_pointColor.data());
+}
+
+
+
+template < class _Mesh >
+inline void VGMeshRenderer<_Mesh>::initialize(Mesh* _mesh)
+{
+    glGenVertexArrays(1, &m_vao);
 
     setMesh(_mesh);
-
-    return true;
 }
 
 template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::updateMesh()
 {
-    assert(m_pMesh->getAttributes() & Mesh::Quadratic == Mesh::Quadratic);
 
     m_vertices.clear();
     m_triangleIndices.clear();
@@ -33,6 +172,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     m_singularNodes.clear();
 
     if(!m_pMesh) return;
+    assert(m_pMesh->getAttributes() & Mesh::Quadratic == Mesh::Quadratic);
 
     // Compute number of singular and normal triangles
     unsigned nSingulars = m_pMesh->nSingularFaces();
@@ -133,55 +273,6 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
 }
 
 template < class _Mesh >
-inline bool VGMeshRenderer<_Mesh>::loadShaders()
-{
-    PATATE_GLCheckError();
-
-    m_pTriangleProgram = new Patate::Shader();
-    if(!m_pTriangleProgram->Init())
-    {
-        return false;
-    }
-
-    bool bRes = true;
-
-    bRes &= m_pTriangleProgram->AddShader(GL_VERTEX_SHADER, vert_common_glsl);
-    bRes &= m_pTriangleProgram->AddShader(GL_GEOMETRY_SHADER, geom_common_glsl);
-    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_common_glsl);
-    bRes &= m_pTriangleProgram->AddShader(GL_FRAGMENT_SHADER, frag_triangle_glsl);
-    assert(bRes);
-
-    bRes &= m_pTriangleProgram->Finalize();
-    assert(bRes);
-
-
-    m_pSingularProgram = new Patate::Shader();
-    if(!m_pSingularProgram->Init())
-    {
-        return false;
-    }
-
-    bRes &= m_pSingularProgram->AddShader(GL_VERTEX_SHADER, vert_common_glsl);
-    bRes &= m_pSingularProgram->AddShader(GL_GEOMETRY_SHADER, geom_common_glsl);
-    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_common_glsl);
-    bRes &= m_pSingularProgram->AddShader(GL_FRAGMENT_SHADER, frag_singular_glsl);
-    assert(bRes);
-
-    bRes &= m_pSingularProgram->Finalize();
-    assert(bRes);
-
-    return PATATE_GLCheckError();;
-}
-
-template < class _Mesh >
-inline bool VGMeshRenderer<_Mesh>::initGl()
-{
-    glGenVertexArrays(1, &m_vao);
-    glBindVertexArray(m_vao);
-    return true;
-}
-
-template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singular)
 {
     const IndicesVector& indices = _singular?
@@ -191,6 +282,8 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(GLuint _shader, bool _singula
     {
         return;
     }
+
+    glBindVertexArray(m_vao);
 
     glUseProgram(_shader);
 
@@ -224,61 +317,23 @@ inline typename VGMeshRenderer<_Mesh>::NodeValue
 VGMeshRenderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
-        return m_pMesh->nodeValue(node);
+        return srgbToLinear(m_pMesh->nodeValue(node));
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 
 template < class _Mesh >
-inline void VGMeshRenderer<_Mesh>::render(Eigen::Matrix4f& _viewMatrix, float _zoom, float _pointRadius, float _lineWidth, bool _showShaderWireframe)
+inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShaders &shaders)
 {
+    GLuint shaderIds[2] =
+    {
+        shaders.triangleShader(),
+        shaders.singularShader()
+    };
+
     for(int pass = 0; pass < 2; ++pass)
     {
-        Patate::Shader* program = (pass == 0) ? m_pTriangleProgram : m_pSingularProgram;
-
-        if(program)
-        {
-            program->Enable();
-
-            GLuint viewMatrixLoc = program->GetUniformLocation("viewMatrix");
-            if(viewMatrixLoc >= 0)
-            {
-                glUniformMatrix4fv(viewMatrixLoc, 1, false, _viewMatrix.data());
-            }
-
-            GLint wireLoc = program->GetUniformLocation("showWireframe");
-            if(wireLoc >=0 )
-            {
-                glUniform1i(wireLoc, _showShaderWireframe);
-            }
-
-            GLuint zoomLoc = program->GetUniformLocation("zoom");
-            if(zoomLoc >= 0)
-            {
-                glUniform1f(zoomLoc, _zoom);
-            }
-
-            GLuint pointRadiutLoc = program->GetUniformLocation("pointRadius");
-            if(pointRadiutLoc >= 0)
-            {
-                glUniform1f(pointRadiutLoc, _pointRadius);
-            }
-
-            GLuint halfLineWidthLoc = program->GetUniformLocation("halfLineWidth");
-            if(halfLineWidthLoc >= 0)
-            {
-                glUniform1f(halfLineWidthLoc, _lineWidth / 2.f);
-            }
-
-
-            if(pass == 0)
-            {
-                renderTriangles(program->GetShaderId());
-            }
-            else
-            {
-                renderTriangles(program->GetShaderId(), true);
-            }
-        }
+        if(shaderIds[pass])
+            renderTriangles(shaderIds[pass], pass);
     }
 }
 

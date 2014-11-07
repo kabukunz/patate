@@ -23,10 +23,8 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-template < typename OtherScalar >
 VGMesh<_Scalar, _Dim, _Chan>&
-VGMesh<_Scalar, _Dim, _Chan>::operator=(
-        const VGMesh<OtherScalar, _Dim, _Chan>& rhs)
+VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
 {
     if(&rhs != this)
     {
@@ -35,12 +33,16 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(
 
         m_nodes = rhs.m_nodes;
 
-        // TODO: Working copy constructor
-//        m_vPos      = vertexProperty<Vector>("v:position");
+        m_positions = vertexProperty<Vector>("v:position");
 
-//        m_hFromNode = halfedgeProperty<Node>("h:fromNode");
-//        m_hToNode   = halfedgeProperty<Node>("h:toNode");
-//        m_hMidNode  = halfedgeProperty<Node>("h:midNode");
+        m_attributes = rhs.m_attributes;
+
+        m_vertexValueNodes = getHalfedgeProperty<Node>("h:vertexValueNode");
+        m_vertexFromValueNodes = getHalfedgeProperty<Node>("h:vertexFromValueNode");
+        m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
+        m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
+
+         m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
     }
     return *this;
 }
@@ -98,7 +100,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
 {
-    std::vector<Node> buf(nNodes(), 0);
+    std::vector<int> buf(nNodes(), 0);
 
     // Find used node ids
     HalfedgeIterator hBegin = halfedgesBegin(),
@@ -107,22 +109,22 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     {
         if(!isBoundary(*hit))
         {
-            if(hasVertexValue())
-                buf[vertexValueNode(*hit)]     = 1;
-            if(hasVertexFromValue())
-                buf[vertexFromValueNode(*hit)] = 1;
-            if(hasEdgeValue())
-                buf[edgeValueNode(*hit)]      = 1;
+            if(hasVertexValue() && vertexValueNode(*hit).isValid())
+                buf[vertexValueNode(*hit).idx()]     = 1;
+            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
+                buf[vertexFromValueNode(*hit).idx()] = 1;
+            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
+                buf[edgeValueNode(*hit).idx()]       = 1;
 //            if(hasVertexGradient())
 //                marked[vertexGradientNode(*hit)]  = 1;
-            if(hasEdgeGradient())
-                buf[edgeGradientNode(*hit)]  = 1;
+            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
+                buf[edgeGradientNode(*hit).idx()]    = 1;
         }
     }
 
     // Compute remapping
-    Node size=0;
-    for(Node i = 0; i < buf.size(); ++i)
+    int size=0;
+    for(int i = 0; i < buf.size(); ++i)
     {
         if(buf[i])
         {
@@ -132,11 +134,11 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     }
 
     // Update node vector and fill remapping vector
-    std::vector<Node> map(nNodes(), Node());
+    std::vector<int> map(nNodes(), -1);
     NodeVector reord(size);
-    for(Node i = 0; i < size; ++i)
+    for(int i = 0; i < size; ++i)
     {
-        reord[i] = nodeValue(buf[i]);
+        reord[i] = nodeValue(Node(buf[i]));
         map[buf[i]] = i;
     }
     m_nodes.swap(reord);
@@ -146,16 +148,16 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     {
         if(!isBoundary(*hit))
         {
-            if(hasVertexValue())
-                vertexValueNode(*hit)     = map[vertexValueNode(*hit)];
-            if(hasVertexFromValue())
-                vertexFromValueNode(*hit) = map[vertexFromValueNode(*hit)];
-            if(hasEdgeValue())
-                (edgeValueNode(*hit))      = map[edgeValueNode(*hit)];
+            if(hasVertexValue() && vertexValueNode(*hit).isValid())
+                vertexValueNode(*hit)     = Node(map[vertexValueNode(*hit).idx()]);
+            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
+                vertexFromValueNode(*hit) = Node(map[vertexFromValueNode(*hit).idx()]);
+            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
+                (edgeValueNode(*hit))     = Node(map[edgeValueNode(*hit).idx()]);
 //            if(hasVertexGradient())
 //                vertexGradientNode(*hit)  = map[vertexGradientNode(*hit)];
-            if(hasEdgeGradient())
-                edgeGradientNode(*hit)  = map[edgeGradientNode(*hit)];
+            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
+                edgeGradientNode(*hit)    = Node(map[edgeGradientNode(*hit).idx()]);
         }
     }
 }
@@ -304,13 +306,10 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
         }
         consEdges.push_back(consEdges.front());
 
-        while(*hit != consEdges.front()) ++hit;
-
         std::vector<Halfedge>::iterator cit = consEdges.begin();
         Halfedge prev = *cit;
         for(++cit; cit != consEdges.end(); ++cit)
         {
-            assert(prev == *hit);
             Halfedge next = oppositeHalfedge(*cit);
             Node n0 = hasVertexFromValue()?
                         vertexFromValueNode(prev):

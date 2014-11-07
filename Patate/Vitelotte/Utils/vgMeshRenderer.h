@@ -2,12 +2,95 @@
 #define _VG_MESH_RENDERER_BASE_H_
 
 
+#include <Eigen/Dense>
+
 #include "../../common/gl_utils/shader.h"
+
+#include "shaders.hpp"
 
 
 namespace Vitelotte {
 
-#include "shaders.hpp"
+
+inline Eigen::Vector4f linearToSrgb(const Eigen::Vector4f& linear);
+inline Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb);
+
+
+class VGMeshRendererShaders
+{
+public:
+    inline VGMeshRendererShaders() {}
+
+    virtual GLuint triangleShader() = 0;
+    virtual GLuint singularShader() = 0;
+
+private:
+    VGMeshRendererShaders(const VGMeshRendererShaders&);
+};
+
+
+class VGMeshRendererDefaultShaders : public VGMeshRendererShaders
+{
+public:
+    inline VGMeshRendererDefaultShaders();
+    virtual inline ~VGMeshRendererDefaultShaders() {}
+
+    virtual inline GLuint triangleShader();
+    virtual inline GLuint singularShader();
+
+    inline Eigen::Matrix4f& viewMatrix() { return m_viewMatrix; }
+    inline const Eigen::Matrix4f& viewMatrix() const { return m_viewMatrix; }
+
+    inline bool& showWireframe() { return m_showWireframe; }
+    inline const bool& showWireframe() const { return m_showWireframe; }
+
+    inline float& zoom() { return m_zoom; }
+    inline const float& zoom() const { return m_zoom; }
+
+    inline float& pointRadius() { return m_pointRadius; }
+    inline const float& pointRadius() const { return m_pointRadius; }
+
+    inline float& lineWidth() { return m_lineWidth; }
+    inline const float& lineWidth() const { return m_lineWidth; }
+
+    inline Eigen::Vector4f& wireframeColor() { return m_wireframeColor; }
+    inline const Eigen::Vector4f& wireframeColor() const { return m_wireframeColor; }
+
+    inline Eigen::Vector4f& pointColor() { return m_pointColor; }
+    inline const Eigen::Vector4f& pointColor() const { return m_pointColor; }
+
+
+private:
+    struct Uniforms
+    {
+        GLint viewMatrixLoc;
+        GLint showWireframeLoc;
+        GLint zoomLoc;
+        GLint pointRadiusLoc;
+        GLint halfLineWidthLoc;
+        GLint wireframeColorLoc;
+        GLint pointColorLoc;
+    };
+
+    inline void getUniforms(Patate::Shader& shader, Uniforms& uniforms);
+    inline void setupUniforms(const Uniforms& uniforms);
+
+private:
+    Patate::Shader m_triangleShader;
+    Patate::Shader m_singularShader;
+
+    Uniforms m_triangleUniforms;
+    Uniforms m_singularUniforms;
+
+    Eigen::Matrix4f m_viewMatrix;
+    bool m_showWireframe;
+    float m_zoom;
+    float m_pointRadius;
+    float m_lineWidth;
+    Eigen::Vector4f m_wireframeColor;
+    Eigen::Vector4f m_pointColor;
+};
+
 
 template < class _Mesh >
 class VGMeshRenderer
@@ -24,20 +107,13 @@ public:
         m_verticesBuffer(0), m_triangleIndicesBuffer(0),
         m_singularIndicesBuffer(0), m_triangleNodesBuffer(0),
         m_singularNodesBuffer(0), m_triangleNodesTexture(0),
-        m_singularNodesTexture(0), m_pTriangleProgram(0),
-        m_pSingularProgram(0),  m_vao(0), m_pMesh(0)
+        m_singularNodesTexture(0),  m_vao(0), m_pMesh(0)
     {}
 
-    ~VGMeshRenderer()
-    {
-        PATATE_SAFE_DELETE(m_pSingularProgram);
-        PATATE_SAFE_DELETE(m_pTriangleProgram);
-    }
+    ~VGMeshRenderer() {}
 
-    void render(Eigen::Matrix4f& _viewMatrix, float _zoom = 1.f,
-                float _pointRadius = 2.f, float _lineWidth = 1.f,
-                bool _showShaderWireframe = false);
-    bool init(Mesh* _mesh);
+    void initialize(Mesh* _mesh=0);
+    void render(VGMeshRendererShaders& shaders);
 
     inline void setMesh(Mesh* _mesh)
     {
@@ -53,8 +129,6 @@ private:
     typedef std::vector<NodeValue> NodesVector;
 
 private:
-    bool loadShaders();
-    bool initGl();
     void renderTriangles(GLuint _shader, bool _singular = false);
 
     NodeValue nodeValue(Node node) const;
@@ -76,9 +150,6 @@ private:
     GLuint m_vao;
 
     Mesh* m_pMesh;
-
-    Patate::Shader* m_pTriangleProgram;
-    Patate::Shader* m_pSingularProgram;
 
     VectorsVector m_vertices;
 

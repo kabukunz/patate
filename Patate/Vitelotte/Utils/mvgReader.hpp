@@ -115,14 +115,17 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         {
             def >> m_tmp;
             parseIndiceList(m_tmp, m_faceIndices);
-            if(m_faceIndices.size() < 2 || m_faceIndices.size() > 3)
+            if(m_faceIndices.size() < 1 || m_faceIndices.size() > 3)
                 error("Invalid number of indices");
 
             m_fVertices.push_back(
                         typename Mesh::Vertex(m_faceIndices[0] - iOffset));
 
-            nodes[2*i + 0] = m_faceIndices[1];
-            nodes[2*i + 1] = m_faceIndices.back();
+            if(m_faceIndices.size() > 1)
+            {
+                nodes[2*i + 0] = m_faceIndices[1];
+                nodes[2*i + 1] = m_faceIndices.back();
+            }
         }
 
         // mid nodes

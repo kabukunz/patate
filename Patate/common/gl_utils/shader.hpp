@@ -1,3 +1,8 @@
+#include "shader.h"
+
+
+namespace Patate
+{
 
 
 static const char* pVSName = "VS";
@@ -28,27 +33,21 @@ inline const char* ShaderType2ShaderName(GLuint _Type)
 }
 
 Shader::Shader()
+    : m_shaderProg(0), m_status(Uninitialized)
 {
-    m_shaderProg = 0;
 }
 
 
 Shader::~Shader()
 {
-    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    if(getShaderId())
     {
-        glDeleteShader(*it);
-    }
-
-    if (m_shaderProg != 0)
-    {
-        glDeleteProgram(m_shaderProg);
-        m_shaderProg = 0;
+        destroy();
     }
 }
 
 
-bool Shader::Init()
+bool Shader::create()
 {
     m_shaderProg = glCreateProgram();
 
@@ -58,11 +57,32 @@ bool Shader::Init()
         return false;
     }
 
+    m_status = NotCompiled;
     return true;
 }
 
-bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
+
+void Shader::destroy()
 {
+    PATATE_ASSERT_NO_GL_ERROR();
+
+    glDeleteProgram(m_shaderProg);
+
+    if(glGetError() == GL_NO_ERROR)
+        m_shaderProg = 0;
+}
+
+
+void Shader::use()
+{
+    glUseProgram(m_shaderProg);
+}
+
+
+bool Shader::addShader(GLenum _ShaderType, const char* _pShaderText)
+{
+    PATATE_ASSERT_NO_GL_ERROR();
+
     GLuint ShaderObj = glCreateShader(_ShaderType);
 
     if (ShaderObj == 0)
@@ -94,10 +114,11 @@ bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
 
     glAttachShader(m_shaderProg, ShaderObj);
 
-    return PATATE_GLCheckError();
+    return glGetError() == GL_NO_ERROR;
 }
 
-bool Shader::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
+
+bool Shader::addShaderFromFile(GLenum _ShaderType, const char* _pFilename)
 {
     FILE* fp;
     size_t filesize;
@@ -124,17 +145,33 @@ bool Shader::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
     pShaderText[filesize] = 0;
     fclose(fp);
 
-    bool res = AddShader(_ShaderType, pShaderText);
+    bool res = addShader(_ShaderType, pShaderText);
 
     delete [] pShaderText;
 
     return res;
 }
 
-bool Shader::Finalize()
+
+void Shader::clearShaderList()
 {
+    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    {
+        glDetachShader(m_shaderProg, *it);
+        glDeleteShader(*it);
+    }
+    m_shaderObjList.clear();
+}
+
+
+bool Shader::finalize()
+{
+    PATATE_ASSERT_NO_GL_ERROR();
+
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
+
+    m_status = CompilationFailed;
 
     glLinkProgram(m_shaderProg);
 
@@ -155,24 +192,17 @@ bool Shader::Finalize()
         return false;
     }
 
-    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    if(glGetError() == GL_NO_ERROR)
     {
-        glDeleteShader(*it);
+        clearShaderList();
+        m_status = CompilationSuccessful;
     }
 
-    m_shaderObjList.clear();
-
-    return PATATE_GLCheckError();
+    return m_status == CompilationSuccessful;
 }
 
 
-void Shader::Enable()
-{
-    glUseProgram(m_shaderProg);
-}
-
-
-GLint Shader::GetUniformLocation(const char* _pUniformName)
+GLint Shader::getUniformLocation(const char* _pUniformName)
 {
     GLuint Location = glGetUniformLocation(m_shaderProg, _pUniformName);
 
@@ -184,10 +214,12 @@ GLint Shader::GetUniformLocation(const char* _pUniformName)
     return Location;
 }
 
-GLint Shader::GetProgramParam(GLint _param)
+GLint Shader::getProgramParam(GLint _param)
 {
     GLint ret;
     glGetProgramiv(m_shaderProg, _param, &ret);
     return ret;
 }
 
+
+}

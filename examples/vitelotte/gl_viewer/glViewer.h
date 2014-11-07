@@ -32,13 +32,8 @@
 #include <cstdio>
 #include <Eigen/Dense>
 
+#include <Patate/vitelotte_gl.h>
 
-namespace Vitelotte {
-    template < typename _Scalar, int _Dim, int _Chan >
-    class VGMesh;
-    template < typename _Mesh >
-    class VGMeshRenderer;
-}
 
 class GLViewer
 {
@@ -203,6 +198,7 @@ private:
     Box       m_boundingBox;
 
     Renderer* m_pQMeshRenderer;
+    Vitelotte::VGMeshRendererDefaultShaders m_defaultShader;
 
     bool m_wireframe;
     bool m_showShaderWireframe;

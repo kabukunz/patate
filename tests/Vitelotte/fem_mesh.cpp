@@ -83,7 +83,7 @@ int main(int argc, char** argv)
 //    mesh.setEdgeConstraintFlag(true);
 //    mesh.isEdgeConstrained(mesh.edge(from)) = true;
 
-    mesh.finalize();
+//    mesh.finalize();
 
 //    mesh.initializeValueConstraints();
 
@@ -157,6 +157,10 @@ int main(int argc, char** argv)
     in.close();
 
     Vitelotte::writeMvgToFile("test2.mvg", mesh2);
+
+    Mesh mesh3 = mesh;
+    Vitelotte::writeMvgToFile("test3.mvg", mesh3);
+    Vitelotte::writeMvgToFile("test4.mvg", mesh);
 
 //    std::cout << "nNodes before: " << mesh.nNodes() << "\n";
 //    mesh.compactNodes();

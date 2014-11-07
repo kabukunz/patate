@@ -95,6 +95,7 @@ bool GLViewer::init()
 
     glewExperimental = GL_TRUE;
     GLenum res = glewInit();
+    glGetError();  // FIXME: avoid a GL error, but why glewInit fail ?
     if (res != GLEW_OK)
     {
         fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
@@ -114,6 +115,8 @@ bool GLViewer::init()
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
         }
     }
+
+    PATATE_ASSERT_NO_GL_ERROR();
 
     return true;
 }
@@ -186,6 +189,8 @@ void GLViewer::shutdown()
 
 void GLViewer::startup(const std::string& filename)
 {
+    PATATE_ASSERT_NO_GL_ERROR();
+
     m_pQvg = new Mesh;
 
     try
@@ -221,12 +226,14 @@ void GLViewer::startup(const std::string& filename)
     glEnable(GL_DEPTH_TEST);
 
     m_pQMeshRenderer = new Renderer;
-    m_pQMeshRenderer->init(m_pQvg);
+    m_pQMeshRenderer->initialize(m_pQvg);
+
+    PATATE_ASSERT_NO_GL_ERROR();
 }
 
 void GLViewer::render()
 {
-    PATATE_GLCheckError();
+    PATATE_ASSERT_NO_GL_ERROR();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -240,9 +247,15 @@ void GLViewer::render()
         m_viewCenter.y() + yOffset,
         -1, 1);
 
-    m_pQMeshRenderer->render(m_viewMatrix, m_zoom, m_pointRadius, m_lineWidth, m_showShaderWireframe);
+    m_defaultShader.viewMatrix() = m_viewMatrix;
+    m_defaultShader.showWireframe() = m_showShaderWireframe;
+    m_defaultShader.zoom() = m_zoom;
+    m_defaultShader.pointRadius() = m_pointRadius;
+    m_defaultShader.lineWidth() = m_lineWidth;
 
-    PATATE_GLCheckError();
+    m_pQMeshRenderer->render(m_defaultShader);
+
+    PATATE_ASSERT_NO_GL_ERROR();
 }
 
 void GLViewer::onRefresh() {

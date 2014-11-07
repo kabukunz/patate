@@ -46,8 +46,11 @@ OBJBaseReader::parseIndiceList(const std::string& _list,
     while(m_indicesStream.good())
     {
         int i;
-        if(m_indicesStream.peek() == '/')
+        if(m_indicesStream.peek() == '/' || m_indicesStream.peek() == 'x')
+        {
             i = -1;
+            m_indicesStream.get();
+        }
         else
             m_indicesStream >> i;
         _indices.push_back(i);

@@ -9,7 +9,7 @@
 
 #define PATATE_SAFE_DELETE(p) if (p) { delete p; p = NULL; }
 
-#define PATATE_GLExitIfError()                                                          \
+#define PATATE_ASSERT_NO_GL_ERROR()                                                          \
 {                                                                               \
     GLenum Error = glGetError();                                                \
                                                                                 \
@@ -18,8 +18,6 @@
         exit(0);                                                                \
     }                                                                           \
 }
-
-#define PATATE_GLCheckError() (glGetError() == GL_NO_ERROR)
 
 #endif
 

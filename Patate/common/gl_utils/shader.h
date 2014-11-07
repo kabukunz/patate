@@ -16,37 +16,53 @@ namespace Patate {
 class Shader
 {
 public:
+    enum Status
+    {
+        Uninitialized,
+        NotCompiled,
+        CompilationSuccessful,
+        CompilationFailed
+    };
+
+public:
 
     inline Shader();
-    inline ~Shader();
+    inline virtual ~Shader();
 
-    inline virtual bool Init();
+    inline bool create();
+    inline void destroy();
 
-    inline void Enable();
+    inline void use();
 
-    inline bool AddShaderFromFile(GLenum _ShaderType, const char* _pFilename);
-    inline bool AddShader(GLenum _ShaderType, const char* _pShaderText);
-    inline bool Finalize();
+    inline Status status() const { return m_status; }
 
-    GLuint GetShaderId() { return m_shaderProg; }
+    inline bool addShaderFromFile(GLenum _ShaderType, const char* _pFilename);
+    inline bool addShader(GLenum _ShaderType, const char* _pShaderText);
+    inline void clearShaderList();
+    inline bool finalize();
 
-    inline GLint GetUniformLocation(const char* _pUniformName);
-    inline GLint GetProgramParam(GLint _param);
+    inline GLuint getShaderId() { return m_shaderProg; }
+
+    inline GLint getUniformLocation(const char* _pUniformName);
+    inline GLint getProgramParam(GLint _param);
   
 protected:
     GLuint m_shaderProg;
     
 private:
     typedef std::list<GLuint> ShaderObjList;
+
+    Status m_status;
     ShaderObjList m_shaderObjList;
 };
 
 //#define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 
+}
+
 #include "shader.hpp"
 
-}
 
 #endif
 

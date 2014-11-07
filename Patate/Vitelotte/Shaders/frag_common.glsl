@@ -4,6 +4,8 @@ uniform float zoom;
 uniform float pointRadius;
 uniform float halfLineWidth;
 uniform bool showWireframe;
+uniform vec4 wireframeColor;
+uniform vec4 pointColor;
 
 in vec3 linearBasis;
 in vec2 position;
@@ -70,14 +72,14 @@ vec4 colorWithBordersAndPoints(in vec4 colorNodes[6])
 
     if(showWireframe)
     {
-        color = mix(color, vec4(0., 0., 0., 1.),
-                    interpFactor(edgeDist[closestEdge], halfLineWidth+.5));
-        color = mix(color, colorNodes[closestEdge + 3]*.5,
-                    interpFactor(edgeDist[closestEdge], halfLineWidth));
-        color = mix(color, vec4(0., 0., 0., 1.),
-                    interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius+.5));
-        color = mix(color, colorNodes[closestVx],
-                    interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
+		color = mix(color, wireframeColor,
+					interpFactor(edgeDist[closestEdge], halfLineWidth));
+//        color = mix(color, colorNodes[closestEdge + 3]*.5,
+//                    interpFactor(edgeDist[closestEdge], halfLineWidth));
+		color = mix(color, pointColor,
+					interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
+//        color = mix(color, colorNodes[closestVx],
+//                    interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
     }
 
     return color;

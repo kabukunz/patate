@@ -65,12 +65,10 @@ public:
     explicit VGMesh(unsigned attributes = 0);
     virtual ~VGMesh() {}
 
-    template < typename OtherScalar >
-    VGMesh(const VGMesh<OtherScalar, _Dim, _Chan>& other)
+    VGMesh(const Self& other)
     { operator=(other); }
 
-    template < typename OtherScalar >
-    VGMesh& operator=(const VGMesh<OtherScalar, _Dim, _Chan>& rhs);
+    VGMesh& operator=(const Self& rhs);
 
     unsigned getAttributes() const { return m_attributes; }
     void setAttributes(unsigned attributes);
