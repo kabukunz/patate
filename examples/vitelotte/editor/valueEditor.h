@@ -22,6 +22,9 @@ public:
     virtual void resizeEvent(QResizeEvent* event);
     virtual void paintEvent(QPaintEvent* event);
 
+    virtual void mouseReleaseEvent(QMouseEvent* event);
+    virtual void mouseMoveEvent(QMouseEvent* event);
+
 
 public slots:
     void setDocument(Document* document);
@@ -32,25 +35,31 @@ public slots:
 private:
     enum InnerSelection
     {
-        FromNode  = 0x00,
-        MidNode   = 0x01,
-        ToNode    = 0x02,
-        PosMask   = 0x03,
+        FromValueNode    = Document::FromValueNode,
+        ToValueNode      = Document::ToValueNode,
+        EdgeValueNode    = Document::EdgeValueNode,
+        EdgeGradientNode = Document::EdgeGradientNode,
 
-        LowerEdge = 0x00,
-        UpperEdge = 0x04
+        PosMask = 0x0f,
+
+        UpperEdge = 0x10
     };
 
 private:
     QPointF vectorToPoint(const Eigen::Vector2f& v) const;
+    Eigen::Vector2f pointToVector(const QPointF& p) const;
     QTransform matrixToTransform(const Eigen::Matrix3f& m) const;
     QColor valueToColor(const Mesh::NodeValue& v) const;
+    Mesh::NodeValue colorToValue(const QColor& c) const;
 
-    Mesh::Node node(unsigned node) const;
-    Eigen::Vector2f nodePos(unsigned node) const;
+    Mesh::Node node(int nid) const;
+    Mesh::Node oppositeNode(int nid) const;
+    Eigen::Vector2f nodePos(int nid) const;
 
-    void drawValueNode(QPainter& p, Mesh::Node n, const QPointF& pos,
-                       float offset);
+    int select(const Eigen::Vector2f& edgePos) const;
+    int select(const QPointF& screenPos) const;
+
+    void drawValueNode(QPainter& p, int nid);
 
 
 private:

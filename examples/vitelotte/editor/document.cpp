@@ -4,7 +4,7 @@
 
 
 Document::Document()
-    : m_fvSolver(&m_solvedMesh)
+    : m_fvSolver(&m_solvedMesh), m_undoStack(new QUndoStack(this))
 {
 
 }
@@ -88,25 +88,14 @@ void Document::solve()
 {
     m_solvedMesh = m_mesh;
     m_solvedMesh.finalize();
-    m_solvedMesh.compactNodes();
+    // Would break undo
+    //m_solvedMesh.compactNodes();
 
     m_fvSolver.build();
     m_fvSolver.sort();
     m_fvSolver.solve();
 
     emit meshUpdated();
-}
-
-
-void Document::loadMesh(const std::string& filename)
-{
-    Vitelotte::readMvgFromFile(filename, m_mesh);
-    m_mesh.setAttributes(Mesh::FV);
-
-    updateBoundingBox();
-    setSelectedEdge(Mesh::Edge());
-
-    solve();
 }
 
 
@@ -131,4 +120,162 @@ Document::Mesh& Document::solvedMesh()
 const Document::Mesh& Document::solvedMesh() const
 {
     return m_solvedMesh;
+}
+
+
+QUndoStack* Document::undoStack()
+{
+    return m_undoStack;
+}
+
+
+Document::HalfedgeNode Document::swapNode(HalfedgeNode nid) const
+{
+    if(nid < MaxVertexNode)
+        return HalfedgeNode(int(nid) ^ 1);
+    return nid;
+}
+
+
+Document::Mesh::Node Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid) const
+{
+    switch(nid)
+    {
+    case FromValueNode:
+        if(m_mesh.hasVertexFromValue())
+            return m_mesh.vertexFromValueNode(h);
+        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
+    case ToValueNode:   return m_mesh.vertexValueNode(h);
+    case EdgeValueNode: return m_mesh.edgeValueNode(h);
+    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
+    default: abort();
+    }
+    return Mesh::Node();
+}
+
+
+Document::Mesh::Node& Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid)
+{
+    switch(nid)
+    {
+    case FromValueNode:
+        if(m_mesh.hasVertexFromValue())
+            return m_mesh.vertexFromValueNode(h);
+        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
+    case ToValueNode:   return m_mesh.vertexValueNode(h);
+    case EdgeValueNode: return m_mesh.edgeValueNode(h);
+    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
+    default: abort();
+    }
+}
+
+
+void Document::splitNode(Mesh::Halfedge h, HalfedgeNode nid)
+{
+    Mesh::Node n = meshNode(h, nid);
+
+    Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
+    HalfedgeNode onid = swapNode(nid);
+    Mesh::Node on = meshNode(oh, onid);
+
+    assert(n == on);
+
+    if(!n.isValid())
+        return;
+
+    // TODO: make this an UndoCommand
+    Mesh::Node nn = m_mesh.addNode(m_mesh.nodeValue(n));
+
+    undoStack()->push(new SetNode(this, oh, onid, nn));
+}
+
+
+void Document::mergeNode(Mesh::Halfedge h, HalfedgeNode nid)
+{
+    Mesh::Node n = meshNode(h, nid);
+
+    Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
+    HalfedgeNode onid = swapNode(nid);
+    Mesh::Node on = meshNode(oh, onid);
+
+    assert(n != on);
+
+    undoStack()->push(new SetNode(this, oh, onid, n));
+}
+
+
+void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
+                            const Mesh::NodeValue& value)
+{
+    Mesh::Node n = meshNode(h, nid);
+
+    if(!n.isValid())
+    {
+        Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
+        HalfedgeNode onid = swapNode(nid);
+        Mesh::Node on = meshNode(oh, onid);
+
+        Mesh::Node nn = m_mesh.addNode(value);
+
+        undoStack()->beginMacro("set node");
+        undoStack()->push(new SetNode(this, h, nid, nn));
+        if(!on.isValid())
+            undoStack()->push(new SetNode(this, oh, onid, nn));
+        undoStack()->endMacro();
+    }
+    else
+        undoStack()->push(new SetNodeValue(this, n, value));
+}
+
+
+void Document::loadMesh(const std::string& filename)
+{
+    Vitelotte::readMvgFromFile(filename, m_mesh);
+    m_mesh.setAttributes(Mesh::FV);
+
+    updateBoundingBox();
+    setSelectedEdge(Mesh::Edge());
+
+    solve();
+}
+
+
+SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value)
+    : m_document(doc), m_node(node), m_newValue(value),
+      m_prevValue(m_document->mesh().nodeValue(m_node))
+{
+}
+
+
+void SetNodeValue::undo()
+{
+    m_document->mesh().nodeValue(m_node) = m_prevValue;
+    m_document->solve();
+}
+
+
+void SetNodeValue::redo()
+{
+    m_document->mesh().nodeValue(m_node) = m_newValue;
+    m_document->solve();
+}
+
+
+SetNode::SetNode(Document* doc, Halfedge halfedge,
+                 Document::HalfedgeNode nid, Node node)
+    : m_document(doc), m_halfedge(halfedge), m_nid(nid), m_newNode(node),
+      m_prevNode(m_document->meshNode(m_halfedge, m_nid))
+{
+}
+
+void SetNode::undo()
+{
+    m_document->meshNode(m_halfedge, m_nid) = m_prevNode;
+    m_document->solve();
+}
+
+
+void SetNode::redo(){
+    m_document->meshNode(m_halfedge, m_nid) = m_newNode;
+    m_document->solve();
 }

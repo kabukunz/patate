@@ -87,6 +87,7 @@ void Editor::updateBuffers()
 {
     assert(m_document);
     m_renderer.setMesh(&mesh());
+    updateGL();
 }
 
 
@@ -229,11 +230,11 @@ void Editor::wheelEvent(QWheelEvent* event)
 
 Editor::Mesh& Editor::mesh()
 {
-    return m_document->mesh();
+    return m_document->solvedMesh();
 }
 
 
 const Editor::Mesh& Editor::mesh() const
 {
-    return m_document->mesh();
+    return m_document->solvedMesh();
 }

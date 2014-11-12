@@ -1,14 +1,16 @@
 #include <QPainter>
 #include <QPaintEvent>
+#include <QColorDialog>
 
 #include "valueEditor.h"
 
 
 ValueEditor::ValueEditor(QWidget* parent)
     : QWidget(parent), m_document(0),
-      m_edgeToScreen(Eigen::Matrix3f::Identity()), m_size(1),
+      m_edgeToScreen(Eigen::Matrix3f::Identity()), m_size(1), m_overNode(-1),
       m_edgeOffset(3), m_nodeOffset(20), m_nodeSize(6), m_textOffset(20)
 {
+    setMouseTracking(true);
 }
 
 
@@ -34,47 +36,101 @@ void ValueEditor::paintEvent(QPaintEvent* event)
 
     if(m_lowerHalfedge.isValid())
     {
-        Mesh& m = m_document->mesh();
-
-        Mesh::Halfedge h0 = m_lowerHalfedge;
-        Mesh::Halfedge h1 = m.oppositeHalfedge(m_lowerHalfedge);
-
-        bool sSplit = m.vertexValueNode(h0) != m.vertexFromValueNode(h1);
-        bool mSplit = m.edgeValueNode(h0) != m.edgeValueNode(h1);
-        bool eSplit = m.vertexFromValueNode(h0) != m.vertexValueNode(h1);
-
         p.setWorldTransform(matrixToTransform(m_edgeToScreen));
 
         m_pen.setWidth(2);
         p.setPen(m_pen);
 
-        p.drawLine(QPointF(-m_size, sSplit?  m_edgeOffset: 0),
-                   QPointF(      0, mSplit?  m_edgeOffset: 0));
-        if(sSplit || mSplit)
+        bool fSplit = node(FromValueNode) != node(FromValueNode | UpperEdge);
+        bool tSplit = node(  ToValueNode) != node(  ToValueNode | UpperEdge);
+        bool eSplit = node(EdgeValueNode) != node(EdgeValueNode | UpperEdge);
+
+        p.drawLine(QPointF( m_size, fSplit?  m_edgeOffset: 0),
+                   QPointF(      0, eSplit?  m_edgeOffset: 0));
+        if(fSplit || eSplit)
         {
-            p.drawLine(QPointF(-m_size, sSplit? -m_edgeOffset: 0),
-                       QPointF(      0, mSplit? -m_edgeOffset: 0));
+            p.drawLine(QPointF( m_size, fSplit? -m_edgeOffset: 0),
+                       QPointF(      0, eSplit? -m_edgeOffset: 0));
         }
-        p.drawLine(QPointF(      0, mSplit?  m_edgeOffset: 0),
-                   QPointF( m_size, eSplit?  m_edgeOffset: 0));
-        if(mSplit || eSplit)
+        p.drawLine(QPointF(      0, eSplit?  m_edgeOffset: 0),
+                   QPointF(-m_size, tSplit?  m_edgeOffset: 0));
+        if(eSplit || tSplit)
         {
-            p.drawLine(QPointF(      0, mSplit? -m_edgeOffset: 0),
-                       QPointF( m_size, eSplit? -m_edgeOffset: 0));
+            p.drawLine(QPointF(      0, eSplit? -m_edgeOffset: 0),
+                       QPointF(-m_size, tSplit? -m_edgeOffset: 0));
         }
 
-        drawValueNode(
-            p, m.vertexValueNode(h0), QPointF(-m_size, 0), sSplit);
-        if(sSplit)
-            drawValueNode(p, m.vertexFromValueNode(h1), QPointF(-m_size, 0), -1);
+        for(int i=0; i<3; ++i)
+        {
+            Mesh::Node nl = node(i);
+            Mesh::Node nu = node(i | UpperEdge);
 
-        drawValueNode(p, m.edgeValueNode(h0), QPointF(0, 0), mSplit);
-        if(mSplit)
-            drawValueNode(p, m.edgeValueNode(h1), QPointF(     0, 0), -1);
+            drawValueNode(p, i);
+            if(nl != nu)
+                drawValueNode(p, i | UpperEdge);
+        }
+    }
+}
 
-        drawValueNode(p, m.vertexFromValueNode(h0), QPointF( m_size, 0), eSplit);
-        if(eSplit)
-            drawValueNode(p, m.vertexValueNode(h1), QPointF( m_size, 0), -1);
+
+void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
+{
+    if(!m_document || m_overNode < 0)
+        return;
+
+    Mesh& m = m_document->mesh();
+
+    Mesh::Node n = node(m_overNode);
+    Mesh::Node on = oppositeNode(m_overNode);
+
+    Mesh::Halfedge h = m_lowerHalfedge;
+    Document::HalfedgeNode nid = Document::HalfedgeNode(m_overNode & PosMask);
+    if(m_overNode & UpperEdge)
+    {
+        h = m.oppositeHalfedge(h);
+        nid = m_document->swapNode(nid);
+    }
+
+    if(event->modifiers() & Qt::ControlModifier &&
+            event->button() == Qt::LeftButton)
+    {
+        if(n == on)
+        {
+            if(n.isValid())
+                m_document->splitNode(h, nid);
+        }
+        else
+        {
+            m_document->mergeNode(h, nid);
+        }
+    }
+    else if(event->button() == Qt::LeftButton || event->button() == Qt::RightButton)
+    {
+        Mesh::NodeValue v = Mesh::UnconstrainedNode;
+        if(event->button() == Qt::LeftButton)
+        {
+            QColor color = Qt::white;
+            if(n.isValid())
+                color = valueToColor(m.nodeValue(n));
+            color = QColorDialog::getColor(color, this,
+                    "Pick a color", QColorDialog::ShowAlphaChannel);
+            if(!color.isValid())
+                return;
+            v = colorToValue(color);
+        }
+
+        m_document->setNodeValue(h, nid, v);
+    }
+}
+
+
+void ValueEditor::mouseMoveEvent(QMouseEvent* event)
+{
+    int s = select(event->localPos());
+    if(s != m_overNode)
+    {
+        m_overNode = s;
+        update();
     }
 }
 
@@ -92,6 +148,8 @@ void ValueEditor::setDocument(Document* document)
 
     if(m_document)
     {
+        connect(m_document, SIGNAL(meshUpdated()),
+                this,         SLOT(update()));
         connect(m_document, SIGNAL(selectedEdgeChanged()),
                 this,         SLOT(updateSelection()));
     }
@@ -142,6 +200,12 @@ QPointF ValueEditor::vectorToPoint(const Eigen::Vector2f& v) const
 }
 
 
+Eigen::Vector2f ValueEditor::pointToVector(const QPointF& p) const
+{
+    return Eigen::Vector2f(p.x(), p.y());
+}
+
+
 QTransform ValueEditor::matrixToTransform(const Eigen::Matrix3f& m) const
 {
     return QTransform(m(0, 0), m(1, 0), m(2, 0),
@@ -153,81 +217,120 @@ QTransform ValueEditor::matrixToTransform(const Eigen::Matrix3f& m) const
 QColor ValueEditor::valueToColor(const Mesh::NodeValue& v) const
 {
     return QColor(
-                std::min(std::max(int(v(0) * 256), 0), 255),
-                std::min(std::max(int(v(1) * 256), 0), 255),
-                std::min(std::max(int(v(2) * 256), 0), 255),
-                std::min(std::max(int(v(3) * 256), 0), 255));
+                std::min(std::max(int(v(0) * 255), 0), 255),
+                std::min(std::max(int(v(1) * 255), 0), 255),
+                std::min(std::max(int(v(2) * 255), 0), 255),
+                std::min(std::max(int(v(3) * 255), 0), 255));
 }
 
 
-ValueEditor::Mesh::Node ValueEditor::node(unsigned node) const
+ValueEditor::Mesh::NodeValue ValueEditor::colorToValue(const QColor& c) const
+{
+    return Mesh::NodeValue(
+                c.redF(), c.greenF(), c.blueF(), c.alphaF());
+}
+
+
+ValueEditor::Mesh::Node ValueEditor::node(int nid) const
 {
     Mesh::Halfedge h = m_lowerHalfedge;
     Mesh& m = m_document->mesh();
-    if(node & UpperEdge)
-        h = m_document->mesh().oppositeHalfedge(h);
+    Document::HalfedgeNode mnid = Document::HalfedgeNode(nid & PosMask);
 
-    switch(node) {
-    case (FromNode | LowerEdge):
-    case (ToNode   | UpperEdge):
-        return m.vertexValueNode(h);
-    case (MidNode  | LowerEdge):
-    case (MidNode  | UpperEdge):
-        return m.edgeValueNode(h);
-    case (ToNode   | LowerEdge):
-    case (FromNode | UpperEdge):
-        return m.vertexFromValueNode(h);
-    default: abort();
+    if(nid & UpperEdge)
+    {
+        h = m_document->mesh().oppositeHalfedge(h);
+        mnid = m_document->swapNode(mnid);
     }
-    return Mesh::Node();
+
+    return m_document->meshNode(h, mnid);
 }
 
 
-Eigen::Vector2f ValueEditor::nodePos(unsigned node) const
+ValueEditor::Mesh::Node ValueEditor::oppositeNode(int nid) const
 {
-    Eigen::Vector2f offset(0, m_nodeOffset * (node & LowerEdge? 1: -1));
-    switch(node & PosMask) {
-    case FromNode:
-        return Eigen::Vector2f(-m_size, 0) + offset;
-    case MidNode:
-        return Eigen::Vector2f(      0, 0) + offset;
-    case ToNode:
+    return node(nid ^ UpperEdge);
+}
+
+
+Eigen::Vector2f ValueEditor::nodePos(int nid) const
+{
+    unsigned pos = nid & PosMask;
+    Eigen::Vector2f offset(0, 0);
+    if(node(pos) != node(pos | UpperEdge))
+        offset.y() = m_nodeOffset * (nid & UpperEdge? -1: 1);
+    switch(pos) {
+    case FromValueNode:
         return Eigen::Vector2f( m_size, 0) + offset;
+    case ToValueNode:
+        return Eigen::Vector2f(-m_size, 0) + offset;
+    case EdgeValueNode:
+        return Eigen::Vector2f(      0, 0) + offset;
     default: abort();
     }
     return Eigen::Vector2f();
 }
 
 
-void ValueEditor::drawValueNode(QPainter& p, Mesh::Node n, const QPointF& pos,
-                                float offset)
+int ValueEditor::select(const Eigen::Vector2f& edgePos) const
 {
-    offset *= m_nodeOffset;
+    if(m_lowerHalfedge.isValid())
+    {
+        float nodeSize2 = m_nodeSize * m_nodeSize;
+        for(int side=0; side<2; ++side)
+        {
+            for(int pos=0; pos<3; ++pos)
+            {
+                int nid = pos | (side? UpperEdge: 0);
+                Eigen::Vector2f np = nodePos(nid);
+                if((edgePos - np).squaredNorm() <= nodeSize2)
+                    return nid;
+            }
+        }
+    }
+    return -1;
+}
 
-    QPointF pos2 = pos + QPointF(0, offset);
+
+int ValueEditor::select(const QPointF& screenPos) const
+{
+    Eigen::Vector3f sp;
+    sp << pointToVector(screenPos), 1;
+
+    Eigen::Vector2f edgePos =
+            m_edgeToScreen.partialPivLu().solve(sp).head<2>();
+
+    return select(edgePos);
+}
+
+
+void ValueEditor::drawValueNode(QPainter& p, int nid)
+{
+    Mesh::Node n = node(nid);
+    QPointF pos = vectorToPoint(nodePos(nid));
     if(n.isValid() && m_document->mesh().isConstraint(n))
     {
-        m_pen.setWidth(1);
+        m_pen.setWidth(nid == m_overNode? 2: 1);
         p.setPen(m_pen);
 
         p.setBrush(QBrush(valueToColor(m_document->mesh().nodeValue(n))));
-        p.drawEllipse(pos2, m_nodeSize, m_nodeSize);
+        p.drawEllipse(pos, m_nodeSize, m_nodeSize);
     }
     else
     {
-        m_pen.setWidth(2);
+        m_pen.setWidthF(nid == m_overNode? 2: 1.5);
         p.setPen(m_pen);
 
-        p.drawLine(pos2 + QPointF(-m_nodeSize, -m_nodeSize),
-                   pos2 + QPointF( m_nodeSize,  m_nodeSize));
-        p.drawLine(pos2 + QPointF(-m_nodeSize,  m_nodeSize),
-                   pos2 + QPointF( m_nodeSize, -m_nodeSize));
+        p.drawLine(pos + QPointF(-m_nodeSize, -m_nodeSize),
+                   pos + QPointF( m_nodeSize,  m_nodeSize));
+        p.drawLine(pos + QPointF(-m_nodeSize,  m_nodeSize),
+                   pos + QPointF( m_nodeSize, -m_nodeSize));
     }
 
     QFontMetrics fm(p.font());
     QString id = QString::number(n.idx());
-    float textOffset = m_textOffset * (offset>0? 1: -1);
-    QPointF pos3 = pos2 + QPointF(-fm.width(id) / 2,
-        textOffset + (offset>0? fm.ascent(): 0));
-    p.drawText(pos3, id);
+    float textOffset = m_textOffset * (pos.y()>0? 1: -1);
+    QPointF posText = pos + QPointF(-fm.width(id) / 2,
+        textOffset + (pos.y()>0? fm.ascent(): 0));
+    p.drawText(posText, id);
 }
