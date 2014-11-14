@@ -248,12 +248,15 @@ void GLViewer::render()
         -1, 1);
 
     m_defaultShader.viewMatrix() = m_viewMatrix;
-    m_defaultShader.showWireframe() = m_showShaderWireframe;
-    m_defaultShader.zoom() = m_zoom;
-    m_defaultShader.pointRadius() = m_pointRadius;
-    m_defaultShader.lineWidth() = m_lineWidth;
-
     m_pQMeshRenderer->render(m_defaultShader);
+
+    if(m_showShaderWireframe)
+    {
+        m_wireframeShader.viewMatrix() = m_viewMatrix;
+        m_wireframeShader.setZoom(m_zoom);
+        m_wireframeShader.setLineWidth(m_lineWidth);
+        m_pQMeshRenderer->render(m_wireframeShader);
+    }
 
     PATATE_ASSERT_NO_GL_ERROR();
 }

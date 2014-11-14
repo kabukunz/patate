@@ -77,7 +77,8 @@ private:
     Eigen::Vector2f m_dragPos;
 
     Renderer m_renderer;
-    Vitelotte::VGMeshRendererDefaultShaders m_defaultShaders;
+    Vitelotte::VGMeshRendererDefaultShader m_defaultShader;
+    Vitelotte::VGMeshRendererWireframeShader m_wireframeShader;
 };
 
 

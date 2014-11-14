@@ -57,7 +57,7 @@ vec4 quadraticInterp(in vec4 colors[6])
 
 float interpFactor(float dist, float radius)
 {
-    return clamp(.5 - dist*zoom + radius, 0, 1);
+	return clamp(.5 + radius - dist*zoom, 0, 1);
 }
 
 vec4 colorWithBordersAndPoints(in vec4 colorNodes[6])

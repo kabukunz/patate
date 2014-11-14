@@ -1,10 +1,12 @@
+#include <QFileDialog>
+
 #include "Patate/vitelotte_io.h"
 
 #include "document.h"
 
 
-Document::Document()
-    : m_fvSolver(&m_solvedMesh), m_undoStack(new QUndoStack(this))
+Document::Document(QObject *parent)
+    : QObject(parent), m_fvSolver(&m_solvedMesh), m_undoStack(new QUndoStack(this))
 {
 
 }
@@ -237,6 +239,42 @@ void Document::loadMesh(const std::string& filename)
     setSelectedEdge(Mesh::Edge());
 
     solve();
+}
+
+
+void Document::openLoadMeshDialog()
+{
+    QString file = QFileDialog::getOpenFileName(0, "Open mesh", "",
+        "Mesh-based vector graphics (*.mvg)");
+
+    if(!file.isEmpty())
+    {
+        loadMesh(file.toStdString());
+    }
+}
+
+
+void Document::openSaveSourceMeshDialog()
+{
+    QString file = QFileDialog::getSaveFileName(0, "Open mesh", "",
+        "Mesh-based vector graphics (*.mvg)");
+
+    if(!file.isEmpty())
+    {
+        Vitelotte::writeMvgToFile(file.toStdString(), m_mesh);
+    }
+}
+
+
+void Document::openSaveFinalMeshDialog()
+{
+    QString file = QFileDialog::getSaveFileName(0, "Open mesh", "",
+        "Mesh-based vector graphics (*.mvg)");
+
+    if(!file.isEmpty())
+    {
+        Vitelotte::writeMvgToFile(file.toStdString(), m_solvedMesh);
+    }
 }
 
 

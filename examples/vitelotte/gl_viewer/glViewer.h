@@ -198,7 +198,8 @@ private:
     Box       m_boundingBox;
 
     Renderer* m_pQMeshRenderer;
-    Vitelotte::VGMeshRendererDefaultShaders m_defaultShader;
+    Vitelotte::VGMeshRendererDefaultShader m_defaultShader;
+    Vitelotte::VGMeshRendererWireframeShader m_wireframeShader;
 
     bool m_wireframe;
     bool m_showShaderWireframe;

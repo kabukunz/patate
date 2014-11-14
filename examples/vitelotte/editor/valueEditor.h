@@ -51,6 +51,7 @@ private:
     QTransform matrixToTransform(const Eigen::Matrix3f& m) const;
     QColor valueToColor(const Mesh::NodeValue& v) const;
     Mesh::NodeValue colorToValue(const QColor& c) const;
+    QPointF edgeToScreen(const Eigen::Vector2f& p) const;
 
     Mesh::Node node(int nid) const;
     Mesh::Node oppositeNode(int nid) const;

@@ -125,12 +125,12 @@ void Editor::initializeGL()
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glClearColor(.5, .5, .5, 1.);
 
-    m_defaultShaders.showWireframe() = true;
-    m_defaultShaders.lineWidth() = .5;
-    m_defaultShaders.wireframeColor() = Eigen::Vector4f(.5, .5, .5, 1.);
-
+    m_initialized = true;
     m_renderer.initialize();
     if(m_document) {
         m_renderer.setMesh(&mesh());
@@ -148,11 +148,15 @@ void Editor::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    m_defaultShaders.viewMatrix() = m_camera.projectionMatrix();
-    m_defaultShaders.zoom() = width() / m_camera.getViewBox().sizes()(0);
-
     if(m_document) {
-        m_renderer.render(m_defaultShaders);
+        m_defaultShader.viewMatrix() = m_camera.projectionMatrix();
+        m_renderer.render(m_defaultShader);
+
+        m_wireframeShader.viewMatrix() = m_camera.projectionMatrix();
+        m_wireframeShader.setLineWidth(.5);
+        m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
+        m_wireframeShader.setZoom(width() / m_camera.getViewBox().sizes()(0));
+        m_renderer.render(m_wireframeShader);
     }
 }
 

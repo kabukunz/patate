@@ -36,7 +36,7 @@ public:
 
 
 public:
-    Document();
+    Document(QObject* parent = 0);
 
     const BoundingBox& boundingBox() const;
     void updateBoundingBox();
@@ -70,6 +70,10 @@ public:
 
 public slots:
     void loadMesh(const std::string& filename);
+
+    void openLoadMeshDialog();
+    void openSaveSourceMeshDialog();
+    void openSaveFinalMeshDialog();
 
 
 signals:

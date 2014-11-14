@@ -36,7 +36,7 @@ void ValueEditor::paintEvent(QPaintEvent* event)
 
     if(m_lowerHalfedge.isValid())
     {
-        p.setWorldTransform(matrixToTransform(m_edgeToScreen));
+        //p.setWorldTransform(matrixToTransform(m_edgeToScreen));
 
         m_pen.setWidth(2);
         p.setPen(m_pen);
@@ -45,19 +45,19 @@ void ValueEditor::paintEvent(QPaintEvent* event)
         bool tSplit = node(  ToValueNode) != node(  ToValueNode | UpperEdge);
         bool eSplit = node(EdgeValueNode) != node(EdgeValueNode | UpperEdge);
 
-        p.drawLine(QPointF( m_size, fSplit?  m_edgeOffset: 0),
-                   QPointF(      0, eSplit?  m_edgeOffset: 0));
+        p.drawLine(edgeToScreen(Eigen::Vector2f( m_size, fSplit *  m_edgeOffset)),
+                   edgeToScreen(Eigen::Vector2f(      0, eSplit *  m_edgeOffset)));
         if(fSplit || eSplit)
         {
-            p.drawLine(QPointF( m_size, fSplit? -m_edgeOffset: 0),
-                       QPointF(      0, eSplit? -m_edgeOffset: 0));
+            p.drawLine(edgeToScreen(Eigen::Vector2f( m_size, fSplit * -m_edgeOffset)),
+                       edgeToScreen(Eigen::Vector2f(      0, eSplit * -m_edgeOffset)));
         }
-        p.drawLine(QPointF(      0, eSplit?  m_edgeOffset: 0),
-                   QPointF(-m_size, tSplit?  m_edgeOffset: 0));
+        p.drawLine(edgeToScreen(Eigen::Vector2f(      0, eSplit *  m_edgeOffset)),
+                   edgeToScreen(Eigen::Vector2f(-m_size, tSplit *  m_edgeOffset)));
         if(eSplit || tSplit)
         {
-            p.drawLine(QPointF(      0, eSplit? -m_edgeOffset: 0),
-                       QPointF(-m_size, tSplit? -m_edgeOffset: 0));
+            p.drawLine(edgeToScreen(Eigen::Vector2f(      0, eSplit * -m_edgeOffset)),
+                       edgeToScreen(Eigen::Vector2f(-m_size, tSplit * -m_edgeOffset)));
         }
 
         for(int i=0; i<3; ++i)
@@ -231,6 +231,13 @@ ValueEditor::Mesh::NodeValue ValueEditor::colorToValue(const QColor& c) const
 }
 
 
+QPointF ValueEditor::edgeToScreen(const Eigen::Vector2f& p) const
+{
+    return vectorToPoint(
+                (m_edgeToScreen * (Eigen::Vector3f() << p, 1).finished()).head<2>());
+}
+
+
 ValueEditor::Mesh::Node ValueEditor::node(int nid) const
 {
     Mesh::Halfedge h = m_lowerHalfedge;
@@ -307,30 +314,34 @@ int ValueEditor::select(const QPointF& screenPos) const
 void ValueEditor::drawValueNode(QPainter& p, int nid)
 {
     Mesh::Node n = node(nid);
-    QPointF pos = vectorToPoint(nodePos(nid));
+    Eigen::Vector2f edgePos = nodePos(nid);
     if(n.isValid() && m_document->mesh().isConstraint(n))
     {
         m_pen.setWidth(nid == m_overNode? 2: 1);
         p.setPen(m_pen);
 
         p.setBrush(QBrush(valueToColor(m_document->mesh().nodeValue(n))));
-        p.drawEllipse(pos, m_nodeSize, m_nodeSize);
+        p.drawEllipse(edgeToScreen(edgePos), m_nodeSize, m_nodeSize);
     }
     else
     {
-        m_pen.setWidthF(nid == m_overNode? 2: 1.5);
+        m_pen.setWidthF(nid == m_overNode? 2: 1.2);
         p.setPen(m_pen);
 
-        p.drawLine(pos + QPointF(-m_nodeSize, -m_nodeSize),
-                   pos + QPointF( m_nodeSize,  m_nodeSize));
-        p.drawLine(pos + QPointF(-m_nodeSize,  m_nodeSize),
-                   pos + QPointF( m_nodeSize, -m_nodeSize));
+        p.drawLine(edgeToScreen(edgePos + Eigen::Vector2f(-m_nodeSize, -m_nodeSize)),
+                   edgeToScreen(edgePos + Eigen::Vector2f( m_nodeSize,  m_nodeSize)));
+        p.drawLine(edgeToScreen(edgePos + Eigen::Vector2f(-m_nodeSize,  m_nodeSize)),
+                   edgeToScreen(edgePos + Eigen::Vector2f( m_nodeSize, -m_nodeSize)));
     }
 
     QFontMetrics fm(p.font());
     QString id = QString::number(n.idx());
-    float textOffset = m_textOffset * (pos.y()>0? 1: -1);
-    QPointF posText = pos + QPointF(-fm.width(id) / 2,
-        textOffset + (pos.y()>0? fm.ascent(): 0));
+    float textOffset = m_textOffset * (edgePos.y()>0? 1: -1);
+//    QPointF posText = pos + QPointF(-fm.width(id) / 2,
+//        textOffset + (pos.y()>0? fm.ascent(): 0));
+    QPointF posText =
+            edgeToScreen(edgePos +
+                         Eigen::Vector2f(-fm.width(id) / 2., textOffset)) +
+            QPointF(0, fm.ascent()/2);
     p.drawText(posText, id);
 }
