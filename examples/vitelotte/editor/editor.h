@@ -15,6 +15,8 @@
 #include "Patate/vitelotte_gl.h"
 
 #include "orthographicCamera.h"
+#include "glPointRenderer.h"
+#include "glLineRenderer.h"
 
 
 class QMouseEvent;
@@ -50,6 +52,7 @@ public slots:
     void centerView();
     void setDocument(Document* document);
     void updateBuffers();
+    void updateSelection();
 
 public:
     virtual void initializeGL();
@@ -79,6 +82,10 @@ private:
     Renderer m_renderer;
     Vitelotte::VGMeshRendererDefaultShader m_defaultShader;
     Vitelotte::VGMeshRendererWireframeShader m_wireframeShader;
+
+    GLPointRenderer m_pointRenderer;
+    GLLineRenderer m_lineRenderer;
+
 };
 
 

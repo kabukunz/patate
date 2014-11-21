@@ -205,7 +205,6 @@ VGMeshRendererWireframeShader::
 }
 
 
-
 template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::initialize(Mesh* _mesh)
 {
@@ -213,6 +212,7 @@ inline void VGMeshRenderer<_Mesh>::initialize(Mesh* _mesh)
 
     setMesh(_mesh);
 }
+
 
 template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::updateMesh()
@@ -309,6 +309,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     PATATE_ASSERT_NO_GL_ERROR();
 }
 
+
 template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::renderTriangles(
         VGMeshRendererShader& shaders, bool _singular)
@@ -356,6 +357,7 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(
     PATATE_ASSERT_NO_GL_ERROR();
 }
 
+
 template < class _Mesh >
 inline typename VGMeshRenderer<_Mesh>::NodeValue
 VGMeshRenderer<_Mesh>::nodeValue(Node node) const
@@ -365,6 +367,7 @@ VGMeshRenderer<_Mesh>::nodeValue(Node node) const
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 
+
 template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
 {
@@ -373,6 +376,7 @@ inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
         renderTriangles(shaders, pass);
     }
 }
+
 
 template < class _Mesh >
 template < typename T >

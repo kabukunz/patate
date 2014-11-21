@@ -5,6 +5,75 @@
 #include "document.h"
 
 
+MeshSelection::MeshSelection()
+    : m_type(SelectionNone),
+      m_index(-1)
+{}
+
+
+MeshSelection::MeshSelection(Mesh::Vertex v)
+    : m_type(v.isValid()? SelectionVertex: SelectionNone),
+      m_index(v.idx())
+{}
+
+
+MeshSelection::MeshSelection(Mesh::Edge e)
+    : m_type(e.isValid()? SelectionEdge: SelectionNone),
+      m_index(e.idx())
+{}
+
+
+bool MeshSelection::operator==(const MeshSelection& other) const
+{
+    return m_type == other.type() && m_index == other.m_index;
+}
+
+
+bool MeshSelection::operator!=(const MeshSelection& other) const
+{
+    return !(*this == other);
+}
+
+
+MeshSelection::SelectionType MeshSelection::type() const
+{
+    return m_type;
+}
+
+
+bool MeshSelection::isNone() const
+{
+    return type() == SelectionNone;
+}
+
+
+bool MeshSelection::isVertex() const
+{
+    return type() == SelectionVertex;
+}
+
+
+bool MeshSelection::isEdge() const
+{
+    return type() == SelectionEdge;
+}
+
+
+Mesh::Vertex MeshSelection::vertex() const
+{
+    assert(isVertex());
+    return Mesh::Vertex(m_index);
+}
+
+
+Mesh::Edge MeshSelection::edge() const
+{
+    assert(isEdge());
+    return Mesh::Edge(m_index);
+}
+
+
+
 Document::Document(QObject *parent)
     : QObject(parent), m_fvSolver(&m_solvedMesh), m_undoStack(new QUndoStack(this))
 {
@@ -29,20 +98,57 @@ void Document::updateBoundingBox()
 }
 
 
-Document::Mesh::Edge Document::selectedEdge() const
+MeshSelection Document::selection() const
 {
-    return m_selectedEdge;
+    return m_selection;
 }
 
 
-void Document::setSelectedEdge(Mesh::Edge e)
+void Document::setSelection(MeshSelection selection)
 {
-    assert(!e.isValid() || m_mesh.isValid(e));
-    if(e != m_selectedEdge)
+    assert(isSelectionValid(selection));
+    if(selection != m_selection)
     {
-        m_selectedEdge = e;
-        emit selectedEdgeChanged();
+        m_selection = selection;
+        emit selectionChanged();
     }
+}
+
+
+bool Document::isSelectionValid(MeshSelection selection)
+{
+    return selection.isNone()                                          ||
+          (selection.isVertex() && mesh().isValid(selection.vertex())) ||
+          (selection.isEdge()   && mesh().isValid(selection.edge()));
+}
+
+
+float Document::vertexSqrDist(Mesh::Vertex v, const Eigen::Vector2f& p) const
+{
+    Eigen::Vector2f vp = m_mesh.position(v);
+    return (vp - p).squaredNorm();
+}
+
+
+Mesh::Vertex Document::closestVertex(const Eigen::Vector2f& p,
+                                     float* sqrDist) const
+{
+    Mesh::VertexIterator vit = m_mesh.verticesBegin();
+    Mesh::Vertex closest = *vit;
+    float dist = vertexSqrDist(*vit, p);
+
+    for(++vit; vit != m_mesh.verticesEnd(); ++vit)
+    {
+        float vdist = vertexSqrDist(*vit, p);
+        if(vdist < dist)
+        {
+            dist = vdist;
+            closest = *vit;
+        }
+    }
+
+    if(sqrDist) *sqrDist = dist;
+    return closest;
 }
 
 
@@ -66,7 +172,8 @@ float Document::edgeSqrDist(Mesh::Edge e, const Eigen::Vector2f& p) const
 }
 
 
-Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p) const
+Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p,
+                                           float *sqrDist) const
 {
     Mesh::EdgeIterator eit = m_mesh.edgesBegin();
     Mesh::Edge closest = *eit;
@@ -82,6 +189,7 @@ Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p) const
         }
     }
 
+    if(sqrDist) *sqrDist = dist;
     return closest;
 }
 
@@ -236,7 +344,7 @@ void Document::loadMesh(const std::string& filename)
     m_mesh.setAttributes(Mesh::FV);
 
     updateBoundingBox();
-    setSelectedEdge(Mesh::Edge());
+    setSelection(MeshSelection());
 
     solve();
 }

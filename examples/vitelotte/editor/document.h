@@ -11,12 +11,47 @@
 #include "Patate/vitelotte.h"
 
 
+typedef Vitelotte::VGMesh<float> Mesh;
+
+
+class MeshSelection
+{
+public:
+    enum SelectionType
+    {
+        SelectionNone,
+        SelectionVertex,
+        SelectionEdge
+    };
+
+public:
+    MeshSelection();
+    MeshSelection(Mesh::Vertex v);
+    MeshSelection(Mesh::Edge e);
+
+    bool operator==(const MeshSelection& other) const;
+    bool operator!=(const MeshSelection& other) const;
+
+    SelectionType type() const;
+    bool isNone() const;
+    bool isVertex() const;
+    bool isEdge() const;
+
+    Mesh::Vertex vertex() const;
+    Mesh::Edge edge() const;
+
+private:
+    SelectionType m_type;
+    int m_index;
+};
+
+
 class Document : public QObject
 {
     Q_OBJECT
 
 public:
-    typedef Vitelotte::VGMesh<float> Mesh;
+    typedef ::Mesh Mesh;
     typedef Vitelotte::FVElementBuilder<Mesh> FVElement;
     typedef Vitelotte::FemSolver<Mesh, FVElement> FVSolver;
     typedef Eigen::AlignedBox2f BoundingBox;
@@ -41,11 +76,15 @@ public:
     const BoundingBox& boundingBox() const;
     void updateBoundingBox();
 
-    Mesh::Edge selectedEdge() const;
-    void setSelectedEdge(Mesh::Edge e);
+    MeshSelection selection() const;
+    void setSelection(MeshSelection selection);
+    bool isSelectionValid(MeshSelection selection);
+
+    float vertexSqrDist(Mesh::Vertex v, const Eigen::Vector2f& p) const;
+    Mesh::Vertex closestVertex(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
     float edgeSqrDist(Mesh::Edge e, const Eigen::Vector2f& p) const;
-    Mesh::Edge closestEdge(const Eigen::Vector2f& p) const;
+    Mesh::Edge closestEdge(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
     void solve();
 
@@ -77,7 +116,7 @@ public slots:
 
 
 signals:
-    void selectedEdgeChanged();
+    void selectionChanged();
     void meshUpdated();
 
 
@@ -86,7 +125,7 @@ private:
     Mesh m_solvedMesh;
     BoundingBox m_bb;
 
-    Mesh::Edge m_selectedEdge;
+    MeshSelection m_selection;
 
     FVSolver m_fvSolver;
 

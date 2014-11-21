@@ -8,6 +8,8 @@ from datetime import datetime
 
 
 argparser = ArgumentParser(description='Convert a set of shaders into cpp source code')
+argparser.add_argument('-e', '--extern',  default=False, action='store_true',
+	help="Declare variables with external linkage.")
 argparser.add_argument('-o', '--output', default='-',
 	help="Write the output to the file output, or stdout if omitted or output is '-'.")
 argparser.add_argument('-n', '--namespace', default='',
@@ -26,14 +28,19 @@ print(file=out)
 
 if namespaces:
 	for ns in namespaces:
-		print("namespace {}".format(ns), file=out)
-		print("{", file=out)
+		if ns != '':
+			print("namespace {}".format(ns), file=out)
+			print("{", file=out)
 	print(file=out)
 
 for shader_file in options.shaders:
 	with open(shader_file) as shader:
 		var_name = sub(r'\W', '_', basename(shader_file), flags=ASCII)
-		print('static const char* {} ='.format(var_name), file=out)
+		if options.extern:
+			print('extern const char* {};'.format(var_name), file=out)
+			print('const char* {} ='.format(var_name), file=out)
+		else:
+			print('static const char* {} ='.format(var_name), file=out)
 		for line in shader:
 			print('\t"{}\\n"'.format(line.rstrip()), file=out)
 		print('\t"";', file=out)
@@ -41,7 +48,8 @@ for shader_file in options.shaders:
 
 if namespaces:
 	for ns in namespaces:
-		print("}", file=out)
+		if ns != '':
+			print("}", file=out)
 	print(file=out)
  
 

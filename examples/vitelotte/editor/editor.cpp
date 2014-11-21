@@ -79,6 +79,8 @@ void Editor::setDocument(Document* document)
             updateBuffers();
 
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateBuffers()));
+        connect(m_document, SIGNAL(selectionChanged()),
+                this, SLOT(updateSelection()));
     }
 }
 
@@ -87,6 +89,52 @@ void Editor::updateBuffers()
 {
     assert(m_document);
     m_renderer.setMesh(&mesh());
+    updateGL();
+}
+
+
+void Editor::updateSelection()
+{
+    assert(m_document);
+
+    MeshSelection sel = m_document->selection();
+    m_pointRenderer.clear();
+    m_lineRenderer.clear();
+    if(sel.isVertex())
+    {
+        Mesh::Vertex v = sel.vertex();
+        Eigen::Vector3f p; p << mesh().position(v), 0;
+
+        float innerRadius = 3;
+        float outerRadius = innerRadius + 1.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        m_pointRenderer.addPoint(p, outerRadius, outerColor);
+        m_pointRenderer.addPoint(p, innerRadius, innerColor);
+    }
+    else if(sel.isEdge())
+    {
+        Mesh::Edge e = sel.edge();
+
+        Eigen::Vector3f p0; p0 << mesh().position(mesh().vertex(e, 0)), 0;
+        Eigen::Vector3f p1; p1 << mesh().position(mesh().vertex(e, 1)), 0;
+
+        float innerWidth = 1.5;
+        float outerWidth = 4.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        m_lineRenderer.addPoint(p0, outerWidth, outerColor);
+        m_lineRenderer.addPoint(p1, outerWidth, outerColor);
+        m_lineRenderer.endLine();
+        m_lineRenderer.addPoint(p0, innerWidth, innerColor);
+        m_lineRenderer.addPoint(p1, innerWidth, innerColor);
+        m_lineRenderer.endLine();
+    }
+    m_pointRenderer.upload();
+    m_lineRenderer.upload();
+
     updateGL();
 }
 
@@ -157,6 +205,10 @@ void Editor::paintGL()
         m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
         m_wireframeShader.setZoom(width() / m_camera.getViewBox().sizes()(0));
         m_renderer.render(m_wireframeShader);
+
+        Eigen::Vector2f viewportSize(width(), height());
+        m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+        m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
     }
 }
 
@@ -168,30 +220,21 @@ void Editor::mousePressEvent(QMouseEvent* event)
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         Eigen::Vector2f cam = m_camera.normalizedToCamera(norm);
 
-        Mesh::Edge sel = m_document->closestEdge(cam);
-        m_document->setSelectedEdge(sel);
+        float selDist = 8 * m_camera.getViewBox().sizes()(0) / width();
 
-//        Mesh& m = m_document->mesh();
-//        Mesh::Halfedge h0 = m.halfedge(sel, 0);
-//        Mesh::Halfedge h1 = m.halfedge(sel, 1);
+        float vSqrDist;
+        Mesh::Vertex vSel = m_document->closestVertex(cam, &vSqrDist);
 
-//        Mesh::Node* nodes[6] =
-//        {
-//            &m.vertexValueNode(h0), &m.vertexFromValueNode(h0), &m.edgeValueNode(h0),
-//            &m.vertexValueNode(h1), &m.vertexFromValueNode(h1), &m.edgeValueNode(h1)
-//        };
-//        for(int i=0; i<6; ++i)
-//        {
-//            if(!nodes[i]->isValid())
-//                *nodes[i] = m.addNode();
-//            m.nodeValue(*nodes[i]) = (Eigen::Vector4f() <<
-//                Eigen::Vector3f::Random() / 2 + Eigen::Vector3f::Constant(.5),
-//                1).finished();
-//        }
+        float eSqrDist;
+        Mesh::Edge eSel = m_document->closestEdge(cam, &eSqrDist);
 
-//        m_document->solve();
-//        updateBuffers();
-//        update();
+        if(vSqrDist < selDist*selDist)
+            m_document->setSelection(MeshSelection(vSel));
+        else if(eSqrDist < selDist*selDist)
+            m_document->setSelection(MeshSelection(eSel));
+        else
+            m_document->setSelection(MeshSelection());
+
     }
     if(!m_drag && event->button() == Qt::MidButton)
     {

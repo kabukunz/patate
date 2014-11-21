@@ -2,9 +2,10 @@
 
 #include <QApplication>
 #include <QMainWindow>
-#include <QGLFormat>
 #include <QWidget>
-#include <QHBoxLayout>
+#include <QGLFormat>
+#include <QVBoxLayout>
+#include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
 #include <QAction>
@@ -26,10 +27,16 @@ int main(int argc, char** argv)
 
     ValueEditor* valueEditor = new ValueEditor;
 
-    QWidget* content = new QWidget;
-    content->setLayout(new QHBoxLayout);
-    content->layout()->addWidget(editor);
-    content->layout()->addWidget(valueEditor);
+//    QWidget* editorsContainer = new QWidget;
+//    editorsContainer->setLayout(new QVBoxLayout);
+//    editorsContainer->layout()->setContentsMargins(QMargins());
+//    editorsContainer->layout()->addWidget(valueEditor);
+//    editorsContainer->layout()->addWidget(gradientEditor);
+
+    QSplitter* content = new QSplitter;
+    content->addWidget(editor);
+    content->addWidget(valueEditor);
+//    content->addWidget(editorsContainer);
 
     QMainWindow window;
     window.setCentralWidget(content);
