@@ -144,6 +144,12 @@ public: //--- Utility ---------------------------------------------------------
 
     inline bool isValid(Node n) const;
 
+    inline int halfedgeOrientation(Halfedge h) const {
+        // It is possible to use h.idx() % 2 for a similar result, but it makes
+        // the halfedge orientation hard to predict.
+        return fromVertex(h).idx() > toVertex(h).idx();
+    }
+
 
 protected: //--- Topological operations ---------------------------------------
 

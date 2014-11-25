@@ -315,7 +315,7 @@ void Document::mergeNode(Mesh::Halfedge h, HalfedgeNode nid)
 
 
 void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
-                            const Mesh::NodeValue& value)
+                            const Mesh::NodeValue& value, bool allowMerge)
 {
     Mesh::Node n = meshNode(h, nid);
 
@@ -334,7 +334,7 @@ void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
         undoStack()->endMacro();
     }
     else
-        undoStack()->push(new SetNodeValue(this, n, value));
+        undoStack()->push(new SetNodeValue(this, n, value, allowMerge));
 }
 
 
@@ -386,9 +386,11 @@ void Document::openSaveFinalMeshDialog()
 }
 
 
-SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value)
+SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
+                           bool allowMerge)
     : m_document(doc), m_node(node), m_newValue(value),
-      m_prevValue(m_document->mesh().nodeValue(m_node))
+      m_prevValue(m_document->mesh().nodeValue(m_node)),
+      m_allowMerge(allowMerge)
 {
 }
 
@@ -404,6 +406,27 @@ void SetNodeValue::redo()
 {
     m_document->mesh().nodeValue(m_node) = m_newValue;
     m_document->solve();
+}
+
+
+int SetNodeValue::id() const
+{
+    return 0;
+}
+
+
+bool SetNodeValue::mergeWith(const QUndoCommand* command)
+{
+    if(command->id() != id())
+        return false;
+    const SetNodeValue* c = static_cast<const SetNodeValue*>(command);
+
+    if(!c->m_allowMerge || c->m_document != m_document || c->m_node != m_node)
+        return false;
+
+    m_newValue = c->m_newValue;
+
+    return true;
 }
 
 

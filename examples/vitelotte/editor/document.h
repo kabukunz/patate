@@ -102,7 +102,7 @@ public:
     void splitNode(Mesh::Halfedge h, HalfedgeNode nid);
     void mergeNode(Mesh::Halfedge h, HalfedgeNode nid);
     void setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
-                      const Mesh::NodeValue& value);
+                      const Mesh::NodeValue& value, bool allowMerge=false);
 
 
     QUndoStack* undoStack();
@@ -140,16 +140,21 @@ public:
     typedef Document::Mesh::NodeValue NodeValue;
 
 public:
-    SetNodeValue(Document* doc, Node node, const NodeValue& value);
+    SetNodeValue(Document* doc, Node node, const NodeValue& value,
+                 bool allowMerge=false);
 
     virtual void undo();
     virtual void redo();
+
+    virtual int id() const;
+    virtual bool mergeWith(const QUndoCommand* command);
 
 private:
     Document* m_document;
     Node m_node;
     NodeValue m_newValue;
     NodeValue m_prevValue;
+    bool m_allowMerge;
 };
 
 

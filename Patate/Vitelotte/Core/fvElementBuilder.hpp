@@ -66,7 +66,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         v[i] = (mesh.position(mesh.toVertex(*hit)) -
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
-        orient[i] = mesh.fromVertex(*hit).idx() > mesh.toVertex(*hit).idx();
+        orient[i] = mesh.halfedgeOrientation(*hit);
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;

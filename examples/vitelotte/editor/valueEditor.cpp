@@ -7,6 +7,7 @@
 
 ValueEditor::ValueEditor(QWidget* parent)
     : QWidget(parent), m_document(0),
+      m_selection(), m_grabHandle(false), m_selectedGradientHandle(-1),
 //      m_edgeToScreen(Eigen::Matrix3f::Identity()), m_size(1), m_overNode(-1),
       m_edgeOffset(3), m_nodeOffset(16), m_nodeSize(6), m_textOffset(12)
 {
@@ -40,60 +41,121 @@ void ValueEditor::paintEvent(QPaintEvent* event)
 }
 
 
+void ValueEditor::mousePressEvent(QMouseEvent* event)
+{
+    if(!m_document)
+        return;
+
+    if(m_selectedGradientHandle >= 0 && event->button() == Qt::LeftButton)
+    {
+        m_grabHandle = true;
+        grabMouse();
+
+        Mesh::Halfedge h = m_leftHalfedge;
+        if(m_selectedGradientHandle > 3)
+            h = m_document->mesh().oppositeHalfedge(h);
+        Mesh::Node n = m_document->meshNode(h, Document::EdgeGradientNode);
+        m_document->setNodeValue(h, Document::EdgeGradientNode,
+                                 m_document->mesh().nodeValue(n), false);
+    }
+}
+
+
 void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
 {
-    if(!m_document || !m_selection.h.isValid())
+    if(!m_document)
         return;
 
     Mesh& m = m_document->mesh();
 
-    Mesh::Halfedge h = m_selection.h;
-    Document::HalfedgeNode hn = m_selection.hn;
-
-    Mesh::Node n = m_document->meshNode(h, hn);
-    Mesh::Node on = m_document->meshNode(m.oppositeHalfedge(h),
-                                         m_document->swapNode(hn));
-
-    if(event->modifiers() & Qt::ControlModifier &&
-            event->button() == Qt::LeftButton)
+    if(m_grabHandle)
     {
-        if(n == on)
-        {
-            if(n.isValid())
-                m_document->splitNode(h, hn);
-        }
-        else
-        {
-            m_document->mergeNode(h, hn);
-        }
+        releaseMouse();
+        m_grabHandle = false;
+
+        return;
     }
-    else if(event->button() == Qt::LeftButton || event->button() == Qt::RightButton)
-    {
-        Mesh::NodeValue v = Mesh::UnconstrainedNode;
-        if(event->button() == Qt::LeftButton)
-        {
-            QColor color = Qt::white;
-            if(n.isValid())
-                color = valueToColor(m.nodeValue(n));
-            color = QColorDialog::getColor(color, this,
-                    "Pick a color", QColorDialog::ShowAlphaChannel);
-            if(!color.isValid())
-                return;
-            v = colorToValue(color);
-        }
 
-        m_document->setNodeValue(h, hn, v);
+    if(m_selection.h.isValid())
+    {
+        Mesh::Halfedge h = m_selection.h;
+        Document::HalfedgeNode hn = m_selection.hn;
+
+        Mesh::Node n = m_document->meshNode(h, hn);
+        Mesh::Node on = m_document->meshNode(m.oppositeHalfedge(h),
+                                             m_document->swapNode(hn));
+
+        if(event->modifiers() & Qt::ControlModifier &&
+                event->button() == Qt::LeftButton)
+        {
+            if(n == on)
+            {
+                if(n.isValid())
+                    m_document->splitNode(h, hn);
+            }
+            else
+            {
+                m_document->mergeNode(h, hn);
+            }
+        }
+        else if(event->button() == Qt::LeftButton || event->button() == Qt::RightButton)
+        {
+            Mesh::NodeValue v = Mesh::UnconstrainedNode;
+            if(event->button() == Qt::LeftButton)
+            {
+                if(hn != Document::EdgeGradientNode)
+                {
+                    QColor color = Qt::white;
+                    if(n.isValid())
+                        color = valueToColor(m.nodeValue(n));
+                    color = QColorDialog::getColor(color, this,
+                            "Pick a color", QColorDialog::ShowAlphaChannel);
+                    if(!color.isValid())
+                        return;
+                    v = colorToValue(color);
+                }
+                else
+                    v = Mesh::NodeValue::Zero();
+            }
+
+            m_document->setNodeValue(h, hn, v);
+        }
     }
 }
 
 
 void ValueEditor::mouseMoveEvent(QMouseEvent* event)
 {
-    Selection s = select(pointToVector(event->localPos()));
-    if(s != m_selection)
+    if(!m_document)
+        return;
+
+    Eigen::Vector2f cursor = pointToVector(event->localPos());
+    if(!m_grabHandle)
     {
-        m_selection = s;
-        update();
+        select(cursor);
+    }
+    else
+    {
+        assert(m_selectedGradientHandle >= 0 && m_selectedGradientHandle < 8);
+        Mesh::Halfedge h = m_leftHalfedge;
+        int index = m_selectedGradientHandle;
+
+        if(index > 3)
+        {
+            h = m_document->mesh().oppositeHalfedge(h);
+            index -= 4;
+        }
+
+        Mesh::Node n = m_document->meshNode(h, Document::EdgeGradientNode);
+        Mesh::NodeValue value = m_document->mesh().nodeValue(n);
+        Eigen::Vector2f v = cursor -
+                gradientNodePos(nodeSide(h, Document::EdgeGradientNode));
+
+        value(index) = -v.y() / std::max(std::abs(v.x()), 1.f);
+        if(m_document->mesh().halfedgeOrientation(h))
+            value(index) = -value(index);
+
+        m_document->setNodeValue(h, Document::EdgeGradientNode, value, true);
     }
 }
 
@@ -189,32 +251,34 @@ void ValueEditor::updateSelection()
     if(m_document->selection().isEdge())
     {
         Mesh::Edge e = m_document->selection().edge();
-        m_lowerHalfedge = m.halfedge(e, 0);
+        Mesh::Halfedge lh = m.halfedge(e, 0);
 
-        Mesh::Vertex v0 = m.fromVertex(m_lowerHalfedge);
-        Mesh::Vertex v1 = m.toVertex(m_lowerHalfedge);
+        Mesh::Vertex v0 = m.fromVertex(lh);
+        Mesh::Vertex v1 = m.toVertex(lh);
 
         Eigen::Vector2f vEdge = m.position(v1) - m.position(v0);
         vEdge.y() = -vEdge.y();  // Qt y axis goes downward.
 
-        if(vEdge.x() < 0)
+        if(vEdge.y() >= 0)
         {
-            m_lowerHalfedge = m.oppositeHalfedge(m_lowerHalfedge);
+            lh = m.oppositeHalfedge(lh);
             vEdge = -vEdge;
         }
+        Mesh::Halfedge rh = m.oppositeHalfedge(lh);
+        m_leftHalfedge = lh;
 
         vEdge.normalize();
         Eigen::Vector2f normal(-vEdge.y(), vEdge.x());
 
-        Mesh::Node n0 = m.edgeValueNode(m_lowerHalfedge);
-        Mesh::Node n1 = m.edgeValueNode(m.oppositeHalfedge(m_lowerHalfedge));
+        Mesh::Node ln = m.edgeValueNode(lh);
+        Mesh::Node rn = m.edgeValueNode(rh);
 
-        Eigen::Vector2f center(width() / 2, height() / 2);
+        Eigen::Vector2f center = edgeValueCenter();
 
         DisplayNode node;
-        node.sel.h = m_lowerHalfedge;
+        node.sel.h = lh;
         node.sel.hn = Document::EdgeValueNode;
-        if(n0 == n1)
+        if(ln == rn)
         {
             node.pos = center;
             m_nodes.push_back(node);
@@ -225,11 +289,37 @@ void ValueEditor::updateSelection()
             m_nodes.push_back(node);
 
             node.pos = center + normal * m_nodeOffset;
-            node.sel.h = m.oppositeHalfedge(m_lowerHalfedge);
+            node.sel.h = rh;
+            m_nodes.push_back(node);
+        }
+
+        // Gradient node
+        Mesh::Node lgn = m.edgeGradientNode(lh);
+        Mesh::Node rgn = m.edgeGradientNode(rh);
+
+        node.sel.h = lh;
+        node.sel.hn = Document::EdgeGradientNode;
+        if(lgn == rgn)
+        {
+            node.pos = gradientNodePos(CentralNode);
+            m_nodes.push_back(node);
+        }
+        else
+        {
+            node.pos = gradientNodePos(LeftNode);
+            m_nodes.push_back(node);
+
+            node.pos = gradientNodePos(RightNode);
+            node.sel.h = rh;
             m_nodes.push_back(node);
         }
     }
 
+    if(!m_grabHandle)
+    {
+        Eigen::Vector2f pos = pointToVector(QPointF(mapFromGlobal(QCursor::pos())));
+        select(pos);
+    }
     update();
 }
 
@@ -264,14 +354,6 @@ Eigen::Vector2f ValueEditor::pointToVector(const QPointF& p) const
 }
 
 
-QTransform ValueEditor::matrixToTransform(const Eigen::Matrix3f& m) const
-{
-    return QTransform(m(0, 0), m(1, 0), m(2, 0),
-                      m(0, 1), m(1, 1), m(2, 1),
-                      m(0, 2), m(1, 2), m(2, 2));
-}
-
-
 QColor ValueEditor::valueToColor(const Mesh::NodeValue& v) const
 {
     return QColor(
@@ -289,52 +371,34 @@ ValueEditor::Mesh::NodeValue ValueEditor::colorToValue(const QColor& c) const
 }
 
 
-//QPointF ValueEditor::edgeToScreen(const Eigen::Vector2f& p) const
-//{
-//    return vectorToPoint(
-//                (m_edgeToScreen * (Eigen::Vector3f() << p, 1).finished()).head<2>());
-//}
+ValueEditor::NodeType ValueEditor::nodeType(Mesh::Node n) const
+{
+    if(n.idx() < 0 )
+        return UnsetNode;
+    else if(m_document->mesh().isConstraint(n))
+        return ConstraintNode;
+    return UnknownNode;
+}
 
 
-//ValueEditor::Mesh::Node ValueEditor::node(int nid) const
-//{
-//    Mesh::Halfedge h = m_lowerHalfedge;
-//    Mesh& m = m_document->mesh();
-//    Document::HalfedgeNode mnid = Document::HalfedgeNode(nid & PosMask);
-
-//    if(nid & UpperEdge)
-//    {
-//        h = m_document->mesh().oppositeHalfedge(h);
-//        mnid = m_document->swapNode(mnid);
-//    }
-
-//    return m_document->meshNode(h, mnid);
-//}
+ValueEditor::NodeSide ValueEditor::nodeSide(
+        Mesh::Halfedge h, Document::HalfedgeNode hn) const
+{
+    Mesh::Halfedge oh = m_document->mesh().oppositeHalfedge(h);
+    if(m_document->meshNode(h, hn) == m_document->meshNode(oh, hn))
+        return CentralNode;
+    else if(h == m_leftHalfedge)
+        return LeftNode;
+    return RightNode;
+}
 
 
-//ValueEditor::Mesh::Node ValueEditor::oppositeNode(int nid) const
-//{
-//    return node(nid ^ UpperEdge);
-//}
-
-
-//Eigen::Vector2f ValueEditor::nodePos(int nid) const
-//{
-//    unsigned pos = nid & PosMask;
-//    Eigen::Vector2f offset(0, 0);
-//    if(node(pos) != node(pos | UpperEdge))
-//        offset.y() = m_nodeOffset * (nid & UpperEdge? -1: 1);
-//    switch(pos) {
-//    case FromValueNode:
-//        return Eigen::Vector2f( m_size, 0) + offset;
-//    case ToValueNode:
-//        return Eigen::Vector2f(-m_size, 0) + offset;
-//    case EdgeValueNode:
-//        return Eigen::Vector2f(      0, 0) + offset;
-//    default: abort();
-//    }
-//    return Eigen::Vector2f();
-//}
+ValueEditor::Mesh::NodeValue ValueEditor::nodeValue(Mesh::Node n) const
+{
+    if(n.isValid() && m_document->mesh().isConstraint(n))
+        return m_document->mesh().nodeValue(n);
+    return Mesh::NodeValue(0, 0, 0, 1);
+}
 
 
 Eigen::Vector2f ValueEditor::nodePos(const Eigen::Vector2f& dir, float offset) const
@@ -347,7 +411,73 @@ Eigen::Vector2f ValueEditor::nodePos(const Eigen::Vector2f& dir, float offset) c
 }
 
 
-ValueEditor::Selection ValueEditor::select(const Eigen::Vector2f& pos) const
+Eigen::Vector2f ValueEditor::gradientNodePos(NodeSide side) const
+{
+    Eigen::Vector2f pos = edgeGradientCenter();
+    if(side == LeftNode)
+        pos.x() -= m_nodeOffset;
+    else if(side == RightNode)
+        pos.x() += m_nodeOffset;
+    return pos;
+}
+
+
+Eigen::Vector2f ValueEditor::gradientHandleOffset(
+        Mesh::Node n, int index) const
+{
+    Eigen::Vector2f v(1, nodeValue(n)(index));
+    v.normalize();
+
+    if(m_document->mesh().halfedgeOrientation(m_leftHalfedge))
+        v.y() = -v.y();
+
+    float baseLen = edgeValueCenter().minCoeff() * .7;
+    float len = baseLen - index * (baseLen / 9);
+    return v*len;
+}
+
+
+Eigen::Vector2f ValueEditor::edgeValueCenter() const
+{
+    int w = width();
+    int h = height();
+    if(w > h) return Eigen::Vector2f(w/4, h/2);
+    else      return Eigen::Vector2f(w/2, h/4);
+}
+
+
+Eigen::Vector2f ValueEditor::edgeGradientCenter() const
+{
+    int w = width();
+    int h = height();
+    if(w > h) return Eigen::Vector2f(w*3/4, h/2);
+    else      return Eigen::Vector2f(w/2, h*3/4);
+}
+
+
+void ValueEditor::select(const Eigen::Vector2f& pos)
+{
+    Selection s = selectNode(pos);
+    if(s != m_selection)
+    {
+        m_selection = s;
+        m_selectedGradientHandle = -1;
+        update();
+    }
+
+    if(!m_selection.h.isValid());
+    {
+        int h = selectGradientHandle(pos);
+        if(h != m_selectedGradientHandle)
+        {
+            m_selectedGradientHandle = h;
+            update();
+        }
+    }
+}
+
+
+ValueEditor::Selection ValueEditor::selectNode(const Eigen::Vector2f& pos) const
 {
     float nodeSize2 = m_nodeSize * m_nodeSize;
 
@@ -360,34 +490,38 @@ ValueEditor::Selection ValueEditor::select(const Eigen::Vector2f& pos) const
         }
     }
     return Selection();
-//    if(m_lowerHalfedge.isValid())
-//    {
-//        float nodeSize2 = m_nodeSize * m_nodeSize;
-//        for(int side=0; side<2; ++side)
-//        {
-//            for(int pos=0; pos<3; ++pos)
-//            {
-//                int nid = pos | (side? UpperEdge: 0);
-//                Eigen::Vector2f np = nodePos(nid);
-//                if((edgePos - np).squaredNorm() <= nodeSize2)
-//                    return nid;
-//            }
-//        }
-//    }
-//    return -1;
 }
 
 
-//int ValueEditor::select(const QPointF& screenPos) const
-//{
-//    Eigen::Vector3f sp;
-//    sp << pointToVector(screenPos), 1;
+int ValueEditor::selectGradientHandle(const Eigen::Vector2f& pos) const
+{
+    float minSqrDist = 8*8;
+    int candidate = -1;
+    if(m_leftHalfedge.isValid())
+    {
+        for(int side = 0; side < 2; ++side)
+        {
+            Mesh::Halfedge h = m_leftHalfedge;
+            if(side) h = m_document->mesh().oppositeHalfedge(h);
+            Eigen::Vector2f base = gradientNodePos(
+                        nodeSide(h, Document::EdgeGradientNode));
+            Mesh::Node n = m_document->meshNode(h, Document::EdgeGradientNode);
+            float factor = side? 1: -1;
 
-//    Eigen::Vector2f edgePos =
-//            m_edgeToScreen.partialPivLu().solve(sp).head<2>();
-
-//    return select(edgePos);
-//}
+            for(int i = 0; i < 4; ++i)
+            {
+                Eigen::Vector2f off = gradientHandleOffset(n, i) * factor;
+                float dist = (base + off - pos).squaredNorm();
+                if(dist <= minSqrDist)
+                {
+                    minSqrDist = dist;
+                    candidate = i + 4*side;
+                }
+            }
+        }
+    }
+    return candidate;
+}
 
 
 void ValueEditor::drawVertex(QPainter& p)
@@ -412,29 +546,29 @@ void ValueEditor::drawVertex(QPainter& p)
 void ValueEditor::drawEdge(QPainter& p)
 {
     Mesh& m = m_document->mesh();
-    Mesh::Halfedge h = m_lowerHalfedge;
-    Mesh::Halfedge oh = m.oppositeHalfedge(m_lowerHalfedge);
+    Mesh::Halfedge lh = m_leftHalfedge;
+    Mesh::Halfedge rh = m.oppositeHalfedge(m_leftHalfedge);
 
-    Eigen::Vector2f center(width() / 2, height() / 2);
-    Eigen::Vector2f v = (m.position(m.toVertex(h)) -
-            m.position(m.fromVertex(h))).normalized();
+    Eigen::Vector2f center = edgeValueCenter();
+    Eigen::Vector2f v = (m.position(m.toVertex(lh)) -
+            m.position(m.fromVertex(lh))).normalized();
     v.y() = -v.y();
     Eigen::Vector2f n(-v.y(), v.x());
-    float edgeLen = std::min(width(), height()) * .4;
+    float edgeLen = center.minCoeff() * .8;
 
     m_pen.setWidth(2);
     p.setPen(m_pen);
 
-    Mesh::Node lf = m_document->meshNode( h, Document::FromValueNode);
-    Mesh::Node le = m_document->meshNode( h, Document::EdgeValueNode);
-    Mesh::Node lt = m_document->meshNode( h, Document::ToValueNode);
-    Mesh::Node uf = m_document->meshNode(oh, Document::ToValueNode);
-    Mesh::Node ue = m_document->meshNode(oh, Document::EdgeValueNode);
-    Mesh::Node ut = m_document->meshNode(oh, Document::FromValueNode);
+    Mesh::Node lf = m_document->meshNode(lh, Document::FromValueNode);
+    Mesh::Node le = m_document->meshNode(lh, Document::EdgeValueNode);
+    Mesh::Node lt = m_document->meshNode(lh, Document::ToValueNode);
+    Mesh::Node rf = m_document->meshNode(rh, Document::ToValueNode);
+    Mesh::Node re = m_document->meshNode(rh, Document::EdgeValueNode);
+    Mesh::Node rt = m_document->meshNode(rh, Document::FromValueNode);
 
-    bool fSplit = (lf != uf);
-    bool eSplit = (le != ue);
-    bool tSplit = (lt != ut);
+    bool fSplit = (lf != rf);
+    bool eSplit = (le != re);
+    bool tSplit = (lt != rt);
 
     p.drawLine(vectorToPoint(center - v * edgeLen - n * m_edgeOffset * fSplit),
                vectorToPoint(center               - n * m_edgeOffset * eSplit));
@@ -453,14 +587,33 @@ void ValueEditor::drawEdge(QPainter& p)
 
     if(eSplit)
     {
-        drawValueNode(p, center - n * m_nodeOffset, le,
-                      Selection(h, Document::EdgeValueNode) == m_selection, -n);
-        drawValueNode(p, center + n * m_nodeOffset, ue,
-                      Selection(oh, Document::EdgeValueNode) == m_selection, n);
+        drawNode(p, center - n * m_nodeOffset, nodeValue(le), le,
+                 Selection(lh, Document::EdgeValueNode) == m_selection, -n);
+        drawNode(p, center + n * m_nodeOffset, nodeValue(re), re,
+                 Selection(rh, Document::EdgeValueNode) == m_selection, n);
     }
     else
-        drawValueNode(p, center, le,
-                      Selection(h, Document::EdgeValueNode) == m_selection, -n);
+        drawNode(p, center, nodeValue(le), le,
+                 Selection(lh, Document::EdgeValueNode) == m_selection, -n);
+
+    Mesh::Node lg = m_document->meshNode(lh, Document::EdgeGradientNode);
+    Mesh::Node rg = m_document->meshNode(rh, Document::EdgeGradientNode);
+
+    if(lg == rg)
+    {
+        drawGradientNode(p, gradientNodePos(CentralNode), lh,
+                         Selection(lh, Document::EdgeGradientNode) == m_selection,
+                         CentralNode);
+    }
+    else
+    {
+        drawGradientNode(p, gradientNodePos(LeftNode), lh,
+                         Selection(lh, Document::EdgeGradientNode) == m_selection,
+                         LeftNode);
+        drawGradientNode(p, gradientNodePos(RightNode), rh,
+                         Selection(rh, Document::EdgeGradientNode) == m_selection,
+                         RightNode);
+    }
 }
 
 
@@ -489,32 +642,27 @@ void ValueEditor::drawVertexValueNode(QPainter& p, const DisplayEdge& de)
                vectorToPoint(epos));
     p.drawLine(vectorToPoint(epos), vectorToPoint(epos + de.dir * nodeDist));
 
-    drawValueNode(p, pos, n, isSel, td);
+    drawNode(p, pos, nodeValue(n), n, isSel, td);
 }
 
 
-void ValueEditor::drawValueNode(QPainter& p, const Eigen::Vector2f& pos,
-                                Mesh::Node n, bool isSel,
-                                const Eigen::Vector2f& textDir)
+void ValueEditor::drawNode(QPainter& p, const Eigen::Vector2f& pos,
+                           Mesh::NodeValue color, Mesh::Node n, bool isSel,
+                           const Eigen::Vector2f& textDir)
 {
     m_pen.setStyle(Qt::SolidLine);
-    if(!n.isValid())
+    switch(nodeType(n))
+    {
+    case UnsetNode:
     {
         float size = isSel? m_nodeSize: m_nodeSize / 2.;
         m_pen.setWidthF(0);
         p.setPen(m_pen);
         p.setBrush(Qt::black);
         p.drawEllipse(vectorToPoint(pos), size, size);
+        break;
     }
-    else if(m_document->mesh().isConstraint(n))
-    {
-        m_pen.setWidthF(isSel? 2: 1);
-        p.setPen(m_pen);
-
-        p.setBrush(QBrush(valueToColor(m_document->mesh().nodeValue(n))));
-        p.drawEllipse(vectorToPoint(pos), m_nodeSize, m_nodeSize);
-    }
-    else
+    case UnknownNode:
     {
         m_pen.setWidthF(isSel? 2: 1.2);
         p.setPen(m_pen);
@@ -523,6 +671,17 @@ void ValueEditor::drawValueNode(QPainter& p, const Eigen::Vector2f& pos,
                    vectorToPoint(pos + Eigen::Vector2f( m_nodeSize,  m_nodeSize)));
         p.drawLine(vectorToPoint(pos + Eigen::Vector2f(-m_nodeSize,  m_nodeSize)),
                    vectorToPoint(pos + Eigen::Vector2f( m_nodeSize, -m_nodeSize)));
+        break;
+    }
+    case ConstraintNode:
+    {
+        m_pen.setWidthF(isSel? 2: 1);
+        p.setPen(m_pen);
+
+        p.setBrush(QBrush(valueToColor(color)));
+        p.drawEllipse(vectorToPoint(pos), m_nodeSize, m_nodeSize);
+        break;
+    }
     }
 
     QFontMetrics fm(p.font());
@@ -541,4 +700,44 @@ void ValueEditor::drawValueNode(QPainter& p, const Eigen::Vector2f& pos,
 //    p.drawEllipse(vectorToPoint(pos + textDir * m_textOffset), 2, 2);
 //    p.setBrush(Qt::green);
 //    p.drawEllipse(vectorToPoint(pos + textOffset), 2, 2);
+}
+
+
+void ValueEditor::drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
+                                   Mesh::Halfedge h, bool isSel,
+                                   NodeSide side)
+{
+    Mesh::Node n = m_document->meshNode(h, Document::EdgeGradientNode);
+    if(n.isValid() && m_document->mesh().isConstraint(n))
+    {
+        Eigen::Vector4f value = nodeValue(n);
+        for(int i = 0; i < 4; ++i)
+        {
+            QColor color = QColor::fromRgbF(i == 0, i == 1, i == 2);
+            m_pen.setWidthF(1.2);
+            m_pen.setColor(color);
+            p.setPen(m_pen);
+
+            p.setBrush(QBrush(color));
+
+            Eigen::Vector2f v = gradientHandleOffset(n, i);
+
+            if(side & LeftNode)
+            {
+                float r = (m_selectedGradientHandle == i)? 3: 2;
+                p.drawLine(vectorToPoint(pos), vectorToPoint(pos - v));
+                p.drawEllipse(vectorToPoint(pos - v), r, r);
+            }
+            if(side & RightNode)
+            {
+                float r = (m_selectedGradientHandle == i+4)? 3: 2;
+                p.drawLine(vectorToPoint(pos), vectorToPoint(pos + v));
+                p.drawEllipse(vectorToPoint(pos + v), r, r);
+            }
+        }
+    }
+
+    m_pen.setColor(Qt::black);
+    drawNode(p, pos, Mesh::NodeValue(1, 1, 1, 1), n, isSel,
+             Eigen::Vector2f(0, (side & RightNode)? -1: 1));
 }

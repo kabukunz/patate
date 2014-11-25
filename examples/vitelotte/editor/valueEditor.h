@@ -24,6 +24,7 @@ public:
     virtual void resizeEvent(QResizeEvent* event);
     virtual void paintEvent(QPaintEvent* event);
 
+    virtual void mousePressEvent(QMouseEvent* event);
     virtual void mouseReleaseEvent(QMouseEvent* event);
     virtual void mouseMoveEvent(QMouseEvent* event);
 
@@ -62,40 +63,59 @@ private:
     };
     typedef std::vector<DisplayEdge> EdgeList;
 
+    enum NodeType
+    {
+        UnsetNode,
+        UnknownNode,
+        ConstraintNode
+    };
+
+    enum NodeSide
+    {
+        LeftNode = 0x01,
+        RightNode = 0x02,
+        CentralNode = LeftNode | RightNode
+    };
+
 private:
     QPointF vectorToPoint(const Eigen::Vector2f& v) const;
     Eigen::Vector2f pointToVector(const QPointF& p) const;
-    QTransform matrixToTransform(const Eigen::Matrix3f& m) const;
     QColor valueToColor(const Mesh::NodeValue& v) const;
     Mesh::NodeValue colorToValue(const QColor& c) const;
-//    QPointF edgeToScreen(const Eigen::Vector2f& p) const;
 
-//    Mesh::Node node(int nid) const;
-//    Mesh::Node oppositeNode(int nid) const;
-//    Eigen::Vector2f nodePos(int nid) const;
+    NodeType nodeType(Mesh::Node n) const;
+    NodeSide nodeSide(Mesh::Halfedge h, Document::HalfedgeNode hn) const;
+    Mesh::NodeValue nodeValue(Mesh::Node n) const;
     Eigen::Vector2f nodePos(const Eigen::Vector2f &dir, float offset) const;
+    Eigen::Vector2f gradientNodePos(NodeSide n) const;
+    Eigen::Vector2f gradientHandleOffset(Mesh::Node n, int index) const;
+    Eigen::Vector2f edgeValueCenter() const;
+    Eigen::Vector2f edgeGradientCenter() const;
 
-    Selection select(const Eigen::Vector2f& pos) const;
-//    int select(const QPointF& screenPos) const;
+    void select(const Eigen::Vector2f& pos);
+    Selection selectNode(const Eigen::Vector2f& pos) const;
+    int selectGradientHandle(const Eigen::Vector2f& pos) const;
 
     void drawVertex(QPainter& p);
     void drawEdge(QPainter& p);
     void drawVertexValueNode(QPainter& p, const DisplayEdge& de);
-    void drawValueNode(QPainter& p, const Eigen::Vector2f& pos,
-                       Mesh::Node n, bool isSel, const Eigen::Vector2f& textDir);
+    void drawNode(QPainter& p, const Eigen::Vector2f& pos,
+                  Mesh::NodeValue color, Mesh::Node n, bool isSel,
+                  const Eigen::Vector2f& textDir);
+    void drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
+                          Mesh::Halfedge h, bool isSel, NodeSide side);
 
 
 private:
     Document* m_document;
 
-//    Eigen::Matrix3f m_edgeToScreen;
-//    float m_size;
-    Mesh::Halfedge m_lowerHalfedge;
-//    int m_overNode;
+    Mesh::Halfedge m_leftHalfedge;
 
     NodeList m_nodes;
     EdgeList m_edges;
     Selection m_selection;
+    bool m_grabHandle;
+    int m_selectedGradientHandle;
 
     QPen m_pen;
 
