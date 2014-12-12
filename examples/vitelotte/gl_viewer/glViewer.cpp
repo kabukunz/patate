@@ -180,8 +180,8 @@ void GLViewer::initVars()
 
 void GLViewer::shutdown()
 {
-    PATATE_SAFE_DELETE(m_pQvg);
-    PATATE_SAFE_DELETE(m_pQMeshRenderer);
+    delete m_pQvg;
+    delete m_pQMeshRenderer;
         
     glfwDestroyWindow(m_pWindow);
     m_pWindow = NULL;

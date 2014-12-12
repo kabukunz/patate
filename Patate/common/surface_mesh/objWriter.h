@@ -9,7 +9,7 @@
 #include "surfaceMesh.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
 
 
@@ -31,8 +31,9 @@ private:
 };
 
 
+}  // namespace Patate
+
 #include "objWriter.hpp"
 
-}  // namespace Patate
 
 #endif  // _OBJWRITER_H_

@@ -7,7 +7,7 @@ namespace Vitelotte
 
 template < typename _Mesh >
 MVGReader<_Mesh>::MVGReader(Mesh& mesh)
-    : Patate::OBJReader<Vector>(mesh, mesh.positionProperty())
+    : PatateCommon::OBJReader<Vector>(mesh, mesh.positionProperty())
 {
     m_faceIndices.reserve(3);
 }

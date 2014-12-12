@@ -1,3 +1,10 @@
+#include "objReader.h"
+
+
+namespace PatateCommon
+{
+
+
 void
 OBJBaseReader::read(std::istream& in)
 {
@@ -138,4 +145,7 @@ OBJReader<_Point>::parseDefinition(const std::string& spec,
     else
         return false;
     return true;
+}
+
+
 }

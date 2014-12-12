@@ -96,11 +96,11 @@ namespace Vitelotte
  * \see QMesh QVGWriter
  */
 template < typename _Mesh >
-class MVGReader: public Patate::OBJReader<typename _Mesh::Vector>
+class MVGReader: public PatateCommon::OBJReader<typename _Mesh::Vector>
 {
 public:
     typedef _Mesh Mesh;
-    typedef Patate::OBJReader<typename _Mesh::Vector> Base;
+    typedef PatateCommon::OBJReader<typename _Mesh::Vector> Base;
 
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::NodeValue NodeValue;

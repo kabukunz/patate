@@ -5,9 +5,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PATATE_INVALID_OGL_VALUE 0xFFFFFFFF
-
-#define PATATE_SAFE_DELETE(p) if (p) { delete p; p = NULL; }
 
 #define PATATE_ASSERT_NO_GL_ERROR()                                                          \
 {                                                                               \
@@ -18,6 +15,7 @@
         exit(0);                                                                \
     }                                                                           \
 }
+
 
 #endif
 

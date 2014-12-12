@@ -46,7 +46,7 @@ private:
     std::vector<int> m_firsts;
     std::vector<int> m_sizes;
 
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
     unsigned m_vao;
     unsigned m_buffer;
 

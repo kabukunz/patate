@@ -1,7 +1,7 @@
 #include "shader.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
 
 
@@ -204,14 +204,14 @@ bool Shader::finalize()
 
 GLint Shader::getUniformLocation(const char* _pUniformName)
 {
-    GLuint Location = glGetUniformLocation(m_shaderProg, _pUniformName);
+    GLint location = glGetUniformLocation(m_shaderProg, _pUniformName);
 
-    if (Location == PATATE_INVALID_OGL_VALUE)
+    if (location < 0)
     {
         fprintf(stderr, "Warning! Unable to get the location of uniform '%s'\n", _pUniformName);
     }
 
-    return Location;
+    return location;
 }
 
 GLint Shader::getProgramParam(GLint _param)

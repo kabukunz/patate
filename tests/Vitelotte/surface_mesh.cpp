@@ -12,17 +12,17 @@ typedef Eigen::Vector3f Vector;
 
 int main(int argc, char** argv)
 {
-    Patate::SurfaceMesh mesh;
-    Patate::SurfaceMesh::VertexProperty<Vector> positions =
+    PatateCommon::SurfaceMesh mesh;
+    PatateCommon::SurfaceMesh::VertexProperty<Vector> positions =
             mesh.addVertexProperty<Vector>("v:position");
 
     std::cout << "Test surface mesh...\n";
 
     std::ifstream in("test.obj");
-    Patate::OBJReader<Vector> reader(mesh, positions);
+    PatateCommon::OBJReader<Vector> reader(mesh, positions);
     reader.read(in);
 
     std::ofstream out("out.obj");
-    Patate::OBJWriter<Vector> writer(mesh, positions);
+    PatateCommon::OBJWriter<Vector> writer(mesh, positions);
     writer.write(out);
 }

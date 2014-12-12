@@ -57,7 +57,7 @@ protected:
     inline void setupUniforms();
 
 protected:
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
 
     GLint m_viewMatrixLoc;
     GLint m_nodesLoc;
@@ -101,7 +101,7 @@ protected:
     inline void setupUniforms();
 
 protected:
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
 
     GLint m_viewMatrixLoc;
     GLint m_zoomLoc;
@@ -157,11 +157,11 @@ protected:
 //        GLint pointColorLoc;
 //    };
 
-//    inline void getUniforms(Patate::Shader& shader, Uniforms& uniforms);
+//    inline void getUniforms(PatateCommon::Shader& shader, Uniforms& uniforms);
 //    inline void setupUniforms(const Uniforms& uniforms);
 
 //protected:
-//    Patate::Shader m_shader;
+//    PatateCommon::Shader m_shader;
 
 //    Uniforms m_uniforms;
 
