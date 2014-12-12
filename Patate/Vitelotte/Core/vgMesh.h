@@ -50,14 +50,14 @@ public:
         EdgeGradient        = 0x08,
 
         // Specials
-//        VertexGradientSpecial = 0x10,
+        VertexGradientConstraint = 0x10,
 
         // Aggregates
         Linear = VertexValue | VertexFromValue,
         Quadratic = Linear | EdgeValue,
 
         Morley = Linear | EdgeGradient /*| VertexGradientSpecial*/,
-        FV = Quadratic | EdgeGradient /*| VertexGradientSpecial*/
+        FV = Quadratic | EdgeGradient | VertexGradientConstraint
     };
 
 
@@ -77,7 +77,7 @@ public:
     bool hasVertexFromValue() const { return m_attributes & VertexFromValue; }
     bool hasEdgeValue() const { return m_attributes & EdgeValue; }
     bool hasEdgeGradient() const { return m_attributes & EdgeGradient; }
-//    bool hasVertexGradientSpecial() const { return m_attributes & VertexGradientSpecial; }
+    bool hasVertexGradientConstraint() const { return m_attributes & VertexGradientConstraint; }
 
 
     bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
@@ -179,6 +179,11 @@ public: //--- Attributes accessors --------------------------------------------
     inline const Vector& position(Vertex v) const { return m_positions[v]; }
     inline Vector& position(Vertex v) { return m_positions[v]; }
 
+    inline bool vertexGradientConstrained(Vertex v) const
+        { assert(m_attributes | VertexGradientConstraint); return m_vertexGradientConstrained[v]; }
+    inline void setVertexGradientConstrained(Vertex v, bool constrained)
+        { assert(m_attributes | VertexGradientConstraint); m_vertexGradientConstrained[v] = constrained; }
+
     inline Node vertexValueNode(Halfedge h) const
         { assert(m_attributes | VertexValue); return m_vertexValueNodes[h]; }
     inline Node& vertexValueNode(Halfedge h)
@@ -194,11 +199,6 @@ public: //--- Attributes accessors --------------------------------------------
     inline Node& edgeValueNode(Halfedge h)
         { assert(m_attributes | EdgeValue); return m_edgeValueNodes[h]; }
 
-//    inline Node vertexGradientNode(Vertex v) const
-//        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
-//    inline Node& vertexGradientNode(Vertex v)
-//        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
-
     inline Node edgeGradientNode(Halfedge h) const
         { assert(m_attributes | EdgeGradient); return m_edgeGradientNodes[h]; }
     inline Node& edgeGradientNode(Halfedge h)
@@ -212,13 +212,14 @@ public: //--- Attributes accessors --------------------------------------------
 protected:
     NodeVector m_nodes;
 
-    VertexProperty<Vector> m_positions;
-
     unsigned m_attributes;
+
+    VertexProperty<Vector> m_positions;
+    VertexProperty<bool> m_vertexGradientConstrained;
+
     HalfedgeProperty<Node> m_vertexValueNodes;
     HalfedgeProperty<Node> m_vertexFromValueNodes;
     HalfedgeProperty<Node> m_edgeValueNodes;
-//    HalfedgeProperty<Node> m_vertexGradientSpecial;
     HalfedgeProperty<Node> m_edgeGradientNodes;
 
     EdgeProperty<bool> m_edgeConstraintFlag;

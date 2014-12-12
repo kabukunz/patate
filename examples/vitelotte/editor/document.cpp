@@ -343,6 +343,41 @@ void Document::loadMesh(const std::string& filename)
     Vitelotte::readMvgFromFile(filename, m_mesh);
     m_mesh.setAttributes(Mesh::FV);
 
+    Eigen::Matrix<float, 4, 2> g;
+    g << 2, .5,
+         2, .5,
+         2, .5,
+         0, 0;
+    g /= 4;
+//    Eigen::Matrix2f rot;
+//    rot << 0, -1, 1, 0;
+//    g = g*rot;
+    Eigen::Vector4f color(.5, .5, .5, 1.);
+
+    Mesh::Vertex vert(5);
+    Mesh::Node vnode = m_mesh.addNode(color);
+    Mesh::HalfedgeAroundVertexCirculator hit = m_mesh.halfedges(vert);
+    Mesh::HalfedgeAroundVertexCirculator end = hit;
+    do
+    {
+        Eigen::Vector2f e = (m_mesh.position(m_mesh.toVertex(*hit))
+                -m_mesh.position(m_mesh.fromVertex(*hit))).normalized();
+        Eigen::Vector4f v = g * e;
+        std::cerr << "e: " << e.transpose() << " -> " << v.transpose() << "\n";
+
+        Mesh::Halfedge opp = m_mesh.oppositeHalfedge(*hit);
+
+        Mesh::Node n = m_mesh.addNode(v * (m_mesh.halfedgeOrientation(*hit)? -1: 1));
+        m_mesh.edgeGradientNode(*hit) = n;
+        m_mesh.edgeGradientNode(opp) = n;
+
+        m_mesh.vertexFromValueNode(*hit) = vnode;
+        m_mesh.vertexValueNode(opp) = vnode;
+        ++hit;
+    } while(hit != end);
+
+    m_mesh.setVertexGradientConstrained(vert, true);
+
     updateBoundingBox();
     setSelection(MeshSelection());
 

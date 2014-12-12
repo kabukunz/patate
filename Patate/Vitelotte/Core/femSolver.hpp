@@ -133,7 +133,31 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     assert(count == nConstraints);
 
     m_x.resize(nUnknowns, Mesh::Chan);
-    m_x = mat.topRightCorner(nUnknowns, nConstraints) * constraints;
+    m_x.setZero();
+
+//    Eigen::Matrix<float, 4, 2> g;
+//    g << 2, .5,
+//         2, .5,
+//         2, .5,
+//         0, 0;
+//    g /= 4;
+
+//    typename Mesh::Vertex vert(5);
+//    typename Mesh::HalfedgeAroundVertexCirculator hit = m_mesh->halfedges(vert);
+//    typename Mesh::HalfedgeAroundVertexCirculator end = hit;
+//    do
+//    {
+//        Eigen::Vector2f e = (m_mesh->position(m_mesh->toVertex(*hit))
+//                -m_mesh->position(m_mesh->fromVertex(*hit))).normalized();
+//        Eigen::Vector4f v = g * e;
+//        std::cerr << "e: " << e.transpose() << " -> " << v.transpose() << "\n";
+
+//        m_x.row(m_mesh->edgeGradientNode(*hit).idx()) = v.cast<Scalar>();
+
+//        ++hit;
+//    } while(hit != end);
+
+    m_x -= mat.topRightCorner(nUnknowns, nConstraints) * constraints;
 
     unsigned nbRanges = m_ranges.size()-1;
 
@@ -160,12 +184,16 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         L.finalize();
         Eigen::SimplicialLDLT<StiffnessMatrix> ldlt(L);
         m_x.middleRows(start,size) = ldlt.solve(m_x.middleRows(start, size));
+//        Eigen::BiCGSTAB<StiffnessMatrix> bicgstab(L);
+//        m_x.middleRows(start,size) = bicgstab.solve(m_x.middleRows(start, size));
+//        Eigen::SparseLU<StiffnessMatrix> lu(L);
+//        m_x.middleRows(start,size) = lu.solve(m_x.middleRows(start, size));
     }
 
     for(unsigned i = 0; i < nUnknowns; ++i)
     {
         assert(!m_mesh->isConstraint(Node(m_perm[i])));
-        m_mesh->nodeValue(Node(m_perm[i])) = -m_x.row(i).
+        m_mesh->nodeValue(Node(m_perm[i])) = m_x.row(i).
                     template cast<typename Mesh::Scalar>();
     }
 

@@ -89,7 +89,7 @@ void Editor::updateBuffers()
 {
     assert(m_document);
     m_renderer.setMesh(&mesh());
-    updateGL();
+    update();
 }
 
 
@@ -135,7 +135,7 @@ void Editor::updateSelection()
     m_pointRenderer.upload();
     m_lineRenderer.upload();
 
-    updateGL();
+    update();
 }
 
 
@@ -261,7 +261,7 @@ void Editor::mouseMoveEvent(QMouseEvent* event)
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         m_camera.normalizedTranslate(norm - m_dragPos);
         m_dragPos = norm;
-        updateGL();
+        update();
     }
 }
 
@@ -271,7 +271,7 @@ void Editor::wheelEvent(QWheelEvent* event)
     m_camera.normalizedZoom(
                 screenToNormalized(event->posF()),
                 event->delta() > 0? 1.1: 1/1.1);
-    updateGL();
+    update();
 }
 
 

@@ -33,16 +33,17 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
 
         m_nodes = rhs.m_nodes;
 
-        m_positions = vertexProperty<Vector>("v:position");
-
         m_attributes = rhs.m_attributes;
+
+        m_positions = vertexProperty<Vector>("v:position");
+        m_vertexGradientConstrained = vertexProperty<bool>("v:vertexGradientConstrained");
 
         m_vertexValueNodes = getHalfedgeProperty<Node>("h:vertexValueNode");
         m_vertexFromValueNodes = getHalfedgeProperty<Node>("h:vertexFromValueNode");
         m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
         m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
-         m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
     }
     return *this;
 }
@@ -58,6 +59,14 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
             removeHalfedgeProperty(_field);\
     } while(0)
 
+    if(!(m_attributes & VertexGradientConstraint) &&
+            (attributes & VertexGradientConstraint))
+        m_vertexGradientConstrained = addVertexProperty<bool>(
+                    "v:vertexGradientConstrained", false);
+    else if((m_attributes & VertexGradientConstraint) &&
+            !(attributes & VertexGradientConstraint))
+        removeVertexProperty(m_vertexGradientConstrained);
+
     PATATE_FEM_MESH_SET_ATTRIBUTE(
                 VertexValue,     m_vertexValueNodes,     "h:vertexValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
@@ -67,8 +76,6 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
     PATATE_FEM_MESH_SET_ATTRIBUTE(
                 EdgeGradient,    m_edgeGradientNodes,    "h:edgeGradientNode");
 
-//    PATATE_FEM_MESH_SET_ATTRIBUTE(
-//                VertexGradientSpecial, m_vertexGradientSpecial, "h:vertexGradientSpecial");
 
     m_attributes = attributes;
 

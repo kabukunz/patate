@@ -42,8 +42,8 @@ int main(int argc, char** argv)
     window.setCentralWidget(content);
 
     Document* doc = new Document(&window);
-//    doc.loadMesh("clean.mvg");
-    doc->loadMesh("test.mvg");
+    doc->loadMesh("clean.mvg");
+//    doc->loadMesh("test.mvg");
     editor->setDocument(doc);
     valueEditor->setDocument(doc);
 

@@ -1,3 +1,5 @@
+#include <Eigen/Dense>
+
 #include "fvElementBuilder.h"
 
 
@@ -61,6 +63,20 @@ FVElementBuilder<_Mesh, _Scalar>::
     bool orient[3];
     Vector v[3];
     unsigned nodes[9];
+    int flatVx = -1;
+    for(int i = 0; i < 3; ++i)
+    {
+        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
+            flatVx = i;
+        ++hit;
+    }
+    while(flatVx > 0)
+    {
+        ++hit;
+        --flatVx;
+    }
+    std::cerr << flatVx << "\n";
+
     --hit;
     for(int i = 0; i < 3; ++i)
     {
@@ -71,7 +87,10 @@ FVElementBuilder<_Mesh, _Scalar>::
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
         nodes[i] = mesh.vertexValueNode(*hit).idx();
+        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
+            flatVx = i;
     }
+    assert(flatVx < 1);
 
     Vector p[] = {
         Vector::Zero(),
@@ -114,24 +133,245 @@ FVElementBuilder<_Mesh, _Scalar>::
     Vector3 dy2[9];
     Vector3 dxy[9];
 
-    for(size_t i = 0; i < 3; ++i)
-    {
-    // 25%:
-        dx2[i+0] = funcVertexBasis(i, Deriv_XX, a, b, c, d, l, area);
-        dx2[i+3] = funcMidpointBasis(i, Deriv_XX, a, b, c, d, l, area);
-        dx2[i+6] = funcMidpointDerivBasis(i, Deriv_XX, a, b, c, d, l, area);
-        dy2[i+0] = funcVertexBasis(i, Deriv_YY, a, b, c, d, l, area);
-        dy2[i+3] = funcMidpointBasis(i, Deriv_YY, a, b, c, d, l, area);
-        dy2[i+6] = funcMidpointDerivBasis(i, Deriv_YY, a, b, c, d, l, area);
-        dxy[i+0] = funcVertexBasis(i, Deriv_XY, a, b, c, d, l, area);
-        dxy[i+3] = funcMidpointBasis(i, Deriv_XY, a, b, c, d, l, area);
-        dxy[i+6] = funcMidpointDerivBasis(i, Deriv_XY, a, b, c, d, l, area);
-    };
+//    for(size_t i = 0; i < 3; ++i)
+//    {
+//    // 25%:
+//        dx2[i+0] = funcVertexBasis(i, Deriv_XX, a, b, c, d, l, area);
+//        dx2[i+3] = funcMidpointBasis(i, Deriv_XX, a, b, c, d, l, area);
+//        dx2[i+6] = funcMidpointDerivBasis(i, Deriv_XX, a, b, c, d, l, area);
+//        dy2[i+0] = funcVertexBasis(i, Deriv_YY, a, b, c, d, l, area);
+//        dy2[i+3] = funcMidpointBasis(i, Deriv_YY, a, b, c, d, l, area);
+//        dy2[i+6] = funcMidpointDerivBasis(i, Deriv_YY, a, b, c, d, l, area);
+//        dxy[i+0] = funcVertexBasis(i, Deriv_XY, a, b, c, d, l, area);
+//        dxy[i+3] = funcMidpointBasis(i, Deriv_XY, a, b, c, d, l, area);
+//        dxy[i+6] = funcMidpointDerivBasis(i, Deriv_XY, a, b, c, d, l, area);
+//    };
 
+    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+    Vector9 b8p0gcons = Vector9::Zero();
+    Vector9 b7p0gcons = Vector9::Zero();
+
+    {
+        Scalar l0 = v[0].norm();
+        Scalar l1 = v[1].norm();
+        Scalar l2 = v[2].norm();
+
+        Eigen::Matrix<Scalar, 2, 2> frame;
+        frame.col(0) = v[2] / l2;
+        frame(0, 1) = -frame(1, 0);
+        frame(1, 1) = frame(0, 0);
+
+//        v[0] = frame.partialPivLu().solve(v[0]);
+        Vector p2 = -frame.partialPivLu().solve(v[1]);
+//        v[2] = frame.partialPivLu().solve(v[2]);
+
+        Scalar p1x = l2;
+        Scalar p2x = p2[0];
+        Scalar p2y = p2[1];
+
+//        std::cout << p1x << ", " << p2x << ", " << p2y << "\n";
+
+        Scalar _2delta = p1x * p2y;
+//        std::cout << "2 * delta = " << _2delta << "\n";
+
+        //Scalar l2 = v[2].norm();
+
+//        std::cout << l0 << ", " << l1 << ", " << l2 << "\n";
+
+        Scalar dl0dn0 = v[0].dot(v[0]) / (_2delta * l0);
+        Scalar dl0dn1 = v[0].dot(v[1]) / (_2delta * l1);
+        Scalar dl0dn2 = v[0].dot(v[2]) / (_2delta * l2);
+
+        Scalar dl1dn0 = v[1].dot(v[0]) / (_2delta * l0);
+        Scalar dl1dn1 = v[1].dot(v[1]) / (_2delta * l1);
+        Scalar dl1dn2 = v[1].dot(v[2]) / (_2delta * l2);
+
+        Scalar dl2dn0 = v[2].dot(v[0]) / (_2delta * l0);
+        Scalar dl2dn1 = v[2].dot(v[1]) / (_2delta * l1);
+        Scalar dl2dn2 = v[2].dot(v[2]) / (_2delta * l2);
+
+//        std::cout << dl0dn0 << ", " << dl0dn1 << ", " << dl0dn2 << "\n";
+//        std::cout << dl1dn0 << ", " << dl1dn1 << ", " << dl1dn2 << "\n";
+//        std::cout << dl2dn0 << ", " << dl2dn1 << ", " << dl2dn2 << "\n";
+
+        Scalar a0 = p1x*p2y / _2delta;
+        Scalar b1 = p2y / _2delta;
+        Scalar b0 = -b1;
+        Scalar c0 = (p2x - p1x) / _2delta;
+        Scalar c1 = -p2x / _2delta;
+        Scalar c2 = p1x / _2delta;
+
+//        std::cout << "a0 = " << a0 << "\n";
+//        std::cout << "b0 = " << b0 << "\n";
+//        std::cout << "b1 = " << b1 << "\n";
+//        std::cout << "c0 = " << c0 << "\n";
+//        std::cout << "c1 = " << c1 << "\n";
+//        std::cout << "c2 = " << c2 << "\n";
+
+        Scalar hf0 = - _2delta / l0;
+        Scalar hf1 = - _2delta / l1;
+        Scalar hf2 = - _2delta / l2;
+
+        Scalar vhf_l0_e1 = dl0dn1 + dl1dn1 / 2.;
+        Scalar vhf_l0_e2 = dl0dn2 + dl2dn2 / 2.;
+        Scalar vhf_l1_e0 = dl1dn0 + dl0dn0 / 2.;
+        Scalar vhf_l1_e2 = dl1dn2 + dl2dn2 / 2.;
+        Scalar vhf_l2_e0 = dl2dn0 + dl0dn0 / 2.;
+        Scalar vhf_l2_e1 = dl2dn1 + dl1dn1 / 2.;
+
+        Scalar tmp0 = pow(b0, 2);
+        Scalar tmp1 = 6*a0;
+        Scalar tmp2 = pow(b1, 2);
+        Scalar tmp3 = 6*hf1;
+        Scalar tmp4 = tmp2*tmp3;
+        Scalar tmp5 = pow(b0, 3);
+        Scalar tmp6 = pow(b1, 3);
+        Scalar tmp7 = 12*hf1;
+        Scalar tmp8 = tmp6*tmp7;
+        Scalar tmp9 = b0*b1*c2;
+        Scalar tmp10 = 6*tmp9;
+        Scalar tmp11 = c0*tmp0;
+        Scalar tmp12 = c1*tmp2;
+        Scalar tmp13 = tmp12*tmp7;
+        Scalar tmp14 = tmp10 + 6*tmp11 + tmp13*vhf_l0_e1;
+        Scalar tmp15 = b0*c0;
+        Scalar tmp16 = a0*b1*c2;
+        Scalar tmp17 = 3*tmp16;
+        Scalar tmp18 = b1*c1;
+        Scalar tmp19 = tmp18*tmp3;
+        Scalar tmp20 = b0*c1*c2;
+        Scalar tmp21 = b1*c0*c2;
+        Scalar tmp22 = 6*tmp20 + 6*tmp21;
+        Scalar tmp23 = pow(c0, 2);
+        Scalar tmp24 = b0*tmp23;
+        Scalar tmp25 = pow(c1, 2);
+        Scalar tmp26 = b1*tmp25;
+        Scalar tmp27 = tmp26*tmp7;
+        Scalar tmp28 = tmp22 + 6*tmp24 + tmp27*vhf_l0_e1;
+        Scalar tmp29 = c1*c2;
+        Scalar tmp30 = tmp1*tmp29;
+        Scalar tmp31 = tmp25*tmp3;
+        Scalar tmp32 = pow(c2, 2);
+        Scalar tmp33 = 6*hf2*tmp32;
+        Scalar tmp34 = pow(c0, 3);
+        Scalar tmp35 = c0*c1*c2;
+        Scalar tmp36 = 18*tmp35;
+        Scalar tmp37 = pow(c1, 3);
+        Scalar tmp38 = tmp37*tmp7;
+        Scalar tmp39 = pow(c2, 3);
+        Scalar tmp40 = 12*hf2*tmp39;
+        Scalar tmp41 = 6*hf0*tmp0;
+        Scalar tmp42 = 12*a0*hf0*tmp0;
+        Scalar tmp43 = 12*hf0;
+        Scalar tmp44 = tmp43*tmp5;
+        Scalar tmp45 = tmp11*tmp43;
+        Scalar tmp46 = tmp10 + 6*tmp12 + tmp45*vhf_l1_e0;
+        Scalar tmp47 = 6*b0*c0*hf0;
+        Scalar tmp48 = 12*a0*b0*c0*hf0;
+        Scalar tmp49 = tmp24*tmp43;
+        Scalar tmp50 = tmp22 + 6*tmp26 + tmp49*vhf_l1_e0;
+        Scalar tmp51 = 6*hf0*tmp23;
+        Scalar tmp52 = 12*a0*hf0*tmp23;
+        Scalar tmp53 = tmp34*tmp43;
+        Scalar tmp54 = tmp10 + tmp13*vhf_l2_e1 + tmp45*vhf_l2_e0;
+        Scalar tmp55 = tmp22 + tmp27*vhf_l2_e1 + tmp49*vhf_l2_e0;
+        Scalar tmp56 = 48*a0;
+        Scalar tmp57 = b1*c2;
+        Scalar tmp58 = 24*b0*(2*tmp15 - tmp57);
+        Scalar tmp59 = -12*tmp16;
+        Scalar tmp60 = -24*tmp20 - 24*tmp21;
+        Scalar tmp61 = 48*tmp24 + tmp60;
+        Scalar tmp62 = -24*a0*tmp29;
+        Scalar tmp63 = -72*tmp35;
+        Scalar tmp64 = b0*c2;
+        Scalar tmp65 = 24*b1*(2*tmp18 - tmp64);
+        Scalar tmp66 = 48*tmp26 + tmp60;
+        Scalar tmp67 = 8*c0;
+        Scalar tmp68 = -24*tmp9;
+        Scalar tmp69 = b0*c1;
+        Scalar tmp70 = b1*c0;
+        Scalar tmp71 = -24*c2*(tmp69 + tmp70);
+        Scalar tmp72 = 2*a0 - 1;
+
+        dx2[0] = Vector3(tmp0*tmp1 + tmp0 - tmp4*vhf_l0_e1, 6*tmp5 + tmp8*vhf_l0_e1, tmp14);
+        dx2[1] = Vector3(tmp2 - tmp41*vhf_l1_e0 + tmp42*vhf_l1_e0, tmp44*vhf_l1_e0 + 6*tmp6, tmp46);
+        dx2[2] = Vector3(-tmp4*vhf_l2_e1 - tmp41*vhf_l2_e0 + tmp42*vhf_l2_e0, tmp44*vhf_l2_e0 + tmp8*vhf_l2_e1, tmp54);
+        dx2[3] = Vector3(tmp0*(tmp56 - 24), 48*tmp5, tmp58);
+        dx2[4] = Vector3(-24*tmp2, 48*tmp6, tmp65);
+        dx2[5] = Vector3(8*b0*b1, 0, tmp68);
+        dx2[6] = Vector3(tmp41*tmp72, tmp44, tmp45);
+        dx2[7] = Vector3(-tmp4, tmp8, tmp13);
+        dx2[8] = Vector3(0, 0, 0);
+        dxy[0] = Vector3(tmp1*tmp15 + tmp15 + tmp17 - tmp19*vhf_l0_e1, tmp14, tmp28);
+        dxy[1] = Vector3(tmp17 + tmp18 - tmp47*vhf_l1_e0 + tmp48*vhf_l1_e0, tmp46, tmp50);
+        dxy[2] = Vector3(tmp17 - tmp19*vhf_l2_e1 - tmp47*vhf_l2_e0 + tmp48*vhf_l2_e0, tmp54, tmp55);
+        dxy[3] = Vector3(tmp15*tmp56 - 24*tmp15 + 4*tmp57 + tmp59, tmp58, tmp61);
+        dxy[4] = Vector3(-24*tmp18 + tmp59 + 4*tmp64, tmp65, tmp66);
+        dxy[5] = Vector3(tmp59 + 4*tmp69 + 4*tmp70, tmp68, tmp71);
+        dxy[6] = Vector3(tmp47*tmp72, tmp45, tmp49);
+        dxy[7] = Vector3(-tmp19, tmp13, tmp27);
+        dxy[8] = Vector3(0, 0, 0);
+        dy2[0] = Vector3(tmp1*tmp23 + tmp23 + tmp30 - tmp31*vhf_l0_e1 - tmp33*vhf_l0_e2, tmp28, 6*tmp34 + tmp36 + tmp38*vhf_l0_e1 + tmp40*vhf_l0_e2);
+        dy2[1] = Vector3(tmp25 + tmp30 - tmp33*vhf_l1_e2 - tmp51*vhf_l1_e0 + tmp52*vhf_l1_e0, tmp50, tmp36 + 6*tmp37 + tmp40*vhf_l1_e2 + tmp53*vhf_l1_e0);
+        dy2[2] = Vector3(tmp30 - tmp31*vhf_l2_e1 + tmp32 - tmp51*vhf_l2_e0 + tmp52*vhf_l2_e0, tmp55, tmp36 + tmp38*vhf_l2_e1 + 6*tmp39 + tmp53*vhf_l2_e0);
+        dy2[3] = Vector3(tmp23*tmp56 - 24*tmp23 + 8*tmp29 + tmp62, tmp61, 48*tmp34 + tmp63);
+        dy2[4] = Vector3(c2*tmp67 - 24*tmp25 + tmp62, tmp66, 48*tmp37 + tmp63);
+        dy2[5] = Vector3(c1*tmp67 - 24*tmp32 + tmp62, tmp71, 48*tmp39 + tmp63);
+        dy2[6] = Vector3(tmp51*tmp72, tmp49, tmp53);
+        dy2[7] = Vector3(-tmp31, tmp27, tmp38);
+        dy2[8] = Vector3(-tmp33, 0, tmp40);
+
+//        std::cout << "Element:\n";
+//        for(int i = 0; i < 9; ++i)
+//        {
+//            for(int j = 0; j < 3; ++j)
+//            {
+//                if(abs(dx2[i][j] - dx22[i][j]) > 1.e-4)
+//                    std::cout << "b" << i << "xx" << j << " = "
+//                              << dx2[i][j] << " | " << dx22[i][j] << " | " << dx2[i][j]/dx22[i][j] << "\n";
+//                if(abs(dxy[i][j] - dxy2[i][j]) > 1.e-4)
+//                    std::cout << "b" << i << "xy" << j << " = "
+//                              << dxy[i][j] << " | " << dxy2[i][j] << " | " << dxy[i][j]/dxy2[i][j] << "\n";
+//                if(abs(dy2[i][j] - dy22[i][j]) > 1.e-4)
+//                    std::cout << "b" << i << "yy" << j << " = "
+//                              << dy2[i][j] << " | " << dy22[i][j] << " | " << dy2[i][j]/dy22[i][j] << "\n";
+//            }
+    //        std::cout << dx2[i].format(fmt) << "\n"
+    //                  << dxy[i].format(fmt) << "\n"
+    //                  << dy2[i].format(fmt) << "\n";
+//        }
+
+        if(flatVx == 0)
+        {
+            b8p0gcons <<
+                _2delta*dl0dn2/(l1*l2) + 4/l1,
+                -_2delta*dl1dn0/(l0*l1) + _2delta*dl1dn2/(l1*l2),
+                -_2delta*dl2dn0/(l0*l1),
+                4/l1,
+                -4/l1,
+                -4/l1,
+                -_2delta/(l0*l1),
+                0,
+                _2delta/(l1*l2);
+            b7p0gcons <<
+                -_2delta*dl0dn1/(l1*l2) - 4/l2,
+                _2delta*dl1dn0/(l0*l2),
+                _2delta*dl2dn0/(l0*l2) - _2delta*dl2dn1/(l1*l2),
+                -4/l2,
+                4/l2,
+                4/l2,
+                _2delta/(l0*l2),
+                -_2delta/(l1*l2),
+                0;
+        }
+    }
+
+    Eigen::Matrix<Scalar, 9, 9> m;
     for(size_t i = 0; i < 9; ++i)
     {
         for(size_t j = i; j < 9; ++j)
         {
+            Scalar value = 0;
             EIGEN_ASM_COMMENT("MYBEGIN");
 
             Vector6 basis = multBasis(dx2[i]+dy2[i], dx2[j]+dy2[j])
@@ -139,7 +379,7 @@ FVElementBuilder<_Mesh, _Scalar>::
                                                     - multBasis(dx2[i], dy2[j])
                     - multBasis(dy2[i], dx2[j]));
 
-            Scalar value = integrateQuadTriangle(v, basis, area);
+            value = integrateQuadTriangle(v, basis, area);
 
             EIGEN_ASM_COMMENT("MYEND");
 
@@ -148,11 +388,29 @@ FVElementBuilder<_Mesh, _Scalar>::
                 value *= -1;
             }
 
-            *(it++) = Triplet(nodes[i], nodes[j], value);
-            if(i != j)
-                *(it++) = Triplet(nodes[j], nodes[i], value);
-//            _elemStiffness(i, j) = value;
-//            _elemStiffness(j, i) = value;
+//            *(it++) = Triplet(nodes[i], nodes[j], value);
+//            if(i != j)
+//                *(it++) = Triplet(nodes[j], nodes[i], value);
+
+            m(i, j) = value;
+            m(j, i) = value;
+        }
+    }
+
+//    if(flatVx == 0)
+//    {
+//        m.row(7) = b7p0gcons;
+//        m.row(8) = b8p0gcons;
+//        m.col(7) = b7p0gcons;
+//        m.col(8) = b8p0gcons;
+//        std::cerr << m << "\n";
+//    }
+
+    for(size_t i = 0; i < 9; ++i)
+    {
+        for(size_t j = 0; j < 9; ++j)
+        {
+            *(it++) = Triplet(nodes[i], nodes[j], m(i, j));
         }
     }
 }
