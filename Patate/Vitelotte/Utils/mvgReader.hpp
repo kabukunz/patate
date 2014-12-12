@@ -29,7 +29,9 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     unsigned dim = 2;
     unsigned params = 4;
     unsigned attributes = 0;
-    unsigned nVert, nNode, nFace;
+    unsigned nVert = 1024;
+    unsigned nNode = 1024;
+    unsigned nFace = 1024;
     while(true)
     {
         Base::readLine(in);

@@ -42,7 +42,7 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
         m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
         m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
-         m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
     }
     return *this;
 }
