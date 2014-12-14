@@ -79,6 +79,12 @@ void Shader::use()
 }
 
 
+void Shader::setGLSLVersionHeader(const std::string& header)
+{
+    m_versionHeader = header;
+}
+
+
 bool Shader::addShader(GLenum _ShaderType, const char* _pShaderText)
 {
     PATATE_ASSERT_NO_GL_ERROR();
@@ -93,11 +99,13 @@ bool Shader::addShader(GLenum _ShaderType, const char* _pShaderText)
 
     m_shaderObjList.push_back(ShaderObj);
 
-    const GLchar* p[1];
-    p[0] = _pShaderText;
-    GLint Lengths[1];
-    Lengths[0]= strlen(_pShaderText);
-    glShaderSource(ShaderObj, 1, p, Lengths);
+    const GLchar* p[2];
+    p[0] = m_versionHeader.empty()? 0: &m_versionHeader[0];
+    p[1] = _pShaderText;
+    GLint Lengths[2];
+    Lengths[0] = m_versionHeader.size();
+    Lengths[1] = strlen(_pShaderText);
+    glShaderSource(ShaderObj, 2, p, Lengths);
 
     glCompileShader(ShaderObj);
 

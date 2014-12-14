@@ -19,5 +19,7 @@
     }                                                                           \
 }
 
+#define PATATE_FIELD_OFFSET(_struct, _field) &(static_cast<_struct*>(0)->_field)
+
 #endif
 

@@ -4,9 +4,9 @@
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <string>
 #include <list>
 
-//#include "../gl/glcorearb.h"
 
 #include "macros.h"
 
@@ -36,6 +36,7 @@ public:
 
     inline Status status() const { return m_status; }
 
+    inline void setGLSLVersionHeader(const std::string& header);
     inline bool addShaderFromFile(GLenum _ShaderType, const char* _pFilename);
     inline bool addShader(GLenum _ShaderType, const char* _pShaderText);
     inline void clearShaderList();
@@ -53,6 +54,7 @@ private:
     typedef std::list<GLuint> ShaderObjList;
 
     Status m_status;
+    std::string m_versionHeader;
     ShaderObjList m_shaderObjList;
 };
 
