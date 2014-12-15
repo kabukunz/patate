@@ -76,6 +76,21 @@
 						console.error(text);
 					}
 				},*/
+				resizePending: false,
+				requestResize: function() {
+					var canvas = document.getElementById('vitelotteCanvas');
+					if(Module.resizePending) {
+						return;
+					}
+					
+					Module.resizePending = true;
+					window.requestAnimationFrame(function() {
+						Module.resizePending = false;
+						canvas.width = canvas.clientWidth;
+						canvas.height = canvas.clientHeight;
+						Module.GL2Viewer.getInstance().resize(canvas.clientWidth, canvas.clientHeight);
+					});
+				},
 				canvas: (function() {
 					var canvas = document.getElementById('vitelotteCanvas');
 
@@ -83,9 +98,18 @@
 					// application robust, you may want to override this behavior before shipping!
 					// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
 					canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+					
+					window.addEventListener("resize", function(e) {
+						Module.requestResize();
+					});
 
 					return canvas;
 				})(),
+				preRun: [
+					function() {
+						Module.requestResize();
+					}
+				],
 	/*			setStatus: function(text) {
 					if (!Module.setStatus.last) Module.setStatus.last = { time: Date.now(), text: '' };
 					if (text === Module.setStatus.text) return;

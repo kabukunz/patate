@@ -30,6 +30,7 @@ body {
 
 a {
 	color: #606060;
+	text-decoration: none;
 }
 
 a:hover {

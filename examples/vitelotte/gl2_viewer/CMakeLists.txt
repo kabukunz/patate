@@ -16,8 +16,8 @@ include_directories(
 )
 
 if(EMSCRIPTEN)
-    add_definitions(-DEMSCRIPTEN -D USE_OPENGL_ES -Wno-warn-absolute-paths)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --embed-file ${PROJECT_BINARY_DIR}/files@/")
+    add_definitions(-DEMSCRIPTEN -D USE_OPENGL_ES -Wno-warn-absolute-paths -std=c++11 --bind)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} --embed-file ${PROJECT_BINARY_DIR}/files@/ --bind")
 else()
     set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
     find_package(Threads REQUIRED)

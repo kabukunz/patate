@@ -4,6 +4,7 @@
 
 #ifdef EMSCRIPTEN
 #  include <emscripten.h>
+#  include <emscripten/bind.h>
 #endif
 
 #include <GL/glew.h>
@@ -26,10 +27,37 @@ public:
     typedef Vitelotte::VGMeshGL2Renderer<Mesh> Renderer;
 
 public:
+    static GL2Viewer* getInstance()
+    {
+        return m_instance;
+    }
+
+public:
     GL2Viewer()
         : m_width(800), m_height(600), m_drag(false), m_needUpdate(true),
           m_showWireframe(true)
-    {}
+    {
+        assert(!m_instance);
+        m_instance = this;
+    }
+
+//#ifdef EMSCRIPTEN
+//    GL2Viewer(const GL2Viewer& other)
+//        : m_width(other.m_width),
+//          m_height(other.m_height),
+//          m_lastMousePos(),
+//          m_drag(false),
+//          m_needUpdate(true),
+//          m_mesh(other.m_mesh),
+//          m_renderer(),
+//          m_defaultShader(),
+//          m_wireframeShader(),
+//          m_camera(other.m_camera),
+//          m_showWireframe(other.m_showWireframe)
+//    {
+//    }
+
+//#endif
 
 
     void init(const std::string& filename)
@@ -137,10 +165,12 @@ public:
 
     void resize(int w, int h)
     {
-        std::cout << "resize: " << w << ", " << h << "\n";
         glViewport(0, 0, w, h);
-        glScissor(0, 0, w, h);
         m_camera.changeAspectRatio(float(w) / float(h));
+
+        m_width = w;
+        m_height = h;
+
         m_needUpdate = true;
     }
 
@@ -272,6 +302,9 @@ public:
     }
 
 private:
+    static GL2Viewer* m_instance;
+
+private:
     int m_width;
     int m_height;
 
@@ -288,6 +321,18 @@ private:
     OrthographicCamera m_camera;
     bool m_showWireframe;
 };
+
+GL2Viewer* GL2Viewer::m_instance = 0;
+
+
+#ifdef EMSCRIPTEN
+EMSCRIPTEN_BINDINGS(gl2ViewerBinding) {
+  emscripten::class_<GL2Viewer>("GL2Viewer")
+    .function("resize", &GL2Viewer::resize)
+    .class_function("getInstance", &GL2Viewer::getInstance, emscripten::allow_raw_pointers())
+    ;
+}
+#endif
 
 
 void app_update(GL2Viewer* viewer)
@@ -307,6 +352,8 @@ int main(int argc, char** argv)
 #else
     while(true)
         app_update(viewer);
+
+    delete viewer;
 #endif
 
     return EXIT_SUCCESS;

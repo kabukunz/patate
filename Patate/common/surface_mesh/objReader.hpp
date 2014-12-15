@@ -28,7 +28,7 @@ OBJBaseReader::read(std::istream& in)
 bool
 OBJBaseReader::readLine(std::istream& in)
 {
-    bool ok = std::getline(in, m_line);
+    bool ok = std::getline(in, m_line).good();
     ++m_lineNb;
     m_lineStream.str(m_line);
     m_lineStream.seekg(0);
