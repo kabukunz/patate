@@ -19,21 +19,21 @@ inline Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb);
 class VGMeshRendererShader
 {
 public:
-    enum TriangleType { Standard, Singular };
+    enum TriangleType {
+        Quadratic = 0x01,
+        Singular  = 0x02
+    };
 
 public:
     inline VGMeshRendererShader() {}
 
     virtual bool useShader(TriangleType triangleType) = 0;
-    virtual void setNodesTexture(int texUnit, int baseOffset) = 0;
+    virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset) = 0;
 
-    inline GLint verticesAttibLocation() { return m_verticesLoc; }
+    virtual GLint verticesAttibLocation(TriangleType triangleType) = 0;
 
 private:
     VGMeshRendererShader(const VGMeshRendererShader&);
-
-protected:
-    GLint m_verticesLoc;
 };
 
 
@@ -43,26 +43,38 @@ public:
     inline VGMeshRendererDefaultShader();
     virtual inline ~VGMeshRendererDefaultShader() {}
 
+    virtual GLint verticesAttibLocation(TriangleType triangleType);
+
     virtual bool useShader(TriangleType triangleType);
-    virtual void setNodesTexture(int texUnit, int baseOffset);
+    virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset);
 
     inline Eigen::Matrix4f& viewMatrix() { return m_viewMatrix; }
     inline const Eigen::Matrix4f& viewMatrix() const { return m_viewMatrix; }
     inline void setViewMatrix(const Eigen::Matrix4f& viewMatrix)
         { m_viewMatrix = viewMatrix; }
 
+protected:
+    struct Uniforms
+    {
+        GLint viewMatrixLoc;
+        GLint nodesLoc;
+        GLint baseNodeIndexLoc;
+        GLint singularTrianglesLoc;
+    };
 
 protected:
-    inline void getUniforms();
-    inline void setupUniforms();
+    inline void getUniforms(PatateCommon::Shader& shader, Uniforms& uniforms);
+    inline void setupUniforms(const Uniforms& uniforms);
 
 protected:
-    PatateCommon::Shader m_shader;
+    PatateCommon::Shader m_linearShader;
+    PatateCommon::Shader m_quadraticShader;
 
-    GLint m_viewMatrixLoc;
-    GLint m_nodesLoc;
-    GLint m_baseNodeIndexLoc;
-    GLint m_singularTrianglesLoc;
+    GLint m_verticesLocLinear;
+    GLint m_verticesLocQuadratic;
+
+    Uniforms m_linearUniforms;
+    Uniforms m_quadraticUniforms;
 
     Eigen::Matrix4f m_viewMatrix;
     int m_nodes;
@@ -77,8 +89,10 @@ public:
     inline VGMeshRendererWireframeShader();
     virtual inline ~VGMeshRendererWireframeShader() {}
 
+    virtual GLint verticesAttibLocation(TriangleType triangleType);
+
     virtual bool useShader(TriangleType triangleType);
-    virtual void setNodesTexture(int texUnit, int baseOffset);
+    virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset);
 
     inline Eigen::Matrix4f& viewMatrix() { return m_viewMatrix; }
     inline const Eigen::Matrix4f& viewMatrix() const { return m_viewMatrix; }
@@ -103,6 +117,8 @@ protected:
 protected:
     PatateCommon::Shader m_shader;
 
+    GLint m_verticesLoc;
+
     GLint m_viewMatrixLoc;
     GLint m_zoomLoc;
     GLint m_lineWidthLoc;
@@ -113,66 +129,6 @@ protected:
     float m_lineWidth;
     Eigen::Vector4f m_wireframeColor;
 };
-
-//class VGMeshRendererDefaultShaders : public VGMeshRendererShaders
-//{
-//public:
-//    inline VGMeshRendererDefaultShaders();
-//    virtual inline ~VGMeshRendererDefaultShaders() {}
-
-//    virtual GLuint useShader(TriangleType triangleType);
-//    virtual void setColorTexture(int texUnit, int baseOffset);
-
-//    inline Eigen::Matrix4f& viewMatrix() { return m_viewMatrix; }
-//    inline const Eigen::Matrix4f& viewMatrix() const { return m_viewMatrix; }
-
-//    inline bool& showWireframe() { return m_showWireframe; }
-//    inline const bool& showWireframe() const { return m_showWireframe; }
-
-//    inline float& zoom() { return m_zoom; }
-//    inline const float& zoom() const { return m_zoom; }
-
-//    inline float& pointRadius() { return m_pointRadius; }
-//    inline const float& pointRadius() const { return m_pointRadius; }
-
-//    inline float& lineWidth() { return m_lineWidth; }
-//    inline const float& lineWidth() const { return m_lineWidth; }
-
-//    inline Eigen::Vector4f& wireframeColor() { return m_wireframeColor; }
-//    inline const Eigen::Vector4f& wireframeColor() const { return m_wireframeColor; }
-
-//    inline Eigen::Vector4f& pointColor() { return m_pointColor; }
-//    inline const Eigen::Vector4f& pointColor() const { return m_pointColor; }
-
-
-//protected:
-//    struct Uniforms
-//    {
-//        GLint viewMatrixLoc;
-//        GLint showWireframeLoc;
-//        GLint zoomLoc;
-//        GLint pointRadiusLoc;
-//        GLint halfLineWidthLoc;
-//        GLint wireframeColorLoc;
-//        GLint pointColorLoc;
-//    };
-
-//    inline void getUniforms(PatateCommon::Shader& shader, Uniforms& uniforms);
-//    inline void setupUniforms(const Uniforms& uniforms);
-
-//protected:
-//    PatateCommon::Shader m_shader;
-
-//    Uniforms m_uniforms;
-
-//    Eigen::Matrix4f m_viewMatrix;
-//    bool m_showWireframe;
-//    float m_zoom;
-//    float m_pointRadius;
-//    float m_lineWidth;
-//    Eigen::Vector4f m_wireframeColor;
-//    Eigen::Vector4f m_pointColor;
-//};
 
 
 template < class _Mesh >
@@ -234,6 +190,7 @@ private:
 
     IndicesVector m_indices;
 
+    bool m_quadratic;
     NodesVector m_nodes;
     int m_nTriangles;
     int m_nSingulars;
