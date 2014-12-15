@@ -434,7 +434,12 @@ inline typename VGMeshGL2Renderer<_Mesh>::NodeValue
 VGMeshGL2Renderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
-        return srgbToLinear(m_pMesh->nodeValue(node));
+    {
+        if(m_renderSrgb)
+            return srgbToLinear(m_pMesh->nodeValue(node));
+        else
+            return m_pMesh->nodeValue(node);
+    }
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 

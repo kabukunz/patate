@@ -11,6 +11,7 @@
 
 #include <SDL.h>
 
+#include <Patate/vitelotte.h>
 #include <Patate/vitelotte_gl.h>
 #include <Patate/Vitelotte/Utils/vgMeshGL2Renderer.h>
 #include <Patate/Vitelotte/Utils/mvgReader.h>
@@ -25,6 +26,11 @@ public:
 
     typedef Vitelotte::VGMesh<Scalar, 2, 4> Mesh;
     typedef Vitelotte::VGMeshGL2Renderer<Mesh> Renderer;
+
+    typedef Vitelotte::FVElementBuilder<Mesh, double> FVElementBase;
+    typedef Vitelotte::SingularElementDecorator<FVElementBase> FVElement;
+    typedef Vitelotte::FemSolver<Mesh, FVElement> FVSolver;
+
 
 public:
     static GL2Viewer* getInstance()
@@ -41,26 +47,8 @@ public:
         m_instance = this;
     }
 
-//#ifdef EMSCRIPTEN
-//    GL2Viewer(const GL2Viewer& other)
-//        : m_width(other.m_width),
-//          m_height(other.m_height),
-//          m_lastMousePos(),
-//          m_drag(false),
-//          m_needUpdate(true),
-//          m_mesh(other.m_mesh),
-//          m_renderer(),
-//          m_defaultShader(),
-//          m_wireframeShader(),
-//          m_camera(other.m_camera),
-//          m_showWireframe(other.m_showWireframe)
-//    {
-//    }
 
-//#endif
-
-
-    void init(const std::string& filename)
+    void init()
     {
         if(SDL_Init(SDL_INIT_VIDEO) != 0)
         {
@@ -117,15 +105,21 @@ public:
 #endif
 
         glViewport(0, 0, m_width, m_height);
-        glClearColor(.5, .5, .5, 1.f);
+        glClearColor(0.f, 0.f, 0.f, 1.f);
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef EMSCRIPTEN
         glEnable(GL_FRAMEBUFFER_SRGB);
+#else
+        m_renderer.setRenderSrgb(false);
 #endif
+    }
 
+
+    void loadMesh(const std::string& filename)
+    {
         try
         {
             Vitelotte::readMvgFromFile(filename, m_mesh);
@@ -136,6 +130,22 @@ public:
             quit(1);
         }
 
+        m_mesh.setAttributes(Mesh::FV);
+        m_mesh.finalize();
+
+        FVSolver solver(&m_mesh);
+        solver.build();
+        solver.sort();
+        solver.solve();
+
+        m_renderer.initialize(&m_mesh);
+
+        m_needUpdate = true;
+    }
+
+
+    void centerView()
+    {
         OrthographicCamera::ViewBox box;
         for(Mesh::VertexIterator vit = m_mesh.verticesBegin();
             vit != m_mesh.verticesEnd(); ++vit)
@@ -147,7 +157,23 @@ public:
         m_camera.setViewBox(box);
         m_camera.changeAspectRatio(float(m_width) / float(m_height));
 
-        m_renderer.initialize(&m_mesh);
+        m_needUpdate = true;
+    }
+
+
+    bool showWireframe() const
+    {
+        return m_showWireframe;
+    }
+
+
+    void setShowWireframe(bool showWireframe)
+    {
+        if(showWireframe != m_showWireframe)
+        {
+            m_showWireframe = showWireframe;
+            m_needUpdate = true;
+        }
     }
 
 
@@ -329,6 +355,10 @@ GL2Viewer* GL2Viewer::m_instance = 0;
 EMSCRIPTEN_BINDINGS(gl2ViewerBinding) {
   emscripten::class_<GL2Viewer>("GL2Viewer")
     .function("resize", &GL2Viewer::resize)
+    .function("loadMesh", &GL2Viewer::loadMesh)
+    .function("centerView", &GL2Viewer::centerView)
+    .function("showWireframe", &GL2Viewer::showWireframe)
+    .function("setShowWireframe", &GL2Viewer::setShowWireframe)
     .class_function("getInstance", &GL2Viewer::getInstance, emscripten::allow_raw_pointers())
     ;
 }
@@ -345,7 +375,9 @@ int main(int argc, char** argv)
 {
     GL2Viewer* viewer = new GL2Viewer;
 
-    viewer->init("test.mvg");
+    viewer->init();
+//    viewer->loadMesh("test.mvg");
+//    viewer->centerView();
 
 #ifdef EMSCRIPTEN
     emscripten_set_main_loop_arg((em_arg_callback_func)app_update, viewer, 0, 0);

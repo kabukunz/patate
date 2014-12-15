@@ -138,13 +138,16 @@ public:
     VGMeshGL2Renderer() :
         m_verticesBuffer(0),
         /*m_nodesBuffer(0),*/ m_nodesTexture(0),
-        /*m_vao(0),*/ m_pMesh(0)
+        /*m_vao(0),*/ m_pMesh(0), m_renderSrgb(true)
     {}
 
     ~VGMeshGL2Renderer() {}
 
     void initialize(Mesh* _mesh=0);
     void render(VGMeshGL2RendererShader& shaders);
+
+    bool renderSrgb() const { return m_renderSrgb; }
+    void setRenderSrgb(bool srgb) { m_renderSrgb = srgb; }
 
     inline void setMesh(Mesh* _mesh)
     {
@@ -191,6 +194,8 @@ private:
     int m_nTriangles;
     int m_nSingulars;
     int m_nodeTextureSize;
+
+    bool m_renderSrgb;
 };
 
 
