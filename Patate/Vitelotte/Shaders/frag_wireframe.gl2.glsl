@@ -26,7 +26,7 @@ void main(void)
         dist = edgeDist.x;
     else if(edgeDist.y < edgeDist.x && edgeDist.y < edgeDist.z)
         dist = edgeDist.y;
-    else if(edgeDist.z < edgeDist.x && edgeDist.z < edgeDist.y)
+    else //if(edgeDist.z < edgeDist.x && edgeDist.z < edgeDist.y)
         dist = edgeDist.z;
 
     highp float intensity = interpFactor(dist, lineWidth/2.);
