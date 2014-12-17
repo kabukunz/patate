@@ -21,11 +21,11 @@ OBJBaseReader::read(std::istream& in)
     while(in.good())
     {
         // comment
-        if(m_line.empty() || m_line[0] == '#' || std::isspace(m_line[0]))
-            continue;
-
-        m_lineStream >> spec;
-        parseDefinition(spec, m_lineStream);
+        if(!m_line.empty() && m_line[0] != '#' && !std::isspace(m_line[0]))
+        {
+            m_lineStream >> spec;
+            parseDefinition(spec, m_lineStream);
+        }
 
         readLine(in);
     }
