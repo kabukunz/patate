@@ -17,16 +17,19 @@ char* progName;
 void usage(int returnValue = 127)
 {
     std::cout << "usage: " << progName << " [OPTIONS] COMMAND [CMD-OPTIONS]\n"
-    "Mvg toolkit: a set of tools to manipulate mvg files.\n"
-    "\n"
-    "Commands:\n"
-    "  convert       Generate a mvg from a mesh in another format.\n"
-    "  finalize      Finalize the mvg by setting nodes on all faces.\n"
-    "\n"
-    "Options:\n"
-    "  -h, --help    Display this message.\n"
-    "  -v            Verbose. Print extra informations.\n"
-    "\n";
+"Mvg toolkit: a set of tools to manipulate mvg files.\n"
+"\n"
+"Commands:\n"
+"  convert [-a ATTRS | --attrib ATTRS] IN OUT\n"
+"                Convert a mesh IN from a supported format to an mvg file OUT,\n"
+"                with attributes ATTRS. If ATTRS is not provided, keep the\n"
+"                default attributes if IN is a mvg file or default to fv.\n"
+"  finalize      Finalize the mvg by setting nodes on all faces.\n"
+"\n"
+"Options:\n"
+"  -h, --help    Display this message.\n"
+"  -v            Verbose. Print extra informations.\n"
+"\n";
     exit(returnValue);
 }
 
@@ -80,29 +83,80 @@ int parseAttribSet(const std::string& attr)
 // Convert command ------------------------------------------------------------
 
 
+enum MeshType
+{
+    MeshObj,
+    MeshMvg
+};
+
 int convert(int argc, char** argv)
 {
-    if(argc != 3 && argc != 4)
-        usage();
+    int attribs = -1;
+    std::string meshFilename;
+    std::string outFilename;
 
     int argi = 1;
+    for(; argi < argc; ++argi)
+    {
+        std::string arg(argv[argi]);
+        if(arg[0] == '-')
+        {
+            if(arg == "-a" || arg == "--attributes")
+            {
+                attribs = parseAttribSet(argv[++argi]);
+                if(attribs < 0)
+                    usage();
+            }
+            else
+                usage();
+        }
+        else if(meshFilename.empty())
+            meshFilename = arg;
+        else if(outFilename.empty())
+            outFilename = arg;
+        else
+            usage();
+    }
 
-    int attribs = Mesh::FV;
-    if(argc == 4)
-        attribs = parseAttribSet(argv[argi++]);
-    std::string meshFilename(argv[argi++]);
-    std::string outFilename(argv[argi++]);
+    MeshType meshType;
+    if(meshFilename.rfind(".obj") == meshFilename.length() - 4)
+    {
+        meshType = MeshObj;
+    }
+    else if(meshFilename.rfind(".mvg") == meshFilename.length() - 4)
+    {
+        meshType = MeshMvg;
+    }
+    else
+    {
+        std::cerr << "Unrecoginzed file type, aborting.\n";
+        exit(1);
+    }
 
-    if(attribs < 0)
-        usage();
+    if(attribs < 0 && meshType != MeshMvg)
+        attribs = Mesh::FV;
 
     Mesh mesh;
 
-    std::ifstream in(meshFilename.c_str());
-    PatateCommon::OBJReader<Mesh::Vector> reader(mesh, mesh.positionProperty());
-    reader.read(in);
+    switch(meshType)
+    {
+    case MeshObj:
+    {
+        std::ifstream in(meshFilename.c_str());
+        PatateCommon::OBJReader<Mesh::Vector> reader(mesh, mesh.positionProperty());
+        reader.read(in);
 
-    mesh.setAttributes(attribs);
+        break;
+    }
+    case MeshMvg:
+    {
+        Vitelotte::readMvgFromFile(meshFilename, mesh);
+        break;
+    }
+    }
+
+    if(attribs != -1)
+        mesh.setAttributes(attribs);
 
     Vitelotte::writeMvgToFile(outFilename, mesh);
 
