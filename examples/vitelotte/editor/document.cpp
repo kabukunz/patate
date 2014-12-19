@@ -93,7 +93,7 @@ void Document::updateBoundingBox()
 
     m_bb.setEmpty();
     for(VertexIterator vit = m_mesh.verticesBegin();
-        vit != m_mesh.verticesEnd(); ++vit)
+            vit != m_mesh.verticesEnd(); ++vit)
         m_bb.extend(m_mesh.position(*vit));
 }
 
@@ -197,13 +197,17 @@ Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p,
 void Document::solve()
 {
     m_solvedMesh = m_mesh;
-    m_solvedMesh.finalize();
-    // Would break undo
-    //m_solvedMesh.compactNodes();
 
-    m_fvSolver.build();
-    m_fvSolver.sort();
-    m_fvSolver.solve();
+    if(m_solvedMesh.hasUnknowns())
+    {
+        m_solvedMesh.finalize();
+        // Would break undo
+        //m_solvedMesh.compactNodes();
+
+        m_fvSolver.build();
+        m_fvSolver.sort();
+        m_fvSolver.solve();
+    }
 
     emit meshUpdated();
 }
@@ -347,6 +351,8 @@ void Document::loadMesh(const std::string& filename)
     setSelection(MeshSelection());
 
     solve();
+
+    emit meshChanged();
 }
 
 

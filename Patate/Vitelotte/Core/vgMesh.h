@@ -93,6 +93,8 @@ public: //--- Nodes -----------------------------------------------------------
     inline typename NodeVector::size_type nNodes() const
     { return m_nodes.size(); }
 
+    inline bool hasUnknowns() const;
+
     inline bool isConstraint(Node node) const
     { return !isnan(nodeValue(node)[0]); }
 

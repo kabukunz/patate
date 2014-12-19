@@ -95,6 +95,16 @@ VGMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
     return Node(m_nodes.size() - 1);
 }
 
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
+{
+    for(int i = 0; i < nNodes(); ++i)
+        if(!isConstraint(Node(i)))
+            return true;
+    return false;
+}
+
 
 template < typename _Scalar, int _Dim, int _Chan >
 void

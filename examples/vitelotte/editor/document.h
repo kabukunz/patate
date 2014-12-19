@@ -52,8 +52,9 @@ class Document : public QObject
 
 public:
     typedef ::Mesh Mesh;
-    typedef Vitelotte::FVElementBuilder<Mesh> FVElement;
-    typedef Vitelotte::FemSolver<Mesh, FVElement> FVSolver;
+    typedef Vitelotte::FVElementBuilder<Mesh, double> FVElement;
+    typedef Vitelotte::SingularElementDecorator<FVElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> FVSolver;
     typedef Eigen::AlignedBox2f BoundingBox;
 
     enum HalfedgeNode
@@ -117,6 +118,7 @@ public slots:
 
 signals:
     void selectionChanged();
+    void meshChanged();
     void meshUpdated();
 
 
