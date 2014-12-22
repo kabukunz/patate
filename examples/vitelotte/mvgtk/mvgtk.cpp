@@ -20,11 +20,13 @@ void usage(int returnValue = 127)
 "Mvg toolkit: a set of tools to manipulate mvg files.\n"
 "\n"
 "Commands:\n"
+"  check IN      Check IN mvg to ensure everything is right.\n"
 "  convert [-a ATTRS | --attrib ATTRS] IN OUT\n"
 "                Convert a mesh IN from a supported format to an mvg file OUT,\n"
 "                with attributes ATTRS. If ATTRS is not provided, keep the\n"
 "                default attributes if IN is a mvg file or default to fv.\n"
-"  finalize      Finalize the mvg by setting nodes on all faces.\n"
+"  finalize IN OUT\n"
+"                Finalize the mvg by setting nodes on all faces.\n"
 "\n"
 "Options:\n"
 "  -h, --help    Display this message.\n"
@@ -38,6 +40,7 @@ typedef std::map<std::string, int> ArgMap;
 
 enum
 {
+    Check,
     Convert,
     Finalize
 };
@@ -79,6 +82,107 @@ int parseAttribSet(const std::string& attr)
         return Mesh::FV;
     return -1;
 }
+
+// Check command --------------------------------------------------------------
+
+
+int check(int argc, char** argv)
+{
+    if(argc != 2)
+        usage();
+
+    Mesh mesh;
+    Vitelotte::readMvgFromFile(argv[1], mesh);
+
+    bool nError = 0;
+    for(Mesh::FaceIterator fit = mesh.facesBegin();
+        fit != mesh.facesEnd(); ++fit)
+    {
+        if(mesh.valence(*fit) != 3)
+        {
+            std::cout << "face " << (*fit).idx() << " is not triangular (valence "
+                      << mesh.valence(*fit) << ")\n";
+            ++nError;
+        }
+        else
+        {
+            Mesh::Halfedge h = mesh.halfedge(*fit);
+            Mesh::Vector p0 = mesh.position(mesh.toVertex(h));
+            h = mesh.nextHalfedge(h);
+            Mesh::Vector p1 = mesh.position(mesh.toVertex(h));
+            h = mesh.nextHalfedge(h);
+            Mesh::Vector p2 = mesh.position(mesh.toVertex(h));
+            Eigen::Matrix2f m; m << (p1-p0), (p2-p1);
+            if(m.determinant() <= 0)
+            {
+                std::cout << "face " << (*fit).idx() << " is degenerate or oriented clockwise.\n";
+                ++nError;
+            }
+        }
+
+        Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
+        Mesh::HalfedgeAroundFaceCirculator hend = hit;
+        do
+        {
+            if(mesh.hasVertexValue())
+            {
+                Mesh::Node n = mesh.vertexValueNode(*hit);
+                if(n.isValid())
+                {
+                    if(!mesh.isValid(n))
+                    {
+                        std::cout << "face " << (*fit).idx()
+                                  << " has an out-of-bound to-vertex value node.\n";
+                        ++nError;
+                    }
+                }
+            }
+            if(mesh.hasVertexFromValue())
+            {
+                Mesh::Node n = mesh.vertexFromValueNode(*hit);
+                if(n.isValid())
+                {
+                    if(!mesh.isValid(n))
+                    {
+                        std::cout << "face " << (*fit).idx()
+                                  << " has an out-of-bound from-vertex value node.\n";
+                        ++nError;
+                    }
+                }
+            }
+            if(mesh.hasEdgeValue())
+            {
+                Mesh::Node n = mesh.edgeValueNode(*hit);
+                if(n.isValid())
+                {
+                    if(!mesh.isValid(n))
+                    {
+                        std::cout << "face " << (*fit).idx()
+                                  << " has an out-of-bound edge value node.\n";
+                        ++nError;
+                    }
+                }
+            }
+            if(mesh.hasEdgeGradient())
+            {
+                Mesh::Node n = mesh.edgeGradientNode(*hit);
+                if(n.isValid())
+                {
+                    if(!mesh.isValid(n))
+                    {
+                        std::cout << "face " << (*fit).idx()
+                                  << " has an out-of-bound edge gradient node.\n";
+                        ++nError;
+                    }
+                }
+            }
+            ++hit;
+        } while(hit != hend);
+    }
+
+    return nError > 0;
+}
+
 
 // Convert command ------------------------------------------------------------
 
@@ -195,6 +299,7 @@ int main(int argc, char** argv)
     progName = argv[0];
 
     ArgMap commands;
+    addOpt(commands, "check", Check);
     addOpt(commands, "convert", Convert);
     addOpt(commands, "finalize", Finalize);
 
@@ -248,6 +353,8 @@ int main(int argc, char** argv)
 
     switch(command)
     {
+    case Check:
+        return check(argc - argi, argv + argi);
     case Convert:
         return convert(argc - argi, argv + argi);
     case Finalize:
