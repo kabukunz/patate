@@ -14,7 +14,7 @@
 #include "Patate/vitelotte.h"
 #include "Patate/vitelotte_gl.h"
 
-#include "orthographicCamera.h"
+#include "../common/orthographicCamera.h"
 #include "glPointRenderer.h"
 #include "glLineRenderer.h"
 
