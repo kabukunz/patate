@@ -36,7 +36,7 @@ set(vitelotte_editor_SHADERS
 
 set(vitelotte_editor_SRCS
     document.cpp
-    orthographicCamera.cpp
+    ../common/orthographicCamera.cpp
     shaders.cpp
     glPointRenderer.cpp
     glLineRenderer.cpp

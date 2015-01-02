@@ -130,6 +130,8 @@ public:
             quit(1);
         }
 
+        centerView();
+
         m_mesh.setAttributes(Mesh::FV);
         m_mesh.finalize();
 
@@ -376,12 +378,18 @@ int main(int argc, char** argv)
     GL2Viewer* viewer = new GL2Viewer;
 
     viewer->init();
-//    viewer->loadMesh("test.mvg");
 //    viewer->centerView();
 
 #ifdef EMSCRIPTEN
     emscripten_set_main_loop_arg((em_arg_callback_func)app_update, viewer, 0, 0);
 #else
+    if(argc != 2)
+    {
+        std::cout << "Usage: " << argv[0] << " FILENAME\n";
+        return 1;
+    }
+    viewer->loadMesh(argv[1]);
+
     while(true)
         app_update(viewer);
 

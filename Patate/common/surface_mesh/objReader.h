@@ -12,7 +12,7 @@
 #include "surfaceMesh.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
 
 
@@ -67,8 +67,9 @@ protected:
 };
 
 
+}  // namespace PatateCommon
+
 #include "objReader.hpp"
 
-}  // namespace Patate
 
 #endif  // _OBJREADER_H_

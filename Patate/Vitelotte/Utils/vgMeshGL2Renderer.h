@@ -66,7 +66,7 @@ protected:
     inline void setupUniforms();
 
 protected:
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
 
     GLint m_viewMatrixLoc;
     GLint m_nodesLoc;
@@ -110,7 +110,7 @@ protected:
     inline void setupUniforms();
 
 protected:
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
 
     GLint m_viewMatrixLoc;
     GLint m_zoomLoc;

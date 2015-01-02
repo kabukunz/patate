@@ -1,3 +1,9 @@
+#include "objWriter.h"
+
+
+namespace PatateCommon
+{
+
 
 template < typename _Point >
 OBJWriter<_Point>::OBJWriter(const SurfaceMesh& mesh,
@@ -34,4 +40,7 @@ OBJWriter<_Point>::write(std::ostream& out)
         while (++fvit != fvend);
         out << "\n";
     }
+}
+
+
 }

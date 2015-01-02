@@ -11,7 +11,7 @@
 #include "macros.h"
 
 
-namespace Patate {
+namespace PatateCommon {
 
 class Shader
 {

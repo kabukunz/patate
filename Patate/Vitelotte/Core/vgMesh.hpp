@@ -29,7 +29,7 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
     if(&rhs != this)
     {
         // FIXME: SurfaceMesh's operator= wont work with properties of different types.
-        Patate::SurfaceMesh::operator=(rhs);
+        PatateCommon::SurfaceMesh::operator=(rhs);
 
         m_nodes = rhs.m_nodes;
 
@@ -42,7 +42,7 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
         m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
         m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
-         m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
     }
     return *this;
 }
@@ -93,6 +93,16 @@ VGMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 {
     m_nodes.push_back(nodeValue);
     return Node(m_nodes.size() - 1);
+}
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
+{
+    for(int i = 0; i < nNodes(); ++i)
+        if(!isConstraint(Node(i)))
+            return true;
+    return false;
 }
 
 
@@ -422,7 +432,7 @@ void
 VGMesh<_Scalar, _Dim, _Chan>::reserve(
         unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
 {
-    Patate::SurfaceMesh::reserve(nvertices, nedges, nfaces);
+    PatateCommon::SurfaceMesh::reserve(nvertices, nedges, nfaces);
     m_nodes.reserve(nnodes);
 }
 
@@ -431,16 +441,16 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::clear()
 {
-    Patate::SurfaceMesh::clear();
+    PatateCommon::SurfaceMesh::clear();
     m_nodes.clear();
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-Patate::SurfaceMesh::Vertex
+PatateCommon::SurfaceMesh::Vertex
 VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
 {
-    Vertex v = Patate::SurfaceMesh::addVertex();
+    Vertex v = PatateCommon::SurfaceMesh::addVertex();
     position(v) = pos;
     return v;
 }

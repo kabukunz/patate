@@ -40,7 +40,7 @@ inline
 bool
 VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
 {
-    if(m_shader.status() == Patate::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::Uninitialized)
     {
         m_shader.create();
 #ifdef USE_OPENGL_ES
@@ -68,7 +68,7 @@ VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
         }
     }
 
-    bool ok = m_shader.status() == Patate::Shader::CompilationSuccessful;
+    bool ok = m_shader.status() == PatateCommon::Shader::CompilationSuccessful;
     if(ok)
     {
         m_shader.use();
@@ -135,7 +135,7 @@ inline
 bool
 VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
 {
-    if(m_shader.status() == Patate::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::Uninitialized)
     {
         m_shader.create();
 #ifdef USE_OPENGL_ES
@@ -162,7 +162,7 @@ VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
         }
     }
 
-    bool ok = m_shader.status() == Patate::Shader::CompilationSuccessful;
+    bool ok = m_shader.status() == PatateCommon::Shader::CompilationSuccessful;
     if(ok)
     {
         m_shader.use();

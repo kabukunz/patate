@@ -49,15 +49,15 @@ void Editor::centerView()
     Eigen::Vector3f center;
     center << bb.center(), 0;
     Eigen::Vector3f scale;
-    scale.head<2>() = bb.sizes().array() / Eigen::Array2f(width(), height()) * .6;
-    if(scale(0) > scale(1))
-        scale *= float(width());
-    else
-        scale *= float(height());
+    scale(0) = bb.sizes().maxCoeff() * .6;
+    scale(1) = scale(0);
     scale(2) = 1;
     m_camera.setViewBox(OrthographicCamera::ViewBox(
         center - scale,
         center + scale));
+    m_camera.changeAspectRatio(float(width()) / float(height()));
+
+    update();
 }
 
 
@@ -78,6 +78,7 @@ void Editor::setDocument(Document* document)
         if(m_initialized)
             updateBuffers();
 
+        connect(m_document, SIGNAL(meshChanged()), this, SLOT(centerView()));
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateBuffers()));
         connect(m_document, SIGNAL(selectionChanged()),
                 this, SLOT(updateSelection()));

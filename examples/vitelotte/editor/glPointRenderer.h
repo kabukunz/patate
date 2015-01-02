@@ -42,7 +42,7 @@ private:
 
     std::vector<Point> m_points;
 
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
     unsigned m_vao;
     unsigned m_buffer;
 

@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./bin/shader2cpp -n Vitelotte::shader -o Patate/Vitelotte/Utils/shaders.hpp Patate/Vitelotte/Shaders/*

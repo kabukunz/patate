@@ -17,7 +17,7 @@ namespace Vitelotte
 {
 
 template < typename _Scalar, int _Dim=2, int _Chan=4 >
-class VGMesh: public Patate::SurfaceMesh
+class VGMesh: public PatateCommon::SurfaceMesh
 {
 public:
     typedef _Scalar Scalar;
@@ -82,9 +82,9 @@ public:
 
     bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
     void setEdgeConstraintFlag(bool on);
-    Patate::Property<bool>::Reference isEdgeConstrained(Edge edge)
+    PatateCommon::Property<bool>::Reference isEdgeConstrained(Edge edge)
         { return m_edgeConstraintFlag[edge]; }
-    Patate::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
+    PatateCommon::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
         { return m_edgeConstraintFlag[edge]; }
 
 
@@ -92,6 +92,8 @@ public: //--- Nodes -----------------------------------------------------------
 
     inline typename NodeVector::size_type nNodes() const
     { return m_nodes.size(); }
+
+    inline bool hasUnknowns() const;
 
     inline bool isConstraint(Node node) const
     { return !isnan(nodeValue(node)[0]); }
@@ -137,10 +139,10 @@ public: //--- Utility ---------------------------------------------------------
 
     inline Vertex addVertex(const Vector& pos);
 
-    inline bool isValid(Vertex v) const { return Patate::SurfaceMesh::isValid(v); }
-    inline bool isValid(Halfedge h) const { return Patate::SurfaceMesh::isValid(h); }
-    inline bool isValid(Edge e) const { return Patate::SurfaceMesh::isValid(e); }
-    inline bool isValid(Face f) const { return Patate::SurfaceMesh::isValid(f); }
+    inline bool isValid(Vertex v) const { return PatateCommon::SurfaceMesh::isValid(v); }
+    inline bool isValid(Halfedge h) const { return PatateCommon::SurfaceMesh::isValid(h); }
+    inline bool isValid(Edge e) const { return PatateCommon::SurfaceMesh::isValid(e); }
+    inline bool isValid(Face f) const { return PatateCommon::SurfaceMesh::isValid(f); }
 
     inline bool isValid(Node n) const;
 
