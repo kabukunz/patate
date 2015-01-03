@@ -41,7 +41,7 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(gl2Viewer_SRCS
-    orthographicCamera.cpp
+    ../common/orthographicCamera.cpp
     gl2Viewer.cpp
 )
 add_executable(gl2_viewer ${gl2Viewer_SRCS})

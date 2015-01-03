@@ -16,7 +16,7 @@
 #include <Patate/Vitelotte/Utils/vgMeshGL2Renderer.h>
 #include <Patate/Vitelotte/Utils/mvgReader.h>
 
-#include "orthographicCamera.h"
+#include "../common/orthographicCamera.h"
 
 
 class GL2Viewer
