@@ -56,6 +56,7 @@ public:
 
 private:
     bool fromSplit(const Mesh& mesh, Mesh::Halfedge h) const;
+    bool isConstrained(const Mesh& mesh, Mesh::Halfedge h) const;
 
     void updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e);
     void updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Vertex vx);

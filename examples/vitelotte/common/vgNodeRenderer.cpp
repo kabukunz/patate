@@ -178,6 +178,20 @@ bool VGNodeRenderer::fromSplit(const Mesh& mesh, Mesh::Halfedge h) const
 }
 
 
+bool VGNodeRenderer::isConstrained(const Mesh& mesh, Mesh::Halfedge h) const
+{
+    Mesh::Halfedge oh = mesh.oppositeHalfedge(h);
+    return  mesh.isConstraint(mesh.vertexFromValueNode(h))              ||
+            mesh.isConstraint(mesh.edgeValueNode(h))                    ||
+            mesh.isConstraint(mesh.edgeGradientNode(h))                 ||
+            mesh.isConstraint(mesh.vertexValueNode(h))                  ||
+            mesh.vertexFromValueNode(h) != mesh.vertexFromValueNode(oh) ||
+            mesh.edgeValueNode(h)       != mesh.edgeValueNode(oh)       ||
+            mesh.edgeGradientNode(h)    != mesh.edgeGradientNode(oh)    ||
+            mesh.vertexValueNode(h)     != mesh.vertexValueNode(oh);
+}
+
+
 void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
 {
     Mesh::Halfedge h = mesh.halfedge(e, 0);
@@ -195,26 +209,18 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
     bool midSplit = !boundary && mesh.edgeValueNode(h) != mesh.edgeValueNode(oh);
     bool toSplit = !boundary && mesh.vertexValueNode(h) != mesh.vertexFromValueNode(oh);
 
-    bool unconstrained = true;
-    unconstrained &= !mesh.isConstraint(mesh.vertexFromValueNode(h));
-    unconstrained &= !mesh.isConstraint(mesh.edgeValueNode(h));
-    unconstrained &= !mesh.isConstraint(mesh.edgeGradientNode(h));
-    unconstrained &= !mesh.isConstraint(mesh.vertexValueNode(h));
-    unconstrained &= mesh.vertexFromValueNode(h) == mesh.vertexFromValueNode(oh);
-    unconstrained &= mesh.edgeValueNode(h) == mesh.edgeValueNode(oh);
-    unconstrained &= mesh.edgeGradientNode(h) == mesh.edgeGradientNode(oh);
-    unconstrained &= mesh.vertexValueNode(h) == mesh.vertexValueNode(oh);
+    bool constrained = isConstrained(mesh, h);
 
     float offset = m_edgeOffset / zoom;
 
     if(!fromSplit && !midSplit && !toSplit)
     {
-        addEdge(p0, p1, !unconstrained);
+        addEdge(p0, p1, constrained);
     }
     else
     {
-        addEdge(p0 + n*offset, p1 + n*offset, !unconstrained);
-        addEdge(p0 - n*offset, p1 - n*offset, !unconstrained);
+        addEdge(p0 + n*offset, p1 + n*offset, constrained);
+        addEdge(p0 - n*offset, p1 - n*offset, constrained);
     }
 
     float noffset = m_nodeOffset / zoom;
@@ -236,6 +242,7 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Verte
     float radius = 0;
     float minSqrEdgeLen = (mesh.position(mesh.toVertex(*hit)) - p).squaredNorm();
     float offset = m_nodeOffset / zoom;
+    bool constrained = false;
     do
     {
         if(mesh.isBoundary(*hit))
@@ -250,6 +257,7 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Verte
         Mesh::Vertex vx1 = mesh.toVertex(*hit);
         minSqrEdgeLen = std::min(minSqrEdgeLen,
                 (mesh.position(vx1) - mesh.position(vx0)).squaredNorm());
+        constrained |= isConstrained(mesh, *hit);
 
         ++hit;
 
@@ -279,8 +287,11 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Verte
         } while(hit != hend);
     }
 
-    m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
-                             m_edgeOffset + 1.5, convColor(m_baseColor));
+    if(constrained)
+    {
+        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
+                                 m_edgeOffset + 1.5, convColor(m_baseColor));
+    }
 }
 
 
