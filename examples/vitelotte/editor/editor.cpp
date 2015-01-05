@@ -90,7 +90,7 @@ void Editor::updateBuffers()
 {
     assert(m_document);
     m_renderer.setMesh(&mesh());
-    updateGL();
+    update();
 }
 
 
@@ -136,7 +136,7 @@ void Editor::updateSelection()
     m_pointRenderer.upload();
     m_lineRenderer.upload();
 
-    updateGL();
+    update();
 }
 
 
@@ -205,13 +205,13 @@ void Editor::paintGL()
         m_wireframeShader.setLineWidth(.5);
         m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
         m_wireframeShader.setZoom(width() / m_camera.getViewBox().sizes()(0));
-        m_renderer.render(m_wireframeShader);
+        //m_renderer.render(m_wireframeShader);
 
         Eigen::Vector2f viewportSize(width(), height());
         m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
 
-        m_nodeRenderer.update(mesh(), width() / m_camera.getViewBox().sizes()(0));
+        m_nodeRenderer.update(m_document->mesh(), width() / m_camera.getViewBox().sizes()(0));
         m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
     }
 }
@@ -265,7 +265,7 @@ void Editor::mouseMoveEvent(QMouseEvent* event)
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         m_camera.normalizedTranslate(norm - m_dragPos);
         m_dragPos = norm;
-        updateGL();
+        update();
     }
 }
 
@@ -275,7 +275,7 @@ void Editor::wheelEvent(QWheelEvent* event)
     m_camera.normalizedZoom(
                 screenToNormalized(event->posF()),
                 event->delta() > 0? 1.1: 1/1.1);
-    updateGL();
+    update();
 }
 
 

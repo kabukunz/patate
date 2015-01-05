@@ -96,7 +96,7 @@ public: //--- Nodes -----------------------------------------------------------
     inline bool hasUnknowns() const;
 
     inline bool isConstraint(Node node) const
-    { return !isnan(nodeValue(node)[0]); }
+    { return isValid(node) && !isnan(nodeValue(node)[0]); }
 
     inline const NodeValue& nodeValue(Node node) const
     { return m_nodes.at(node.idx()); }

@@ -17,6 +17,7 @@
 #include <Patate/Vitelotte/Utils/mvgReader.h>
 
 #include "../common/orthographicCamera.h"
+#include "../common/vgNodeRenderer.h"
 
 
 class GL2Viewer
@@ -41,7 +42,7 @@ public:
 public:
     GL2Viewer()
         : m_width(800), m_height(600), m_drag(false), m_needUpdate(true),
-          m_showWireframe(true)
+          m_showWireframe(false)
     {
         assert(!m_instance);
         m_instance = this;
@@ -122,7 +123,7 @@ public:
     {
         try
         {
-            Vitelotte::readMvgFromFile(filename, m_mesh);
+            Vitelotte::readMvgFromFile(filename, m_baseMesh);
         }
         catch(std::runtime_error& e)
         {
@@ -130,7 +131,8 @@ public:
             quit(1);
         }
 
-        centerView();
+
+        m_mesh = m_baseMesh;
 
         m_mesh.setAttributes(Mesh::FV);
         m_mesh.finalize();
@@ -140,6 +142,7 @@ public:
         solver.sort();
         solver.solve();
 
+        centerView();
         m_renderer.initialize(&m_mesh);
 
         m_needUpdate = true;
@@ -240,6 +243,9 @@ public:
             m_renderer.render(m_wireframeShader);
         }
 
+        m_nodeRenderer.update(m_baseMesh, zoom);
+        m_nodeRenderer.render(viewMatrix, Eigen::Vector2f(m_width, m_height));
+
         SDL_GL_SwapBuffers();
         //SDL_GL_SwapWindow(window);
     }
@@ -326,6 +332,16 @@ public:
             m_needUpdate = true;
         }
 
+        // Allow node picking.
+//        Eigen::Vector2f p = m_camera.normalizedToCamera(mousePos);
+//        Mesh::Node hn = m_nodeRenderer.highlightedNode();
+//        Mesh::Node pick = m_nodeRenderer.pickNode(p);
+//        if(pick != hn)
+//        {
+//            m_nodeRenderer.setHighlightedNode(pick);
+//            m_needUpdate = true;
+//        }
+
         m_lastMousePos = mousePos;
     }
 
@@ -340,11 +356,14 @@ private:
     bool m_drag;
     bool m_needUpdate;
 
+    Mesh m_baseMesh;
     Mesh m_mesh;
 
     Renderer m_renderer;
     Vitelotte::VGMeshRendererGL2DefaultShader m_defaultShader;
     Vitelotte::VGMeshRendererGL2WireframeShader m_wireframeShader;
+
+    VGNodeRenderer m_nodeRenderer;
 
     OrthographicCamera m_camera;
     bool m_showWireframe;

@@ -86,7 +86,7 @@ int parseAttribSet(const std::string& attr)
 // Check command --------------------------------------------------------------
 
 
-int check(int argc, char** argv)
+int check(int argc, char** argv, const GlobalOptions& opts)
 {
     if(argc != 2)
         usage();
@@ -113,10 +113,23 @@ int check(int argc, char** argv)
             h = mesh.nextHalfedge(h);
             Mesh::Vector p2 = mesh.position(mesh.toVertex(h));
             Eigen::Matrix2f m; m << (p1-p0), (p2-p1);
-            if(m.determinant() <= 0)
+            float det = m.determinant();
+            if(det <= 0)
             {
                 std::cout << "face " << (*fit).idx() << " is degenerate or oriented clockwise.\n";
                 ++nError;
+                if(opts.verbose)
+                {
+                    std::cout << "  Area: " << det / 2. << "\n";
+
+                    Mesh::Halfedge hend = h;
+                    do
+                    {
+                        std::cout << "  v" << mesh.toVertex(h).idx() << ": "
+                                  << mesh.position(mesh.toVertex(h)).transpose() << "\n";
+                        h = mesh.nextHalfedge(h);
+                    } while(h != hend);
+                }
             }
         }
 
@@ -354,7 +367,7 @@ int main(int argc, char** argv)
     switch(command)
     {
     case Check:
-        return check(argc - argi, argv + argi);
+        return check(argc - argi, argv + argi, opts);
     case Convert:
         return convert(argc - argi, argv + argi);
     case Finalize:

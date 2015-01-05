@@ -19,6 +19,12 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
+    if(argc > 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " [FILENAME]\n";
+        return 1;
+    }
+
     QGLFormat glFormat;
     glFormat.setVersion(4, 0);
     QGLFormat::setDefaultFormat(glFormat);
@@ -42,8 +48,10 @@ int main(int argc, char** argv)
     window.setCentralWidget(content);
 
     Document* doc = new Document(&window);
-//    doc.loadMesh("clean.mvg");
-    doc->loadMesh("test.mvg");
+    if(argc == 2)
+    {
+        doc->loadMesh(argv[1]);
+    }
     editor->setDocument(doc);
     valueEditor->setDocument(doc);
 

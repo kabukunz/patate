@@ -42,6 +42,10 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(gl2Viewer_SRCS
     ../common/orthographicCamera.cpp
+    ../common/shaders.cpp
+    ../common/glPointRenderer.cpp
+    ../common/glLineRenderer.cpp
+    ../common/vgNodeRenderer.cpp
     gl2Viewer.cpp
 )
 add_executable(gl2_viewer ${gl2Viewer_SRCS})

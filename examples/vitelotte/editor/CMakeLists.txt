@@ -39,8 +39,8 @@ set(vitelotte_editor_SRCS
     ../common/glPointRenderer.cpp
     ../common/glLineRenderer.cpp
     ../common/vgNodeRenderer.cpp
+    ../common/shaders.cpp
     document.cpp
-    shaders.cpp
     valueEditor.cpp
     editor.cpp
     main.cpp
