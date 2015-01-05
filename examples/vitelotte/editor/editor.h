@@ -15,8 +15,9 @@
 #include "Patate/vitelotte_gl.h"
 
 #include "../common/orthographicCamera.h"
-#include "glPointRenderer.h"
-#include "glLineRenderer.h"
+#include "../common/glPointRenderer.h"
+#include "../common/glLineRenderer.h"
+#include "../common/vgNodeRenderer.h"
 
 
 class QMouseEvent;
@@ -85,7 +86,7 @@ private:
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
-
+    VGNodeRenderer m_nodeRenderer;
 };
 
 

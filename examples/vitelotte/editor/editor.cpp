@@ -210,6 +210,9 @@ void Editor::paintGL()
         Eigen::Vector2f viewportSize(width(), height());
         m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+
+        m_nodeRenderer.update(mesh(), width() / m_camera.getViewBox().sizes()(0));
+        m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
     }
 }
 
