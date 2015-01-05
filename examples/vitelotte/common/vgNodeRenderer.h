@@ -23,7 +23,18 @@ public:
                 const Eigen::Vector2f& viewportSize);
 
 private:
+    bool fromSplit(const Mesh& mesh, Mesh::Halfedge h) const;
+
+    void updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e);
+    void updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Vertex vx);
+
+    void addEdge(const Mesh::Vector& p0, const Mesh::Vector& p1);
+    void addNode(const Mesh& mesh, Mesh::Node n, const Mesh::Vector& p);
+
+private:
     float m_nodeOffset;
+    float m_nodeRadius;
+    float m_edgeOffset;
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
