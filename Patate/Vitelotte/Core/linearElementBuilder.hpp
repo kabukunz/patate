@@ -23,7 +23,7 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 LinearElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element)
 {
     assert(mesh.valence(element) == 3);
 
@@ -40,9 +40,13 @@ LinearElementBuilder<_Mesh, _Scalar>::
         nodes[i] = mesh.vertexValueNode(*hit).idx();
     }
 
-    Scalar inv4A = 1. / (2. * det2(v[0], v[1]));
+    Scalar _2area = det2(v[0], v[1]);
+    Scalar inv4A = 1. / (2. * _2area);
 
-    assert(inv4A > 0);
+    if(_2area <= 0)
+    {
+        error(StatusWarning, "Degenerated or reversed triangle");
+    }
 
     for(int i = 0; i < 3; ++i)
     {

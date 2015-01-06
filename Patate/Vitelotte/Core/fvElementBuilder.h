@@ -5,13 +5,14 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "elementBuilderBase.h"
 
 namespace Vitelotte
 {
 
 
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class FVElementBuilder
+class FVElementBuilder : public ElementBuilderBase
 {
 public:
     typedef _Scalar Scalar;
@@ -31,11 +32,11 @@ public:
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
 
 protected:
     template < typename InIt >
-    void processFV1Element(InIt& it, const Mesh& mesh, Face element) const;
+    void processFV1Element(InIt& it, const Mesh& mesh, Face element);
 
     template < typename InIt >
     void processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const;

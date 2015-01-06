@@ -26,7 +26,7 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 MorleyElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element)
 {
     assert(mesh.valence(element) == 3);
 
@@ -69,6 +69,11 @@ MorleyElementBuilder<_Mesh, _Scalar>::
 
     Scalar _2delta = p1x * p2y;
     Scalar area = _2delta / 2;
+
+    if(area <= 0)
+    {
+        error(StatusWarning, "Degenerated or reversed triangle");
+    }
 
     Scalar a0 = p1x*p2y / _2delta;
     Scalar b1 = p2y / _2delta;

@@ -24,6 +24,8 @@ public:
     typedef typename Element::Vector Vector;
     typedef typename Element::Triplet Triplet;
 
+    typedef typename Element::Status Status;
+
 protected:
     typedef typename Mesh::Face Face;
 
@@ -35,7 +37,10 @@ public:
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
+
+    inline Status status() const { return m_element.status(); }
+    inline const std::string& errorString() const { return m_element.errorString(); }
 
     Element& element() { return m_element; }
     const Element& element() const { return m_element; }

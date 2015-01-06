@@ -18,7 +18,7 @@ template < typename _Element >
 template < typename InIt >
 void
 SingularElementDecorator<_Element>::addCoefficients(
-        InIt& it, const Mesh& mesh, Face element) const
+        InIt& it, const Mesh& mesh, Face element)
 {
     typedef typename Element::Mesh Mesh;
 

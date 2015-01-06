@@ -24,9 +24,13 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element)
 {
-    assert(mesh.valence(element) == 3);
+    if(mesh.valence(element) != 3)
+    {
+        error(StatusError, "Non-triangular face");
+        return;
+    }
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
@@ -52,10 +56,8 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    processFV1Element(InIt& it, const Mesh& mesh, Face element) const
+    processFV1Element(InIt& it, const Mesh& mesh, Face element)
 {
-    assert(mesh.valence(element) == 3);
-
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
     bool orient[3];
@@ -81,7 +83,10 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     Scalar area = det2(v[0], v[1]) / 2.;
 
-    assert(area > 0);
+    if(area <= 0)
+    {
+        error(StatusWarning, "Degenerated or reversed triangle");
+    }
 
     Vector3 a, b, c, d, l;
     for(size_t i0 = 0; i0 < 3; ++i0)

@@ -207,6 +207,15 @@ void Document::solve()
         m_fvSolver.build();
         m_fvSolver.sort();
         m_fvSolver.solve();
+
+        if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::StatusWarning)
+        {
+            std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
+        }
+        else if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::StatusError)
+        {
+            std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
+        }
     }
 
     emit meshUpdated();

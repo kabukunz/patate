@@ -42,11 +42,13 @@ public:
     inline FemSolver(Mesh* _inMesh,
                      const ElementBuilder& elementBuilder = ElementBuilder());
 
-    inline void build();
-    inline void sort();
-    inline void solve();
+    void build();
+    void sort();
+    void solve();
 
     inline bool isSolved() const { return m_solved; }
+    inline typename ElementBuilder::Status status() const { return m_elementBuilder.status(); }
+    inline const std::string& errorString() const { return m_elementBuilder.errorString(); }
 
 protected:
     template<typename SpMatrix, typename Rhs, typename Res>

@@ -6,12 +6,15 @@
 #include <Eigen/Sparse>
 
 
+#include "elementBuilderBase.h"
+
+
 namespace Vitelotte
 {
 
 
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class QuadraticElementBuilder
+class QuadraticElementBuilder : public ElementBuilderBase
 {
 public:
     typedef _Scalar Scalar;
@@ -35,7 +38,7 @@ public:
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
 
 private:
     static bool m_matricesInitialized;
