@@ -113,6 +113,7 @@ public:
     inline MVGReader(Mesh& mesh);
 
     using Base::error;
+    using Base::warning;
     using Base::parseIndiceList;
 
 protected:

@@ -169,7 +169,10 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         }
     }
     else
+    {
+        warning("Unknown spec: " + spec);
         return false;
+    }
     return true;
 }
 

@@ -5,20 +5,33 @@ namespace PatateCommon
 {
 
 
-void
+bool defaultErrorCallback(const std::string& msg, void* ptr)
+{
+    std::cout << "Mvg parse error: " << msg << "\n";
+    return true;
+}
+
+
+bool
 OBJBaseReader::read(std::istream& in)
 {
     m_lineNb = 0;
+    m_error = false;
     m_line.reserve(200);
     std::string spec;
 
     in.imbue(std::locale::classic());
 
+    if(in.bad())
+    {
+        error("Can not read input");
+    }
+
     readLine(in);
-    if(in.good())
+    if(in.good() && !m_error)
         parseHeader(in);
 
-    while(in.good())
+    while(in.good() && !m_error)
     {
         // comment
         if(!m_line.empty() && m_line[0] != '#' && !std::isspace(m_line[0]))
@@ -29,6 +42,8 @@ OBJBaseReader::read(std::istream& in)
 
         readLine(in);
     }
+
+    return m_error;
 }
 
 
@@ -75,11 +90,21 @@ OBJBaseReader::parseIndiceList(const std::string& _list,
 void
 OBJBaseReader::error(const std::string& msg)
 {
-    std::ostringstream out;
-    out << "Error: " << m_lineNb << ": " << msg;
-    throw std::runtime_error(out.str());
+    if(m_errorCallback)
+    {
+        m_error = m_errorCallback(msg, m_errorCallbackPtr);
+    }
 }
 
+
+void
+OBJBaseReader::warning(const std::string& msg)
+{
+    if(m_warningCallback)
+    {
+        m_error = m_warningCallback(msg, m_errorCallbackPtr);
+    }
+}
 
 
 template < typename _Point >
@@ -143,7 +168,10 @@ OBJReader<_Point>::parseDefinition(const std::string& spec,
         m_mesh.addFace(m_fVertices);
     }
     else
+    {
+        warning("Unknown spec: " + spec);
         return false;
+    }
     return true;
 }
 

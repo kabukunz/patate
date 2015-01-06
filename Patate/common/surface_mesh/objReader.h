@@ -16,13 +16,25 @@ namespace PatateCommon
 {
 
 
+inline bool defaultErrorCallback(const std::string& msg, void* ptr);
+
+
 class OBJBaseReader
 {
 public:
-    inline OBJBaseReader() {}
+    typedef bool (*ErrorCallback)(const std::string& msg, void* ptr);
+
+public:
+    inline OBJBaseReader()
+        : m_error(false),
+          m_errorCallback(defaultErrorCallback),
+          m_warningCallback(0),
+          m_errorCallbackPtr(0) {}
     virtual ~OBJBaseReader() {}
 
-    void read(std::istream& in);
+    void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
+
+    bool read(std::istream& in);
 
 protected:
     virtual void parseHeader(std::istream& /*in*/) {}
@@ -34,13 +46,19 @@ protected:
                          std::vector<unsigned>& _indices);
 
     void error(const std::string& msg);
+    void warning(const std::string& msg);
 
 protected:
     unsigned m_lineNb;
+    bool m_error;
 
     std::string m_line;
     std::istringstream m_lineStream;
     std::istringstream m_indicesStream;
+
+    ErrorCallback m_errorCallback;
+    ErrorCallback m_warningCallback;
+    void* m_errorCallbackPtr;
 };
 
 
