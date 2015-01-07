@@ -19,6 +19,7 @@ void
 FemSolver<_Mesh, _ElementBuilder>::build()
 {
     unsigned nCoefficients = 0;
+    m_elementBuilder.resetStatus();
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {

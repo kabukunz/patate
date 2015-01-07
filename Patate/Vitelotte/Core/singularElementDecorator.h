@@ -41,6 +41,7 @@ public:
 
     inline Status status() const { return m_element.status(); }
     inline const std::string& errorString() const { return m_element.errorString(); }
+    inline void resetStatus() { m_element.resetStatus(); }
 
     Element& element() { return m_element; }
     const Element& element() const { return m_element; }

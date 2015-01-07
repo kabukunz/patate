@@ -24,6 +24,7 @@ public:
     inline ElementBuilderBase() : m_status(StatusOK), m_errorString() {}
     inline Status status() const { return m_status; }
     inline const std::string& errorString() const { return m_errorString; }
+    inline void resetStatus() { m_status = StatusOK; m_errorString.clear(); }
 
 protected:
     inline void error(Status status, const std::string& errorString)
