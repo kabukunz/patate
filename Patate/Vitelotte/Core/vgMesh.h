@@ -80,12 +80,12 @@ public:
 //    bool hasVertexGradientSpecial() const { return m_attributes & VertexGradientSpecial; }
 
 
-    bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
-    void setEdgeConstraintFlag(bool on);
-    PatateCommon::Property<bool>::Reference isEdgeConstrained(Edge edge)
-        { return m_edgeConstraintFlag[edge]; }
-    PatateCommon::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
-        { return m_edgeConstraintFlag[edge]; }
+//    bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
+//    void setEdgeConstraintFlag(bool on);
+//    PatateCommon::Property<bool>::Reference isEdgeConstrained(Edge edge)
+//        { return m_edgeConstraintFlag[edge]; }
+//    PatateCommon::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
+//        { return m_edgeConstraintFlag[edge]; }
 
 
 public: //--- Nodes -----------------------------------------------------------

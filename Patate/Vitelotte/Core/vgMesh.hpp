@@ -76,15 +76,15 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 }
 
 
-template < typename _Scalar, int _Dim, int _Chan >
-void
-VGMesh<_Scalar, _Dim, _Chan>::setEdgeConstraintFlag(bool on)
-{
-    if(on && !hasEdgeConstraintFlag())
-        m_edgeConstraintFlag = edgeProperty("e:constraintFlag", false);
-    else if(!on && hasEdgeConstraintFlag())
-        removeEdgeProperty(m_edgeConstraintFlag);
-}
+//template < typename _Scalar, int _Dim, int _Chan >
+//void
+//VGMesh<_Scalar, _Dim, _Chan>::setEdgeConstraintFlag(bool on)
+//{
+//    if(on && !hasEdgeConstraintFlag())
+//        m_edgeConstraintFlag = edgeProperty("e:constraintFlag", false);
+//    else if(!on && hasEdgeConstraintFlag())
+//        removeEdgeProperty(m_edgeConstraintFlag);
+//}
 
 
 template < typename _Scalar, int _Dim, int _Chan >

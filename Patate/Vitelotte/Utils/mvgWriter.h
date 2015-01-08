@@ -37,15 +37,15 @@ public:
     /**
      * \brief Constructor
      */
-    inline MVGWriter(const Mesh& _mesh, Version version=LastestVersion)
-        : m_mesh(_mesh), m_version(version) {}
+    inline MVGWriter(Version version=LastestVersion)
+        : m_version(version) {}
 
     /**
      * \brief Write `mesh` in the stream `out` as a `.mvg` file.
      * \param mesh The QMesh to save.
      * \param out The output stream.
      */
-    void write(std::ostream& _out) const;
+    void write(std::ostream& _out, const Mesh& mesh) const;
 
 
 protected:
@@ -53,7 +53,6 @@ protected:
 
 
 protected:
-    const Mesh& m_mesh;
     Version m_version;
 };
 

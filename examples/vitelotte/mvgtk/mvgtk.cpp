@@ -260,8 +260,8 @@ int convert(int argc, char** argv)
     case MeshObj:
     {
         std::ifstream in(meshFilename.c_str());
-        PatateCommon::OBJReader<Mesh::Vector> reader(mesh, mesh.positionProperty());
-        reader.read(in);
+        PatateCommon::OBJReader<Mesh> reader;
+        reader.read(in, mesh);
 
         break;
     }

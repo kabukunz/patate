@@ -13,7 +13,7 @@ bool defaultErrorCallback(const std::string& msg, void* ptr)
 
 
 bool
-OBJBaseReader::read(std::istream& in)
+OBJBaseReader::doRead(std::istream& in)
 {
     m_lineNb = 0;
     m_error = false;
@@ -107,28 +107,36 @@ OBJBaseReader::warning(const std::string& msg)
 }
 
 
-template < typename _Point >
-OBJReader<_Point>::OBJReader(SurfaceMesh& mesh,
-                             SurfaceMesh::VertexProperty<Point> positions)
-    : m_mesh(mesh), m_vPos(positions)
+template < typename _Mesh >
+OBJReader<_Mesh>::OBJReader()
+    : m_mesh(0)
 {
 }
 
 
-template < typename _Point >
+template < typename _Mesh >
 bool
-OBJReader<_Point>::parseDefinition(const std::string& spec,
+OBJReader<_Mesh>::read(std::istream& in, Mesh& mesh)
+{
+    m_mesh = &mesh;
+    doRead(in);
+    m_mesh = 0;
+}
+
+
+template < typename _Mesh >
+bool
+OBJReader<_Mesh>::parseDefinition(const std::string& spec,
                                    std::istream& def)
 {
     // vertex
     if (spec == "v")
     {
-        Point p;
-        for(unsigned i = 0; i < Point::SizeAtCompileTime; ++i)
+        Vector p;
+        for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
             def >> p[i];
         if(!def) error("Failed to read vertex (not enough components ?)");
-        SurfaceMesh::Vertex v = m_mesh.addVertex();
-        m_vPos[v] = p;
+        m_mesh->addVertex(p);
     }
     // normal
 //        else if (strncmp(s, "vn ", 3) == 0)
@@ -165,7 +173,7 @@ OBJReader<_Point>::parseDefinition(const std::string& spec,
             m_fVertices.push_back(SurfaceMesh::Vertex(idx - 1));
         }
 
-        m_mesh.addFace(m_fVertices);
+        m_mesh->addFace(m_fVertices);
     }
     else
     {

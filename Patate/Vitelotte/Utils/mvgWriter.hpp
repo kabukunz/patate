@@ -5,7 +5,7 @@ namespace Vitelotte {
 
 template < typename _Mesh >
 void
-MVGWriter<_Mesh>::write(std::ostream& _out) const
+MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
 {
     typedef typename Mesh::VertexIterator VertexIterator;
     typedef typename Mesh::FaceIterator FaceIterator;
@@ -23,57 +23,57 @@ MVGWriter<_Mesh>::write(std::ostream& _out) const
     _out << "dim " << Mesh::Dim << "\n";
     _out << "parameters " << Mesh::Chan << "\n";
 
-    if(m_mesh.getAttributes() == Mesh::Linear)
+    if(mesh.getAttributes() == Mesh::Linear)
         _out << "linear\n";
-    else if(m_mesh.getAttributes() == Mesh::Quadratic)
+    else if(mesh.getAttributes() == Mesh::Quadratic)
         _out << "quadratic\n";
-    else if(m_mesh.getAttributes() == Mesh::Morley)
+    else if(mesh.getAttributes() == Mesh::Morley)
         _out << "morley\n";
-    else if(m_mesh.getAttributes() == Mesh::FV)
+    else if(mesh.getAttributes() == Mesh::FV)
         _out << "fv\n";
     else
-        _out << "mesh " << m_mesh.getAttributes() << "\n";
+        _out << "mesh " << mesh.getAttributes() << "\n";
 
-    _out << "vertices " << m_mesh.nVertices() << "\n";
-    _out << "nodes " << m_mesh.nNodes() << "\n";
-    _out << "faces " << m_mesh.nFaces() << "\n";
+    _out << "vertices " << mesh.nVertices() << "\n";
+    _out << "nodes " << mesh.nNodes() << "\n";
+    _out << "faces " << mesh.nFaces() << "\n";
 
-    for(VertexIterator vit = m_mesh.verticesBegin();
-        vit != m_mesh.verticesEnd(); ++vit)
+    for(VertexIterator vit = mesh.verticesBegin();
+        vit != mesh.verticesEnd(); ++vit)
     {
-        _out << "v " << m_mesh.position(*vit).transpose() << "\n";
+        _out << "v " << mesh.position(*vit).transpose() << "\n";
     }
 
-    for(unsigned i = 0; i < m_mesh.nNodes(); ++i)
+    for(unsigned i = 0; i < mesh.nNodes(); ++i)
     {
-        if(m_mesh.isConstraint(Node(i)))
-            _out << "n " << m_mesh.nodeValue(Node(i)).transpose() << "\n";
+        if(mesh.isConstraint(Node(i)))
+            _out << "n " << mesh.nodeValue(Node(i)).transpose() << "\n";
         else
             _out << "n void\n";
     }
 
-    for(FaceIterator fit = m_mesh.facesBegin();
-         fit != m_mesh.facesEnd(); ++fit)
+    for(FaceIterator fit = mesh.facesBegin();
+         fit != mesh.facesEnd(); ++fit)
     {
-        _out << (m_mesh.isSingular(*fit)? "fs": "f");
+        _out << (mesh.isSingular(*fit)? "fs": "f");
 
         HalfedgeAroundFaceCirculator
-                hit  = m_mesh.halfedges(*fit),
+                hit  = mesh.halfedges(*fit),
                 hend = hit;
         do
         {
-            _out << " " << m_mesh.toVertex(*hit).idx() + iOffset;
+            _out << " " << mesh.toVertex(*hit).idx() + iOffset;
 
-            if(m_mesh.hasVertexValue())
+            if(mesh.hasVertexValue())
             {
-                Node vn = m_mesh.vertexValueNode(*hit);
+                Node vn = mesh.vertexValueNode(*hit);
                 _out << "/";
                 printNode(_out, vn);
 
                 // VertexFromValue only makes sense if vertexValue in enable.
-                if(m_mesh.hasVertexFromValue())
+                if(mesh.hasVertexFromValue())
                 {
-                    Node fn = m_mesh.vertexFromValueNode(m_mesh.nextHalfedge(*hit));
+                    Node fn = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit));
                     if(vn != fn)
                     {
                         _out << "/";
@@ -84,7 +84,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out) const
         }
         while(++hit != hend);
 
-        if(m_mesh.hasEdgeValue() || m_mesh.hasEdgeGradient())
+        if(mesh.hasEdgeValue() || mesh.hasEdgeGradient())
         {
             _out << " -";
 
@@ -92,17 +92,17 @@ MVGWriter<_Mesh>::write(std::ostream& _out) const
             do
             {
                 char sep = ' ';
-                if(m_mesh.hasEdgeValue())
+                if(mesh.hasEdgeValue())
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, m_mesh.edgeValueNode(*hit));
+                    printNode(_out, mesh.edgeValueNode(*hit));
                 }
-                if(m_mesh.hasEdgeGradient())
+                if(mesh.hasEdgeGradient())
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, m_mesh.edgeGradientNode(*hit));
+                    printNode(_out, mesh.edgeGradientNode(*hit));
                 }
             }
             while(++hit != hend);
@@ -127,8 +127,8 @@ template < typename Mesh >
 void writeMvg(std::ostream& out, const Mesh& mesh,
               typename MVGWriter<Mesh>::Version version)
 {
-    MVGWriter<Mesh> writer(mesh, version);
-    writer.write(out);
+    MVGWriter<Mesh> writer(version);
+    writer.write(out, mesh);
 }
 
 template < typename Mesh >

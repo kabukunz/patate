@@ -13,21 +13,18 @@ namespace PatateCommon
 {
 
 
-template < typename _Point >
+template < typename _Mesh >
 class OBJWriter
 {
 public:
-    typedef _Point Point;
+    typedef _Mesh Mesh;
+
+    typedef typename Mesh::Vector Vector;
 
 public:
-    inline OBJWriter(const SurfaceMesh& mesh,
-                     const SurfaceMesh::VertexProperty<Point>& positions);
+    inline OBJWriter();
 
-    void write(std::ostream& out);
-
-private:
-    const SurfaceMesh& m_mesh;
-    const SurfaceMesh::VertexProperty<Point>& m_vPos;
+    void write(std::ostream& out, const Mesh& mesh);
 };
 
 

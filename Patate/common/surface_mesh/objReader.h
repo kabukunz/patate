@@ -34,9 +34,9 @@ public:
 
     void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
 
-    bool read(std::istream& in);
-
 protected:
+    bool doRead(std::istream& in);
+
     virtual void parseHeader(std::istream& /*in*/) {}
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def) = 0;
@@ -62,25 +62,27 @@ protected:
 };
 
 
-template < typename _Point >
+template < typename _Mesh >
 class OBJReader: public OBJBaseReader
 {
 public:
-    typedef _Point Point;
+    typedef _Mesh Mesh;
+    typedef typename Mesh::Vector Vector;
+    typedef typename Mesh::Vertex Vertex;
 
 public:
-    inline OBJReader(SurfaceMesh& mesh,
-                     SurfaceMesh::VertexProperty<Point> positions);
+    inline OBJReader();
+
+    bool read(std::istream& in, Mesh& mesh);
 
 protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
 protected:
-    SurfaceMesh& m_mesh;
-    SurfaceMesh::VertexProperty<Point> m_vPos;
+    Mesh* m_mesh;
 
-    std::vector<SurfaceMesh::Vertex>  m_fVertices;
+    std::vector<Vertex>  m_fVertices;
 
 };
 

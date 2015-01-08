@@ -5,33 +5,31 @@ namespace PatateCommon
 {
 
 
-template < typename _Point >
-OBJWriter<_Point>::OBJWriter(const SurfaceMesh& mesh,
-                             const SurfaceMesh::VertexProperty<Point>& positions)
-    : m_mesh(mesh), m_vPos(positions)
+template < typename _Mesh >
+OBJWriter<_Mesh>::OBJWriter()
 {
 }
 
-template < typename _Point >
+template < typename _Mesh >
 void
-OBJWriter<_Point>::write(std::ostream& out)
+OBJWriter<_Mesh>::write(std::ostream& out, const Mesh& mesh)
 {
     out.imbue(std::locale::classic());
 
     //vertices
-    for (SurfaceMesh::VertexIterator vit = m_mesh.verticesBegin();
-         vit != m_mesh.verticesEnd(); ++vit)
+    for (typename Mesh::VertexIterator vit = mesh.verticesBegin();
+         vit != mesh.verticesEnd(); ++vit)
     {
-        out << "v " << m_vPos[*vit].transpose() << "\n";
+        out << "v " << mesh.position(*vit).transpose() << "\n";
     }
 
     //faces
-    for (SurfaceMesh::FaceIterator fit = m_mesh.facesBegin();
-         fit != m_mesh.facesEnd(); ++fit)
+    for (typename Mesh::FaceIterator fit = mesh.facesBegin();
+         fit != mesh.facesEnd(); ++fit)
     {
         out << "f";
-        SurfaceMesh::VertexAroundFaceCirculator
-                fvit  = m_mesh.vertices(*fit),
+        typename Mesh::VertexAroundFaceCirculator
+                fvit  = mesh.vertices(*fit),
                 fvend = fvit;
         do
         {
