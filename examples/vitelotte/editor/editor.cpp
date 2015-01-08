@@ -15,6 +15,7 @@ Editor::Editor(QWidget* parent)
     : QGLWidget(parent),
       m_document(0),
       m_initialized(false),
+      m_showWireframe(true),
       m_drag(false)
 {
 }
@@ -140,6 +141,16 @@ void Editor::updateSelection()
 }
 
 
+void Editor::setShowWireframe(bool enable)
+{
+    if(enable != m_showWireframe)
+    {
+        m_showWireframe = enable;
+        update();
+    }
+}
+
+
 void Editor::initializeGL()
 {
     std::cout << "OpenGL Vendor:       " << glGetString(GL_VENDOR) << "\n";
@@ -211,8 +222,11 @@ void Editor::paintGL()
         m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
 
-        m_nodeRenderer.update(m_document->mesh(), width() / m_camera.getViewBox().sizes()(0));
-        m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+        if(m_showWireframe)
+        {
+            m_nodeRenderer.update(m_document->mesh(), width() / m_camera.getViewBox().sizes()(0));
+            m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+        }
     }
 }
 

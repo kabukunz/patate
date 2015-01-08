@@ -97,8 +97,14 @@ int main(int argc, char** argv)
 
 
     // View Menu
-    //QAction*
+    QAction* wireframeAction = new QAction("Show wireframe", &window);
+    wireframeAction->setCheckable(true);
+    wireframeAction->setChecked(editor->showWireframe());
+    QObject::connect(wireframeAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(setShowWireframe(bool)));
 
+    QMenu* viewMenu = window.menuBar()->addMenu("View");
+    viewMenu->addAction(wireframeAction);
 
     window.resize(800, 600);
     window.show();

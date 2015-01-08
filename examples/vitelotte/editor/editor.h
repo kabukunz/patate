@@ -46,6 +46,8 @@ public:
     explicit Editor(QWidget* parent=0);
     virtual ~Editor();
 
+    bool showWireframe() const { return m_showWireframe; }
+
     Eigen::Vector2f screenToNormalized(const QPointF& screen) const;
     QPointF normalizedToScreen(const Eigen::Vector2f& normalized) const;
 
@@ -54,6 +56,7 @@ public slots:
     void setDocument(Document* document);
     void updateBuffers();
     void updateSelection();
+    void setShowWireframe(bool enable);
 
 public:
     virtual void initializeGL();
@@ -75,6 +78,7 @@ private:
     Document* m_document;
 
     bool m_initialized;
+    bool m_showWireframe;
 
     OrthographicCamera m_camera;
     bool m_drag;
