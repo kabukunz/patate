@@ -7,9 +7,9 @@ namespace Vitelotte
 
 VGMeshRendererDefaultShader::VGMeshRendererDefaultShader()
     : m_viewMatrix(Eigen::Matrix4f::Identity()),
-      m_singularTriangles(false),
       m_nodes(0),
-      m_baseNodeIndex(0)
+      m_baseNodeIndex(0),
+      m_singularTriangles(false)
 {
 }
 
@@ -85,7 +85,7 @@ VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
 inline
 void
 VGMeshRendererDefaultShader::
-    setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset)
+    setNodesTexture(TriangleType /*triangleType*/, int texUnit, int baseOffset)
 {
     m_nodes = texUnit;
     m_baseNodeIndex = baseOffset;

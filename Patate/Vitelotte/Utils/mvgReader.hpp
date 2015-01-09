@@ -17,8 +17,10 @@ bool
 MVGReader<_Mesh>::read(std::istream& in, Mesh& mesh)
 {
     m_mesh = &mesh;
-    doRead(in);
+    bool r = doRead(in);
     m_mesh = 0;
+
+    return r;
 }
 
 

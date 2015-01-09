@@ -52,7 +52,6 @@ OrthographicCamera::cameraToNormalized(const Eigen::Vector2f& camera) const
 void OrthographicCamera::changeAspectRatio(float ratio)
 {
     Eigen::Vector2f sizes = m_viewBox.sizes().head<2>();
-    float prev = sizes(0) / sizes(1);
     float sum = sizes(0) + sizes(1);
 
     float h = sum / (1+ratio);

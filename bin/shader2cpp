@@ -61,6 +61,6 @@ if namespaces:
 	print(file=out)
  
 if options.include_guard:
-	print("#endif", options.include_guard, file=out)
+	print("#endif", file=out)
 	
 out.close()

@@ -13,7 +13,7 @@ LinearElementBuilder<_Mesh, _Scalar>::LinearElementBuilder()
 template < class _Mesh, typename _Scalar >
 unsigned
 LinearElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 9;
 }

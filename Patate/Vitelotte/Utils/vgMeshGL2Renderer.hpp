@@ -6,10 +6,10 @@ namespace Vitelotte
 
 
 VGMeshRendererGL2DefaultShader::VGMeshRendererGL2DefaultShader()
-    : m_viewMatrix(Eigen::Matrix4f::Identity()),
-      m_singularTriangles(false),
+    : m_nodesTextureSizeLoc(0),
+      m_viewMatrix(Eigen::Matrix4f::Identity()),
       m_nodes(0),
-      m_nodesTextureSizeLoc(0)
+      m_singularTriangles(false)
 {
 }
 
@@ -213,7 +213,7 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
     // Compute number of singular and normal triangles
     m_nSingulars = m_pMesh->nSingularFaces();
     m_nTriangles = m_pMesh->nFaces() - m_nSingulars;
-    int nNodes = m_nTriangles * 6 + m_nSingulars * 7;
+    //int nNodes = m_nTriangles * 6 + m_nSingulars * 7;
     m_nodeTextureSize = 4;
     int nTriRows = 0;
     int nSingRows = 0;

@@ -298,7 +298,7 @@ public:
     }
 
 
-    void keyReleaseEvent(const SDL_KeyboardEvent& event)
+    void keyReleaseEvent(const SDL_KeyboardEvent& /*event*/)
     {
 
     }

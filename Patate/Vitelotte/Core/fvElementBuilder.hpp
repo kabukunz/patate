@@ -14,7 +14,7 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 81;
 }
@@ -32,9 +32,9 @@ FVElementBuilder<_Mesh, _Scalar>::
         return;
     }
 
-    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
-
     // TODO: remove some code duplication by moving stuff here
+
+//    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 //    bool flat = false;
 //    for(int i = 0; i < 3; ++i)
 //    {
@@ -293,7 +293,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcVertexBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& _d, const Vector3& /*_l*/,
         const Scalar _area) const
 {
     const size_t i2 = (_i1+1)%3;
@@ -325,7 +325,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcMidpointBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& /*_d*/, const Vector3& /*_l*/,
         const Scalar _area) const
 {
     const size_t i2 = (_i1+1)%3;
@@ -353,7 +353,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcMidpointDerivBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& /*_d*/, const Vector3& _l,
         const Scalar _area) const
 {
     const Vector3& d1 = (_deriv & Deriv_0_Y) ? _c : _b;

@@ -20,7 +20,7 @@ ValueEditor::~ValueEditor()
 }
 
 
-void ValueEditor::resizeEvent(QResizeEvent* event)
+void ValueEditor::resizeEvent(QResizeEvent* /*event*/)
 {
     updateSelection();
 }
@@ -465,7 +465,7 @@ void ValueEditor::select(const Eigen::Vector2f& pos)
         update();
     }
 
-    if(!m_selection.h.isValid());
+    if(!m_selection.h.isValid())
     {
         int h = selectGradientHandle(pos);
         if(h != m_selectedGradientHandle)
@@ -526,8 +526,6 @@ int ValueEditor::selectGradientHandle(const Eigen::Vector2f& pos) const
 
 void ValueEditor::drawVertex(QPainter& p)
 {
-    Mesh& m = m_document->mesh();
-
     Eigen::Vector2f center(width() / 2, height() / 2);
 
     for(EdgeList::iterator deit = m_edges.begin();
@@ -710,7 +708,7 @@ void ValueEditor::drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
     Mesh::Node n = m_document->meshNode(h, Document::EdgeGradientNode);
     if(n.isValid() && m_document->mesh().isConstraint(n))
     {
-        Eigen::Vector4f value = nodeValue(n);
+        //Eigen::Vector4f value = nodeValue(n);
         for(int i = 0; i < 4; ++i)
         {
             QColor color = QColor::fromRgbF(i == 0, i == 1, i == 2);

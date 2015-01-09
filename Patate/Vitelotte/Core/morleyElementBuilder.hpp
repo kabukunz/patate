@@ -16,7 +16,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::MorleyElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 MorleyElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 36;
 }

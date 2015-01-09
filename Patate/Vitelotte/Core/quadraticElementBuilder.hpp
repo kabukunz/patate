@@ -57,7 +57,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::QuadraticElementBuilder()
 template < class _Mesh, typename _Scalar >
 unsigned
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 36;
 }

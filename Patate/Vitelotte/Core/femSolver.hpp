@@ -8,8 +8,8 @@ namespace Vitelotte
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& elementBuilder)
   : m_mesh(_mesh),
-    m_solved(false),
-    m_elementBuilder(elementBuilder)
+    m_elementBuilder(elementBuilder),
+    m_solved(false)
 {
 }
 

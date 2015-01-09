@@ -5,7 +5,7 @@ namespace PatateCommon
 {
 
 
-bool defaultErrorCallback(const std::string& msg, void* ptr)
+bool defaultErrorCallback(const std::string& msg, void* /*ptr*/)
 {
     std::cout << "Mvg parse error: " << msg << "\n";
     return true;
@@ -119,8 +119,10 @@ bool
 OBJReader<_Mesh>::read(std::istream& in, Mesh& mesh)
 {
     m_mesh = &mesh;
-    doRead(in);
+    bool r = doRead(in);
     m_mesh = 0;
+
+    return r;
 }
 
 

@@ -141,8 +141,6 @@ void VGNodeRenderer::update(const Mesh& mesh, float zoom)
 {
     clear();
 
-    float offset = m_nodeOffset / zoom;
-
     for(Mesh::EdgeIterator eit = mesh.edgesBegin();
         eit != mesh.edgesEnd(); ++eit)
     {
