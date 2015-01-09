@@ -7,7 +7,8 @@
 #include <string.h>
 
 
-#define PATATE_ASSERT_NO_GL_ERROR()                                                          \
+#ifndef PATATE_ASSERT_NO_GL_ERROR
+#define PATATE_ASSERT_NO_GL_ERROR()                                             \
 {                                                                               \
     GLenum Error = glGetError();                                                \
                                                                                 \
@@ -16,6 +17,7 @@
         exit(0);                                                                \
     }                                                                           \
 }
+#endif
 
 #define PATATE_FIELD_OFFSET(_struct, _field) &(static_cast<_struct*>(0)->_field)
 

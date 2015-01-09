@@ -5,28 +5,6 @@ namespace Vitelotte
 {
 
 
-Eigen::Vector4f linearToSrgb(const Eigen::Vector4f& linear)
-{
-    Eigen::Vector4f srgb = linear;
-    for(int i=0; i<3; ++i)
-        srgb(i) = linear(i) > 0.0031308?
-                    1.055 * std::pow(linear(i), 1/2.4):
-                    12.92 * linear(i);
-    return srgb;
-}
-
-
-Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb)
-{
-    Eigen::Vector4f linear = srgb;
-    for(int i=0; i<3; ++i)
-        linear(i) = linear(i) > 0.04045?
-                    std::pow((linear(i)+0.055) / 1.055, 2.4):
-                    linear(i) / 12.92;
-    return linear;
-}
-
-
 VGMeshRendererDefaultShader::VGMeshRendererDefaultShader()
     : m_viewMatrix(Eigen::Matrix4f::Identity()),
       m_singularTriangles(false),
@@ -409,7 +387,7 @@ inline typename VGMeshRenderer<_Mesh>::NodeValue
 VGMeshRenderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
-        return srgbToLinear(m_pMesh->nodeValue(node));
+        return PatateCommon::srgbToLinear(m_pMesh->nodeValue(node));
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 

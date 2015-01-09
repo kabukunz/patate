@@ -6,14 +6,11 @@
 
 #include "../../common/gl_utils/shader.h"
 
-//#include "shaders.hpp"
+#include "../Core/femUtils.h"
+#include "shaders.hpp"
 
 
 namespace Vitelotte {
-
-
-inline Eigen::Vector4f linearToSrgb(const Eigen::Vector4f& linear);
-inline Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb);
 
 
 class VGMeshGL2RendererShader
