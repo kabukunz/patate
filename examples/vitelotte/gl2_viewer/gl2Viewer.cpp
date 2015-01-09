@@ -13,8 +13,8 @@
 
 #include <Patate/vitelotte.h>
 #include <Patate/vitelotte_gl.h>
+#include <Patate/vitelotte_io.h>
 #include <Patate/Vitelotte/Utils/vgMeshGL2Renderer.h>
-#include <Patate/Vitelotte/Utils/mvgReader.h>
 
 #include "../common/orthographicCamera.h"
 #include "../common/vgNodeRenderer.h"
@@ -235,16 +235,19 @@ public:
         m_defaultShader.viewMatrix() = viewMatrix;
         m_renderer.render(m_defaultShader);
 
+//        if(m_showWireframe)
+//        {
+//            m_wireframeShader.viewMatrix() = viewMatrix;
+//            m_wireframeShader.setZoom(zoom);
+//            m_wireframeShader.setLineWidth(1);
+//            m_renderer.render(m_wireframeShader);
+//        }
+
         if(m_showWireframe)
         {
-            m_wireframeShader.viewMatrix() = viewMatrix;
-            m_wireframeShader.setZoom(zoom);
-            m_wireframeShader.setLineWidth(1);
-            m_renderer.render(m_wireframeShader);
+            m_nodeRenderer.update(m_baseMesh, zoom);
+            m_nodeRenderer.render(viewMatrix, Eigen::Vector2f(m_width, m_height));
         }
-
-        m_nodeRenderer.update(m_baseMesh, zoom);
-        m_nodeRenderer.render(viewMatrix, Eigen::Vector2f(m_width, m_height));
 
         SDL_GL_SwapBuffers();
         //SDL_GL_SwapWindow(window);
@@ -255,6 +258,12 @@ public:
     {
         switch(event.type)
         {
+        case SDL_KEYDOWN:
+            keyPressEvent(event.key);
+            break;
+        case SDL_KEYUP:
+            keyReleaseEvent(event.key);
+            break;
         case SDL_MOUSEBUTTONDOWN:
             mousePressEvent(event.button);
             break;
@@ -273,6 +282,25 @@ public:
             quit();
             break;
         }
+    }
+
+
+    void keyPressEvent(const SDL_KeyboardEvent& event)
+    {
+        switch(event.keysym.sym)
+        {
+        case SDLK_w:
+            setShowWireframe(!m_showWireframe);
+            break;
+        default:
+            break;
+        }
+    }
+
+
+    void keyReleaseEvent(const SDL_KeyboardEvent& event)
+    {
+
     }
 
 
