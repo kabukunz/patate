@@ -32,7 +32,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
 
     Vector v[3];
     bool orient[3];
-    unsigned nodes[6];
+    int nodes[6];
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     --hit;
@@ -44,6 +44,15 @@ MorleyElementBuilder<_Mesh, _Scalar>::
         nodes[i+3] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
         nodes[i] = mesh.vertexValueNode(*hit).idx();
+    }
+
+    for(int i = 0; i < 6; ++i)
+    {
+        if(nodes[i] < 0)
+        {
+            error(StatusError, "Invalid node");
+            return;
+        }
     }
 
     typedef Eigen::Matrix<Scalar, 6, 1> Vector6;

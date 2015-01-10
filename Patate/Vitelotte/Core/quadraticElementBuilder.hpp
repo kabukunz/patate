@@ -72,7 +72,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
     assert(mesh.valence(element) == 3);
 
     Vector v[3];
-    unsigned nodes[6];
+    int nodes[6];
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     --hit;
@@ -83,6 +83,15 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         ++hit;
         nodes[i] = mesh.vertexValueNode(*hit).idx();
+    }
+
+    for(int i = 0; i < 6; ++i)
+    {
+        if(nodes[i] < 0)
+        {
+            error(StatusError, "Invalid node");
+            return;
+        }
     }
 
     Scalar _2area = det2(v[0], v[1]);

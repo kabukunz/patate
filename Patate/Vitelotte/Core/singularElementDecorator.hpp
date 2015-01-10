@@ -10,7 +10,7 @@ unsigned
 SingularElementDecorator<_Element>::nCoefficients(
         const Mesh& mesh, Face element) const
 {
-    return m_element.nCoefficients(mesh, element) *
+    return Base::nCoefficients(mesh, element) *
             (mesh.isSingular(element)? 2: 1);
 }
 
@@ -20,10 +20,10 @@ void
 SingularElementDecorator<_Element>::addCoefficients(
         InIt& it, const Mesh& mesh, Face element)
 {
-    typedef typename Element::Mesh Mesh;
+    typedef typename Base::Mesh Mesh;
 
     InIt begin = it;
-    m_element.addCoefficients(it, mesh, element);
+    Base::addCoefficients(it, mesh, element);
 
     if(mesh.isSingular(element)) {
         InIt end = it;

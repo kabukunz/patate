@@ -62,7 +62,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     bool orient[3];
     Vector v[3];
-    unsigned nodes[9];
+    int nodes[9];
     --hit;
     for(int i = 0; i < 3; ++i)
     {
@@ -73,6 +73,15 @@ FVElementBuilder<_Mesh, _Scalar>::
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
         nodes[i] = mesh.vertexValueNode(*hit).idx();
+    }
+
+    for(int i = 0; i < 9; ++i)
+    {
+        if(nodes[i] < 0)
+        {
+            error(StatusError, "Invalid node");
+            return;
+        }
     }
 
     Vector p[] = {

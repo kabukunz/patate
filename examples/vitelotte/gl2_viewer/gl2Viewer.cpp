@@ -142,6 +142,15 @@ public:
         solver.sort();
         solver.solve();
 
+        if(solver.status() != FVElement::StatusOK)
+        {
+            std::cerr << "Solver error: " << solver.errorString() << "\n";
+        }
+        if(!solver.isSolved())
+        {
+            std::cerr << "Solve failed./n";
+        }
+
         centerView();
         m_renderer.initialize(&m_mesh);
 

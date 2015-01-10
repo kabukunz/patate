@@ -28,7 +28,7 @@ LinearElementBuilder<_Mesh, _Scalar>::
     assert(mesh.valence(element) == 3);
 
     Vector v[3];
-    unsigned nodes[3];
+    int nodes[3];
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     --hit;
@@ -38,6 +38,11 @@ LinearElementBuilder<_Mesh, _Scalar>::
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
         ++hit;
         nodes[i] = mesh.vertexValueNode(*hit).idx();
+        if(nodes[i] < 0)
+        {
+            error(StatusError, "Invalid node");
+            return;
+        }
     }
 
     Scalar _2area = det2(v[0], v[1]);

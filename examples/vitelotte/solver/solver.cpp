@@ -25,6 +25,17 @@ void solveGeneric(Mesh& mesh)
 {
     Solver solver(&mesh);
     solver.build();
+
+    if(solver.status() == Solver::ElementBuilder::StatusWarning)
+    {
+        std::cerr << "Warning: " << solver.errorString() << "\n";
+    }
+    else if(solver.status() == Solver::ElementBuilder::StatusError)
+    {
+        std::cerr << "Error: " << solver.errorString() << "\n";
+        return;
+    }
+
     solver.solve();
 
     if(!solver.isSolved())
