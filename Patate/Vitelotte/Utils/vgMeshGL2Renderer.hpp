@@ -21,7 +21,7 @@ VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
     if(m_shader.status() == PatateCommon::Shader::Uninitialized)
     {
         m_shader.create();
-#ifdef USE_OPENGL_ES
+#ifdef VITELOTTE_USE_OPENGL_ES
         m_shader.setGLSLVersionHeader("#version 100\n");
 #else
         m_shader.setGLSLVersionHeader("#version 120\n");
@@ -116,7 +116,7 @@ VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
     if(m_shader.status() == PatateCommon::Shader::Uninitialized)
     {
         m_shader.create();
-#ifdef USE_OPENGL_ES
+#ifdef VITELOTTE_USE_OPENGL_ES
         m_shader.setGLSLVersionHeader("#version 100\n");
 #else
         m_shader.setGLSLVersionHeader("#version 120\n");
@@ -275,6 +275,7 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
                     (nodeCoord.cast<float>() + Eigen::Vector2f(.5, .5)) /
                             float(m_nodeTextureSize);
             m_vertices[index + ei] = vert;
+            m_nodes[nodeIndex + 3 + ((ei+1)%3)] = nodeValue(m_pMesh->edgeValueNode(h));
 
             h = m_pMesh->nextHalfedge(h);
 
@@ -282,14 +283,8 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
         }
         // Singular node is the last one
         if(isSingular)
-            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->vertexValueNode(h));
-
-        // Push edge nodes
-        h = m_pMesh->prevHalfedge(h);
-        for(int ei = 0; ei < 3; ++ei)
         {
-            m_nodes[nodeIndex + 3 + ei] = nodeValue(m_pMesh->edgeValueNode(h));
-            h = m_pMesh->nextHalfedge(h);
+            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->vertexValueNode(h));
         }
 
         index += 3;
@@ -311,7 +306,13 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
         glGenTextures(1, &m_nodesTexture);
     }
     glBindTexture(GL_TEXTURE_2D, m_nodesTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_nodeTextureSize, m_nodeTextureSize, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0,
+#ifdef VITELOTTE_USE_OPENGL_ES
+                 GL_RGBA,
+#else
+                 GL_SRGB8_ALPHA8,
+#endif
+                 m_nodeTextureSize, m_nodeTextureSize, 0,
                  GL_RGBA, GL_FLOAT, &m_nodes[0]);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -413,10 +414,7 @@ VGMeshGL2Renderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
     {
-        if(m_renderSrgb)
-            return PatateCommon::srgbToLinear(m_pMesh->nodeValue(node));
-        else
-            return m_pMesh->nodeValue(node);
+        return m_pMesh->nodeValue(node);
     }
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }

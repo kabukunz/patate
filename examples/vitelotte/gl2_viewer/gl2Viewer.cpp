@@ -42,7 +42,7 @@ public:
 public:
     GL2Viewer()
         : m_width(800), m_height(600), m_drag(false), m_needUpdate(true),
-          m_showWireframe(false)
+          m_showWireframe(true)
     {
         assert(!m_instance);
         m_instance = this;
@@ -113,8 +113,6 @@ public:
 
 #ifndef EMSCRIPTEN
         glEnable(GL_FRAMEBUFFER_SRGB);
-#else
-        m_renderer.setRenderSrgb(false);
 #endif
     }
 
@@ -134,6 +132,10 @@ public:
 
         m_mesh = m_baseMesh;
 
+        unsigned time = SDL_GetTicks();
+        std::cout << "Solving '" << filename << "'... ";
+        std::cout.flush();
+
         m_mesh.setAttributes(Mesh::FV);
         m_mesh.finalize();
 
@@ -150,6 +152,9 @@ public:
         {
             std::cerr << "Solve failed./n";
         }
+
+        time = SDL_GetTicks() - time;
+        std::cout << time << "ms" << std::endl;
 
         centerView();
         m_renderer.initialize(&m_mesh);
@@ -244,19 +249,22 @@ public:
         m_defaultShader.viewMatrix() = viewMatrix;
         m_renderer.render(m_defaultShader);
 
-//        if(m_showWireframe)
-//        {
-//            m_wireframeShader.viewMatrix() = viewMatrix;
-//            m_wireframeShader.setZoom(zoom);
-//            m_wireframeShader.setLineWidth(1);
-//            m_renderer.render(m_wireframeShader);
-//        }
-
+#ifdef EMSCRIPTEN
+        if(m_showWireframe)
+        {
+            m_wireframeShader.viewMatrix() = viewMatrix;
+            m_wireframeShader.setZoom(zoom);
+            m_wireframeShader.setLineWidth(.5);
+            m_wireframeShader.setWireframeColor(Eigen::Vector4f(0, 0, 0, .25));
+            m_renderer.render(m_wireframeShader);
+        }
+#else
         if(m_showWireframe)
         {
             m_nodeRenderer.update(m_baseMesh, zoom);
             m_nodeRenderer.render(viewMatrix, Eigen::Vector2f(m_width, m_height));
         }
+#endif
 
         SDL_GL_SwapBuffers();
         //SDL_GL_SwapWindow(window);

@@ -338,7 +338,7 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
             }
             else if(n0c != n1c)
                 n = n0c? n0: n1;  // One constraint, choose it
-            else if(n0 == n1)
+            else if(n0 == n1 || nodeValue(n0) == nodeValue(n1))
                 n = n0;  // Same constraints, choice is obvious
 
             // The remaining option is a singularity, that require special
