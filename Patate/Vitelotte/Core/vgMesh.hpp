@@ -49,6 +49,43 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::reserve(
+        unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
+{
+    PatateCommon::SurfaceMesh::reserve(nvertices, nedges, nfaces);
+    m_nodes.reserve(nnodes);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::clear()
+{
+    PatateCommon::SurfaceMesh::clear();
+    m_nodes.clear();
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+PatateCommon::SurfaceMesh::Vertex
+VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+{
+    Vertex v = PatateCommon::SurfaceMesh::addVertex();
+    position(v) = pos;
+    return v;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
+{
+    return 0 <= n.idx() && n.idx() < m_nodes.size();
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 {
 #define PATATE_FEM_MESH_SET_ATTRIBUTE(_bit, _field, _name) do {\
@@ -103,73 +140,6 @@ VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
         if(!isConstraint(Node(i)))
             return true;
     return false;
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
-void
-VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
-{
-    std::vector<int> buf(nNodes(), 0);
-
-    // Find used node ids
-    HalfedgeIterator hBegin = halfedgesBegin(),
-                     hEnd   = halfedgesEnd();
-    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
-    {
-        if(!isBoundary(*hit))
-        {
-            if(hasVertexValue() && vertexValueNode(*hit).isValid())
-                buf[vertexValueNode(*hit).idx()]     = 1;
-            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
-                buf[vertexFromValueNode(*hit).idx()] = 1;
-            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
-                buf[edgeValueNode(*hit).idx()]       = 1;
-//            if(hasVertexGradient())
-//                marked[vertexGradientNode(*hit)]  = 1;
-            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
-                buf[edgeGradientNode(*hit).idx()]    = 1;
-        }
-    }
-
-    // Compute remapping
-    int size=0;
-    for(int i = 0; i < buf.size(); ++i)
-    {
-        if(buf[i])
-        {
-            buf[size] = i;
-            ++size;
-        }
-    }
-
-    // Update node vector and fill remapping vector
-    std::vector<int> map(nNodes(), -1);
-    NodeVector reord(size);
-    for(int i = 0; i < size; ++i)
-    {
-        reord[i] = nodeValue(Node(buf[i]));
-        map[buf[i]] = i;
-    }
-    m_nodes.swap(reord);
-
-    // Remap nodes in mesh
-    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
-    {
-        if(!isBoundary(*hit))
-        {
-            if(hasVertexValue() && vertexValueNode(*hit).isValid())
-                vertexValueNode(*hit)     = Node(map[vertexValueNode(*hit).idx()]);
-            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
-                vertexFromValueNode(*hit) = Node(map[vertexFromValueNode(*hit).idx()]);
-            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
-                (edgeValueNode(*hit))     = Node(map[edgeValueNode(*hit).idx()]);
-//            if(hasVertexGradient())
-//                vertexGradientNode(*hit)  = map[vertexGradientNode(*hit)];
-            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
-                edgeGradientNode(*hit)    = Node(map[edgeGradientNode(*hit).idx()]);
-        }
-    }
 }
 
 
@@ -535,6 +505,73 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
+{
+    std::vector<int> buf(nNodes(), 0);
+
+    // Find used node ids
+    HalfedgeIterator hBegin = halfedgesBegin(),
+                     hEnd   = halfedgesEnd();
+    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
+    {
+        if(!isBoundary(*hit))
+        {
+            if(hasVertexValue() && vertexValueNode(*hit).isValid())
+                buf[vertexValueNode(*hit).idx()]     = 1;
+            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
+                buf[vertexFromValueNode(*hit).idx()] = 1;
+            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
+                buf[edgeValueNode(*hit).idx()]       = 1;
+//            if(hasVertexGradient())
+//                marked[vertexGradientNode(*hit)]  = 1;
+            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
+                buf[edgeGradientNode(*hit).idx()]    = 1;
+        }
+    }
+
+    // Compute remapping
+    int size=0;
+    for(int i = 0; i < buf.size(); ++i)
+    {
+        if(buf[i])
+        {
+            buf[size] = i;
+            ++size;
+        }
+    }
+
+    // Update node vector and fill remapping vector
+    std::vector<int> map(nNodes(), -1);
+    NodeVector reord(size);
+    for(int i = 0; i < size; ++i)
+    {
+        reord[i] = nodeValue(Node(buf[i]));
+        map[buf[i]] = i;
+    }
+    m_nodes.swap(reord);
+
+    // Remap nodes in mesh
+    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
+    {
+        if(!isBoundary(*hit))
+        {
+            if(hasVertexValue() && vertexValueNode(*hit).isValid())
+                vertexValueNode(*hit)     = Node(map[vertexValueNode(*hit).idx()]);
+            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
+                vertexFromValueNode(*hit) = Node(map[vertexFromValueNode(*hit).idx()]);
+            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
+                (edgeValueNode(*hit))     = Node(map[edgeValueNode(*hit).idx()]);
+//            if(hasVertexGradient())
+//                vertexGradientNode(*hit)  = map[vertexGradientNode(*hit)];
+            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
+                edgeGradientNode(*hit)    = Node(map[edgeGradientNode(*hit).idx()]);
+        }
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {
@@ -572,43 +609,6 @@ VGMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
         nSingulars += isSingular(*fit);
     }
     return nSingulars;
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
-void
-VGMesh<_Scalar, _Dim, _Chan>::reserve(
-        unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
-{
-    PatateCommon::SurfaceMesh::reserve(nvertices, nedges, nfaces);
-    m_nodes.reserve(nnodes);
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
-void
-VGMesh<_Scalar, _Dim, _Chan>::clear()
-{
-    PatateCommon::SurfaceMesh::clear();
-    m_nodes.clear();
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
-PatateCommon::SurfaceMesh::Vertex
-VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
-{
-    Vertex v = PatateCommon::SurfaceMesh::addVertex();
-    position(v) = pos;
-    return v;
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
-bool
-VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
-{
-    return 0 <= n.idx() && n.idx() < m_nodes.size();
 }
 
 
