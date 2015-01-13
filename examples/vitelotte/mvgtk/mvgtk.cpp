@@ -42,7 +42,8 @@ enum
 {
     Check,
     Convert,
-    Finalize
+    Finalize,
+    Simplify
 };
 
 enum
@@ -135,8 +136,22 @@ int check(int argc, char** argv, const GlobalOptions& opts)
 
         Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
         Mesh::HalfedgeAroundFaceCirculator hend = hit;
+        int singularCount = 0;
         do
         {
+            if(mesh.hasVertexValue() && mesh.hasVertexFromValue())
+            {
+                Mesh::Node n0 = mesh.vertexValueNode(*hit);
+                Mesh::Node n1 = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit));
+                bool n0c = n0.isValid() && mesh.isConstraint(n0);
+                bool n1c = n1.isValid() && mesh.isConstraint(n1);
+
+                if(n0c && n1c && n0 != n1)
+                {
+                    ++singularCount;
+                }
+            }
+
             if(mesh.hasVertexValue())
             {
                 Mesh::Node n = mesh.vertexValueNode(*hit);
@@ -191,6 +206,13 @@ int check(int argc, char** argv, const GlobalOptions& opts)
             }
             ++hit;
         } while(hit != hend);
+
+        if(singularCount > 1)
+        {
+            std::cout << "face " << (*fit).idx() << " has " << singularCount
+                      << " singular faces (maximum supported by solvers and viewer is 1).\n";
+            ++nError;
+        }
     }
 
     return nError > 0;
@@ -304,6 +326,30 @@ int finalize(int argc, char** argv)
 }
 
 
+// Simplify command -----------------------------------------------------------
+
+
+int simplify(int argc, char** argv)
+{
+    if(argc != 3)
+        usage();
+
+    std::string meshFilename(argv[1]);
+    std::string outFilename(argv[2]);
+
+    Mesh mesh;
+
+    Vitelotte::readMvgFromFile(meshFilename, mesh);
+
+    mesh.simplifyConstraints();
+    mesh.compactNodes();
+
+    Vitelotte::writeMvgToFile(outFilename, mesh);
+
+    return 0;
+}
+
+
 // Main -----------------------------------------------------------------------
 
 
@@ -315,6 +361,7 @@ int main(int argc, char** argv)
     addOpt(commands, "check", Check);
     addOpt(commands, "convert", Convert);
     addOpt(commands, "finalize", Finalize);
+    addOpt(commands, "simplify", Simplify);
 
     ArgMap globalOptions;
     addOpt(globalOptions, "-h", GlobalHelp);
@@ -372,6 +419,8 @@ int main(int argc, char** argv)
         return convert(argc - argi, argv + argi);
     case Finalize:
         return finalize(argc - argi, argv + argi);
+    case Simplify:
+        return simplify(argc - argi, argv + argi);
     default:
         assert(false);
     }

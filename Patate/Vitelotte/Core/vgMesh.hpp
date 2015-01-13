@@ -287,12 +287,160 @@ VGMesh<_Scalar, _Dim, _Chan>::
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
+VGMesh<_Scalar, _Dim, _Chan>::simplifyConstraints()
+{
+    assert(hasVertexValue());
+
+    std::vector<Halfedge> consEdges;
+    consEdges.reserve(12);
+
+    for(VertexIterator vit = verticesBegin();
+        vit != verticesEnd(); ++vit)
+    {
+        consEdges.clear();
+        HalfedgeAroundVertexCirculator hit = halfedges(*vit),
+                                       hEnd = hit;
+        do
+        {
+            Node& np = vertexValueNode(oppositeHalfedge(*hit));
+            Node& n0 = hasVertexFromValue()?
+                        vertexFromValueNode(*hit):
+                        vertexValueNode(prevHalfedge(*hit));
+            if(np.isValid() || n0.isValid())
+            {
+                simplifyOppositeNodes(np, n0);
+
+                if(np.isValid() || n0.isValid())
+                {
+                    consEdges.push_back(*hit);
+                }
+            }
+            ++hit;
+        }
+        while(hit != hEnd);
+
+        if(consEdges.empty())
+        {
+            continue;
+        }
+        consEdges.push_back(consEdges.front());
+
+        std::vector<Halfedge>::iterator cit = consEdges.begin();
+        Halfedge prev = *cit;
+        for(++cit; cit != consEdges.end(); ++cit)
+        {
+            Halfedge next = oppositeHalfedge(*cit);
+            Node& n0 = hasVertexFromValue()?
+                        vertexFromValueNode(prev):
+                        vertexValueNode(prevHalfedge(prev));
+            Node& n1 = vertexValueNode(next);
+            Node& n1o = hasVertexFromValue()?
+                        vertexFromValueNode(*cit):
+                        vertexValueNode(prevHalfedge(*cit));
+
+            bool n0c = n0.isValid() && isConstraint(n0);
+            bool n1c = n1.isValid() && isConstraint(n1);
+
+            if((!n0c && !n1c) ||
+               (n0c && !n1c) ||
+               (n0c && n1c && nodeValue(n0) == nodeValue(n1)))
+            {
+                if(n1o == n1)
+                {
+                    n1o = n0;
+                }
+                n1 = n0;
+            }
+            else if(!n0c && n1c)
+            {
+                Node replaced = n0;
+                Halfedge h = *cit;
+                do {
+                    Node& n = hasVertexFromValue()?
+                                vertexFromValueNode(h):
+                                vertexValueNode(prevHalfedge(h));
+                    Node& no = vertexValueNode(h);
+
+                    if(n == replaced) {
+                        n = n1;
+                    }
+
+                    if(no == replaced) {
+                        n = n0;
+                    }
+
+                    h = nextHalfedge(h);
+                } while(h != *cit);
+            }
+
+            prev = *cit;
+        }
+    }
+
+    if(!hasEdgeValue() && !hasEdgeGradient())
+    {
+        return;
+    }
+
+    for(EdgeIterator eit = edgesBegin();
+        eit != edgesEnd(); ++eit)
+    {
+        if(hasEdgeValue())
+        {
+            Node& n0 = edgeValueNode(halfedge(*eit, false));
+            Node& n1 = edgeValueNode(halfedge(*eit, true));
+            simplifyOppositeNodes(n0, n1);
+        }
+        if(hasEdgeGradient())
+        {
+            Node& n0 = edgeGradientNode(halfedge(*eit, false));
+            Node& n1 = edgeGradientNode(halfedge(*eit, true));
+            simplifyOppositeNodes(n0, n1);
+        }
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::simplifyOppositeNodes(Node& n0, Node& n1) const
+{
+    bool n0c = n0.isValid() && isConstraint(n0);
+    bool n1c = n1.isValid() && isConstraint(n1);
+
+    // if not a discontinuity, merge nodes.
+    if(n0c && n1c && nodeValue(n0) == nodeValue(n1))
+    {
+        n0 = Node(std::min(n1.idx(), n0.idx()));
+        n1 = n0;
+    }
+    else if(!n0c && !n1c && n0 == n1)
+    {
+        // It is useless to use an unknown node here
+        // FIXME: Assume that these unknown node are only used
+        // around this vertex.
+        n0 = Node();
+        n1 = Node();
+    }
+    else if(n0c && !n1.isValid())
+    {
+        n1 = n0;
+    }
+    else if(n1c && !n0.isValid())
+    {
+        n0 = n1;
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
 VGMesh<_Scalar, _Dim, _Chan>::finalize()
 {
     assert(hasVertexValue());
 
     std::vector<Halfedge> consEdges;
-    consEdges.reserve(8);
+    consEdges.reserve(12);
 
     for(VertexIterator vit = verticesBegin();
         vit != verticesEnd(); ++vit)

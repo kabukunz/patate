@@ -120,6 +120,9 @@ public: //--- Constraints edition ---------------------------------------------
     void setVertexNode(Node node, Halfedge from, Halfedge to);
     void setSingularity(Node fromNode, Node toNode, Halfedge from, Halfedge to);
 
+//    void removeUselessUnknownNodes();
+    void simplifyConstraints();
+    void simplifyOppositeNodes(Node& n0, Node& n1) const;
     void finalize();
 
 
