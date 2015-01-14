@@ -1,6 +1,6 @@
 
-#ifndef _MVGWRITER_H_
-#define _MVGWRITER_H_
+#ifndef _VITELOTTE_MVG_WRITER_
+#define _VITELOTTE_MVG_WRITER_
 
 
 #include <cassert>

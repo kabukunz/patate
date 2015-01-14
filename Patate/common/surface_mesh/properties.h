@@ -17,8 +17,8 @@
 //=============================================================================
 
 
-#ifndef SURFACE_MESH_PROPERTIES_H
-#define SURFACE_MESH_PROPERTIES_H
+#ifndef _PATATE_COMMON_SURFACE_MESH_PROPERTIES_
+#define _PATATE_COMMON_SURFACE_MESH_PROPERTIES_
 
 
 //== INCLUDES =================================================================

@@ -1,5 +1,5 @@
-#ifndef _MACROS_H_
-#define	_MACROS_H_
+#ifndef _PATATE_COMMON_GL_UTILS_MACROS_
+#define _PATATE_COMMON_GL_UTILS_MACROS_
 
 
 #include <stdlib.h>

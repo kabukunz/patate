@@ -1,5 +1,5 @@
-#ifndef _VG_MESH_GL2_RENDERER_BASE_H_
-#define _VG_MESH_GL2_RENDERER_BASE_H_
+#ifndef _VITELOTTE_VG_MESH_GL2_RENDERER_
+#define _VITELOTTE_VG_MESH_GL2_RENDERER_
 
 
 #include <Eigen/Dense>

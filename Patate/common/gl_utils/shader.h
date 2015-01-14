@@ -1,5 +1,5 @@
-#ifndef _SHADER_H_
-#define	_SHADER_H_
+#ifndef _PATATE_COMMON_GL_UTILS_SHADER_
+#define _PATATE_COMMON_GL_UTILS_SHADER_
 
 #include <cstdio>
 #include <cstring>

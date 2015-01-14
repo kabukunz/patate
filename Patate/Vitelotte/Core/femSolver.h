@@ -1,5 +1,5 @@
-#ifndef _FEM_SOLVER_H_
-#define _FEM_SOLVER_H_
+#ifndef _VITELOTTE_FEM_SOLVER_
+#define _VITELOTTE_FEM_SOLVER_
 
 #include <cassert>
 

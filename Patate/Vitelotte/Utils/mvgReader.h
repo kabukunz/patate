@@ -1,6 +1,6 @@
 
-#ifndef _MVGREADER_H_
-#define _MVGREADER_H_
+#ifndef _VITELOTTE_MVG_READER_
+#define _VITELOTTE_MVG_READER_
 
 
 #include <cassert>

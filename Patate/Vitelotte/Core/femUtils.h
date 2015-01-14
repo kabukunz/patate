@@ -1,5 +1,5 @@
-#ifndef _FEM_UTILS_H_
-#define _FEM_UTILS_H_
+#ifndef _VITELOTTE_FEM_UTILS_
+#define _VITELOTTE_FEM_UTILS_
 
 #include <Eigen/Core>
 

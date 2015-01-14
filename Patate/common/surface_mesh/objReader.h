@@ -1,5 +1,5 @@
-#ifndef _OBJREADER_H_
-#define _OBJREADER_H_
+#ifndef _PATATE_COMMON_SURFACE_MESH_OBJ_READER_
+#define _PATATE_COMMON_SURFACE_MESH_OBJ_READER_
 
 
 #include <stdexcept>

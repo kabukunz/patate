@@ -1,5 +1,5 @@
-#ifndef _OBJWRITER_H_
-#define _OBJWRITER_H_
+#ifndef _PATATE_COMMON_SURFACE_MESH_OBJ_WRITER_
+#define _PATATE_COMMON_SURFACE_MESH_OBJ_WRITER_
 
 
 #include <stdexcept>

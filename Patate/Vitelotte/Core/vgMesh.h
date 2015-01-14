@@ -1,6 +1,6 @@
 
-#ifndef VGMESH_H
-#define VGMESH_H
+#ifndef _VITELOTTE_VG_MESH_
+#define _VITELOTTE_VG_MESH_
 
 
 #include <cassert>

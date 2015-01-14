@@ -1,5 +1,5 @@
-#ifndef _FV_ELEMENT_BUILDER_H_
-#define _FV_ELEMENT_BUILDER_H_
+#ifndef _VITELOTTE_FV_ELEMENT_BUILDER_
+#define _VITELOTTE_FV_ELEMENT_BUILDER_
 
 
 #include <Eigen/Core>
