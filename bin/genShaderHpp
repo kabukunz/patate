@@ -1,6 +1,7 @@
 #!/bin/sh
 
 ./bin/shader2cpp \
+	-l \
 	-n Vitelotte::shader \
 	-g PATATE_VITELOTTE_UTILS_SHADER_H \
 	-o Patate/Vitelotte/Utils/shaders.hpp \
