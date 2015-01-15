@@ -144,7 +144,7 @@ public:
         solver.sort();
         solver.solve();
 
-        if(solver.status() != FVElement::StatusOK)
+        if(solver.status() != FVElement::STATUS_OK)
         {
             std::cerr << "Solver error: " << solver.errorString() << "\n";
         }

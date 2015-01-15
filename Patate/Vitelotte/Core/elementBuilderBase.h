@@ -21,16 +21,16 @@ public:
 
     enum Status
     {
-        StatusOK,
-        StatusWarning,
-        StatusError
+        STATUS_OK,
+        STATUS_WARNING,
+        STATUS_ERROR
     };
 
 public:
-    inline ElementBuilderBase() : m_status(StatusOK), m_errorString() {}
+    inline ElementBuilderBase() : m_status(STATUS_OK), m_errorString() {}
     inline Status status() const { return m_status; }
     inline const std::string& errorString() const { return m_errorString; }
-    inline void resetStatus() { m_status = StatusOK; m_errorString.clear(); }
+    inline void resetStatus() { m_status = STATUS_OK; m_errorString.clear(); }
 
 protected:
     inline void error(Status status, const std::string& errorString)

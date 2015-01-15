@@ -34,7 +34,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 {
     if(mesh.valence(element) != 3)
     {
-        error(StatusError, "Non-triangular face");
+        error(STATUS_ERROR, "Non-triangular face");
         return;
     }
 
@@ -85,7 +85,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(StatusError, "Invalid node");
+            error(STATUS_ERROR, "Invalid node");
             return;
         }
     }
@@ -100,7 +100,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     if(area <= 0)
     {
-        error(StatusWarning, "Degenerated or reversed triangle");
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
     }
 
     Vector3 a, b, c, d, l;

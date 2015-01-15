@@ -95,7 +95,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(StatusError, "Invalid node");
+            error(STATUS_ERROR, "Invalid node");
             return;
         }
     }
@@ -104,7 +104,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
 
     if(_2area <= 0)
     {
-        error(StatusWarning, "Degenerated or reversed triangle");
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
     }
 
     Scalar inv4A = 1. / (2. * _2area);

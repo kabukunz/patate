@@ -352,24 +352,7 @@ VGMesh<_Scalar, _Dim, _Chan>::simplifyConstraints()
         vit != verticesEnd(); ++vit)
     {
         consEdges.clear();
-        HalfedgeAroundVertexCirculator hit = halfedges(*vit),
-                                       hEnd = hit;
-        do
-        {
-            Node& np = halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE);
-            Node& n0 = halfedgeNode(*hit, FROM_VERTEX_VALUE);
-            if(np.isValid() || n0.isValid())
-            {
-                simplifyOppositeNodes(np, n0);
-
-                if(np.isValid() || n0.isValid())
-                {
-                    consEdges.push_back(*hit);
-                }
-            }
-            ++hit;
-        }
-        while(hit != hEnd);
+        findConstrainedEdgesSimplify(*vit, consEdges);
 
         Halfedge prev = consEdges.back();
         std::vector<Halfedge>::iterator cit = consEdges.begin();
@@ -503,21 +486,10 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
         vit != verticesEnd(); ++vit)
     {
         consEdges.clear();
-        HalfedgeAroundVertexCirculator hit = halfedges(*vit),
-                                       hEnd = hit;
-        do
-        {
-            if(vertexValueNode(oppositeHalfedge(*hit)).isValid() ||
-                    (hasVertexFromValue() && vertexFromValueNode(*hit).isValid()))
-                consEdges.push_back(*hit);
-            ++hit;
-        }
-        while(hit != hEnd);
+        findConstrainedEdgesSimplify(*vit, consEdges);
 
         if(consEdges.empty())
-        {
-            consEdges.push_back(*hit);
-        }
+            consEdges.push_back(halfedge(*vit));
 
         Halfedge prev = consEdges.back();
         std::vector<Halfedge>::iterator cit = consEdges.begin();
@@ -683,17 +655,25 @@ template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
 {
+    return nSingular(f);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+unsigned
+VGMesh<_Scalar, _Dim, _Chan>::nSingular(Face f) const
+{
+    unsigned nSingular = 0;
     HalfedgeAroundFaceCirculator
             hit  = halfedges(f),
             hend = hit;
     do
     {
-        if(isSingular(*hit))
-            return true;
+        nSingular += isSingular(*hit);
     }
     while(++hit != hend);
 
-    return false;
+    return nSingular;
 }
 
 
@@ -708,6 +688,33 @@ VGMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
         nSingulars += isSingular(*fit);
     }
     return nSingulars;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::
+    findConstrainedEdgesSimplify(Vertex vx,
+                                 std::vector<Halfedge>& consEdges)
+{
+    HalfedgeAroundVertexCirculator hit = halfedges(vx),
+                                   hEnd = hit;
+    do
+    {
+        Node& np = halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE);
+        Node& n0 = halfedgeNode(*hit, FROM_VERTEX_VALUE);
+        if(np.isValid() || n0.isValid())
+        {
+            simplifyOppositeNodes(np, n0);
+
+            if(np.isValid() || n0.isValid())
+            {
+                consEdges.push_back(*hit);
+            }
+        }
+        ++hit;
+    }
+    while(hit != hEnd);
 }
 
 

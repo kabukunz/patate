@@ -207,11 +207,11 @@ void Document::solve()
         m_fvSolver.build();
         m_fvSolver.solve();
 
-        if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::StatusWarning)
+        if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_WARNING)
         {
             std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
         }
-        else if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::StatusError)
+        else if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_ERROR)
         {
             std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
         }

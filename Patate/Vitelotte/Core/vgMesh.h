@@ -363,9 +363,12 @@ public:
     /// \brief Return true if the target vertex of `h` is singular.
     inline bool isSingular(Halfedge h) const;
 
-    // TODO: Replace this by a nSingular() function counting singular vertices ?
     /// \brief Return true if the face has a singular vertex.
+    /// \deprecated
     inline bool isSingular(Face f) const;
+
+    /// \brief Return the number of singular vertex around `f`.
+    inline unsigned nSingular(Face f) const;
 
     /**
      * \brief Return the number of singular faces in the mesh.
@@ -402,6 +405,15 @@ protected:
 
     inline bool isFlipOk(Edge e) const { assert(false); return false; }
     inline void flip(Edge e) { assert(false); }
+
+    /// \}
+
+
+    /// \name Helper methods
+    /// \{
+
+    void findConstrainedEdgesSimplify(Vertex vx,
+                                      std::vector<Halfedge>& consEdges);
 
     /// \}
 

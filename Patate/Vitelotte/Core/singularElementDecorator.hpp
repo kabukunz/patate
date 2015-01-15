@@ -31,7 +31,12 @@ SingularElementDecorator<_Element>::addCoefficients(
     InIt begin = it;
     Base::addCoefficients(it, mesh, element);
 
-    if(mesh.isSingular(element)) {
+    int nSingular = mesh.nSingular(element);
+
+    if(nSingular > 1)
+        Base::error(Base::STATUS_WARNING, "Element with more than one singular vertex");
+
+    if(nSingular) {
         InIt end = it;
         int from, to;
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);

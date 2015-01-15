@@ -56,7 +56,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(StatusError, "Invalid node");
+            error(STATUS_ERROR, "Invalid node");
             return;
         }
     }
@@ -87,7 +87,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
 
     if(area <= 0)
     {
-        error(StatusWarning, "Degenerated or reversed triangle");
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
     }
 
     Scalar a0 = p1x*p2y / _2delta;

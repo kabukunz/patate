@@ -40,7 +40,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     {
         m_elementBuilder.addCoefficients(it, *m_mesh, *elem);
 
-        if(m_elementBuilder.status() == ElementBuilder::StatusError)
+        if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
         {
             return;
         }
@@ -59,7 +59,7 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::sort()
 {
-    if(m_elementBuilder.status() == ElementBuilder::StatusError)
+    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
     {
         return;
     }
@@ -127,7 +127,7 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::solve()
 {
-    if(m_elementBuilder.status() == ElementBuilder::StatusError)
+    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
     {
         return;
     }

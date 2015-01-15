@@ -46,7 +46,7 @@ LinearElementBuilder<_Mesh, _Scalar>::
         nodes[i] = mesh.vertexValueNode(*hit).idx();
         if(nodes[i] < 0)
         {
-            error(StatusError, "Invalid node");
+            error(STATUS_ERROR, "Invalid node");
             return;
         }
     }
@@ -56,7 +56,7 @@ LinearElementBuilder<_Mesh, _Scalar>::
 
     if(_2area <= 0)
     {
-        error(StatusWarning, "Degenerated or reversed triangle");
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
     }
 
     for(int i = 0; i < 3; ++i)

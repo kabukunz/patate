@@ -26,11 +26,11 @@ void solveGeneric(Mesh& mesh)
     Solver solver(&mesh);
     solver.build();
 
-    if(solver.status() == Solver::ElementBuilder::StatusWarning)
+    if(solver.status() == Solver::ElementBuilder::STATUS_WARNING)
     {
         std::cerr << "Warning: " << solver.errorString() << "\n";
     }
-    else if(solver.status() == Solver::ElementBuilder::StatusError)
+    else if(solver.status() == Solver::ElementBuilder::STATUS_ERROR)
     {
         std::cerr << "Error: " << solver.errorString() << "\n";
         return;
