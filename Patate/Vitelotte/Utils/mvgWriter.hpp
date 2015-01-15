@@ -61,7 +61,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
     for(FaceIterator fit = mesh.facesBegin();
          fit != mesh.facesEnd(); ++fit)
     {
-        _out << (mesh.isSingular(*fit)? "fs": "f");
+        _out << (mesh.nSingulars(*fit)? "fs": "f");
 
         HalfedgeAroundFaceCirculator
                 hit  = mesh.halfedges(*fit),

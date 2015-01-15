@@ -278,7 +278,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
         assert(m_pMesh->valence(*fit) == 3);
         typename Mesh::Halfedge h = m_pMesh->halfedge(*fit);
 
-        bool isSingular = m_pMesh->isSingular(*fit);
+        bool isSingular = m_pMesh->nSingulars(*fit);
         if(isSingular)
         {
             // The first vertex must be the singular one

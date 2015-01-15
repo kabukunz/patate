@@ -17,7 +17,7 @@ SingularElementDecorator<_Element>::nCoefficients(
         const Mesh& mesh, Face element) const
 {
     return Base::nCoefficients(mesh, element) *
-            (mesh.isSingular(element)? 2: 1);
+            (mesh.nSingulars(element)? 2: 1);
 }
 
 template < typename _Element >
@@ -31,7 +31,7 @@ SingularElementDecorator<_Element>::addCoefficients(
     InIt begin = it;
     Base::addCoefficients(it, mesh, element);
 
-    int nSingular = mesh.nSingular(element);
+    unsigned nSingular = mesh.nSingulars(element);
 
     if(nSingular > 1)
         Base::error(Base::STATUS_WARNING, "Element with more than one singular vertex");

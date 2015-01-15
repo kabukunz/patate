@@ -652,28 +652,20 @@ VGMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-bool
-VGMesh<_Scalar, _Dim, _Chan>::isSingular(Face f) const
-{
-    return nSingular(f);
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
 unsigned
-VGMesh<_Scalar, _Dim, _Chan>::nSingular(Face f) const
+VGMesh<_Scalar, _Dim, _Chan>::nSingulars(Face f) const
 {
-    unsigned nSingular = 0;
+    unsigned nSingulars = 0;
     HalfedgeAroundFaceCirculator
             hit  = halfedges(f),
             hend = hit;
     do
     {
-        nSingular += isSingular(*hit);
+        nSingulars += isSingular(*hit);
     }
     while(++hit != hend);
 
-    return nSingular;
+    return nSingulars;
 }
 
 
@@ -681,13 +673,14 @@ template < typename _Scalar, int _Dim, int _Chan >
 unsigned
 VGMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
 {
-    unsigned nSingulars = 0;
+    unsigned n = 0;
     for(FaceIterator fit = facesBegin();
         fit != facesEnd(); ++fit)
     {
-        nSingulars += isSingular(*fit);
+        if(nSingulars(*fit))
+            ++n;
     }
-    return nSingulars;
+    return n;
 }
 
 

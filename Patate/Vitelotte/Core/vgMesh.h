@@ -363,12 +363,8 @@ public:
     /// \brief Return true if the target vertex of `h` is singular.
     inline bool isSingular(Halfedge h) const;
 
-    /// \brief Return true if the face has a singular vertex.
-    /// \deprecated
-    inline bool isSingular(Face f) const;
-
     /// \brief Return the number of singular vertex around `f`.
-    inline unsigned nSingular(Face f) const;
+    inline unsigned nSingulars(Face f) const;
 
     /**
      * \brief Return the number of singular faces in the mesh.
