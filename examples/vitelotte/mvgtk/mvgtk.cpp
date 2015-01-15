@@ -74,13 +74,13 @@ typedef Vitelotte::MVGWriter<Mesh> Writer;
 int parseAttribSet(const std::string& attr)
 {
     if(attr == "linear")
-        return Mesh::Linear;
+        return Mesh::LINEAR_FLAGS;
     if(attr == "quadratic")
-        return Mesh::Quadratic;
+        return Mesh::QUADRATIC_FLAGS;
     if(attr == "morley")
-        return Mesh::Morley;
+        return Mesh::MORLEY_FLAGS;
     if(attr == "fv")
-        return Mesh::FV;
+        return Mesh::FV_FLAGS;
     return -1;
 }
 
@@ -273,7 +273,7 @@ int convert(int argc, char** argv)
     }
 
     if(attribs < 0 && meshType != MeshMvg)
-        attribs = Mesh::FV;
+        attribs = Mesh::FV_FLAGS;
 
     Mesh mesh;
 

@@ -102,13 +102,13 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
     } while(0)
 
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                VertexValue,     m_vertexValueNodes,     "h:vertexValueNode");
+                TO_VERTEX_VALUE_FLAG,   m_vertexValueNodes,     "h:vertexValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                VertexFromValue, m_vertexFromValueNodes, "h:vertexFromValueNode");
+                FROM_VERTEX_VALUE_FLAG, m_vertexFromValueNodes, "h:vertexFromValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                EdgeValue,       m_edgeValueNodes,       "h:edgeValueNode");
+                EDGE_VALUE_FLAG,        m_edgeValueNodes,       "h:edgeValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                EdgeGradient,    m_edgeGradientNodes,    "h:edgeGradientNode");
+                EDGE_GRADIENT_FLAG,     m_edgeGradientNodes,    "h:edgeGradientNode");
 
 //    PATATE_FEM_MESH_SET_ATTRIBUTE(
 //                VertexGradientSpecial, m_vertexGradientSpecial, "h:vertexGradientSpecial");

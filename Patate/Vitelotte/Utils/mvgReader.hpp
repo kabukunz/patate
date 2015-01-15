@@ -59,13 +59,13 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
         else if(cmd == "parameters")
             m_lineStream >> params;
         else if(cmd == "linear")
-            attributes = Mesh::Linear;
+            attributes = Mesh::LINEAR_FLAGS;
         else if(cmd == "quadratic")
-            attributes = Mesh::Quadratic;
+            attributes = Mesh::QUADRATIC_FLAGS;
         else if(cmd == "morley")
-            attributes = Mesh::Morley;
+            attributes = Mesh::MORLEY_FLAGS;
         else if(cmd == "fv")
-            attributes = Mesh::FV;
+            attributes = Mesh::FV_FLAGS;
         else if(cmd == "mesh")
             m_lineStream >>attributes;
         else if(cmd == "vertices")

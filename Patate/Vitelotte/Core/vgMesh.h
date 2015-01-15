@@ -77,20 +77,20 @@ public:
 
     enum {
         // Nodes
-        VertexValue         = 0x01,
-        VertexFromValue     = 0x02,
-        EdgeValue           = 0x04,
-        EdgeGradient        = 0x08,
+        TO_VERTEX_VALUE_FLAG    = (1 << TO_VERTEX_VALUE),
+        FROM_VERTEX_VALUE_FLAG  = (1 << FROM_VERTEX_VALUE),
+        EDGE_VALUE_FLAG         = (1 << EDGE_VALUE),
+        EDGE_GRADIENT_FLAG      = (1 << EDGE_GRADIENT),
 
         // Specials
 //        VertexGradientSpecial = 0x10,
 
         // Aggregates
-        Linear = VertexValue | VertexFromValue,
-        Quadratic = Linear | EdgeValue,
+        LINEAR_FLAGS = TO_VERTEX_VALUE_FLAG | FROM_VERTEX_VALUE_FLAG,
+        QUADRATIC_FLAGS = LINEAR_FLAGS | EDGE_VALUE_FLAG,
 
-        Morley = Linear | EdgeGradient /*| VertexGradientSpecial*/,
-        FV = Quadratic | EdgeGradient /*| VertexGradientSpecial*/
+        MORLEY_FLAGS = LINEAR_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/,
+        FV_FLAGS = QUADRATIC_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/
     };
 
 
@@ -168,10 +168,10 @@ public:
      */
     void setAttributes(unsigned attributes);
 
-    inline bool hasVertexValue() const { return m_attributes & VertexValue; }
-    inline bool hasVertexFromValue() const { return m_attributes & VertexFromValue; }
-    inline bool hasEdgeValue() const { return m_attributes & EdgeValue; }
-    inline bool hasEdgeGradient() const { return m_attributes & EdgeGradient; }
+    inline bool hasVertexValue() const { return m_attributes & TO_VERTEX_VALUE_FLAG; }
+    inline bool hasVertexFromValue() const { return m_attributes & FROM_VERTEX_VALUE_FLAG; }
+    inline bool hasEdgeValue() const { return m_attributes & EDGE_VALUE_FLAG; }
+    inline bool hasEdgeGradient() const { return m_attributes & EDGE_GRADIENT_FLAG; }
 //    bool hasVertexGradientSpecial() const { return m_attributes & VertexGradientSpecial; }
 
 
@@ -183,19 +183,19 @@ public:
 //        { return m_edgeConstraintFlag[edge]; }
 
     inline Node vertexValueNode(Halfedge h) const
-        { assert(m_attributes | VertexValue); return m_vertexValueNodes[h]; }
+        { assert(hasVertexValue()); return m_vertexValueNodes[h]; }
     inline Node& vertexValueNode(Halfedge h)
-        { assert(m_attributes | VertexValue); return m_vertexValueNodes[h]; }
+        { assert(hasVertexValue()); return m_vertexValueNodes[h]; }
 
     inline Node vertexFromValueNode(Halfedge h) const
-        { assert(m_attributes | VertexFromValue); return m_vertexFromValueNodes[h]; }
+        { assert(hasVertexFromValue()); return m_vertexFromValueNodes[h]; }
     inline Node& vertexFromValueNode(Halfedge h)
-        { assert(m_attributes | VertexFromValue); return m_vertexFromValueNodes[h]; }
+        { assert(hasVertexFromValue()); return m_vertexFromValueNodes[h]; }
 
     inline Node edgeValueNode(Halfedge h) const
-        { assert(m_attributes | EdgeValue); return m_edgeValueNodes[h]; }
+        { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
     inline Node& edgeValueNode(Halfedge h)
-        { assert(m_attributes | EdgeValue); return m_edgeValueNodes[h]; }
+        { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
 
 //    inline Node vertexGradientNode(Vertex v) const
 //        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
@@ -203,9 +203,9 @@ public:
 //        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
 
     inline Node edgeGradientNode(Halfedge h) const
-        { assert(m_attributes | EdgeGradient); return m_edgeGradientNodes[h]; }
+        { assert(hasEdgeGradient()); return m_edgeGradientNodes[h]; }
     inline Node& edgeGradientNode(Halfedge h)
-        { assert(m_attributes | EdgeGradient); return m_edgeGradientNodes[h]; }
+        { assert(hasEdgeGradient()); return m_edgeGradientNodes[h]; }
 
     HalfedgeAttribute oppositeAttribute(HalfedgeAttribute attr) const;
 

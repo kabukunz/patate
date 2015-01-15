@@ -136,7 +136,7 @@ public:
         std::cout << "Solving '" << filename << "'... ";
         std::cout.flush();
 
-        m_mesh.setAttributes(Mesh::FV);
+        m_mesh.setAttributes(Mesh::FV_FLAGS);
         m_mesh.finalize();
 
         FVSolver solver(&m_mesh);

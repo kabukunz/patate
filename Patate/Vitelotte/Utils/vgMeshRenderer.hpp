@@ -244,8 +244,8 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     m_nodes.clear();
 
     if(!m_pMesh) return;
-    assert(m_pMesh->getAttributes() & Mesh::VertexValue);
-    m_quadratic = m_pMesh->getAttributes() & Mesh::EdgeValue;
+    assert(m_pMesh->hasVertexValue());
+    m_quadratic = m_pMesh->hasEdgeValue();
 
     int nodePerTriangle = m_quadratic? 6: 3;
 

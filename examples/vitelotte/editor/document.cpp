@@ -345,7 +345,7 @@ void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
 void Document::loadMesh(const std::string& filename)
 {
     Vitelotte::readMvgFromFile(filename, m_mesh);
-    m_mesh.setAttributes(Mesh::FV);
+    m_mesh.setAttributes(Mesh::FV_FLAGS);
 
     updateBoundingBox();
     setSelection(MeshSelection());

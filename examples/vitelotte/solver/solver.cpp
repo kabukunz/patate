@@ -109,16 +109,16 @@ int main(int argc, char** argv)
 
     switch(mesh.getAttributes())
     {
-    case Mesh::Linear:
+    case Mesh::LINEAR_FLAGS:
         solveHarmonicLinear(mesh);
         break;
-    case Mesh::Quadratic:
+    case Mesh::QUADRATIC_FLAGS:
         solveHarmonicQuadratic(mesh);
         break;
-    case Mesh::Morley:
+    case Mesh::MORLEY_FLAGS:
         solveBiharmonicLinear(mesh);
         break;
-    case Mesh::FV:
+    case Mesh::FV_FLAGS:
         solveBiharmonicQuadratic(mesh);
         break;
     default:

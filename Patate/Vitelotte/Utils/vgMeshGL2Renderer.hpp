@@ -214,7 +214,7 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
     m_nodes.clear();
 
     if(!m_pMesh) return;
-    assert((m_pMesh->getAttributes() & Mesh::Quadratic) == Mesh::Quadratic);
+    assert((m_pMesh->getAttributes() & Mesh::QUADRATIC_FLAGS) == Mesh::QUADRATIC_FLAGS);
 
     // Compute number of singular and normal triangles
     m_nSingulars = m_pMesh->nSingularFaces();
