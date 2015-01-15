@@ -68,6 +68,13 @@ public:
     /// \brief A special NodeValue used for unconstrained nodes.
     static const NodeValue UnconstrainedNode;
 
+    enum HalfedgeAttribute{
+        TO_VERTEX_VALUE,
+        FROM_VERTEX_VALUE,
+        EDGE_VALUE,
+        EDGE_GRADIENT,
+    };
+
     enum {
         // Nodes
         VertexValue         = 0x01,
@@ -200,6 +207,14 @@ public:
     inline Node& edgeGradientNode(Halfedge h)
         { assert(m_attributes | EdgeGradient); return m_edgeGradientNodes[h]; }
 
+    HalfedgeAttribute oppositeAttribute(HalfedgeAttribute attr) const;
+
+    inline Node halfedgeNode(Halfedge h, HalfedgeAttribute attr) const;
+    inline Node& halfedgeNode(Halfedge h, HalfedgeAttribute attr);
+
+    inline Node halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr) const;
+    inline Node& halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr);
+
     /// \}
 
 
@@ -298,6 +313,9 @@ public:
      */
     void simplifyConstraints();
 
+    void simplifyVertexArcConstraints(Halfedge from, Halfedge to);
+    void simplifyEdgeConstraints(Edge e);
+
     /**
      * \brief Replace `n0` and `n1` by a single node on an invalid node if
      * possible.
@@ -323,6 +341,9 @@ public:
      * unexpected results.
      */
     void finalize();
+
+    void finalizeVertexArc(Halfedge from, Halfedge to);
+    void finalizeEdge(Edge e);
 
     /**
      * \brief Remove unused nodes and reassign node indices accordingly.

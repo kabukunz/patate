@@ -103,8 +103,44 @@ int main(int argc, char** argv)
     QObject::connect(wireframeAction, SIGNAL(triggered(bool)),
                      editor, SLOT(setShowWireframe(bool)));
 
+    QAction* showBaseMeshAction = new QAction("Show base mesh", &window);
+    showBaseMeshAction->setCheckable(true);
+    showBaseMeshAction->setChecked(true);
+    QObject::connect(showBaseMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showBaseMeshNodes()));
+    QObject::connect(showBaseMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showBaseMeshNodes()));
+
+    QAction* showFinalizedMeshAction = new QAction("Show finalized mesh", &window);
+    showFinalizedMeshAction->setCheckable(true);
+    showFinalizedMeshAction->setChecked(false);
+    QObject::connect(showFinalizedMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showFinalizedMeshNodes()));
+    QObject::connect(showFinalizedMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showFinalizedMeshNodes()));
+
+    QAction* showSolvedMeshAction = new QAction("Show solved mesh", &window);
+    showSolvedMeshAction->setCheckable(true);
+    showSolvedMeshAction->setChecked(false);
+    QObject::connect(showSolvedMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showSolvedMeshNodes()));
+    QObject::connect(showSolvedMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showSolvedMeshNodes()));
+
+
+    QActionGroup* showMeshGroup = new QActionGroup(&window);
+    showMeshGroup->addAction(showBaseMeshAction);
+    showMeshGroup->addAction(showFinalizedMeshAction);
+    showMeshGroup->addAction(showSolvedMeshAction);
+
+
     QMenu* viewMenu = window.menuBar()->addMenu("View");
     viewMenu->addAction(wireframeAction);
+    viewMenu->addSeparator();
+    viewMenu->addAction(showBaseMeshAction);
+    viewMenu->addAction(showFinalizedMeshAction);
+    viewMenu->addAction(showSolvedMeshAction);
+
 
     window.resize(800, 600);
     window.show();

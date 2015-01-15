@@ -16,6 +16,7 @@ Editor::Editor(QWidget* parent)
       m_document(0),
       m_initialized(false),
       m_showWireframe(true),
+      m_nodeMeshType(Document::BASE_MESH),
       m_drag(false)
 {
 }
@@ -151,6 +152,29 @@ void Editor::setShowWireframe(bool enable)
 }
 
 
+void Editor::showBaseMeshNodes()
+{
+    m_nodeMeshType = Document::BASE_MESH;
+    update();
+}
+
+
+void Editor::showFinalizedMeshNodes()
+{
+    m_nodeMeshType = Document::FINALIZED_MESH;
+    update();
+}
+
+
+void Editor::showSolvedMeshNodes()
+{
+    m_nodeMeshType = Document::SOLVED_MESH;
+    update();
+}
+
+
+
+
 void Editor::initializeGL()
 {
     std::cout << "OpenGL Vendor:       " << glGetString(GL_VENDOR) << "\n";
@@ -224,7 +248,8 @@ void Editor::paintGL()
 
         if(m_showWireframe)
         {
-            m_nodeRenderer.update(m_document->mesh(), width() / m_camera.getViewBox().sizes()(0));
+            m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
+                                  width() / m_camera.getViewBox().sizes()(0));
             m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         }
     }

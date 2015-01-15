@@ -196,16 +196,15 @@ Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p,
 
 void Document::solve()
 {
-    m_solvedMesh = m_mesh;
+    m_finalizedMesh = m_mesh;
+    // Would break undo
+    //m_solvedMesh.compactNodes();
+    m_finalizedMesh.finalize();
+    m_solvedMesh = m_finalizedMesh;
 
     if(m_solvedMesh.hasUnknowns())
     {
-        m_solvedMesh.finalize();
-        // Would break undo
-        //m_solvedMesh.compactNodes();
-
         m_fvSolver.build();
-        m_fvSolver.sort();
         m_fvSolver.solve();
 
         if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::StatusWarning)
@@ -222,6 +221,27 @@ void Document::solve()
 }
 
 
+Document::Mesh& Document::getMesh(MeshType type)
+{
+    switch(type)
+    {
+    case BASE_MESH:
+        return m_mesh;
+    case FINALIZED_MESH:
+        return m_finalizedMesh;
+    case SOLVED_MESH:
+        return m_solvedMesh;
+    }
+    assert(false);
+}
+
+
+const Document::Mesh& Document::getMesh(MeshType type) const
+{
+    return const_cast<Document*>(this)->getMesh(type);
+}
+
+
 Document::Mesh& Document::mesh()
 {
     return m_mesh;
@@ -231,6 +251,18 @@ Document::Mesh& Document::mesh()
 const Document::Mesh& Document::mesh() const
 {
     return m_mesh;
+}
+
+
+Document::Mesh& Document::finalizedMesh()
+{
+    return m_finalizedMesh;
+}
+
+
+const Document::Mesh& Document::finalizedMesh() const
+{
+    return m_finalizedMesh;
 }
 
 
@@ -252,54 +284,13 @@ QUndoStack* Document::undoStack()
 }
 
 
-Document::HalfedgeNode Document::swapNode(HalfedgeNode nid) const
+void Document::splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 {
-    if(nid < MaxVertexNode)
-        return HalfedgeNode(int(nid) ^ 1);
-    return nid;
-}
-
-
-Document::Mesh::Node Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid) const
-{
-    switch(nid)
-    {
-    case FromValueNode:
-        if(m_mesh.hasVertexFromValue())
-            return m_mesh.vertexFromValueNode(h);
-        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
-    case ToValueNode:   return m_mesh.vertexValueNode(h);
-    case EdgeValueNode: return m_mesh.edgeValueNode(h);
-    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
-    default: abort();
-    }
-    return Mesh::Node();
-}
-
-
-Document::Mesh::Node& Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid)
-{
-    switch(nid)
-    {
-    case FromValueNode:
-        if(m_mesh.hasVertexFromValue())
-            return m_mesh.vertexFromValueNode(h);
-        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
-    case ToValueNode:   return m_mesh.vertexValueNode(h);
-    case EdgeValueNode: return m_mesh.edgeValueNode(h);
-    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
-    default: abort();
-    }
-}
-
-
-void Document::splitNode(Mesh::Halfedge h, HalfedgeNode nid)
-{
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-    HalfedgeNode onid = swapNode(nid);
-    Mesh::Node on = meshNode(oh, onid);
+    Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
+    Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
     assert(n == on);
 
@@ -313,13 +304,13 @@ void Document::splitNode(Mesh::Halfedge h, HalfedgeNode nid)
 }
 
 
-void Document::mergeNode(Mesh::Halfedge h, HalfedgeNode nid)
+void Document::mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 {
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-    HalfedgeNode onid = swapNode(nid);
-    Mesh::Node on = meshNode(oh, onid);
+    Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
+    Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
     assert(n != on);
 
@@ -327,16 +318,16 @@ void Document::mergeNode(Mesh::Halfedge h, HalfedgeNode nid)
 }
 
 
-void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
+void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
                             const Mesh::NodeValue& value, bool allowMerge)
 {
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     if(!n.isValid())
     {
         Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-        HalfedgeNode onid = swapNode(nid);
-        Mesh::Node on = meshNode(oh, onid);
+        Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
+        Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
         Mesh::Node nn = m_mesh.addNode(value);
 
@@ -446,20 +437,20 @@ bool SetNodeValue::mergeWith(const QUndoCommand* command)
 
 
 SetNode::SetNode(Document* doc, Halfedge halfedge,
-                 Document::HalfedgeNode nid, Node node)
+                 Mesh::HalfedgeAttribute nid, Node node)
     : m_document(doc), m_halfedge(halfedge), m_nid(nid), m_newNode(node),
-      m_prevNode(m_document->meshNode(m_halfedge, m_nid))
+      m_prevNode(m_document->mesh().halfedgeNode(m_halfedge, m_nid))
 {
 }
 
 void SetNode::undo()
 {
-    m_document->meshNode(m_halfedge, m_nid) = m_prevNode;
+    m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_prevNode;
     m_document->solve();
 }
 
 
 void SetNode::redo(){
-    m_document->meshNode(m_halfedge, m_nid) = m_newNode;
+    m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_newNode;
     m_document->solve();
 }

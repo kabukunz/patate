@@ -131,6 +131,84 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+typename VGMesh<_Scalar, _Dim, _Chan>::HalfedgeAttribute
+VGMesh<_Scalar, _Dim, _Chan>::
+    oppositeAttribute(HalfedgeAttribute attr) const
+{
+    switch(attr)
+    {
+    case TO_VERTEX_VALUE:
+        return FROM_VERTEX_VALUE;
+    case FROM_VERTEX_VALUE:
+        return TO_VERTEX_VALUE;
+    case EDGE_VALUE:
+    case EDGE_GRADIENT:
+        return attr;
+    }
+    assert(false);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+typename VGMesh<_Scalar, _Dim, _Chan>::Node
+VGMesh<_Scalar, _Dim, _Chan>::
+    halfedgeNode(Halfedge h, HalfedgeAttribute attr) const
+{
+    return const_cast<Self*>(this)->halfedgeNode(h, attr);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+typename VGMesh<_Scalar, _Dim, _Chan>::Node&
+VGMesh<_Scalar, _Dim, _Chan>::
+    halfedgeNode(Halfedge h, HalfedgeAttribute attr)
+{
+    switch(attr)
+    {
+    case TO_VERTEX_VALUE:
+        assert(hasVertexValue());
+        return vertexValueNode(h);
+    case FROM_VERTEX_VALUE:
+        assert(hasVertexValue() || hasVertexFromValue());
+        if(hasVertexFromValue())
+        {
+            return vertexFromValueNode(h);
+        }
+        else
+        {
+            return vertexValueNode(prevHalfedge(h));
+        }
+    case EDGE_VALUE:
+        assert(hasEdgeValue());
+        return edgeValueNode(h);
+    case EDGE_GRADIENT:
+        assert(hasEdgeGradient());
+        return edgeGradientNode(h);
+    }
+    assert(false);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+typename VGMesh<_Scalar, _Dim, _Chan>::Node
+VGMesh<_Scalar, _Dim, _Chan>::
+    halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr) const
+{
+    return const_cast<Self*>(this)->halfedgeOppositeNode(h, attr);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+typename VGMesh<_Scalar, _Dim, _Chan>::Node&
+VGMesh<_Scalar, _Dim, _Chan>::
+    halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr)
+{
+    return halfedgeNode(oppositeHalfedge(h), oppositeAttribute(attr));
+}
+
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 typename VGMesh<_Scalar, _Dim, _Chan>::Node
 VGMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
 {
@@ -278,10 +356,8 @@ VGMesh<_Scalar, _Dim, _Chan>::simplifyConstraints()
                                        hEnd = hit;
         do
         {
-            Node& np = vertexValueNode(oppositeHalfedge(*hit));
-            Node& n0 = hasVertexFromValue()?
-                        vertexFromValueNode(*hit):
-                        vertexValueNode(prevHalfedge(*hit));
+            Node& np = halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE);
+            Node& n0 = halfedgeNode(*hit, FROM_VERTEX_VALUE);
             if(np.isValid() || n0.isValid())
             {
                 simplifyOppositeNodes(np, n0);
@@ -295,84 +371,89 @@ VGMesh<_Scalar, _Dim, _Chan>::simplifyConstraints()
         }
         while(hit != hEnd);
 
-        if(consEdges.empty())
-        {
-            continue;
-        }
-        consEdges.push_back(consEdges.front());
-
+        Halfedge prev = consEdges.back();
         std::vector<Halfedge>::iterator cit = consEdges.begin();
-        Halfedge prev = *cit;
-        for(++cit; cit != consEdges.end(); ++cit)
+        for(; cit != consEdges.end(); ++cit)
         {
-            Halfedge next = oppositeHalfedge(*cit);
-            Node& n0 = hasVertexFromValue()?
-                        vertexFromValueNode(prev):
-                        vertexValueNode(prevHalfedge(prev));
-            Node& n1 = vertexValueNode(next);
-            Node& n1o = hasVertexFromValue()?
-                        vertexFromValueNode(*cit):
-                        vertexValueNode(prevHalfedge(*cit));
-
-            bool n0c = n0.isValid() && isConstraint(n0);
-            bool n1c = n1.isValid() && isConstraint(n1);
-
-            if((!n0c && !n1c) ||
-               (n0c && !n1c) ||
-               (n0c && n1c && nodeValue(n0) == nodeValue(n1)))
-            {
-                if(n1o == n1)
-                {
-                    n1o = n0;
-                }
-                n1 = n0;
-            }
-            else if(!n0c && n1c)
-            {
-                Node replaced = n0;
-                Halfedge h = *cit;
-                do {
-                    Node& n = hasVertexFromValue()?
-                                vertexFromValueNode(h):
-                                vertexValueNode(prevHalfedge(h));
-                    Node& no = vertexValueNode(h);
-
-                    if(n == replaced) {
-                        n = n1;
-                    }
-
-                    if(no == replaced) {
-                        n = n0;
-                    }
-
-                    h = nextHalfedge(h);
-                } while(h != *cit);
-            }
-
+            simplifyVertexArcConstraints(prev, *cit);
             prev = *cit;
         }
     }
 
-    if(!hasEdgeValue() && !hasEdgeGradient())
+    if(hasEdgeValue() || hasEdgeGradient())
     {
-        return;
+        for(EdgeIterator eit = edgesBegin();
+            eit != edgesEnd(); ++eit)
+        {
+            simplifyEdgeConstraints(*eit);
+        }
     }
+}
 
-    for(EdgeIterator eit = edgesBegin();
-        eit != edgesEnd(); ++eit)
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::simplifyVertexArcConstraints(
+        Halfedge from, Halfedge to)
+{
+    assert(hasVertexValue());
+    assert(fromVertex(from) == fromVertex(to));
+
+    Node& n0 = halfedgeNode(from, FROM_VERTEX_VALUE);
+    Node& n1 = halfedgeOppositeNode(to, FROM_VERTEX_VALUE);
+
+    bool n0c = n0.isValid() && isConstraint(n0);
+    bool n1c = n1.isValid() && isConstraint(n1);
+
+    if((!n0c && !n1c) ||
+       (n0c && !n1c) ||
+       (n0c && n1c && nodeValue(n0) == nodeValue(n1)))
     {
-        if(hasEdgeValue())
+        Node& n1o = halfedgeNode(to, FROM_VERTEX_VALUE);
+        if(n1o == n1)
         {
-            Node& n0 = edgeValueNode(halfedge(*eit, false));
-            Node& n1 = edgeValueNode(halfedge(*eit, true));
-            simplifyOppositeNodes(n0, n1);
+            n1o = n0;
         }
-        if(hasEdgeGradient())
-        {
-            Node& n0 = edgeGradientNode(halfedge(*eit, false));
-            Node& n1 = edgeGradientNode(halfedge(*eit, true));
-            simplifyOppositeNodes(n0, n1);
+        n1 = n0;
+    }
+    else if(!n0c && n1c)
+    {
+        Node toReplace = n0;
+        Halfedge h = from;
+        while(true) {
+            Node& n = halfedgeNode(h, FROM_VERTEX_VALUE);
+            if(n == toReplace)
+                n = n1;
+            else
+                break;
+
+            Node& no = halfedgeOppositeNode(h, FROM_VERTEX_VALUE);
+            if(no == toReplace)
+                n = n1;
+            else
+                break;
+
+            h = nextHalfedge(h);
         }
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::simplifyEdgeConstraints(Edge e)
+{
+    if(hasEdgeValue())
+    {
+        Node& n0 = edgeValueNode(halfedge(e, 0));
+        Node& n1 = edgeValueNode(halfedge(e, 1));
+        simplifyOppositeNodes(n0, n1);
+    }
+    if(hasEdgeGradient())
+    {
+        Node& n0 = edgeGradientNode(halfedge(e, 0));
+        Node& n1 = edgeGradientNode(halfedge(e, 1));
+        simplifyOppositeNodes(n0, n1);
     }
 }
 
@@ -436,41 +517,13 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
         if(consEdges.empty())
         {
             consEdges.push_back(*hit);
-            consEdges.push_back(*hit);
         }
-        consEdges.push_back(consEdges.front());
 
+        Halfedge prev = consEdges.back();
         std::vector<Halfedge>::iterator cit = consEdges.begin();
-        Halfedge prev = *cit;
-        for(++cit; cit != consEdges.end(); ++cit)
+        for(; cit != consEdges.end(); ++cit)
         {
-            Halfedge next = oppositeHalfedge(*cit);
-            Node n0 = hasVertexFromValue()?
-                        vertexFromValueNode(prev):
-                        vertexValueNode(prevHalfedge(prev));
-            Node n1 = vertexValueNode(next);
-            bool n0c = n0.isValid() && isConstraint(n0);
-            bool n1c = n1.isValid() && isConstraint(n1);
-
-            Node n = Node();
-            if(!n0c && !n1c)
-            {
-                // Free nodes, choose one valid or create a new one.
-                if     (n0.isValid()) n = n0;
-                else if(n1.isValid()) n = n1;
-                else                  n = addNode();
-            }
-            else if(n0c != n1c)
-                n = n0c? n0: n1;  // One constraint, choose it
-            else if(n0 == n1 || nodeValue(n0) == nodeValue(n1))
-                n = n0;  // Same constraints, choice is obvious
-
-            // The remaining option is a singularity, that require special
-            // processing.
-            if(isValid(n))
-                setVertexNode(n, prev, *cit);
-            else
-                setSingularity(n0, n1, prev, *cit);
+            finalizeVertexArc(prev, *cit);
 
             prev = *cit;
         }
@@ -481,31 +534,71 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
         for(EdgeIterator eit = edgesBegin();
             eit != edgesEnd(); ++eit)
         {
-            if(hasEdgeValue())
-            {
-                Node& n0 = edgeValueNode(halfedge(*eit, false));
-                Node& n1 = edgeValueNode(halfedge(*eit, true));
-                bool n0v = n0.isValid();
-                bool n1v = n1.isValid();
-
-                // if both are invalid, create a single node. Else, create
-                // nodes independently, thus producing a discontinuity.
-                if(!n0v) n0 = addNode();
-                if(!n1v) n1 = n0v? addNode(): n0;
-            }
-            if(hasEdgeGradient())
-            {
-                Node& n0 = edgeGradientNode(halfedge(*eit, false));
-                Node& n1 = edgeGradientNode(halfedge(*eit, true));
-                bool n0v = n0.isValid();
-                bool n1v = n1.isValid();
-
-                // if both are invalid, create a single node. Else, create
-                // nodes independently, thus producing a discontinuity.
-                if(!n0v) n0 = addNode();
-                if(!n1v) n1 = n0v? addNode(): n0;
-            }
+            finalizeEdge(*eit);
         }
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::finalizeVertexArc(Halfedge from, Halfedge to)
+{
+    Node n0 = halfedgeNode(from, FROM_VERTEX_VALUE);
+    Node n1 = halfedgeOppositeNode(to, FROM_VERTEX_VALUE);
+
+    bool n0c = n0.isValid() && isConstraint(n0);
+    bool n1c = n1.isValid() && isConstraint(n1);
+
+    Node n = Node();
+    if(!n0c && !n1c)
+    {
+        // Free nodes, choose one valid or create a new one.
+        if     (n0.isValid()) n = n0;
+        else if(n1.isValid()) n = n1;
+        else                  n = addNode();
+    }
+    else if(n0c != n1c)
+        n = n0c? n0: n1;  // One constraint, choose it
+    else if(n0 == n1 || nodeValue(n0) == nodeValue(n1))
+        n = n0;  // Same constraints, choose one arbitrarily
+
+    // The remaining option is a singularity, that require special
+    // processing.
+    if(isValid(n))
+        setVertexNode(n, from, to);
+    else
+        setSingularity(n0, n1, from, to);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::finalizeEdge(Edge e)
+{
+    if(hasEdgeValue())
+    {
+        Node& n0 = edgeValueNode(halfedge(e, 0));
+        Node& n1 = edgeValueNode(halfedge(e, 1));
+        bool n0v = n0.isValid();
+        bool n1v = n1.isValid();
+
+        // if both are invalid, create a single node. Else, create
+        // nodes independently, thus producing a discontinuity.
+        if(!n0v) n0 = addNode();
+        if(!n1v) n1 = n0v? addNode(): n0;
+    }
+    if(hasEdgeGradient())
+    {
+        Node& n0 = edgeGradientNode(halfedge(e, 0));
+        Node& n1 = edgeGradientNode(halfedge(e, 1));
+        bool n0v = n0.isValid();
+        bool n1v = n1.isValid();
+
+        // if both are invalid, create a single node. Else, create
+        // nodes independently, thus producing a discontinuity.
+        if(!n0v) n0 = addNode();
+        if(!n1v) n1 = n0v? addNode(): n0;
     }
 }
 

@@ -19,11 +19,11 @@
 #include "../common/glLineRenderer.h"
 #include "../common/vgNodeRenderer.h"
 
+#include "document.h"
+
 
 class QMouseEvent;
 class QWheelEvent;
-
-class Document;
 
 
 class Editor : public QGLWidget
@@ -41,7 +41,6 @@ public:
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;
 
-
 public:
     explicit Editor(QWidget* parent=0);
     virtual ~Editor();
@@ -57,6 +56,9 @@ public slots:
     void updateBuffers();
     void updateSelection();
     void setShowWireframe(bool enable);
+    void showBaseMeshNodes();
+    void showFinalizedMeshNodes();
+    void showSolvedMeshNodes();
 
 public:
     virtual void initializeGL();
@@ -79,6 +81,7 @@ private:
 
     bool m_initialized;
     bool m_showWireframe;
+    Document::MeshType m_nodeMeshType;
 
     OrthographicCamera m_camera;
     bool m_drag;
