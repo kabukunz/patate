@@ -43,7 +43,7 @@ LinearElementBuilder<_Mesh, _Scalar>::
         v[i] = (mesh.position(mesh.toVertex(*hit)) -
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
         if(nodes[i] < 0)
         {
             error(STATUS_ERROR, "Invalid node");

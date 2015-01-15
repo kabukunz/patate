@@ -172,21 +172,21 @@ bool VGNodeRenderer::fromSplit(const Mesh& mesh, Mesh::Halfedge h) const
     Mesh::Halfedge oh = mesh.oppositeHalfedge(h);
     if(mesh.isBoundary(h) || mesh.isBoundary(oh))
         return false;
-    return mesh.vertexFromValueNode(h) != mesh.vertexValueNode(oh);
+    return mesh.fromVertexValueNode(h) != mesh.toVertexValueNode(oh);
 }
 
 
 bool VGNodeRenderer::isConstrained(const Mesh& mesh, Mesh::Halfedge h) const
 {
     Mesh::Halfedge oh = mesh.oppositeHalfedge(h);
-    return  mesh.isConstraint(mesh.vertexFromValueNode(h))              ||
+    return  mesh.isConstraint(mesh.fromVertexValueNode(h))              ||
             mesh.isConstraint(mesh.edgeValueNode(h))                    ||
             mesh.isConstraint(mesh.edgeGradientNode(h))                 ||
-            mesh.isConstraint(mesh.vertexValueNode(h))                  ||
-            mesh.vertexFromValueNode(h) != mesh.vertexFromValueNode(oh) ||
+            mesh.isConstraint(mesh.toVertexValueNode(h))                  ||
+            mesh.fromVertexValueNode(h) != mesh.fromVertexValueNode(oh) ||
             mesh.edgeValueNode(h)       != mesh.edgeValueNode(oh)       ||
             mesh.edgeGradientNode(h)    != mesh.edgeGradientNode(oh)    ||
-            mesh.vertexValueNode(h)     != mesh.vertexValueNode(oh);
+            mesh.toVertexValueNode(h)     != mesh.toVertexValueNode(oh);
 }
 
 
@@ -203,9 +203,9 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
     Mesh::Vector n(-v.y(), v.x());
 
     bool boundary = mesh.isBoundary(e);
-    bool fromSplit = !boundary && mesh.vertexFromValueNode(h) != mesh.vertexValueNode(oh);
+    bool fromSplit = !boundary && mesh.fromVertexValueNode(h) != mesh.toVertexValueNode(oh);
     bool midSplit = !boundary && mesh.edgeValueNode(h) != mesh.edgeValueNode(oh);
-    bool toSplit = !boundary && mesh.vertexValueNode(h) != mesh.vertexFromValueNode(oh);
+    bool toSplit = !boundary && mesh.toVertexValueNode(h) != mesh.fromVertexValueNode(oh);
 
     bool constrained = isConstrained(mesh, h);
 
@@ -277,8 +277,8 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Verte
             Mesh::Vector v = (mesh.position(vx1) - mesh.position(vx0)).normalized();
             Mesh::Vector n(-v.y(), v.x());
 
-            addNode2(mesh, mesh.vertexFromValueNode(*hit),
-                     mesh.vertexValueNode(mesh.oppositeHalfedge(*hit)),
+            addNode2(mesh, mesh.fromVertexValueNode(*hit),
+                     mesh.toVertexValueNode(mesh.oppositeHalfedge(*hit)),
                      p + v*radius, n*offset);
 
             ++hit;

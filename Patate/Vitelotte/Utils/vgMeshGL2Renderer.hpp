@@ -285,12 +285,12 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
 
             h = m_pMesh->nextHalfedge(h);
 
-            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->vertexFromValueNode(h));
+            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->fromVertexValueNode(h));
         }
         // Singular node is the last one
         if(isSingular)
         {
-            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->vertexValueNode(h));
+            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->toVertexValueNode(h));
         }
 
         index += 3;

@@ -78,7 +78,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
     }
 
     for(int i = 0; i < 9; ++i)

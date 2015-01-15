@@ -43,8 +43,8 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
 
         m_attributes = rhs.m_attributes;
 
-        m_vertexValueNodes = getHalfedgeProperty<Node>("h:vertexValueNode");
-        m_vertexFromValueNodes = getHalfedgeProperty<Node>("h:vertexFromValueNode");
+        m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
+        m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
         m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
         m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
@@ -102,9 +102,9 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
     } while(0)
 
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                TO_VERTEX_VALUE_FLAG,   m_vertexValueNodes,     "h:vertexValueNode");
+                TO_VERTEX_VALUE_FLAG,   m_toVertexValueNodes,   "h:toVertexValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
-                FROM_VERTEX_VALUE_FLAG, m_vertexFromValueNodes, "h:vertexFromValueNode");
+                FROM_VERTEX_VALUE_FLAG, m_fromVertexValueNodes, "h:fromVertexValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
                 EDGE_VALUE_FLAG,        m_edgeValueNodes,       "h:edgeValueNode");
     PATATE_FEM_MESH_SET_ATTRIBUTE(
@@ -166,17 +166,17 @@ VGMesh<_Scalar, _Dim, _Chan>::
     switch(attr)
     {
     case TO_VERTEX_VALUE:
-        assert(hasVertexValue());
-        return vertexValueNode(h);
+        assert(hasToVertexValue());
+        return toVertexValueNode(h);
     case FROM_VERTEX_VALUE:
-        assert(hasVertexValue() || hasVertexFromValue());
-        if(hasVertexFromValue())
+        assert(hasToVertexValue() || hasFromVertexValue());
+        if(hasFromVertexValue())
         {
-            return vertexFromValueNode(h);
+            return fromVertexValueNode(h);
         }
         else
         {
-            return vertexValueNode(prevHalfedge(h));
+            return toVertexValueNode(prevHalfedge(h));
         }
     case EDGE_VALUE:
         assert(hasEdgeValue());
@@ -232,9 +232,9 @@ VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
 //FemMesh<_Scalar, _Dim, _Chan>::setValueConstraint(
 //        Halfedge h, Node from, Node mid, Node to)
 //{
-//    vertexValueNode(h) = to;
+//    toVertexValueNode(h) = to;
 //    edgeGradientNode(h) = mid;
-//    vertexFromValueNode(h) = from;
+//    fromVertexValueNode(h) = from;
 //}
 
 
@@ -268,18 +268,18 @@ VGMesh<_Scalar, _Dim, _Chan>::
     setVertexNode(Node node, Halfedge from, Halfedge to)
 {
     assert(fromVertex(from) == fromVertex(to));
-    assert(hasVertexValue());
+    assert(hasToVertexValue());
 
     Halfedge h = from;
     do
     {
-        if(hasVertexFromValue() && !isBoundary(h))
-            vertexFromValueNode(h) = node;
+        if(hasFromVertexValue() && !isBoundary(h))
+            fromVertexValueNode(h) = node;
 
         h = prevHalfedge(h);
 
         if(!isBoundary(h))
-            vertexValueNode(h) = node;
+            toVertexValueNode(h) = node;
 
         h = oppositeHalfedge(h);
     }
@@ -293,7 +293,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
     setSingularity(Node fromNode, Node toNode, Halfedge from, Halfedge to)
 {
     assert(fromVertex(from) == fromVertex(to));
-    assert(hasVertexValue() && hasVertexFromValue());
+    assert(hasToVertexValue() && hasFromVertexValue());
     assert(isConstraint(fromNode) && isConstraint(toNode));
 
     const NodeValue& fromValue = nodeValue(fromNode);
@@ -314,7 +314,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
     do
     {
         if(!isBoundary(h))
-            vertexFromValueNode(h) = n;
+            fromVertexValueNode(h) = n;
 
         h = prevHalfedge(h);
 
@@ -331,7 +331,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
             n = toNode;
 
         if(!isBoundary(h))
-            vertexValueNode(h) = n;
+            toVertexValueNode(h) = n;
 
         h = oppositeHalfedge(h);
     }
@@ -343,7 +343,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::simplifyConstraints()
 {
-    assert(hasVertexValue());
+    assert(hasToVertexValue());
 
     std::vector<Halfedge> consEdges;
     consEdges.reserve(12);
@@ -379,7 +379,7 @@ void
 VGMesh<_Scalar, _Dim, _Chan>::simplifyVertexArcConstraints(
         Halfedge from, Halfedge to)
 {
-    assert(hasVertexValue());
+    assert(hasToVertexValue());
     assert(fromVertex(from) == fromVertex(to));
 
     Node& n0 = halfedgeNode(from, FROM_VERTEX_VALUE);
@@ -477,7 +477,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::finalize()
 {
-    assert(hasVertexValue());
+    assert(hasToVertexValue());
 
     std::vector<Halfedge> consEdges;
     consEdges.reserve(12);
@@ -588,10 +588,10 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     {
         if(!isBoundary(*hit))
         {
-            if(hasVertexValue() && vertexValueNode(*hit).isValid())
-                buf[vertexValueNode(*hit).idx()]     = 1;
-            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
-                buf[vertexFromValueNode(*hit).idx()] = 1;
+            if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
+                buf[toVertexValueNode(*hit).idx()]     = 1;
+            if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
+                buf[fromVertexValueNode(*hit).idx()] = 1;
             if(hasEdgeValue() && edgeValueNode(*hit).isValid())
                 buf[edgeValueNode(*hit).idx()]       = 1;
 //            if(hasVertexGradient())
@@ -627,10 +627,10 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     {
         if(!isBoundary(*hit))
         {
-            if(hasVertexValue() && vertexValueNode(*hit).isValid())
-                vertexValueNode(*hit)     = Node(map[vertexValueNode(*hit).idx()]);
-            if(hasVertexFromValue() && vertexFromValueNode(*hit).isValid())
-                vertexFromValueNode(*hit) = Node(map[vertexFromValueNode(*hit).idx()]);
+            if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
+                toVertexValueNode(*hit)     = Node(map[toVertexValueNode(*hit).idx()]);
+            if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
+                fromVertexValueNode(*hit) = Node(map[fromVertexValueNode(*hit).idx()]);
             if(hasEdgeValue() && edgeValueNode(*hit).isValid())
                 (edgeValueNode(*hit))     = Node(map[edgeValueNode(*hit).idx()]);
 //            if(hasVertexGradient())
@@ -646,8 +646,8 @@ template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {
-    return hasVertexFromValue() &&
-            vertexValueNode(h) != vertexFromValueNode(nextHalfedge(h));
+    return hasFromVertexValue() &&
+            toVertexValueNode(h) != fromVertexValueNode(nextHalfedge(h));
 }
 
 

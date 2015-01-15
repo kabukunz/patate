@@ -70,16 +70,16 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
         {
             _out << " " << mesh.toVertex(*hit).idx() + iOffset;
 
-            if(mesh.hasVertexValue())
+            if(mesh.hasToVertexValue())
             {
-                Node vn = mesh.vertexValueNode(*hit);
+                Node vn = mesh.toVertexValueNode(*hit);
                 _out << "/";
                 printNode(_out, vn);
 
                 // VertexFromValue only makes sense if vertexValue in enable.
-                if(mesh.hasVertexFromValue())
+                if(mesh.hasFromVertexValue())
                 {
-                    Node fn = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit));
+                    Node fn = mesh.fromVertexValueNode(mesh.nextHalfedge(*hit));
                     if(vn != fn)
                     {
                         _out << "/";

@@ -49,7 +49,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
         orient[i] = mesh.halfedgeOrientation(*hit);
         nodes[i+3] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
     }
 
     for(int i = 0; i < 6; ++i)

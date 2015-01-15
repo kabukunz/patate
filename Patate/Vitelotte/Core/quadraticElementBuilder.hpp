@@ -88,7 +88,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
     }
 
     for(int i = 0; i < 6; ++i)

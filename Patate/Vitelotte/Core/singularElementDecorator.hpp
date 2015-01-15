@@ -44,8 +44,8 @@ SingularElementDecorator<_Element>::addCoefficients(
         {
             if(mesh.isSingular(*hit))
             {
-                from = mesh.vertexValueNode(*hit).idx();
-                to = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit)).idx();
+                from = mesh.toVertexValueNode(*hit).idx();
+                to = mesh.fromVertexValueNode(mesh.nextHalfedge(*hit)).idx();
                 break;
             }
             ++hit;

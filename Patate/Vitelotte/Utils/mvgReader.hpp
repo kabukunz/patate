@@ -175,11 +175,11 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         typename Mesh::HalfedgeAroundFaceCirculator hit = m_mesh->halfedges(f);
         for(int i = 0; i < 3; ++i)
         {
-            if(m_mesh->hasVertexValue())
-                m_mesh->vertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
+            if(m_mesh->hasToVertexValue())
+                m_mesh->toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
             ++hit;
-            if(m_mesh->hasVertexFromValue())
-                m_mesh->vertexFromValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
+            if(m_mesh->hasFromVertexValue())
+                m_mesh->fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
             if(m_mesh->hasEdgeValue())
                 m_mesh->edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
             if(m_mesh->hasEdgeGradient())

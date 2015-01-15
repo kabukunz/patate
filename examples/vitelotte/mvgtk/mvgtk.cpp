@@ -139,10 +139,10 @@ int check(int argc, char** argv, const GlobalOptions& opts)
         int singularCount = 0;
         do
         {
-            if(mesh.hasVertexValue() && mesh.hasVertexFromValue())
+            if(mesh.hasToVertexValue() && mesh.hasFromVertexValue())
             {
-                Mesh::Node n0 = mesh.vertexValueNode(*hit);
-                Mesh::Node n1 = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit));
+                Mesh::Node n0 = mesh.toVertexValueNode(*hit);
+                Mesh::Node n1 = mesh.fromVertexValueNode(mesh.nextHalfedge(*hit));
                 bool n0c = n0.isValid() && mesh.isConstraint(n0);
                 bool n1c = n1.isValid() && mesh.isConstraint(n1);
 
@@ -152,9 +152,9 @@ int check(int argc, char** argv, const GlobalOptions& opts)
                 }
             }
 
-            if(mesh.hasVertexValue())
+            if(mesh.hasToVertexValue())
             {
-                Mesh::Node n = mesh.vertexValueNode(*hit);
+                Mesh::Node n = mesh.toVertexValueNode(*hit);
                 if(n.isValid())
                 {
                     if(!mesh.isValid(n))
@@ -165,9 +165,9 @@ int check(int argc, char** argv, const GlobalOptions& opts)
                     }
                 }
             }
-            if(mesh.hasVertexFromValue())
+            if(mesh.hasFromVertexValue())
             {
-                Mesh::Node n = mesh.vertexFromValueNode(*hit);
+                Mesh::Node n = mesh.fromVertexValueNode(*hit);
                 if(n.isValid())
                 {
                     if(!mesh.isValid(n))

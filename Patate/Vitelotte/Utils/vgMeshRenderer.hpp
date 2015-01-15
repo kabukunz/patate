@@ -244,7 +244,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     m_nodes.clear();
 
     if(!m_pMesh) return;
-    assert(m_pMesh->hasVertexValue());
+    assert(m_pMesh->hasToVertexValue());
     m_quadratic = m_pMesh->hasEdgeValue();
 
     int nodePerTriangle = m_quadratic? 6: 3;
@@ -292,11 +292,11 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
         {
             m_indices[index + ei] = m_pMesh->toVertex(h).idx();
             h = m_pMesh->nextHalfedge(h);
-            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->vertexFromValueNode(h));
+            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->fromVertexValueNode(h));
         }
         // Singular node is the last one
         if(isSingular)
-            m_nodes[nodeIndex + nodePerTriangle] = nodeValue(m_pMesh->vertexValueNode(h));
+            m_nodes[nodeIndex + nodePerTriangle] = nodeValue(m_pMesh->toVertexValueNode(h));
 
         if(m_quadratic)
         {

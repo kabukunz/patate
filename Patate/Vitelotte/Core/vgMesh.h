@@ -123,9 +123,9 @@ public:
     inline const Vector& position(Vertex v) const { return m_positions[v]; }
     inline Vector& position(Vertex v) { return m_positions[v]; }
 
-    inline VertexProperty<Vector>& positionProperty() { return m_positions; }
-    inline const VertexProperty<Vector>& positionProperty() const
-        { return m_positions; }
+//    inline VertexProperty<Vector>& positionProperty() { return m_positions; }
+//    inline const VertexProperty<Vector>& positionProperty() const
+//        { return m_positions; }
 
     inline bool isValid(Vertex v) const { return PatateCommon::SurfaceMesh::isValid(v); }
     inline bool isValid(Halfedge h) const { return PatateCommon::SurfaceMesh::isValid(h); }
@@ -168,8 +168,8 @@ public:
      */
     void setAttributes(unsigned attributes);
 
-    inline bool hasVertexValue() const { return m_attributes & TO_VERTEX_VALUE_FLAG; }
-    inline bool hasVertexFromValue() const { return m_attributes & FROM_VERTEX_VALUE_FLAG; }
+    inline bool hasToVertexValue() const { return m_attributes & TO_VERTEX_VALUE_FLAG; }
+    inline bool hasFromVertexValue() const { return m_attributes & FROM_VERTEX_VALUE_FLAG; }
     inline bool hasEdgeValue() const { return m_attributes & EDGE_VALUE_FLAG; }
     inline bool hasEdgeGradient() const { return m_attributes & EDGE_GRADIENT_FLAG; }
 //    bool hasVertexGradientSpecial() const { return m_attributes & VertexGradientSpecial; }
@@ -182,15 +182,15 @@ public:
 //    PatateCommon::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
 //        { return m_edgeConstraintFlag[edge]; }
 
-    inline Node vertexValueNode(Halfedge h) const
-        { assert(hasVertexValue()); return m_vertexValueNodes[h]; }
-    inline Node& vertexValueNode(Halfedge h)
-        { assert(hasVertexValue()); return m_vertexValueNodes[h]; }
+    inline Node toVertexValueNode(Halfedge h) const
+        { assert(hasToVertexValue()); return m_toVertexValueNodes[h]; }
+    inline Node& toVertexValueNode(Halfedge h)
+        { assert(hasToVertexValue()); return m_toVertexValueNodes[h]; }
 
-    inline Node vertexFromValueNode(Halfedge h) const
-        { assert(hasVertexFromValue()); return m_vertexFromValueNodes[h]; }
-    inline Node& vertexFromValueNode(Halfedge h)
-        { assert(hasVertexFromValue()); return m_vertexFromValueNodes[h]; }
+    inline Node fromVertexValueNode(Halfedge h) const
+        { assert(hasFromVertexValue()); return m_fromVertexValueNodes[h]; }
+    inline Node& fromVertexValueNode(Halfedge h)
+        { assert(hasFromVertexValue()); return m_fromVertexValueNodes[h]; }
 
     inline Node edgeValueNode(Halfedge h) const
         { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
@@ -424,8 +424,8 @@ protected:
     VertexProperty<Vector> m_positions;
 
     unsigned m_attributes;
-    HalfedgeProperty<Node> m_vertexValueNodes;
-    HalfedgeProperty<Node> m_vertexFromValueNodes;
+    HalfedgeProperty<Node> m_toVertexValueNodes;
+    HalfedgeProperty<Node> m_fromVertexValueNodes;
     HalfedgeProperty<Node> m_edgeValueNodes;
 //    HalfedgeProperty<Node> m_vertexGradientSpecial;
     HalfedgeProperty<Node> m_edgeGradientNodes;
