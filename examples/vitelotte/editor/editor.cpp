@@ -181,6 +181,8 @@ void Editor::initializeGL()
     std::cout << "OpenGL Renderer:     " << glGetString(GL_RENDERER) << "\n";
     std::cout << "OpenGL Version:      " << glGetString(GL_VERSION) << "\n";
     std::cout << "OpenGL GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
+    if(format().sampleBuffers())
+        std::cout << "OpenGL Multisample:  " << format().samples() << "\n";
 
     GLenum res = glewInit();
     if (res != GLEW_OK)

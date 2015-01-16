@@ -157,7 +157,7 @@ void GLViewer::initVars()
     m_info.windowHeight = 600;
     m_info.majorVersion = 4;
     m_info.minorVersion = 1;
-    m_info.samples = 64;
+    m_info.samples = 16;
     m_info.flags.all = 0;
     m_info.flags.cursor = 1;
     m_info.flags.fullscreen = 0;

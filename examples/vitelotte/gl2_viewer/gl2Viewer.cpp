@@ -62,6 +62,8 @@ public:
         SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
         SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 16);
 
         SDL_WM_SetCaption("OpenGL 2 mvg viewer", "");
         SDL_Surface* screen = SDL_SetVideoMode(m_width, m_height, 0, SDL_OPENGL /*| SDL_RESIZABLE*/);
@@ -110,6 +112,8 @@ public:
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        //glEnable(GL_MULTISAMPLE);
 
 #ifndef EMSCRIPTEN
         glEnable(GL_FRAMEBUFFER_SRGB);
@@ -254,7 +258,8 @@ public:
         {
             m_wireframeShader.viewMatrix() = viewMatrix;
             m_wireframeShader.setZoom(zoom);
-            m_wireframeShader.setLineWidth(.5);
+            // Supersampling divide sizes by 2
+            m_wireframeShader.setLineWidth(1);
             m_wireframeShader.setWireframeColor(Eigen::Vector4f(0, 0, 0, .25));
             m_renderer.render(m_wireframeShader);
         }

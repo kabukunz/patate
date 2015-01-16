@@ -27,6 +27,8 @@ int main(int argc, char** argv)
 
     QGLFormat glFormat;
     glFormat.setVersion(4, 0);
+    glFormat.setSampleBuffers(true);
+    glFormat.setSamples(16);
     QGLFormat::setDefaultFormat(glFormat);
 
     Editor* editor = new Editor;

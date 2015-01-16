@@ -96,10 +96,13 @@
 					
 					Module.resizePending = true;
 					window.requestAnimationFrame(function() {
+						var supersampling = 2;
 						Module.resizePending = false;
-						canvas.width = canvas.clientWidth;
-						canvas.height = canvas.clientHeight;
-						Module.GL2Viewer.getInstance().resize(canvas.clientWidth, canvas.clientHeight);
+						canvas.width = canvas.clientWidth * supersampling;
+						canvas.height = canvas.clientHeight * supersampling;
+						Module.GL2Viewer.getInstance().resize(
+							canvas.clientWidth * supersampling,
+							canvas.clientHeight * supersampling);
 					});
 				},
 				
