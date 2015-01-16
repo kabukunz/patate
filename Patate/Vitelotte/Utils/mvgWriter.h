@@ -32,8 +32,8 @@ public:
 
     enum Version
     {
-        Version1_0 = 0x100,
-        LastestVersion = Version1_0
+        VERSION_1_0 = 0x100,
+        LATEST_VERSION = VERSION_1_0
     };
 
 
@@ -42,7 +42,7 @@ public:
     /**
      * \brief Constructor
      */
-    inline MVGWriter(Version version=LastestVersion)
+    inline MVGWriter(Version version=LATEST_VERSION)
         : m_version(version) {}
 
     /**
@@ -64,11 +64,11 @@ protected:
 
 template < typename Mesh >
 void writeMvg(std::ostream& out, const Mesh& mesh,
-              typename MVGWriter<Mesh>::Version version=MVGWriter<Mesh>::LastestVersion);
+              typename MVGWriter<Mesh>::Version version=MVGWriter<Mesh>::LATEST_VERSION);
 
 template < typename Mesh >
 void writeMvgToFile(const std::string& filename, const Mesh& mesh,
-                    typename MVGWriter<Mesh>::Version version=MVGWriter<Mesh>::LastestVersion);
+                    typename MVGWriter<Mesh>::Version version=MVGWriter<Mesh>::LATEST_VERSION);
 
 
 } // namespace Vitelotte

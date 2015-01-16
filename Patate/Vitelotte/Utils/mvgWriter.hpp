@@ -18,7 +18,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
     typedef typename Mesh::HalfedgeAroundFaceCirculator
             HalfedgeAroundFaceCirculator;
 
-    assert(m_version == Version1_0);
+    assert(m_version == VERSION_1_0);
 
     // Ensure that the stream we read encode numbers using the C locale
     _out.imbue(std::locale::classic());

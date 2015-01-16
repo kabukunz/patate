@@ -232,7 +232,7 @@ Document::Mesh& Document::getMesh(MeshType type)
     case SOLVED_MESH:
         return m_solvedMesh;
     }
-    assert(false);
+    abort();
 }
 
 
@@ -290,9 +290,8 @@ void Document::splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
     Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
-    Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
-    assert(n == on);
+    assert(n == m_mesh.halfedgeNode(oh, onid));
 
     if(!n.isValid())
         return;
@@ -310,9 +309,8 @@ void Document::mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
     Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
-    Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
-    assert(n != on);
+    assert(n != m_mesh.halfedgeNode(oh, onid));
 
     undoStack()->push(new SetNode(this, oh, onid, n));
 }
