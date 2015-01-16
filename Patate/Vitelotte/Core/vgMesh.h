@@ -370,7 +370,7 @@ public:
      * \brief Return the number of singular faces in the mesh.
      *
      * \par Complexity
-     * This method opperates in \f$O(n)\f$ with \f@n\f@ the number of
+     * This method opperates in \f$O(n)\f$ with \f$n\f$ the number of
      * halfedges.
      */
     inline unsigned nSingularFaces() const;

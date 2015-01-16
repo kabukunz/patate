@@ -146,12 +146,7 @@ public:
     typedef typename Mesh::NodeValue NodeValue;
 
 public:
-    VGMeshRenderer() :
-        m_verticesBuffer(0), m_indicesBuffer(0),
-        m_nodesBuffer(0), m_nodesTexture(0),
-        m_vao(0), m_pMesh(0)
-    {}
-
+    VGMeshRenderer();
     ~VGMeshRenderer() {}
 
     void initialize(Mesh* _mesh=0);

@@ -226,11 +226,29 @@ VGMeshRendererWireframeShader::
 
 
 template < class _Mesh >
+VGMeshRenderer<_Mesh>::VGMeshRenderer() :
+    m_verticesBuffer(0), m_indicesBuffer(0),
+    m_nodesBuffer(0), m_nodesTexture(0),
+    m_vao(0), m_pMesh(0)
+{}
+
+
+template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::initialize(Mesh* _mesh)
 {
     glGenVertexArrays(1, &m_vao);
 
     setMesh(_mesh);
+}
+
+
+template < class _Mesh >
+inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
+{
+    for(int pass = 0; pass < 2; ++pass)
+    {
+        renderTriangles(shaders, pass);
+    }
 }
 
 
@@ -397,16 +415,6 @@ VGMeshRenderer<_Mesh>::nodeValue(Node node) const
         return PatateCommon::srgbToLinear(m_pMesh->nodeValue(node));
     }
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
-}
-
-
-template < class _Mesh >
-inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
-{
-    for(int pass = 0; pass < 2; ++pass)
-    {
-        renderTriangles(shaders, pass);
-    }
 }
 
 
