@@ -14,7 +14,7 @@
 #include "../../common/gl_utils/color.h"
 
 #include "../Core/femUtils.h"
-#include "shaders.hpp"
+#include "vgMeshRendererShaders.hpp"
 
 
 namespace Vitelotte {

@@ -6,7 +6,7 @@
 
 
 ValueEditor::ValueEditor(QWidget* parent)
-    : QWidget(parent), m_document(0),
+    : QWidget(parent), m_document(0), m_meshType(Document::BASE_MESH),
       m_selection(), m_grabHandle(false), m_selectedGradientHandle(-1),
 //      m_edgeToScreen(Eigen::Matrix3f::Identity()), m_size(1), m_overNode(-1),
       m_edgeOffset(3), m_nodeOffset(16), m_nodeSize(6), m_textOffset(12)

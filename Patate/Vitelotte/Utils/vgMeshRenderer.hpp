@@ -48,15 +48,15 @@ VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
         bool bRes = true;
 
         bRes &= shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_glsl);
+                                 VGMeshRendererShaders::vert_common_glsl);
         bRes &= shader.addShader(GL_GEOMETRY_SHADER,
-                                   shader::geom_common_glsl);
+                                 VGMeshRendererShaders::geom_common_glsl);
         bRes &= shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_common_glsl);
+                                 VGMeshRendererShaders::frag_common_glsl);
         bRes &= shader.addShader(GL_FRAGMENT_SHADER,
-                                   quadratic?
-                                     shader::frag_quadratic_glsl:
-                                     shader::frag_linear_glsl);
+                                 quadratic?
+                                     VGMeshRendererShaders::frag_quadratic_glsl:
+                                     VGMeshRendererShaders::frag_linear_glsl);
 
         bRes &= shader.finalize();
 
@@ -158,13 +158,13 @@ VGMeshRendererWireframeShader::useShader(TriangleType /*triangleType*/)
         bool bRes = true;
 
         bRes &= m_shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_glsl);
+                                   VGMeshRendererShaders::vert_common_glsl);
         bRes &= m_shader.addShader(GL_GEOMETRY_SHADER,
-                                   shader::geom_common_glsl);
+                                   VGMeshRendererShaders::geom_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_common_glsl);
+                                   VGMeshRendererShaders::frag_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_wireframe_glsl);
+                                   VGMeshRendererShaders::frag_wireframe_glsl);
 
         bRes &= m_shader.finalize();
 

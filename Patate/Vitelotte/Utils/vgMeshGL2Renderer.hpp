@@ -36,9 +36,9 @@ VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
         bool bRes = true;
 
         bRes &= m_shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_gl2_glsl);
+                                   VGMeshGL2RendererShaders::vert_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_quadratic_gl2_glsl);
+                                   VGMeshGL2RendererShaders::frag_quadratic_glsl);
 
         bRes &= m_shader.finalize();
 
@@ -131,9 +131,9 @@ VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
         bool bRes = true;
 
         bRes &= m_shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_gl2_glsl);
+                                   VGMeshGL2RendererShaders::vert_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_wireframe_gl2_glsl);
+                                   VGMeshGL2RendererShaders::frag_wireframe_glsl);
 
         bRes &= m_shader.finalize();
 

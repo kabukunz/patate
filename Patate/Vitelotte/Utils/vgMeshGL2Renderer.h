@@ -13,7 +13,7 @@
 #include "../../common/gl_utils/shader.h"
 
 #include "../Core/femUtils.h"
-#include "shaders.hpp"
+#include "vgMeshGL2RendererShaders.hpp"
 
 
 namespace Vitelotte {
