@@ -21,15 +21,6 @@ VGMeshRendererDefaultShader::VGMeshRendererDefaultShader()
 
 
 inline
-GLint
-VGMeshRendererDefaultShader::verticesAttibLocation(TriangleType triangleType)
-{
-    return (triangleType & Quadratic)? m_verticesLocQuadratic:
-                                       m_verticesLocLinear;
-}
-
-
-inline
 bool
 VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
 {
@@ -41,7 +32,7 @@ VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
                 m_quadraticUniforms:
                 m_linearUniforms;
 
-    if(shader.status() == PatateCommon::Shader::Uninitialized)
+    if(shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         shader.create();
 
@@ -58,25 +49,16 @@ VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
                                      VGMeshRendererShaders::frag_quadratic_glsl:
                                      VGMeshRendererShaders::frag_linear_glsl);
 
+        shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
         bRes &= shader.finalize();
 
         if(bRes)
         {
             getUniforms(shader, uniforms);
-            if(quadratic)
-            {
-                m_verticesLocQuadratic =
-                        glGetAttribLocation(shader.getShaderId(), "vx_position");
-            }
-            else
-            {
-                m_verticesLocLinear =
-                        glGetAttribLocation(shader.getShaderId(), "vx_position");
-            }
         }
     }
 
-    bool ok = shader.status() == PatateCommon::Shader::CompilationSuccessful;
+    bool ok = (shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
         shader.use();
@@ -140,18 +122,10 @@ VGMeshRendererWireframeShader::VGMeshRendererWireframeShader()
 
 
 inline
-GLint
-VGMeshRendererWireframeShader::verticesAttibLocation(TriangleType /*triangleType*/)
-{
-    return m_verticesLoc;
-}
-
-
-inline
 bool
 VGMeshRendererWireframeShader::useShader(TriangleType /*triangleType*/)
 {
-    if(m_shader.status() == PatateCommon::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         m_shader.create();
 
@@ -166,16 +140,16 @@ VGMeshRendererWireframeShader::useShader(TriangleType /*triangleType*/)
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
                                    VGMeshRendererShaders::frag_wireframe_glsl);
 
+        m_shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
         bRes &= m_shader.finalize();
 
         if(bRes)
         {
             getUniforms();
-            m_verticesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_position");
         }
     }
 
-    bool ok = m_shader.status() == PatateCommon::Shader::CompilationSuccessful;
+    bool ok = (m_shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
         m_shader.use();
@@ -381,14 +355,11 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(
     if(!shaders.useShader(triangleType))
         return;
 
-    GLint verticesLoc = shaders.verticesAttibLocation(triangleType);
-    if(verticesLoc >= 0)
-    {
-        glEnableVertexAttribArray(verticesLoc);
-        glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
-        glVertexAttribPointer(verticesLoc, Vector::SizeAtCompileTime, GL_FLOAT,
-                              false, sizeof(Vector), 0);
-    }
+    glEnableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
+    glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
+    glVertexAttribPointer(VG_MESH_POSITION_ATTR_LOC,
+                          Vector::SizeAtCompileTime, GL_FLOAT,
+                          false, sizeof(Vector), 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_BUFFER, m_nodesTexture);
@@ -397,10 +368,7 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(
     glDrawElements(GL_TRIANGLES, nPrimitives * 3, GL_UNSIGNED_INT,
                   (const void*)(_singular * m_nTriangles * 3 * sizeof(unsigned)));
 
-    if(verticesLoc >= 0)
-    {
-        glDisableVertexAttribArray(verticesLoc);
-    }
+    glDisableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
 
     PATATE_ASSERT_NO_GL_ERROR();
 }

@@ -19,33 +19,27 @@
 namespace Vitelotte {
 
 
+enum
+{
+    VG_MESH_GL2_POSITION_ATTR_LOC,
+    VG_MESH_GL2_BASIS_ATTR_LOC,
+    VG_MESH_GL2_EDGES_ATTR_LOC,
+    VG_MESH_GL2_BASE_NODE_COORD_ATTR_LOC,
+};
+
 class VGMeshGL2RendererShader
 {
 public:
     enum TriangleType { Standard, Singular };
 
 public:
-    inline VGMeshGL2RendererShader()
-        : m_verticesLoc(-1), m_basisLoc(-1),
-          m_edgesLoc(-1), m_baseNodeCoordLoc(-1)
-    {}
+    inline VGMeshGL2RendererShader() {}
 
     virtual bool useShader(TriangleType triangleType) = 0;
     virtual void setNodesTexture(int texUnit, int size) = 0;
 
-    inline GLint verticesAttibLocation() { return m_verticesLoc; }
-    inline GLint basisAttibLocation() { return m_basisLoc; }
-    inline GLint edgesAttibLocation() { return m_edgesLoc; }
-    inline GLint baseNodeCoordAttibLocation() { return m_baseNodeCoordLoc; }
-
 private:
     VGMeshGL2RendererShader(const VGMeshGL2RendererShader&);
-
-protected:
-    GLint m_verticesLoc;
-    GLint m_basisLoc;
-    GLint m_edgesLoc;
-    GLint m_baseNodeCoordLoc;
 };
 
 

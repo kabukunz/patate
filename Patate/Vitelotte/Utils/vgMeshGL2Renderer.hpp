@@ -24,7 +24,7 @@ inline
 bool
 VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
 {
-    if(m_shader.status() == PatateCommon::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         m_shader.create();
 #ifdef VITELOTTE_USE_OPENGL_ES
@@ -40,19 +40,23 @@ VGMeshRendererGL2DefaultShader::useShader(TriangleType triangleType)
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
                                    VGMeshGL2RendererShaders::frag_quadratic_glsl);
 
+        m_shader.bindAttributeLocation("vx_position",
+                                       VG_MESH_GL2_POSITION_ATTR_LOC);
+        m_shader.bindAttributeLocation("vx_basis",
+                                       VG_MESH_GL2_BASIS_ATTR_LOC);
+        m_shader.bindAttributeLocation("vx_edges",
+                                       VG_MESH_GL2_EDGES_ATTR_LOC);
+        m_shader.bindAttributeLocation("vx_baseNodeCoord",
+                                       VG_MESH_GL2_BASE_NODE_COORD_ATTR_LOC);
         bRes &= m_shader.finalize();
 
         if(bRes)
         {
             getUniforms();
-            m_verticesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_position");
-            m_basisLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_basis");
-            m_edgesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_edges");
-            m_baseNodeCoordLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_baseNodeCoord");
         }
     }
 
-    bool ok = m_shader.status() == PatateCommon::Shader::CompilationSuccessful;
+    bool ok = (m_shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
         m_shader.use();
@@ -119,7 +123,7 @@ inline
 bool
 VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
 {
-    if(m_shader.status() == PatateCommon::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         m_shader.create();
 #ifdef VITELOTTE_USE_OPENGL_ES
@@ -135,18 +139,21 @@ VGMeshRendererGL2WireframeShader::useShader(TriangleType /*triangleType*/)
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
                                    VGMeshGL2RendererShaders::frag_wireframe_glsl);
 
+        m_shader.bindAttributeLocation("vx_position",
+                                       VG_MESH_GL2_POSITION_ATTR_LOC);
+        m_shader.bindAttributeLocation("vx_basis",
+                                       VG_MESH_GL2_BASIS_ATTR_LOC);
+        m_shader.bindAttributeLocation("vx_edges",
+                                       VG_MESH_GL2_EDGES_ATTR_LOC);
         bRes &= m_shader.finalize();
 
         if(bRes)
         {
             getUniforms();
-            m_verticesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_position");
-            m_basisLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_basis");
-            m_edgesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_edges");
         }
     }
 
-    bool ok = m_shader.status() == PatateCommon::Shader::CompilationSuccessful;
+    bool ok = (m_shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
         m_shader.use();
@@ -354,43 +361,30 @@ inline void VGMeshGL2Renderer<_Mesh>::renderTriangles(
     glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
 
     PATATE_ASSERT_NO_GL_ERROR();
-    GLint verticesLoc = shaders.verticesAttibLocation();
-    if(verticesLoc >= 0)
-    {
-        glEnableVertexAttribArray(verticesLoc);
-        glVertexAttribPointer(verticesLoc, Vector::SizeAtCompileTime, GL_FLOAT,
-                              false, sizeof(Vertex), 0);
-    }
+    glEnableVertexAttribArray(VG_MESH_GL2_POSITION_ATTR_LOC);
+    glVertexAttribPointer(VG_MESH_GL2_POSITION_ATTR_LOC,
+                          Vector::SizeAtCompileTime, GL_FLOAT,
+                          false, sizeof(Vertex), 0);
 
     PATATE_ASSERT_NO_GL_ERROR();
-    GLint edgesLoc = shaders.edgesAttibLocation();
-    if(edgesLoc >= 0)
-    {
-        glEnableVertexAttribArray(edgesLoc);
-        glVertexAttribPointer(edgesLoc, 4, GL_FLOAT,
-                              false, sizeof(Vertex),
-                              PATATE_FIELD_OFFSET(Vertex, edge0));
-    }
+    glEnableVertexAttribArray(VG_MESH_GL2_EDGES_ATTR_LOC);
+    glVertexAttribPointer(VG_MESH_GL2_EDGES_ATTR_LOC,
+                          4, GL_FLOAT,
+                          false, sizeof(Vertex),
+                          PATATE_FIELD_OFFSET(Vertex, edge0));
 
     PATATE_ASSERT_NO_GL_ERROR();
-    GLint baseNodeCoordLoc = shaders.baseNodeCoordAttibLocation();
-    if(baseNodeCoordLoc >= 0)
-    {
-        glEnableVertexAttribArray(baseNodeCoordLoc);
-        glVertexAttribPointer(baseNodeCoordLoc, 2, GL_FLOAT,
-                              false, sizeof(Vertex),
-                              PATATE_FIELD_OFFSET(Vertex, baseNodeCoord));
-    }
+    glEnableVertexAttribArray(VG_MESH_GL2_BASE_NODE_COORD_ATTR_LOC);
+    glVertexAttribPointer(VG_MESH_GL2_BASE_NODE_COORD_ATTR_LOC,
+                          2, GL_FLOAT,
+                          false, sizeof(Vertex),
+                          PATATE_FIELD_OFFSET(Vertex, baseNodeCoord));
 
     PATATE_ASSERT_NO_GL_ERROR();
-    GLint basisLoc = shaders.basisAttibLocation();
-    if(basisLoc >= 0)
-    {
-        glEnableVertexAttribArray(basisLoc);
-        glVertexAttribPointer(basisLoc, 3, GL_UNSIGNED_BYTE,
-                              false, sizeof(Vertex),
-                              PATATE_FIELD_OFFSET(Vertex, basis));
-    }
+    glEnableVertexAttribArray(VG_MESH_GL2_BASIS_ATTR_LOC);
+    glVertexAttribPointer(VG_MESH_GL2_BASIS_ATTR_LOC, 3, GL_UNSIGNED_BYTE,
+                          false, sizeof(Vertex),
+                          PATATE_FIELD_OFFSET(Vertex, basis));
 
     PATATE_ASSERT_NO_GL_ERROR();
     glActiveTexture(GL_TEXTURE0);
@@ -401,14 +395,10 @@ inline void VGMeshGL2Renderer<_Mesh>::renderTriangles(
                  _singular * m_nTriangles * 3,
                  nPrimitives * 3);
 
-    if(basisLoc >= 0)
-        glDisableVertexAttribArray(basisLoc);
-    if(baseNodeCoordLoc >= 0)
-        glDisableVertexAttribArray(baseNodeCoordLoc);
-    if(edgesLoc >= 0)
-        glDisableVertexAttribArray(edgesLoc);
-    if(verticesLoc >= 0)
-        glDisableVertexAttribArray(verticesLoc);
+    glDisableVertexAttribArray(VG_MESH_GL2_BASIS_ATTR_LOC);
+    glDisableVertexAttribArray(VG_MESH_GL2_BASE_NODE_COORD_ATTR_LOC);
+    glDisableVertexAttribArray(VG_MESH_GL2_EDGES_ATTR_LOC);
+    glDisableVertexAttribArray(VG_MESH_GL2_POSITION_ATTR_LOC);
 
     PATATE_ASSERT_NO_GL_ERROR();
 }

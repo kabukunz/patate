@@ -24,10 +24,10 @@ class Shader
 public:
     enum Status
     {
-        Uninitialized,
-        NotCompiled,
-        CompilationSuccessful,
-        CompilationFailed
+        UNINITIALIZED,
+        NOT_COMPILED,
+        COMPILATION_SUCCESSFULL,
+        COMPILATION_FAILED
     };
 
 public:
@@ -50,6 +50,7 @@ public:
 
     inline GLuint getShaderId() { return m_shaderProg; }
 
+    inline void bindAttributeLocation(const char* name, unsigned location);
     inline GLint getUniformLocation(const char* _pUniformName);
     inline GLint getProgramParam(GLint _param);
   

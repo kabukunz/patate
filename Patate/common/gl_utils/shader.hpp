@@ -39,7 +39,7 @@ inline const char* ShaderType2ShaderName(GLuint _Type)
 }
 
 Shader::Shader()
-    : m_shaderProg(0), m_status(Uninitialized)
+    : m_shaderProg(0), m_status(UNINITIALIZED)
 {
 }
 
@@ -63,7 +63,7 @@ bool Shader::create()
         return false;
     }
 
-    m_status = NotCompiled;
+    m_status = NOT_COMPILED;
     return true;
 }
 
@@ -76,6 +76,7 @@ void Shader::destroy()
 
     if(glGetError() == GL_NO_ERROR)
         m_shaderProg = 0;
+    m_status = UNINITIALIZED;
 }
 
 
@@ -185,7 +186,7 @@ bool Shader::finalize()
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
 
-    m_status = CompilationFailed;
+    m_status = COMPILATION_FAILED;
 
     glLinkProgram(m_shaderProg);
 
@@ -209,10 +210,16 @@ bool Shader::finalize()
     if(glGetError() == GL_NO_ERROR)
     {
         clearShaderList();
-        m_status = CompilationSuccessful;
+        m_status = COMPILATION_SUCCESSFULL;
     }
 
-    return m_status == CompilationSuccessful;
+    return m_status == COMPILATION_SUCCESSFULL;
+}
+
+
+void Shader::bindAttributeLocation(const char* name, unsigned location)
+{
+    glBindAttribLocation(m_shaderProg, location, name);
 }
 
 

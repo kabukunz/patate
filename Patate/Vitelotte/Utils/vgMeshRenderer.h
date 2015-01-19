@@ -20,6 +20,13 @@
 namespace Vitelotte {
 
 
+enum
+{
+    VG_MESH_POSITION_ATTR_LOC
+};
+
+
+
 class VGMeshRendererShader
 {
 public:
@@ -34,8 +41,6 @@ public:
     virtual bool useShader(TriangleType triangleType) = 0;
     virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset) = 0;
 
-    virtual GLint verticesAttibLocation(TriangleType triangleType) = 0;
-
 private:
     VGMeshRendererShader(const VGMeshRendererShader&);
 };
@@ -46,8 +51,6 @@ class VGMeshRendererDefaultShader : public VGMeshRendererShader
 public:
     inline VGMeshRendererDefaultShader();
     virtual inline ~VGMeshRendererDefaultShader() {}
-
-    virtual GLint verticesAttibLocation(TriangleType triangleType);
 
     virtual bool useShader(TriangleType triangleType);
     virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset);
@@ -74,9 +77,6 @@ protected:
     PatateCommon::Shader m_linearShader;
     PatateCommon::Shader m_quadraticShader;
 
-    GLint m_verticesLocLinear;
-    GLint m_verticesLocQuadratic;
-
     Uniforms m_linearUniforms;
     Uniforms m_quadraticUniforms;
 
@@ -92,8 +92,6 @@ class VGMeshRendererWireframeShader : public VGMeshRendererShader
 public:
     inline VGMeshRendererWireframeShader();
     virtual inline ~VGMeshRendererWireframeShader() {}
-
-    virtual GLint verticesAttibLocation(TriangleType triangleType);
 
     virtual bool useShader(TriangleType triangleType);
     virtual void setNodesTexture(TriangleType triangleType, int texUnit, int baseOffset);
@@ -120,8 +118,6 @@ protected:
 
 protected:
     PatateCommon::Shader m_shader;
-
-    GLint m_verticesLoc;
 
     GLint m_viewMatrixLoc;
     GLint m_zoomLoc;
