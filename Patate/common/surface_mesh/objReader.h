@@ -32,21 +32,21 @@ public:
           m_errorCallbackPtr(0) {}
     virtual ~OBJBaseReader() {}
 
-    void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
+    inline void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
 
 protected:
-    bool doRead(std::istream& in);
+    inline bool doRead(std::istream& in);
 
-    virtual void parseHeader(std::istream& /*in*/) {}
+    inline virtual void parseHeader(std::istream& /*in*/) {}
     virtual bool parseDefinition(const std::string& spec,
-                                 std::istream& def) = 0;
+                                        std::istream& def) = 0;
 
-    bool readLine(std::istream& in);
-    void parseIndiceList(const std::string& _list,
+    inline bool readLine(std::istream& in);
+    inline void parseIndiceList(const std::string& _list,
                          std::vector<unsigned>& _indices);
 
-    void error(const std::string& msg);
-    void warning(const std::string& msg);
+    inline void error(const std::string& msg);
+    inline void warning(const std::string& msg);
 
 protected:
     unsigned m_lineNb;

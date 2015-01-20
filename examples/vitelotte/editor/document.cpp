@@ -2,6 +2,8 @@
 
 #include "Patate/vitelotte_io.h"
 
+#include "../common/vgMeshWithCurvesReader.h"
+
 #include "document.h"
 
 
@@ -342,7 +344,9 @@ void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
 
 void Document::loadMesh(const std::string& filename)
 {
-    Vitelotte::readMvgFromFile(filename, m_mesh);
+    VGMeshWithCurveReader reader;
+    std::ifstream in(filename.c_str());
+    reader.read(in, m_mesh);
     m_mesh.setAttributes(Mesh::FV_FLAGS);
 
     updateBoundingBox();

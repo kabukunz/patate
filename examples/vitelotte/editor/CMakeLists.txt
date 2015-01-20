@@ -39,6 +39,7 @@ set(vitelotte_editor_SRCS
     ../common/glPointRenderer.cpp
     ../common/glLineRenderer.cpp
     ../common/vgMeshWithCurves.cpp
+    ../common/vgMeshWithCurvesReader.cpp
     ../common/vgNodeRenderer.cpp
     ../common/shaders.cpp
     document.cpp
