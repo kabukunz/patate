@@ -21,13 +21,29 @@ public:
 public:
     VGMeshWithCurveReader();
 
+
+protected:
+    enum
+    {
+        CONS_LEFT = 1,
+        CONS_RIGHT = 2,
+        TEAR = 4
+    };
+
 protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
     void parseDc(std::istream& def);
+    int parseCurveType(std::istream& in);
+    bool parseGradient(std::istream& def, Mesh::ValueGradient& g);
+    bool parseCurveVertices(std::istream& def, Mesh::Curve curve);
 
 protected:
+    std::string m_part;
+    std::string m_token;
+    std::istringstream m_in;
+
 };
 
 

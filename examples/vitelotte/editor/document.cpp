@@ -349,6 +349,9 @@ void Document::loadMesh(const std::string& filename)
     reader.read(in, m_mesh);
     m_mesh.setAttributes(Mesh::FV_FLAGS);
 
+    if(m_mesh.nCurves())
+        m_mesh.setNodesFromCurves();
+
     updateBoundingBox();
     setSelection(MeshSelection());
 

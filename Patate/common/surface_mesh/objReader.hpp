@@ -7,7 +7,7 @@ namespace PatateCommon
 
 bool defaultErrorCallback(const std::string& msg, void* /*ptr*/)
 {
-    std::cout << "Mvg parse error: " << msg << "\n";
+    std::cout << "Parse error: " << msg << "\n";
     return true;
 }
 

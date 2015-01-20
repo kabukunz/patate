@@ -57,23 +57,36 @@ public:
         GRADIENT_RIGHT  = GRADIENT  | RIGHT
     };
 
+    enum
+    {
+        FLAT_BOUNDARY = 0x01
+    };
+
 public:
     VGMeshWithCurves();
 
     inline Curve  curve(Halfedge h) const { return m_halfedgeCurveConn[h].curve; }
     inline Curve& curve(Halfedge h)       { return m_halfedgeCurveConn[h].curve; }
 
-    inline float  curvePos(Halfedge h) const { return m_halfedgeCurveConn[h].pos; }
-    inline float& curvePos(Halfedge h)       { return m_halfedgeCurveConn[h].pos; }
+    inline float  fromCurvePos(Halfedge h) const
+        { return m_halfedgeCurveConn[oppositeHalfedge(h)].pos; }
+    inline float& fromCurvePos(Halfedge h)
+        { return m_halfedgeCurveConn[oppositeHalfedge(h)].pos; }
+    inline float  toCurvePos(Halfedge h) const { return m_halfedgeCurveConn[h].pos; }
+    inline float& toCurvePos(Halfedge h)       { return m_halfedgeCurveConn[h].pos; }
 
     inline Halfedge  nextCurveHalfedge(Halfedge h) const { return m_halfedgeCurveConn[h].next; }
     inline Halfedge& nextCurveHalfedge(Halfedge h)       { return m_halfedgeCurveConn[h].next; }
+    inline Halfedge  prevCurveHalfedge(Halfedge h) const
+        { return m_halfedgeCurveConn[oppositeHalfedge(h)].next; }
+    inline Halfedge& prevCurveHalfedge(Halfedge h)
+        { return m_halfedgeCurveConn[oppositeHalfedge(h)].next; }
 
     inline unsigned nCurves() const { return m_curves.size(); }
     Curve addCurve(unsigned flags);
 
     using Base::isValid;
-    inline bool isValid(Curve c) const { return c.isValid() && c.idx() < nCurves(); }
+    inline bool isValid(Curve c) const { return c.isValid() && unsigned(c.idx()) < nCurves(); }
 
     void addHalfedgeToCurve(Curve c, Halfedge h, float from, float to);
 
@@ -90,6 +103,15 @@ public:
 
     const ValueGradient& valueGradient(Curve c, unsigned which) const;
           ValueGradient& valueGradient(Curve c, unsigned which);
+
+    void setNodesFromCurves(unsigned flags_ = FLAT_BOUNDARY);
+
+    NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
+
+
+private:
+    typedef Node NodePair[2];
+    void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
 private:
     Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;

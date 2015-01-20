@@ -3,7 +3,7 @@
 
 VGMeshWithCurves::VGMeshWithCurves()
 {
-
+    m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
 }
 
 
@@ -89,4 +89,124 @@ VGMeshWithCurves::valueGradient(Curve c, unsigned which)
     }
 
     return m_curves[c.idx()].gradient[which];
+}
+
+
+void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
+{
+    m_nodes.clear();
+    for(HalfedgeIterator hit = halfedgesBegin();
+        hit != halfedgesEnd(); ++hit)
+    {
+        if(hasFromVertexValue())    fromVertexValueNode(*hit)   = Node();
+        if(hasToVertexValue())      toVertexValueNode(*hit)     = Node();
+        if(hasEdgeValue())          edgeValueNode(*hit)         = Node();
+        if(hasEdgeGradient())       edgeGradientNode(*hit)      = Node();
+    }
+
+    for(unsigned ci = 0; ci < nCurves(); ++ci)
+    {
+        Curve c(ci);
+
+        Halfedge lh = firstHalfedge(c);
+        if(!lh.isValid())
+            continue;
+
+        std::cout << "Curve: " << lh << "\n";
+        Node fromNode[2];
+        addGradientNodes(fromNode, c, VALUE, fromCurvePos(lh));
+        do {
+            Node toNode[2];
+            addGradientNodes(toNode, c, VALUE, toCurvePos(lh));
+
+            Halfedge rh = oppositeHalfedge(lh);
+            float midPos = (fromCurvePos(lh) + toCurvePos(lh)) / 2.f;
+
+            if(hasFromVertexValue())
+            {
+                fromVertexValueNode(lh) = fromNode[LEFT];
+                fromVertexValueNode(rh) =   toNode[RIGHT];
+            }
+            if(hasToVertexValue())
+            {
+                toVertexValueNode(lh) =   toNode[LEFT];
+                toVertexValueNode(rh) = fromNode[RIGHT];
+            }
+
+            if(hasEdgeValue())
+            {
+                Node midNode[2];
+                addGradientNodes(midNode, c, VALUE, midPos);
+                edgeValueNode(lh) = midNode[LEFT];
+                edgeValueNode(rh) = midNode[RIGHT];
+            }
+
+            if(hasEdgeGradient())
+            {
+                Node gNode[2];
+                addGradientNodes(gNode, c, GRADIENT, midPos);
+                edgeGradientNode(lh) = gNode[LEFT];
+                edgeGradientNode(rh) = gNode[RIGHT];
+            }
+
+            fromNode[0] = toNode[0];
+            fromNode[1] = toNode[1];
+            lh = nextCurveHalfedge(lh);
+        } while(lh.isValid());
+    }
+
+    if(flags_ & FLAT_BOUNDARY)
+    {
+        Halfedge h;
+        for(EdgeIterator eit = edgesBegin();
+            eit != edgesEnd(); ++eit)
+        {
+            if(!isBoundary(*eit))
+                continue;
+            for(int i = 0; i < 2; ++i)
+            {
+                h = halfedge(*eit, i);
+                if(!isBoundary(h))
+                    edgeGradientNode(h) = addNode(NodeValue::Constant(0));
+            }
+        }
+    }
+}
+
+
+VGMeshWithCurves::NodeValue VGMeshWithCurves::evalValueGradient(
+        Curve c, unsigned which, float pos) const
+{
+    const ValueGradient& g = valueGradient(c, which);
+
+    assert(!g.empty());
+
+    if(pos <= g.begin()->first)
+        return g.begin()->second;
+    if(pos >= g.rbegin()->first)
+        return g.rbegin()->second;
+
+    ValueGradient::const_iterator next = g.upper_bound(pos);
+    ValueGradient::const_iterator prev = next;
+    --next;
+
+    float alpha = (pos - prev->first) / (next->first - prev->first);
+    return (1 - alpha) * prev->second + alpha * next->second;
+}
+
+
+void VGMeshWithCurves::addGradientNodes(
+        Node nodes[2], Curve c, unsigned gType, float pos)
+{
+    bool tear = (gType == VALUE)? valueTear(c): gradientTear(c);
+
+    nodes[LEFT] = valueGradient(c, gType | LEFT).empty()?
+                addNode():
+                addNode(evalValueGradient(c, gType | LEFT, pos));
+    nodes[RIGHT] =
+            (!tear)?
+                nodes[LEFT]:
+                valueGradient(c, gType | RIGHT).empty()?
+                            addNode():
+                            addNode(evalValueGradient(c, gType | RIGHT, pos));
 }
