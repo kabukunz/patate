@@ -10,8 +10,10 @@
 
 #include "Patate/vitelotte.h"
 
+#include "../common/vgMeshWithCurves.h"
 
-typedef Vitelotte::VGMesh<float> Mesh;
+
+typedef VGMeshWithCurves Mesh;
 
 
 class MeshSelection
