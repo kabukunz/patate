@@ -129,18 +129,32 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
         PointConstraint pc(pci);
         Vertex vx = vertex(pc);
         assert(isValid(vx));
-        if(isValueConstraint(pc))
-        {
-            Node n = addNode(value(pc));
-            HalfedgeAroundVertexCirculator hit = halfedges(vx);
-            HalfedgeAroundVertexCirculator hend = hit;
 
-            do {
-                halfedgeNode(*hit, FROM_VERTEX_VALUE) = n;
-                halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = n;
-                ++hit;
-            } while(hit != hend);
-        }
+        Node vn;
+        if(isValueConstraint(pc))
+            vn = addNode(value(pc));
+
+        Eigen::Matrix<float, 4, 2> grad;
+        grad << xGradient(pc), yGradient(pc);
+
+        HalfedgeAroundVertexCirculator hit = halfedges(vx);
+        HalfedgeAroundVertexCirculator hend = hit;
+        do {
+            if(isValueConstraint(pc))
+            {
+                halfedgeNode(*hit, FROM_VERTEX_VALUE) = vn;
+                halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = vn;
+            }
+            if(isGradientConstraint(pc))
+            {
+                Eigen::Vector2f v = (position(toVertex(*hit)) - position(fromVertex(*hit))).normalized();
+                v = Eigen::Vector2f(-v(1), v(0));
+                Node gn = addNode(grad * v * (halfedgeOrientation(*hit)? -1: 1));
+                halfedgeNode(*hit, EDGE_GRADIENT) = gn;
+                halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
+            }
+            ++hit;
+        } while(hit != hend);
     }
 
     for(unsigned ci = 0; ci < nCurves(); ++ci)
