@@ -34,6 +34,7 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
+    void parsePointConstraint(std::istream& def);
     void parseDc(std::istream& def);
     int parseCurveType(std::istream& in);
     bool parseGradient(std::istream& def, Mesh::ValueGradient& g);

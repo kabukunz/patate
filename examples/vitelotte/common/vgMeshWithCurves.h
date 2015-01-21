@@ -23,6 +23,12 @@ public:
         std::ostream& operator<<(std::ostream& os) const { return os << 'c' << idx(); }
     };
 
+    struct PointConstraint : public BaseHandle
+    {
+        explicit PointConstraint(int _idx = -1) : BaseHandle(_idx) {}
+        std::ostream& operator<<(std::ostream& os) const { return os << "pc" << idx(); }
+    };
+
     struct HalfedgeCurveConnectivity
     {
         Curve curve;
@@ -36,6 +42,14 @@ public:
         Halfedge lastHalfedge;
         unsigned flags;
         ValueGradient gradient[4];
+    };
+
+    struct PointConstraintInfo
+    {
+        Vertex vertex;
+        NodeValue value;
+        NodeValue xGradient;
+        NodeValue yGradient;
     };
 
     enum
@@ -104,6 +118,40 @@ public:
     const ValueGradient& valueGradient(Curve c, unsigned which) const;
           ValueGradient& valueGradient(Curve c, unsigned which);
 
+
+    inline PointConstraint  pointConstraint(Vertex v) const
+      { return m_pointConstraintConn[v]; }
+    inline PointConstraint& pointConstraint(Vertex v)
+      { return m_pointConstraintConn[v]; }
+
+    using Base::vertex;
+    inline Vertex  vertex(PointConstraint pc) const { return m_pointConstraints[pc.idx()].vertex; }
+    inline Vertex& vertex(PointConstraint pc)       { return m_pointConstraints[pc.idx()].vertex; }
+
+    inline bool isValueConstraint(PointConstraint pc) const
+        { return !isnan(m_pointConstraints[pc.idx()].value(0)); }
+    inline bool isGradientConstraint(PointConstraint pc) const
+        { return !isnan(m_pointConstraints[pc.idx()].xGradient(0)); }
+
+    inline const NodeValue& value(PointConstraint pc) const
+        { return m_pointConstraints[pc.idx()].value; }
+    inline       NodeValue& value(PointConstraint pc)
+        { return m_pointConstraints[pc.idx()].value; }
+
+    inline const NodeValue& xGradient(PointConstraint pc) const
+        { return m_pointConstraints[pc.idx()].xGradient; }
+    inline       NodeValue& xGradient(PointConstraint pc)
+        { return m_pointConstraints[pc.idx()].xGradient; }
+    inline const NodeValue& yGradient(PointConstraint pc) const
+        { return m_pointConstraints[pc.idx()].yGradient; }
+    inline       NodeValue& yGradient(PointConstraint pc)
+        { return m_pointConstraints[pc.idx()].yGradient; }
+
+    inline unsigned nPointConstraints() const { return m_pointConstraints.size(); }
+    PointConstraint addPointConstraint();
+
+
+    void clear();
     void setNodesFromCurves(unsigned flags_ = FLAT_BOUNDARY);
 
     NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
@@ -114,8 +162,10 @@ private:
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
 private:
+    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
     Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
+    std::vector<PointConstraintInfo> m_pointConstraints;
     std::vector<CurveInfo> m_curves;
 
 };

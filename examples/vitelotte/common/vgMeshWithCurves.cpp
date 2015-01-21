@@ -92,6 +92,26 @@ VGMeshWithCurves::valueGradient(Curve c, unsigned which)
 }
 
 
+VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint()
+{
+    PointConstraint pc(nPointConstraints());
+    PointConstraintInfo pci;
+    pci.value = UnconstrainedNode;
+    pci.xGradient = UnconstrainedNode;
+    pci.yGradient = UnconstrainedNode;
+    m_pointConstraints.push_back(pci);
+    return pc;
+}
+
+
+void VGMeshWithCurves::clear()
+{
+    Base::clear();
+    m_pointConstraints.clear();
+    m_curves.clear();
+}
+
+
 void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
 {
     m_nodes.clear();
@@ -104,6 +124,25 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
         if(hasEdgeGradient())       edgeGradientNode(*hit)      = Node();
     }
 
+    for(unsigned pci = 0; pci < nPointConstraints(); ++pci)
+    {
+        PointConstraint pc(pci);
+        Vertex vx = vertex(pc);
+        assert(isValid(vx));
+        if(isValueConstraint(pc))
+        {
+            Node n = addNode(value(pc));
+            HalfedgeAroundVertexCirculator hit = halfedges(vx);
+            HalfedgeAroundVertexCirculator hend = hit;
+
+            do {
+                halfedgeNode(*hit, FROM_VERTEX_VALUE) = n;
+                halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = n;
+                ++hit;
+            } while(hit != hend);
+        }
+    }
+
     for(unsigned ci = 0; ci < nCurves(); ++ci)
     {
         Curve c(ci);
@@ -112,7 +151,6 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
         if(!lh.isValid())
             continue;
 
-        std::cout << "Curve: " << lh << "\n";
         Node fromNode[2];
         addGradientNodes(fromNode, c, VALUE, fromCurvePos(lh));
         do {

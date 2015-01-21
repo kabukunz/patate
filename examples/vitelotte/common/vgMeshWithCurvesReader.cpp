@@ -13,7 +13,13 @@ VGMeshWithCurveReader::VGMeshWithCurveReader()
 bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
                                             std::istream& def)
 {
-    if(spec == "dc") {
+    if(spec == "pc")
+    {
+        parsePointConstraint(def);
+        return true;
+    }
+    else if(spec == "dc")
+    {
         parseDc(def);
         return true;
     }
@@ -21,9 +27,80 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
     return Base::parseDefinition(spec, def);
 }
 
+void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
+{
+#define VITELOTTE_READER_ERROR(_msg) do { error(_msg); return; } while(0)
+    if(!def.good())
+        VITELOTTE_READER_ERROR("empty point constraint declaration");
+    std::getline(def, m_part, ';');
+    m_in.str(m_part);
+    m_in.seekg(std::ios_base::beg);
+
+    char cd, cg;
+    m_in >> cd >> cg >> std::ws;
+    bool diffuse = (cd == 'o');
+    bool gradient = (cg == 'o');
+
+    if((!diffuse && cd != 'x') || (!gradient && cg != 'x') || m_in.fail() || !m_in.eof())
+        VITELOTTE_READER_ERROR("invalid point constraint type specification.");
+
+    Mesh::PointConstraint pc = m_mesh->addPointConstraint();
+
+    if(diffuse)
+    {
+        if(!def.good())
+            VITELOTTE_READER_ERROR("expected point constraint value specification.");
+        std::getline(def, m_part, ';');
+        m_in.str(m_part);
+        m_in.seekg(std::ios_base::beg);
+
+        Mesh::NodeValue& nv = m_mesh->value(pc);
+        for(int i = 0; i < Mesh::Chan; ++i)
+            m_in >> nv(i);
+
+        m_in >> std::ws;
+        if(m_in.fail() || !m_in.eof())
+            VITELOTTE_READER_ERROR("invalid point constraint value specification.");
+    }
+    if(gradient)
+    {
+        if(!def.good())
+            VITELOTTE_READER_ERROR("expected point constraint gradient specification.");
+        std::getline(def, m_part, ';');
+        m_in.str(m_part);
+        m_in.seekg(std::ios_base::beg);
+
+        Mesh::NodeValue& ngx = m_mesh->xGradient(pc);
+        for(int i = 0; i < Mesh::Chan; ++i)
+            m_in >> ngx(i);
+        Mesh::NodeValue& ngy = m_mesh->yGradient(pc);
+        for(int i = 0; i < Mesh::Chan; ++i)
+            m_in >> ngy(i);
+
+        m_in >> std::ws;
+        if(m_in.fail() || !m_in.eof())
+            VITELOTTE_READER_ERROR("invalid point constraint gradient specification.");
+    }
+
+    if(!def.good())
+        VITELOTTE_READER_ERROR("expected point constraint vertex specification.");
+
+    int vi;
+    def >> vi >> std::ws;
+    m_mesh->vertex(pc) = Mesh::Vertex(vi);
+    if(!m_mesh->isValid(m_mesh->vertex(pc)))
+        VITELOTTE_READER_ERROR("specified vertex in invalid.");
+
+    if(def.fail() || !def.eof())
+        VITELOTTE_READER_ERROR("invalid point constraint vertex specification.");
+
+#undef VITELOTTE_READER_ERROR
+}
+
+
 void VGMeshWithCurveReader::parseDc(std::istream& def)
 {
-    if(def.bad())
+    if(def.fail())
     {
         error("Incomplete diffusion curve definition. Expected type specification.");
         return;
@@ -102,7 +179,7 @@ fail:
 
 bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::ValueGradient &g)
 {
-    if(def.bad())
+    if(def.fail())
     {
         error("Incomplete diffusion curve definition. Expected gradient definition.");
         return false;
@@ -150,7 +227,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
         g.insert(std::make_pair(pos, v));
     }
 
-    if(m_in.bad())
+    if(m_in.fail())
     {
         error("Error while reading gradent specification.");
         return false;
@@ -162,7 +239,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
 
 bool VGMeshWithCurveReader::parseCurveVertices(std::istream& def, Mesh::Curve curve)
 {
-    if(def.bad())
+    if(def.fail())
     {
         error("Incomplete diffusion curve definition. Expected vertices specifications.");
         return false;
@@ -210,7 +287,7 @@ bool VGMeshWithCurveReader::parseCurveVertices(std::istream& def, Mesh::Curve cu
         fromP = toP;
     }
 
-    if(m_in.bad())
+    if(m_in.fail())
         goto fail;
 
     return true;
