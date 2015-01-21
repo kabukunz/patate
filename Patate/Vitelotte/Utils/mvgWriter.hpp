@@ -29,16 +29,18 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
     _out << "dim " << Mesh::Dim << "\n";
     _out << "parameters " << Mesh::Chan << "\n";
 
-    if(mesh.getAttributes() == Mesh::LINEAR_FLAGS)
-        _out << "linear\n";
+    if(mesh.getAttributes() == 0)
+        _out << "attributes none\n";
+    else if(mesh.getAttributes() == Mesh::LINEAR_FLAGS)
+        _out << "attributes linear\n";
     else if(mesh.getAttributes() == Mesh::QUADRATIC_FLAGS)
-        _out << "quadratic\n";
+        _out << "attributes quadratic\n";
     else if(mesh.getAttributes() == Mesh::MORLEY_FLAGS)
-        _out << "morley\n";
+        _out << "attributes morley\n";
     else if(mesh.getAttributes() == Mesh::FV_FLAGS)
-        _out << "fv\n";
+        _out << "attributes fv\n";
     else
-        _out << "mesh " << mesh.getAttributes() << "\n";
+        _out << "attributes " << mesh.getAttributes() << "\n";
 
     _out << "vertices " << mesh.nVertices() << "\n";
     _out << "nodes " << mesh.nNodes() << "\n";

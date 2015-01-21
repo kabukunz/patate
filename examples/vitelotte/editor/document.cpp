@@ -350,7 +350,7 @@ void Document::loadMesh(const std::string& filename)
     m_mesh.setAttributes(Mesh::FV_FLAGS);
 
     if(m_mesh.nPointConstraints() || m_mesh.nCurves())
-        m_mesh.setNodesFromCurves(0);
+        m_mesh.setNodesFromCurves();
 
     updateBoundingBox();
     setSelection(MeshSelection());
