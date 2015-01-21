@@ -36,14 +36,18 @@ public slots:
 
     void updateSelection();
 
+    void showBaseMeshNodes();
+    void showFinalizedMeshNodes();
+    void showSolvedMeshNodes();
+
 
 private:
     struct Selection
     {
         Mesh::Halfedge h;
-        Document::HalfedgeNode hn;
+        Mesh::HalfedgeAttribute hn;
         Selection(Mesh::Halfedge h = Mesh::Halfedge(),
-                  Document::HalfedgeNode hn = Document::FromValueNode);
+                  Mesh::HalfedgeAttribute hn = Mesh::FROM_VERTEX_VALUE);
         bool operator==(const Selection& other) const;
         bool operator!=(const Selection& other) const;
     };
@@ -84,7 +88,7 @@ private:
     Mesh::NodeValue colorToValue(const QColor& c) const;
 
     NodeType nodeType(Mesh::Node n) const;
-    NodeSide nodeSide(Mesh::Halfedge h, Document::HalfedgeNode hn) const;
+    NodeSide nodeSide(Mesh::Halfedge h, Mesh::HalfedgeAttribute hn) const;
     Mesh::NodeValue nodeValue(Mesh::Node n) const;
     Eigen::Vector2f nodePos(const Eigen::Vector2f &dir, float offset) const;
     Eigen::Vector2f gradientNodePos(NodeSide n) const;
@@ -105,9 +109,12 @@ private:
     void drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
                           Mesh::Halfedge h, bool isSel, NodeSide side);
 
+    Mesh& mesh();
+    const Mesh& mesh() const;
 
 private:
     Document* m_document;
+    Document::MeshType m_meshType;
 
     Mesh::Halfedge m_leftHalfedge;
 

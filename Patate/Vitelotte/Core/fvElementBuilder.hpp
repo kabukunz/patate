@@ -1,3 +1,10 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
 #include <Eigen/Dense>
 
 #include "fvElementBuilder.h"
@@ -16,7 +23,7 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 81;
 }
@@ -26,13 +33,17 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element)
 {
-    assert(mesh.valence(element) == 3);
-
-    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
+    if(mesh.valence(element) != 3)
+    {
+        error(STATUS_ERROR, "Non-triangular face");
+        return;
+    }
 
     // TODO: remove some code duplication by moving stuff here
+
+//    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 //    bool flat = false;
 //    for(int i = 0; i < 3; ++i)
 //    {
@@ -54,28 +65,26 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    processFV1Element(InIt& it, const Mesh& mesh, Face element) const
+    processFV1Element(InIt& it, const Mesh& mesh, Face element)
 {
-    assert(mesh.valence(element) == 3);
-
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
     bool orient[3];
     Vector v[3];
-    unsigned nodes[9];
-    int flatVx = -1;
-    for(int i = 0; i < 3; ++i)
-    {
-        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
-            flatVx = i;
-        ++hit;
-    }
-    while(flatVx > 0)
-    {
-        ++hit;
-        --flatVx;
-    }
-    std::cerr << flatVx << "\n";
+    int nodes[9];
+//    int flatVx = -1;
+//    for(int i = 0; i < 3; ++i)
+//    {
+//        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
+//            flatVx = i;
+//        ++hit;
+//    }
+//    while(flatVx > 0)
+//    {
+//        ++hit;
+//        --flatVx;
+//    }
+//    std::cerr << flatVx << "\n";
 
     --hit;
     for(int i = 0; i < 3; ++i)
@@ -86,11 +95,20 @@ FVElementBuilder<_Mesh, _Scalar>::
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
-        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
-            flatVx = i;
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
+//        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
+//            flatVx = i;
     }
-    assert(flatVx < 1);
+
+    for(int i = 0; i < 9; ++i)
+    {
+        if(nodes[i] < 0)
+        {
+            error(STATUS_ERROR, "Invalid node");
+            return;
+        }
+    }
+//    assert(flatVx < 1);
 
     Vector p[] = {
         Vector::Zero(),
@@ -100,7 +118,10 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     Scalar area = det2(v[0], v[1]) / 2.;
 
-    assert(area > 0);
+    if(area <= 0)
+    {
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
+    }
 
     Vector3 a, b, c, d, l;
     for(size_t i0 = 0; i0 < 3; ++i0)
@@ -341,29 +362,29 @@ FVElementBuilder<_Mesh, _Scalar>::
     //                  << dy2[i].format(fmt) << "\n";
 //        }
 
-        if(flatVx == 0)
-        {
-            b8p0gcons <<
-                _2delta*dl0dn2/(l1*l2) + 4/l1,
-                -_2delta*dl1dn0/(l0*l1) + _2delta*dl1dn2/(l1*l2),
-                -_2delta*dl2dn0/(l0*l1),
-                4/l1,
-                -4/l1,
-                -4/l1,
-                -_2delta/(l0*l1),
-                0,
-                _2delta/(l1*l2);
-            b7p0gcons <<
-                -_2delta*dl0dn1/(l1*l2) - 4/l2,
-                _2delta*dl1dn0/(l0*l2),
-                _2delta*dl2dn0/(l0*l2) - _2delta*dl2dn1/(l1*l2),
-                -4/l2,
-                4/l2,
-                4/l2,
-                _2delta/(l0*l2),
-                -_2delta/(l1*l2),
-                0;
-        }
+//        if(flatVx != 0)
+//        {
+//            b8p0gcons <<
+//                _2delta*dl0dn2/(l1*l2) + 4/l1,
+//                -_2delta*dl1dn0/(l0*l1) + _2delta*dl1dn2/(l1*l2),
+//                -_2delta*dl2dn0/(l0*l1),
+//                4/l1,
+//                -4/l1,
+//                -4/l1,
+//                -_2delta/(l0*l1),
+//                0,
+//                _2delta/(l1*l2);
+//            b7p0gcons <<
+//                -_2delta*dl0dn1/(l1*l2) - 4/l2,
+//                _2delta*dl1dn0/(l0*l2),
+//                _2delta*dl2dn0/(l0*l2) - _2delta*dl2dn1/(l1*l2),
+//                -4/l2,
+//                4/l2,
+//                4/l2,
+//                _2delta/(l0*l2),
+//                -_2delta/(l1*l2),
+//                0;
+//        }
     }
 
     Eigen::Matrix<Scalar, 9, 9> m;
@@ -397,7 +418,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         }
     }
 
-//    if(flatVx == 0)
+//    if(flatVx != 0)
 //    {
 //        m.row(7) = b7p0gcons;
 //        m.row(8) = b8p0gcons;
@@ -546,7 +567,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcVertexBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& _d, const Vector3& /*_l*/,
         const Scalar _area) const
 {
     const size_t i2 = (_i1+1)%3;
@@ -578,7 +599,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcMidpointBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& /*_d*/, const Vector3& /*_l*/,
         const Scalar _area) const
 {
     const size_t i2 = (_i1+1)%3;
@@ -606,7 +627,7 @@ template < class _Mesh, typename _Scalar >
 typename FVElementBuilder<_Mesh, _Scalar>::Vector3
 FVElementBuilder<_Mesh, _Scalar>::funcMidpointDerivBasis(
         const int _i1, int _deriv, const Vector3& _a, const Vector3& _b,
-        const Vector3& _c, const Vector3& _d, const Vector3& _l,
+        const Vector3& _c, const Vector3& /*_d*/, const Vector3& _l,
         const Scalar _area) const
 {
     const Vector3& d1 = (_deriv & Deriv_0_Y) ? _c : _b;

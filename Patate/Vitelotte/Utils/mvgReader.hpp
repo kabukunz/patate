@@ -1,3 +1,9 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "mvgReader.h"
 
 
@@ -6,10 +12,21 @@ namespace Vitelotte
 
 
 template < typename _Mesh >
-MVGReader<_Mesh>::MVGReader(Mesh& mesh)
-    : Patate::OBJReader<Vector>(mesh, mesh.positionProperty())
+MVGReader<_Mesh>::MVGReader()
 {
     m_faceIndices.reserve(3);
+}
+
+
+template < typename _Mesh >
+bool
+MVGReader<_Mesh>::read(std::istream& in, Mesh& mesh)
+{
+    m_mesh = &mesh;
+    bool r = doRead(in);
+    m_mesh = 0;
+
+    return r;
 }
 
 
@@ -17,11 +34,11 @@ template < typename _Mesh >
 void
 MVGReader<_Mesh>::parseHeader(std::istream& in)
 {
-    Base::m_lineStream >> m_tmp;
+    m_lineStream >> m_tmp;
     if(!in) error("Failed to read header");
     if(m_tmp != "mvg") error("Missing mvg header");
 
-    Base::m_lineStream >> m_tmp;
+    m_lineStream >> m_tmp;
     if(!in) error("Failed to read header");
     if(m_tmp != "1.0") error("Unsuported version");
 
@@ -29,44 +46,59 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     unsigned dim = 2;
     unsigned params = 4;
     unsigned attributes = 0;
-    unsigned nVert, nNode, nFace;
+    unsigned nVert = 1024;
+    unsigned nNode = 1024;
+    unsigned nFace = 1024;
     while(true)
     {
-        Base::readLine(in);
-        Base::m_lineStream >> cmd;
+        readLine(in);
+        m_lineStream >> cmd;
 
         if(cmd == "dim")
-            Base::m_lineStream >> dim;
+            m_lineStream >> dim;
         else if(cmd == "parameters")
-            Base::m_lineStream >> params;
+            m_lineStream >> params;
         else if(cmd == "linear")
-            attributes = Mesh::Linear;
+            attributes = Mesh::LINEAR_FLAGS;
         else if(cmd == "quadratic")
-            attributes = Mesh::Quadratic;
+            attributes = Mesh::QUADRATIC_FLAGS;
         else if(cmd == "morley")
-            attributes = Mesh::Morley;
+            attributes = Mesh::MORLEY_FLAGS;
         else if(cmd == "fv")
-            attributes = Mesh::FV;
+            attributes = Mesh::FV_FLAGS;
+        else if(cmd == "attributes")
+        {
+            m_lineStream >> cmd;
+            if(cmd == "none")
+                attributes = 0;
+            else if(cmd == "linear")
+                attributes = Mesh::LINEAR_FLAGS;
+            else if(cmd == "quadratic")
+                attributes = Mesh::QUADRATIC_FLAGS;
+            else if(cmd == "morley")
+                attributes = Mesh::MORLEY_FLAGS;
+            else if(cmd == "fv")
+                attributes = Mesh::FV_FLAGS;
+        }
         else if(cmd == "mesh")
-            Base::m_lineStream >>attributes;
+            m_lineStream >> attributes;
         else if(cmd == "vertices")
-            Base::m_lineStream >> nVert;
+            m_lineStream >> nVert;
         else if(cmd == "nodes")
-            Base::m_lineStream >> nNode;
+            m_lineStream >> nNode;
         else if(cmd == "faces")
-            Base::m_lineStream >> nFace;
+            m_lineStream >> nFace;
         else
             break;
 
-        if(!in || !Base::m_lineStream) error("Failed to read header");
+        if(!in || !m_lineStream) error("Failed to read header");
     }
-    Base::m_lineStream.seekg(0);
+    m_lineStream.seekg(0);
 
-    Mesh& m = static_cast<Mesh&>(m_mesh);
-    m.clear();
+    m_mesh->clear();
     // TODO: set / check dims and parameters
-    m.setAttributes(attributes);
-    m.reserve(nVert, nVert+nFace, nFace, nNode);
+    m_mesh->setAttributes(attributes);
+    m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
 }
 
 
@@ -77,14 +109,16 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
 {
     typedef typename Mesh::Node Node;
 
-    Mesh& m = static_cast<Mesh&>(m_mesh);
-
     int iOffset = 0;
 
     // vertex
     if(spec == "v")
     {
-        Base::parseDefinition(spec, def);
+        Vector p;
+        for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
+            def >> p[i];
+        if(!def) error("Failed to read vertex (not enough components ?)");
+        m_mesh->addVertex(p);
     }
 
     // nodes
@@ -100,7 +134,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
                 def >> n[i];
             if(!def) error("Failed to read node (not enough components ?)");
         }
-        m.addNode(n);
+        m_mesh->addNode(n);
     }
 
     // face
@@ -129,7 +163,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         }
 
         // mid nodes
-        unsigned nEAttrs = m.hasEdgeValue() + m.hasEdgeGradient();
+        unsigned nEAttrs = m_mesh->hasEdgeValue() + m_mesh->hasEdgeGradient();
         if(nEAttrs)
         {
             def >> m_tmp;
@@ -143,31 +177,34 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
                 if(m_faceIndices.size() != nEAttrs)
                     error("Invalid number of indices");
 
-                if(m.hasEdgeValue())
+                if(m_mesh->hasEdgeValue())
                     nodes[6+i] = m_faceIndices.front();
-                if(m.hasEdgeGradient())
+                if(m_mesh->hasEdgeGradient())
                     nodes[9+i] = m_faceIndices.back();
             }
         }
 
-        typename Mesh::Face f = m.addFace(m_fVertices);
+        typename Mesh::Face f = m_mesh->addFace(m_fVertices);
 
-        typename Mesh::HalfedgeAroundFaceCirculator hit = m.halfedges(f);
+        typename Mesh::HalfedgeAroundFaceCirculator hit = m_mesh->halfedges(f);
         for(int i = 0; i < 3; ++i)
         {
-            if(m.hasVertexValue())
-                m.vertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
+            if(m_mesh->hasToVertexValue())
+                m_mesh->toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
             ++hit;
-            if(m.hasVertexFromValue())
-                m.vertexFromValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
-            if(m.hasEdgeValue())
-                m.edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
-            if(m.hasEdgeGradient())
-                m.edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
+            if(m_mesh->hasFromVertexValue())
+                m_mesh->fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
+            if(m_mesh->hasEdgeValue())
+                m_mesh->edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
+            if(m_mesh->hasEdgeGradient())
+                m_mesh->edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
         }
     }
     else
+    {
+        warning("Unknown spec: " + spec);
         return false;
+    }
     return true;
 }
 
@@ -175,8 +212,8 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
 template < typename Mesh >
 void readMvg(std::istream& in, Mesh& mesh)
 {
-    MVGReader<Mesh> reader(mesh);
-    reader.read(in);
+    MVGReader<Mesh> reader;
+    reader.read(in, mesh);
 }
 
 template < typename Mesh >

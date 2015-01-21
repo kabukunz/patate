@@ -1,27 +1,33 @@
-#ifndef _SHADER_H_
-#define	_SHADER_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#ifndef _PATATE_COMMON_GL_UTILS_SHADER_
+#define _PATATE_COMMON_GL_UTILS_SHADER_
 
 #include <cstdio>
 #include <cstring>
 #include <cassert>
+#include <string>
 #include <list>
 
-//#include "../gl/glcorearb.h"
 
 #include "macros.h"
 
 
-namespace Patate {
+namespace PatateCommon {
 
 class Shader
 {
 public:
     enum Status
     {
-        Uninitialized,
-        NotCompiled,
-        CompilationSuccessful,
-        CompilationFailed
+        UNINITIALIZED,
+        NOT_COMPILED,
+        COMPILATION_SUCCESSFULL,
+        COMPILATION_FAILED
     };
 
 public:
@@ -36,6 +42,7 @@ public:
 
     inline Status status() const { return m_status; }
 
+    inline void setGLSLVersionHeader(const std::string& header);
     inline bool addShaderFromFile(GLenum _ShaderType, const char* _pFilename);
     inline bool addShader(GLenum _ShaderType, const char* _pShaderText);
     inline void clearShaderList();
@@ -43,6 +50,7 @@ public:
 
     inline GLuint getShaderId() { return m_shaderProg; }
 
+    inline void bindAttributeLocation(const char* name, unsigned location);
     inline GLint getUniformLocation(const char* _pUniformName);
     inline GLint getProgramParam(GLint _param);
   
@@ -53,6 +61,7 @@ private:
     typedef std::list<GLuint> ShaderObjList;
 
     Status m_status;
+    std::string m_versionHeader;
     ShaderObjList m_shaderObjList;
 };
 

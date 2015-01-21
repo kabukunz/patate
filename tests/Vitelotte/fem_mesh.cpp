@@ -152,8 +152,8 @@ int main(int argc, char** argv)
 
     Mesh mesh2(0);
     std::ifstream in("test.mvg");
-    Reader reader(mesh2);
-    reader.read(in);
+    Reader reader;
+    reader.read(in, mesh2);
     in.close();
 
     Vitelotte::writeMvgToFile("test2.mvg", mesh2);

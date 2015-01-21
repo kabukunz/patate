@@ -19,8 +19,16 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
 
+    if(argc > 2)
+    {
+        std::cerr << "Usage: " << argv[0] << " [FILENAME]\n";
+        return 1;
+    }
+
     QGLFormat glFormat;
     glFormat.setVersion(4, 0);
+    glFormat.setSampleBuffers(true);
+    glFormat.setSamples(16);
     QGLFormat::setDefaultFormat(glFormat);
 
     Editor* editor = new Editor;
@@ -42,8 +50,10 @@ int main(int argc, char** argv)
     window.setCentralWidget(content);
 
     Document* doc = new Document(&window);
-    doc->loadMesh("clean.mvg");
-//    doc->loadMesh("test.mvg");
+    if(argc == 2)
+    {
+        doc->loadMesh(argv[1]);
+    }
     editor->setDocument(doc);
     valueEditor->setDocument(doc);
 
@@ -89,7 +99,49 @@ int main(int argc, char** argv)
 
 
     // View Menu
-    //QAction*
+    QAction* wireframeAction = new QAction("Show wireframe", &window);
+    wireframeAction->setCheckable(true);
+    wireframeAction->setChecked(editor->showWireframe());
+    QObject::connect(wireframeAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(setShowWireframe(bool)));
+
+    QAction* showBaseMeshAction = new QAction("Show base mesh", &window);
+    showBaseMeshAction->setCheckable(true);
+    showBaseMeshAction->setChecked(true);
+    QObject::connect(showBaseMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showBaseMeshNodes()));
+    QObject::connect(showBaseMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showBaseMeshNodes()));
+
+    QAction* showFinalizedMeshAction = new QAction("Show finalized mesh", &window);
+    showFinalizedMeshAction->setCheckable(true);
+    showFinalizedMeshAction->setChecked(false);
+    QObject::connect(showFinalizedMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showFinalizedMeshNodes()));
+    QObject::connect(showFinalizedMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showFinalizedMeshNodes()));
+
+    QAction* showSolvedMeshAction = new QAction("Show solved mesh", &window);
+    showSolvedMeshAction->setCheckable(true);
+    showSolvedMeshAction->setChecked(false);
+    QObject::connect(showSolvedMeshAction, SIGNAL(triggered(bool)),
+                     editor, SLOT(showSolvedMeshNodes()));
+    QObject::connect(showSolvedMeshAction, SIGNAL(triggered(bool)),
+                     valueEditor, SLOT(showSolvedMeshNodes()));
+
+
+    QActionGroup* showMeshGroup = new QActionGroup(&window);
+    showMeshGroup->addAction(showBaseMeshAction);
+    showMeshGroup->addAction(showFinalizedMeshAction);
+    showMeshGroup->addAction(showSolvedMeshAction);
+
+
+    QMenu* viewMenu = window.menuBar()->addMenu("View");
+    viewMenu->addAction(wireframeAction);
+    viewMenu->addSeparator();
+    viewMenu->addAction(showBaseMeshAction);
+    viewMenu->addAction(showFinalizedMeshAction);
+    viewMenu->addAction(showSolvedMeshAction);
 
 
     window.resize(800, 600);

@@ -1,10 +1,17 @@
-#ifndef _FV_ELEMENT_BUILDER_H_
-#define _FV_ELEMENT_BUILDER_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#ifndef _VITELOTTE_FV_ELEMENT_BUILDER_
+#define _VITELOTTE_FV_ELEMENT_BUILDER_
 
 
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "elementBuilderBase.h"
 
 namespace Vitelotte
 {
@@ -35,7 +42,7 @@ namespace Vitelotte
  * functions can be obtained by cyclic permutation of the indices.
  */
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class FVElementBuilder
+class FVElementBuilder : public ElementBuilderBase
 {
 public:
     typedef _Scalar Scalar;
@@ -55,11 +62,11 @@ public:
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
 
 protected:
     template < typename InIt >
-    void processFV1Element(InIt& it, const Mesh& mesh, Face element) const;
+    void processFV1Element(InIt& it, const Mesh& mesh, Face element);
 
     template < typename InIt >
     void processFV1ElementFlat(InIt& it, const Mesh& mesh, Face element) const;

@@ -1,7 +1,13 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "shader.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
 
 
@@ -33,7 +39,7 @@ inline const char* ShaderType2ShaderName(GLuint _Type)
 }
 
 Shader::Shader()
-    : m_shaderProg(0), m_status(Uninitialized)
+    : m_shaderProg(0), m_status(UNINITIALIZED)
 {
 }
 
@@ -57,7 +63,7 @@ bool Shader::create()
         return false;
     }
 
-    m_status = NotCompiled;
+    m_status = NOT_COMPILED;
     return true;
 }
 
@@ -70,12 +76,19 @@ void Shader::destroy()
 
     if(glGetError() == GL_NO_ERROR)
         m_shaderProg = 0;
+    m_status = UNINITIALIZED;
 }
 
 
 void Shader::use()
 {
     glUseProgram(m_shaderProg);
+}
+
+
+void Shader::setGLSLVersionHeader(const std::string& header)
+{
+    m_versionHeader = header;
 }
 
 
@@ -93,11 +106,13 @@ bool Shader::addShader(GLenum _ShaderType, const char* _pShaderText)
 
     m_shaderObjList.push_back(ShaderObj);
 
-    const GLchar* p[1];
-    p[0] = _pShaderText;
-    GLint Lengths[1];
-    Lengths[0]= strlen(_pShaderText);
-    glShaderSource(ShaderObj, 1, p, Lengths);
+    const GLchar* p[2];
+    p[0] = m_versionHeader.empty()? 0: &m_versionHeader[0];
+    p[1] = _pShaderText;
+    GLint Lengths[2];
+    Lengths[0] = m_versionHeader.size();
+    Lengths[1] = strlen(_pShaderText);
+    glShaderSource(ShaderObj, 2, p, Lengths);
 
     glCompileShader(ShaderObj);
 
@@ -171,7 +186,7 @@ bool Shader::finalize()
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
 
-    m_status = CompilationFailed;
+    m_status = COMPILATION_FAILED;
 
     glLinkProgram(m_shaderProg);
 
@@ -195,23 +210,29 @@ bool Shader::finalize()
     if(glGetError() == GL_NO_ERROR)
     {
         clearShaderList();
-        m_status = CompilationSuccessful;
+        m_status = COMPILATION_SUCCESSFULL;
     }
 
-    return m_status == CompilationSuccessful;
+    return m_status == COMPILATION_SUCCESSFULL;
+}
+
+
+void Shader::bindAttributeLocation(const char* name, unsigned location)
+{
+    glBindAttribLocation(m_shaderProg, location, name);
 }
 
 
 GLint Shader::getUniformLocation(const char* _pUniformName)
 {
-    GLuint Location = glGetUniformLocation(m_shaderProg, _pUniformName);
+    GLint location = glGetUniformLocation(m_shaderProg, _pUniformName);
 
-    if (Location == PATATE_INVALID_OGL_VALUE)
+    if (location < 0)
     {
         fprintf(stderr, "Warning! Unable to get the location of uniform '%s'\n", _pUniformName);
     }
 
-    return Location;
+    return location;
 }
 
 GLint Shader::getProgramParam(GLint _param)

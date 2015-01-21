@@ -1,15 +1,20 @@
-#ifndef _MACROS_H_
-#define	_MACROS_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#ifndef _PATATE_COMMON_GL_UTILS_MACROS_
+#define _PATATE_COMMON_GL_UTILS_MACROS_
+
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#define PATATE_INVALID_OGL_VALUE 0xFFFFFFFF
 
-#define PATATE_SAFE_DELETE(p) if (p) { delete p; p = NULL; }
-
-#define PATATE_ASSERT_NO_GL_ERROR()                                                          \
+#ifndef PATATE_ASSERT_NO_GL_ERROR
+#define PATATE_ASSERT_NO_GL_ERROR()                                             \
 {                                                                               \
     GLenum Error = glGetError();                                                \
                                                                                 \
@@ -18,6 +23,10 @@
         exit(0);                                                                \
     }                                                                           \
 }
+#endif
+
+#define PATATE_FIELD_OFFSET(_struct, _field) &(static_cast<_struct*>(0)->_field)
+
 
 #endif
 

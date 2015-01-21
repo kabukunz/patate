@@ -1,5 +1,5 @@
-#ifndef GL_LINE_RENDERER
-#define GL_LINE_RENDERER
+#ifndef GL_POINT_RENDERER
+#define GL_POINT_RENDERER
 
 
 #include <vector>
@@ -9,44 +9,40 @@
 #include "Patate/common/gl_utils/shader.h"
 
 
-class GLLineRenderer
+class GLPointRenderer
 {
 public:
     struct Point
     {
         Eigen::Vector3f pos;
-        float width;
+        float radius;
         Eigen::Vector4f color;
     };
 
 public:
-    GLLineRenderer();
+    GLPointRenderer();
 
-    float defaultWidth() const;
-    void setDefaultWidth(float defaultWidth);
+    float defaultRadius() const;
+    void setDefaultRadius(float defaultRadius);
 
     const Eigen::Vector4f& defaultColor() const;
     void setDefaultColor(const Eigen::Vector4f& defaultColor);
 
     void clear();
-    void addPoint(const Eigen::Vector3f& pos, float width=-1,
+    void addPoint(const Eigen::Vector3f& pos, float radius=-1,
                   const Eigen::Vector4f& color=Eigen::Vector4f::Constant(-1));
-    void endLine();
 
     void upload();
     void render(const Eigen::Matrix4f& viewMatrix,
                 const Eigen::Vector2f& viewportSize);
 
 private:
-    float m_defaultWidth;
+    float m_defaultRadius;
     Eigen::Vector4f m_defaultColor;
 
-    bool m_startNewLine;
     std::vector<Point> m_points;
-    std::vector<int> m_firsts;
-    std::vector<int> m_sizes;
 
-    Patate::Shader m_shader;
+    PatateCommon::Shader m_shader;
     unsigned m_vao;
     unsigned m_buffer;
 

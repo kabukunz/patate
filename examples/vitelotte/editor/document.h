@@ -10,8 +10,10 @@
 
 #include "Patate/vitelotte.h"
 
+#include "../common/vgMeshWithCurves.h"
 
-typedef Vitelotte::VGMesh<float> Mesh;
+
+typedef VGMeshWithCurves Mesh;
 
 
 class MeshSelection
@@ -52,21 +54,16 @@ class Document : public QObject
 
 public:
     typedef ::Mesh Mesh;
-    typedef Vitelotte::FVElementBuilder<Mesh> FVElement;
-    typedef Vitelotte::FemSolver<Mesh, FVElement> FVSolver;
+    typedef Vitelotte::FVElementBuilder<Mesh, double> FVElement;
+    typedef Vitelotte::SingularElementDecorator<FVElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> FVSolver;
     typedef Eigen::AlignedBox2f BoundingBox;
 
-    enum HalfedgeNode
+    enum MeshType
     {
-        FromValueNode,
-        ToValueNode,
-        MaxVertexNode,  // node can be swapped by inverting the first bit if
-                        // it is a vertex node (n < MaxVertexNode).
-
-        EdgeValueNode = MaxVertexNode,
-        EdgeGradientNode,
-
-        MaxHalfedgeNode = 0xff  // Ensure the enum is big enough
+        BASE_MESH,
+        FINALIZED_MESH,
+        SOLVED_MESH
     };
 
 
@@ -88,20 +85,22 @@ public:
 
     void solve();
 
+    Mesh& getMesh(MeshType type);
+    const Mesh& getMesh(MeshType type) const;
+
     Mesh& mesh();
     const Mesh& mesh() const;
+
+    Mesh& finalizedMesh();
+    const Mesh& finalizedMesh() const;
 
     Mesh& solvedMesh();
     const Mesh& solvedMesh() const;
 
-    HalfedgeNode swapNode(HalfedgeNode nid) const;
-    Mesh::Node meshNode(Mesh::Halfedge h, HalfedgeNode nid) const;
-    Mesh::Node& meshNode(Mesh::Halfedge h, HalfedgeNode nid);
 
-
-    void splitNode(Mesh::Halfedge h, HalfedgeNode nid);
-    void mergeNode(Mesh::Halfedge h, HalfedgeNode nid);
-    void setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
+    void splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
+    void mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
+    void setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
                       const Mesh::NodeValue& value, bool allowMerge=false);
 
 
@@ -117,11 +116,13 @@ public slots:
 
 signals:
     void selectionChanged();
+    void meshChanged();
     void meshUpdated();
 
 
 private:
     Mesh m_mesh;
+    Mesh m_finalizedMesh;
     Mesh m_solvedMesh;
     BoundingBox m_bb;
 
@@ -165,7 +166,7 @@ public:
     typedef Document::Mesh::Node Node;
 
 public:
-    SetNode(Document* doc, Halfedge halfedge, Document::HalfedgeNode nid,
+    SetNode(Document* doc, Halfedge halfedge, Mesh::HalfedgeAttribute nid,
             Node node);
 
     virtual void undo();
@@ -174,7 +175,7 @@ public:
 private:
     Document* m_document;
     Halfedge m_halfedge;
-    Document::HalfedgeNode m_nid;
+    Mesh::HalfedgeAttribute m_nid;
     Node m_newNode;
     Node m_prevNode;
 };

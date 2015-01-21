@@ -14,15 +14,16 @@
 #include "Patate/vitelotte.h"
 #include "Patate/vitelotte_gl.h"
 
-#include "orthographicCamera.h"
-#include "glPointRenderer.h"
-#include "glLineRenderer.h"
+#include "../common/orthographicCamera.h"
+#include "../common/glPointRenderer.h"
+#include "../common/glLineRenderer.h"
+#include "../common/vgNodeRenderer.h"
+
+#include "document.h"
 
 
 class QMouseEvent;
 class QWheelEvent;
-
-class Document;
 
 
 class Editor : public QGLWidget
@@ -40,10 +41,11 @@ public:
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;
 
-
 public:
     explicit Editor(QWidget* parent=0);
     virtual ~Editor();
+
+    bool showWireframe() const { return m_showWireframe; }
 
     Eigen::Vector2f screenToNormalized(const QPointF& screen) const;
     QPointF normalizedToScreen(const Eigen::Vector2f& normalized) const;
@@ -53,6 +55,10 @@ public slots:
     void setDocument(Document* document);
     void updateBuffers();
     void updateSelection();
+    void setShowWireframe(bool enable);
+    void showBaseMeshNodes();
+    void showFinalizedMeshNodes();
+    void showSolvedMeshNodes();
 
 public:
     virtual void initializeGL();
@@ -74,6 +80,8 @@ private:
     Document* m_document;
 
     bool m_initialized;
+    bool m_showWireframe;
+    Document::MeshType m_nodeMeshType;
 
     OrthographicCamera m_camera;
     bool m_drag;
@@ -85,7 +93,7 @@ private:
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
-
+    VGNodeRenderer m_nodeRenderer;
 };
 
 

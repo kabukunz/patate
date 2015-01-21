@@ -35,11 +35,14 @@ set(vitelotte_editor_SHADERS
 )
 
 set(vitelotte_editor_SRCS
+    ../common/orthographicCamera.cpp
+    ../common/glPointRenderer.cpp
+    ../common/glLineRenderer.cpp
+    ../common/vgMeshWithCurves.cpp
+    ../common/vgMeshWithCurvesReader.cpp
+    ../common/vgNodeRenderer.cpp
+    ../common/shaders.cpp
     document.cpp
-    orthographicCamera.cpp
-    shaders.cpp
-    glPointRenderer.cpp
-    glLineRenderer.cpp
     valueEditor.cpp
     editor.cpp
     main.cpp

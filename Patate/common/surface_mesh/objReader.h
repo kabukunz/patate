@@ -1,5 +1,5 @@
-#ifndef _OBJREADER_H_
-#define _OBJREADER_H_
+#ifndef _PATATE_COMMON_SURFACE_MESH_OBJ_READER_
+#define _PATATE_COMMON_SURFACE_MESH_OBJ_READER_
 
 
 #include <stdexcept>
@@ -12,63 +12,84 @@
 #include "surfaceMesh.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
+
+
+inline bool defaultErrorCallback(const std::string& msg, void* ptr);
 
 
 class OBJBaseReader
 {
 public:
-    inline OBJBaseReader() {}
+    typedef bool (*ErrorCallback)(const std::string& msg, void* ptr);
+
+public:
+    inline OBJBaseReader()
+        : m_error(false),
+          m_errorCallback(defaultErrorCallback),
+          m_warningCallback(0),
+          m_errorCallbackPtr(0) {}
     virtual ~OBJBaseReader() {}
 
-    void read(std::istream& in);
+    inline void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
 
 protected:
-    virtual void parseHeader(std::istream& /*in*/) {}
-    virtual bool parseDefinition(const std::string& spec,
-                                 std::istream& def) = 0;
+    inline bool doRead(std::istream& in);
 
-    bool readLine(std::istream& in);
-    void parseIndiceList(const std::string& _list,
+    inline virtual void parseHeader(std::istream& /*in*/) {}
+    virtual bool parseDefinition(const std::string& spec,
+                                        std::istream& def) = 0;
+
+    inline bool readLine(std::istream& in);
+    inline void parseIndiceList(const std::string& _list,
                          std::vector<unsigned>& _indices);
 
-    void error(const std::string& msg);
+    inline void error(const std::string& msg);
+    inline void warning(const std::string& msg);
 
 protected:
     unsigned m_lineNb;
+    bool m_error;
 
     std::string m_line;
     std::istringstream m_lineStream;
     std::istringstream m_indicesStream;
+
+    ErrorCallback m_errorCallback;
+    ErrorCallback m_warningCallback;
+    void* m_errorCallbackPtr;
 };
 
 
-template < typename _Point >
+template < typename _Mesh >
 class OBJReader: public OBJBaseReader
 {
 public:
-    typedef _Point Point;
+    typedef _Mesh Mesh;
+    typedef typename Mesh::Vector Vector;
+    typedef typename Mesh::Vertex Vertex;
 
 public:
-    inline OBJReader(SurfaceMesh& mesh,
-                     SurfaceMesh::VertexProperty<Point> positions);
+    inline OBJReader();
+
+    bool read(std::istream& in, Mesh& mesh);
 
 protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
 protected:
-    SurfaceMesh& m_mesh;
-    SurfaceMesh::VertexProperty<Point> m_vPos;
+    Mesh* m_mesh;
 
-    std::vector<SurfaceMesh::Vertex>  m_fVertices;
+    std::vector<Vertex>  m_fVertices;
 
 };
 
 
+}  // namespace PatateCommon
+
 #include "objReader.hpp"
 
-}  // namespace Patate
 
 #endif  // _OBJREADER_H_

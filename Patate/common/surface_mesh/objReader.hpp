@@ -1,34 +1,56 @@
-void
-OBJBaseReader::read(std::istream& in)
+#include "objReader.h"
+
+
+namespace PatateCommon
+{
+
+
+bool defaultErrorCallback(const std::string& msg, void* /*ptr*/)
+{
+    std::cout << "Parse error: " << msg << "\n";
+    return true;
+}
+
+
+bool
+OBJBaseReader::doRead(std::istream& in)
 {
     m_lineNb = 0;
+    m_error = false;
     m_line.reserve(200);
     std::string spec;
 
     in.imbue(std::locale::classic());
 
+    if(in.bad())
+    {
+        error("Can not read input");
+    }
+
     readLine(in);
-    if(in.good())
+    if(in.good() && !m_error)
         parseHeader(in);
 
-    while(in.good())
+    while(in.good() && !m_error)
     {
         // comment
-        if(m_line.empty() || m_line[0] == '#' || std::isspace(m_line[0]))
-            continue;
-
-        m_lineStream >> spec;
-        parseDefinition(spec, m_lineStream);
+        if(!m_line.empty() && m_line[0] != '#' && !std::isspace(m_line[0]))
+        {
+            m_lineStream >> spec;
+            parseDefinition(spec, m_lineStream);
+        }
 
         readLine(in);
     }
+
+    return m_error;
 }
 
 
 bool
 OBJBaseReader::readLine(std::istream& in)
 {
-    bool ok = std::getline(in, m_line);
+    bool ok = std::getline(in, m_line).good();
     ++m_lineNb;
     m_lineStream.str(m_line);
     m_lineStream.seekg(0);
@@ -68,35 +90,55 @@ OBJBaseReader::parseIndiceList(const std::string& _list,
 void
 OBJBaseReader::error(const std::string& msg)
 {
-    std::ostringstream out;
-    out << "Error: " << m_lineNb << ": " << msg;
-    throw std::runtime_error(out.str());
+    if(m_errorCallback)
+    {
+        m_error = m_errorCallback(msg, m_errorCallbackPtr);
+    }
 }
 
 
+void
+OBJBaseReader::warning(const std::string& msg)
+{
+    if(m_warningCallback)
+    {
+        m_error = m_warningCallback(msg, m_errorCallbackPtr);
+    }
+}
 
-template < typename _Point >
-OBJReader<_Point>::OBJReader(SurfaceMesh& mesh,
-                             SurfaceMesh::VertexProperty<Point> positions)
-    : m_mesh(mesh), m_vPos(positions)
+
+template < typename _Mesh >
+OBJReader<_Mesh>::OBJReader()
+    : m_mesh(0)
 {
 }
 
 
-template < typename _Point >
+template < typename _Mesh >
 bool
-OBJReader<_Point>::parseDefinition(const std::string& spec,
+OBJReader<_Mesh>::read(std::istream& in, Mesh& mesh)
+{
+    m_mesh = &mesh;
+    bool r = doRead(in);
+    m_mesh = 0;
+
+    return r;
+}
+
+
+template < typename _Mesh >
+bool
+OBJReader<_Mesh>::parseDefinition(const std::string& spec,
                                    std::istream& def)
 {
     // vertex
     if (spec == "v")
     {
-        Point p;
-        for(unsigned i = 0; i < Point::SizeAtCompileTime; ++i)
+        Vector p;
+        for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
             def >> p[i];
         if(!def) error("Failed to read vertex (not enough components ?)");
-        SurfaceMesh::Vertex v = m_mesh.addVertex();
-        m_vPos[v] = p;
+        m_mesh->addVertex(p);
     }
     // normal
 //        else if (strncmp(s, "vn ", 3) == 0)
@@ -133,9 +175,15 @@ OBJReader<_Point>::parseDefinition(const std::string& spec,
             m_fVertices.push_back(SurfaceMesh::Vertex(idx - 1));
         }
 
-        m_mesh.addFace(m_fVertices);
+        m_mesh->addFace(m_fVertices);
     }
     else
+    {
+        warning("Unknown spec: " + spec);
         return false;
+    }
     return true;
+}
+
+
 }

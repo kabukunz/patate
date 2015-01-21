@@ -1,5 +1,11 @@
-#ifndef _SINGULAR_ELEMENT_DECORATOR_H_
-#define _SINGULAR_ELEMENT_DECORATOR_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#ifndef _VITELOTTE_SINGULAR_ELEMENT_DECORATOR_
+#define _VITELOTTE_SINGULAR_ELEMENT_DECORATOR_
 
 
 #include <vector>
@@ -13,35 +19,30 @@ namespace Vitelotte
 
 
 template < class _Element >
-class SingularElementDecorator
+class SingularElementDecorator : public _Element
 {
 public:
-    typedef _Element Element;
+    typedef _Element Base;
 
-    typedef typename Element::Scalar Scalar;
-    typedef typename Element::Mesh Mesh;
+    typedef typename Base::Scalar Scalar;
+    typedef typename Base::Mesh Mesh;
 
-    typedef typename Element::Vector Vector;
-    typedef typename Element::Triplet Triplet;
+    typedef typename Base::Vector Vector;
+    typedef typename Base::Triplet Triplet;
+
 
 protected:
     typedef typename Mesh::Face Face;
 
 
 public:
-    inline explicit SingularElementDecorator(const Element& element=Element())
-        : m_element(element) {}
+    inline explicit SingularElementDecorator(const Base& element=Base())
+        : Base(element) {}
 
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
-
-    Element& element() { return m_element; }
-    const Element& element() const { return m_element; }
-
-private:
-    Element m_element;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
 };
 
 

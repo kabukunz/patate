@@ -1,3 +1,9 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "vgMeshRenderer.h"
 
 
@@ -5,33 +11,11 @@ namespace Vitelotte
 {
 
 
-Eigen::Vector4f linearToSrgb(const Eigen::Vector4f& linear)
-{
-    Eigen::Vector4f srgb = linear;
-    for(int i=0; i<3; ++i)
-        srgb(i) = linear(i) > 0.0031308?
-                    1.055 * std::pow(linear(i), 1/2.4):
-                    12.92 * linear(i);
-    return srgb;
-}
-
-
-Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb)
-{
-    Eigen::Vector4f linear = srgb;
-    for(int i=0; i<3; ++i)
-        linear(i) = linear(i) > 0.04045?
-                    std::pow((linear(i)+0.055) / 1.055, 2.4):
-                    linear(i) / 12.92;
-    return linear;
-}
-
-
 VGMeshRendererDefaultShader::VGMeshRendererDefaultShader()
     : m_viewMatrix(Eigen::Matrix4f::Identity()),
-      m_singularTriangles(false),
       m_nodes(0),
-      m_baseNodeIndex(0)
+      m_baseNodeIndex(0),
+      m_singularTriangles(false)
 {
 }
 
@@ -40,36 +24,46 @@ inline
 bool
 VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
 {
-    if(m_shader.status() == Patate::Shader::Uninitialized)
+    bool quadratic = triangleType & Quadratic;
+    PatateCommon::Shader& shader = quadratic?
+                m_quadraticShader:
+                m_linearShader;
+    Uniforms& uniforms = quadratic?
+                m_quadraticUniforms:
+                m_linearUniforms;
+
+    if(shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
-        m_shader.create();
+        shader.create();
 
         bool bRes = true;
 
-        bRes &= m_shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_glsl);
-        bRes &= m_shader.addShader(GL_GEOMETRY_SHADER,
-                                   shader::geom_common_glsl);
-        bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_common_glsl);
-        bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_quadratic_glsl);
+        bRes &= shader.addShader(GL_VERTEX_SHADER,
+                                 VGMeshRendererShaders::vert_common_glsl);
+        bRes &= shader.addShader(GL_GEOMETRY_SHADER,
+                                 VGMeshRendererShaders::geom_common_glsl);
+        bRes &= shader.addShader(GL_FRAGMENT_SHADER,
+                                 VGMeshRendererShaders::frag_common_glsl);
+        bRes &= shader.addShader(GL_FRAGMENT_SHADER,
+                                 quadratic?
+                                     VGMeshRendererShaders::frag_quadratic_glsl:
+                                     VGMeshRendererShaders::frag_linear_glsl);
 
-        bRes &= m_shader.finalize();
+        shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
+        bRes &= shader.finalize();
 
         if(bRes)
         {
-            getUniforms();
-            m_verticesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_position");
+            getUniforms(shader, uniforms);
         }
     }
 
-    bool ok = m_shader.status() == Patate::Shader::CompilationSuccessful;
+    bool ok = (shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
-        m_shader.use();
-        m_singularTriangles = (triangleType == Singular);
-        setupUniforms();
+        shader.use();
+        m_singularTriangles = (triangleType & Singular);
+        setupUniforms(uniforms);
     }
 
     return ok;
@@ -79,7 +73,7 @@ VGMeshRendererDefaultShader::useShader(TriangleType triangleType)
 inline
 void
 VGMeshRendererDefaultShader::
-    setNodesTexture(int texUnit, int baseOffset)
+    setNodesTexture(TriangleType /*triangleType*/, int texUnit, int baseOffset)
 {
     m_nodes = texUnit;
     m_baseNodeIndex = baseOffset;
@@ -89,31 +83,31 @@ VGMeshRendererDefaultShader::
 inline
 void
 VGMeshRendererDefaultShader::
-    getUniforms()
+    getUniforms(PatateCommon::Shader& shader, Uniforms& uniforms)
 {
-    m_viewMatrixLoc        = m_shader.getUniformLocation("viewMatrix");
-    m_nodesLoc             = m_shader.getUniformLocation("nodes");
-    m_baseNodeIndexLoc     = m_shader.getUniformLocation("baseNodeIndex");
-    m_singularTrianglesLoc = m_shader.getUniformLocation("singularTriangles");
+    uniforms.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
+    uniforms.nodesLoc             = shader.getUniformLocation("nodes");
+    uniforms.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
+    uniforms.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
 }
 
 
 inline
 void
 VGMeshRendererDefaultShader::
-    setupUniforms()
+    setupUniforms(const Uniforms& uniforms)
 {
-    if(m_viewMatrixLoc >= 0)
-        glUniformMatrix4fv(m_viewMatrixLoc, 1, false, m_viewMatrix.data());
+    if(uniforms.viewMatrixLoc >= 0)
+        glUniformMatrix4fv(uniforms.viewMatrixLoc, 1, false, m_viewMatrix.data());
 
-    if(m_nodesLoc >= 0)
-        glUniform1i(m_nodesLoc, m_nodes);
+    if(uniforms.nodesLoc >= 0)
+        glUniform1i(uniforms.nodesLoc, m_nodes);
 
-    if(m_baseNodeIndexLoc >= 0)
-        glUniform1i(m_baseNodeIndexLoc, m_baseNodeIndex);
+    if(uniforms.baseNodeIndexLoc >= 0)
+        glUniform1i(uniforms.baseNodeIndexLoc, m_baseNodeIndex);
 
-    if(m_singularTrianglesLoc >= 0)
-        glUniform1i(m_singularTrianglesLoc, m_singularTriangles);
+    if(uniforms.singularTrianglesLoc >= 0)
+        glUniform1i(uniforms.singularTrianglesLoc, m_singularTriangles);
 }
 
 
@@ -131,31 +125,31 @@ inline
 bool
 VGMeshRendererWireframeShader::useShader(TriangleType /*triangleType*/)
 {
-    if(m_shader.status() == Patate::Shader::Uninitialized)
+    if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         m_shader.create();
 
         bool bRes = true;
 
         bRes &= m_shader.addShader(GL_VERTEX_SHADER,
-                                   shader::vert_common_glsl);
+                                   VGMeshRendererShaders::vert_common_glsl);
         bRes &= m_shader.addShader(GL_GEOMETRY_SHADER,
-                                   shader::geom_common_glsl);
+                                   VGMeshRendererShaders::geom_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_common_glsl);
+                                   VGMeshRendererShaders::frag_common_glsl);
         bRes &= m_shader.addShader(GL_FRAGMENT_SHADER,
-                                   shader::frag_wireframe_glsl);
+                                   VGMeshRendererShaders::frag_wireframe_glsl);
 
+        m_shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
         bRes &= m_shader.finalize();
 
         if(bRes)
         {
             getUniforms();
-            m_verticesLoc = glGetAttribLocation(m_shader.getShaderId(), "vx_position");
         }
     }
 
-    bool ok = m_shader.status() == Patate::Shader::CompilationSuccessful;
+    bool ok = (m_shader.status() == PatateCommon::Shader::COMPILATION_SUCCESSFULL);
     if(ok)
     {
         m_shader.use();
@@ -169,7 +163,7 @@ VGMeshRendererWireframeShader::useShader(TriangleType /*triangleType*/)
 inline
 void
 VGMeshRendererWireframeShader::
-    setNodesTexture(int /*texUnit*/, int /*baseOffset*/)
+    setNodesTexture(TriangleType /*triangleType*/, int /*texUnit*/, int /*baseOffset*/)
 {
 }
 
@@ -206,11 +200,29 @@ VGMeshRendererWireframeShader::
 
 
 template < class _Mesh >
+VGMeshRenderer<_Mesh>::VGMeshRenderer() :
+    m_verticesBuffer(0), m_indicesBuffer(0),
+    m_nodesBuffer(0), m_nodesTexture(0),
+    m_vao(0), m_pMesh(0)
+{}
+
+
+template < class _Mesh >
 inline void VGMeshRenderer<_Mesh>::initialize(Mesh* _mesh)
 {
     glGenVertexArrays(1, &m_vao);
 
     setMesh(_mesh);
+}
+
+
+template < class _Mesh >
+inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
+{
+    for(int pass = 0; pass < 2; ++pass)
+    {
+        renderTriangles(shaders, pass);
+    }
 }
 
 
@@ -224,7 +236,10 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     m_nodes.clear();
 
     if(!m_pMesh) return;
-    assert((m_pMesh->getAttributes() & Mesh::Quadratic) == Mesh::Quadratic);
+    assert(m_pMesh->hasToVertexValue());
+    m_quadratic = m_pMesh->hasEdgeValue();
+
+    int nodePerTriangle = m_quadratic? 6: 3;
 
     // Compute number of singular and normal triangles
     m_nSingulars = m_pMesh->nSingularFaces();
@@ -233,7 +248,8 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     // Reserve buffers
     m_vertices.reserve(m_pMesh->nVertices());
     m_indices.resize(m_nTriangles * 3 + m_nSingulars * 3);
-    m_nodes.resize(m_nTriangles * 6 + m_nSingulars * 7);
+    m_nodes.resize(m_nTriangles * nodePerTriangle +
+                   m_nSingulars * (nodePerTriangle + 1));
 
     // Push vertices positions
     for(typename Mesh::VertexIterator vit = m_pMesh->verticesBegin();
@@ -246,7 +262,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     unsigned triIndex = 0;
     unsigned singIndex = m_nTriangles * 3;
     unsigned triNodeIndex = 0;
-    unsigned singNodeIndex = m_nTriangles * 6;
+    unsigned singNodeIndex = m_nTriangles * nodePerTriangle;
     for(typename Mesh::FaceIterator fit = m_pMesh->facesBegin();
         fit != m_pMesh->facesEnd(); ++fit)
     {
@@ -254,7 +270,7 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
         assert(m_pMesh->valence(*fit) == 3);
         typename Mesh::Halfedge h = m_pMesh->halfedge(*fit);
 
-        bool isSingular = m_pMesh->isSingular(*fit);
+        bool isSingular = m_pMesh->nSingulars(*fit);
         if(isSingular)
         {
             // The first vertex must be the singular one
@@ -268,25 +284,28 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
         {
             m_indices[index + ei] = m_pMesh->toVertex(h).idx();
             h = m_pMesh->nextHalfedge(h);
-            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->vertexFromValueNode(h));
+            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->fromVertexValueNode(h));
         }
         // Singular node is the last one
         if(isSingular)
-            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->vertexValueNode(h));
+            m_nodes[nodeIndex + nodePerTriangle] = nodeValue(m_pMesh->toVertexValueNode(h));
 
-        // Push edge nodes
-        h = m_pMesh->prevHalfedge(h);
-        for(int ei = 0; ei < 3; ++ei)
+        if(m_quadratic)
         {
-            m_nodes[nodeIndex + 3 + ei] = nodeValue(m_pMesh->edgeValueNode(h));
-            h = m_pMesh->nextHalfedge(h);
+            // Push edge nodes
+            h = m_pMesh->prevHalfedge(h);
+            for(int ei = 0; ei < 3; ++ei)
+            {
+                m_nodes[nodeIndex + 3 + ei] = nodeValue(m_pMesh->edgeValueNode(h));
+                h = m_pMesh->nextHalfedge(h);
+            }
         }
 
         index += 3;
-        nodeIndex += 6 + isSingular;
+        nodeIndex += nodePerTriangle + isSingular;
     }
     assert(triIndex == m_nTriangles * 3 && singIndex == m_indices.size());
-    assert(triNodeIndex == m_nTriangles * 6 && singNodeIndex == m_nodes.size());
+    assert(triNodeIndex == m_nTriangles * nodePerTriangle && singNodeIndex == m_nodes.size());
 
     // Create and upload buffers
     createAndUploadBuffer(m_verticesBuffer, GL_ARRAY_BUFFER,
@@ -326,21 +345,21 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(
 
     glBindVertexArray(m_vao);
 
-    shaders.setNodesTexture(0, _singular * m_nTriangles * 6);
-    if(!shaders.useShader((!_singular)?
-                          VGMeshRendererShader::Standard:
-                          VGMeshRendererShader::Singular))
+    VGMeshRendererShader::TriangleType triangleType =
+            VGMeshRendererShader::TriangleType(
+                (m_quadratic? VGMeshRendererShader::Quadratic: 0) |
+                (_singular?   VGMeshRendererShader::Singular:  0));
+
+    int nodePerTriangle = m_quadratic? 6: 3;
+    shaders.setNodesTexture(triangleType, 0, _singular * m_nTriangles * nodePerTriangle);
+    if(!shaders.useShader(triangleType))
         return;
 
-    GLint verticesLoc = shaders.verticesAttibLocation();
-
-    if(verticesLoc >= 0)
-    {
-        glEnableVertexAttribArray(verticesLoc);
-        glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
-        glVertexAttribPointer(verticesLoc, Vector::SizeAtCompileTime, GL_FLOAT,
-                              false, sizeof(Vector), 0);
-    }
+    glEnableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
+    glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
+    glVertexAttribPointer(VG_MESH_POSITION_ATTR_LOC,
+                          Vector::SizeAtCompileTime, GL_FLOAT,
+                          false, sizeof(Vector), 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_BUFFER, m_nodesTexture);
@@ -349,10 +368,7 @@ inline void VGMeshRenderer<_Mesh>::renderTriangles(
     glDrawElements(GL_TRIANGLES, nPrimitives * 3, GL_UNSIGNED_INT,
                   (const void*)(_singular * m_nTriangles * 3 * sizeof(unsigned)));
 
-    if(verticesLoc >= 0)
-    {
-        glDisableVertexAttribArray(verticesLoc);
-    }
+    glDisableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
 
     PATATE_ASSERT_NO_GL_ERROR();
 }
@@ -363,18 +379,10 @@ inline typename VGMeshRenderer<_Mesh>::NodeValue
 VGMeshRenderer<_Mesh>::nodeValue(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
-        return srgbToLinear(m_pMesh->nodeValue(node));
-    return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
-}
-
-
-template < class _Mesh >
-inline void VGMeshRenderer<_Mesh>::render(VGMeshRendererShader &shaders)
-{
-    for(int pass = 0; pass < 2; ++pass)
     {
-        renderTriangles(shaders, pass);
+        return PatateCommon::srgbToLinear(m_pMesh->nodeValue(node));
     }
+    return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 
 

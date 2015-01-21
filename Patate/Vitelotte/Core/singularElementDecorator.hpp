@@ -1,3 +1,9 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "singularElementDecorator.h"
 
 
@@ -10,22 +16,27 @@ unsigned
 SingularElementDecorator<_Element>::nCoefficients(
         const Mesh& mesh, Face element) const
 {
-    return m_element.nCoefficients(mesh, element) *
-            (mesh.isSingular(element)? 2: 1);
+    return Base::nCoefficients(mesh, element) *
+            (mesh.nSingulars(element)? 2: 1);
 }
 
 template < typename _Element >
 template < typename InIt >
 void
 SingularElementDecorator<_Element>::addCoefficients(
-        InIt& it, const Mesh& mesh, Face element) const
+        InIt& it, const Mesh& mesh, Face element)
 {
-    typedef typename Element::Mesh Mesh;
+    typedef typename Base::Mesh Mesh;
 
     InIt begin = it;
-    m_element.addCoefficients(it, mesh, element);
+    Base::addCoefficients(it, mesh, element);
 
-    if(mesh.isSingular(element)) {
+    unsigned nSingular = mesh.nSingulars(element);
+
+    if(nSingular > 1)
+        Base::error(Base::STATUS_WARNING, "Element with more than one singular vertex");
+
+    if(nSingular) {
         InIt end = it;
         int from, to;
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
@@ -33,8 +44,8 @@ SingularElementDecorator<_Element>::addCoefficients(
         {
             if(mesh.isSingular(*hit))
             {
-                from = mesh.vertexValueNode(*hit).idx();
-                to = mesh.vertexFromValueNode(mesh.nextHalfedge(*hit)).idx();
+                from = mesh.toVertexValueNode(*hit).idx();
+                to = mesh.fromVertexValueNode(mesh.nextHalfedge(*hit)).idx();
                 break;
             }
             ++hit;

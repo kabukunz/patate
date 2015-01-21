@@ -20,15 +20,22 @@ void usage(char* progName)
 }
 
 
-void solveHarmonic(Mesh& mesh)
+template <typename Solver>
+void solveGeneric(Mesh& mesh)
 {
-    //typedef Vitelotte::QuadraticElement<Mesh, double> Element;
-    typedef Vitelotte::QuadraticElementBuilder<Mesh, double> QuadraticElement;
-    typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
-    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
-
     Solver solver(&mesh);
     solver.build();
+
+    if(solver.status() == Solver::ElementBuilder::STATUS_WARNING)
+    {
+        std::cerr << "Warning: " << solver.errorString() << "\n";
+    }
+    else if(solver.status() == Solver::ElementBuilder::STATUS_ERROR)
+    {
+        std::cerr << "Error: " << solver.errorString() << "\n";
+        return;
+    }
+
     solver.solve();
 
     if(!solver.isSolved())
@@ -39,22 +46,47 @@ void solveHarmonic(Mesh& mesh)
 }
 
 
-void solveBiharmonic(Mesh& mesh)
+void solveHarmonicLinear(Mesh& mesh)
 {
-//    typedef Vitelotte::FVElementBuilder<Mesh, double> Element;
+    typedef Vitelotte::LinearElementBuilder<Mesh, double> LinearElement;
+    typedef Vitelotte::SingularElementDecorator<LinearElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Harmonic linear diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveHarmonicQuadratic(Mesh& mesh)
+{
+    typedef Vitelotte::QuadraticElementBuilder<Mesh, double> QuadraticElement;
+    typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Harmonic quadratic diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveBiharmonicLinear(Mesh& mesh)
+{
+    typedef Vitelotte::MorleyElementBuilder<Mesh, double> MorleyElement;
+    typedef Vitelotte::SingularElementDecorator<MorleyElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Biharmonic linear diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveBiharmonicQuadratic(Mesh& mesh)
+{
     typedef Vitelotte::FVElementBuilder<Mesh, double> FVElement;
     typedef Vitelotte::SingularElementDecorator<FVElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
-    Solver solver(&mesh);
-    solver.build();
-    solver.solve();
-
-    if(!solver.isSolved())
-    {
-        std::cerr << "Failed to solve the diffusion.\n";
-        exit(2);
-    }
+    std::cout << "Biharmonic quadratic diffusion.\n";
+    solveGeneric<Solver>(mesh);
 }
 
 
@@ -77,11 +109,17 @@ int main(int argc, char** argv)
 
     switch(mesh.getAttributes())
     {
-    case Mesh::Quadratic:
-        solveHarmonic(mesh);
+    case Mesh::LINEAR_FLAGS:
+        solveHarmonicLinear(mesh);
         break;
-    case Mesh::FV:
-        solveBiharmonic(mesh);
+    case Mesh::QUADRATIC_FLAGS:
+        solveHarmonicQuadratic(mesh);
+        break;
+    case Mesh::MORLEY_FLAGS:
+        solveBiharmonicLinear(mesh);
+        break;
+    case Mesh::FV_FLAGS:
+        solveBiharmonicQuadratic(mesh);
         break;
     default:
         std::cerr << "Mesh type not supported.\n";

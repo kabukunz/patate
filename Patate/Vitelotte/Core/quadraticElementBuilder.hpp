@@ -1,3 +1,9 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "quadraticElementBuilder.h"
 
 
@@ -57,7 +63,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::QuadraticElementBuilder()
 template < class _Mesh, typename _Scalar >
 unsigned
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
 {
     return 36;
 }
@@ -67,12 +73,12 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element) const
+    addCoefficients(InIt& it, const Mesh& mesh, Face element)
 {
     assert(mesh.valence(element) == 3);
 
     Vector v[3];
-    unsigned nodes[6];
+    int nodes[6];
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     --hit;
@@ -82,12 +88,26 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
                 mesh.position(mesh.fromVertex(*hit))).template cast<Scalar>();
         nodes[3+i] = mesh.edgeValueNode(*hit).idx();
         ++hit;
-        nodes[i] = mesh.vertexValueNode(*hit).idx();
+        nodes[i] = mesh.toVertexValueNode(*hit).idx();
     }
 
-    Scalar inv4A = 1. / (2. * det2(v[0], v[1]));
+    for(int i = 0; i < 6; ++i)
+    {
+        if(nodes[i] < 0)
+        {
+            error(STATUS_ERROR, "Invalid node");
+            return;
+        }
+    }
 
-    assert(inv4A > 0);
+    Scalar _2area = det2(v[0], v[1]);
+
+    if(_2area <= 0)
+    {
+        error(STATUS_WARNING, "Degenerated or reversed triangle");
+    }
+
+    Scalar inv4A = 1. / (2. * _2area);
 
     ElementStiffnessMatrix matrix = (m_quadM1 * v[0].squaredNorm() +
                                      m_quadM2 * v[1].squaredNorm() +

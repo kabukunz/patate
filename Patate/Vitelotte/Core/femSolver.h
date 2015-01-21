@@ -1,5 +1,11 @@
-#ifndef _FEM_SOLVER_H_
-#define _FEM_SOLVER_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#ifndef _VITELOTTE_FEM_SOLVER_
+#define _VITELOTTE_FEM_SOLVER_
 
 #include <cassert>
 
@@ -42,11 +48,13 @@ public:
     inline FemSolver(Mesh* _inMesh,
                      const ElementBuilder& elementBuilder = ElementBuilder());
 
-    inline void build();
-    inline void sort();
-    inline void solve();
+    void build();
+    void sort();
+    void solve();
 
     inline bool isSolved() const { return m_solved; }
+    inline typename ElementBuilder::Status status() const { return m_elementBuilder.status(); }
+    inline const std::string& errorString() const { return m_elementBuilder.errorString(); }
 
 protected:
     template<typename SpMatrix, typename Rhs, typename Res>

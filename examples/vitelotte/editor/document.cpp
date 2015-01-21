@@ -2,6 +2,8 @@
 
 #include "Patate/vitelotte_io.h"
 
+#include "../common/vgMeshWithCurvesReader.h"
+
 #include "document.h"
 
 
@@ -93,7 +95,7 @@ void Document::updateBoundingBox()
 
     m_bb.setEmpty();
     for(VertexIterator vit = m_mesh.verticesBegin();
-        vit != m_mesh.verticesEnd(); ++vit)
+            vit != m_mesh.verticesEnd(); ++vit)
         m_bb.extend(m_mesh.position(*vit));
 }
 
@@ -196,16 +198,49 @@ Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p,
 
 void Document::solve()
 {
-    m_solvedMesh = m_mesh;
-    m_solvedMesh.finalize();
+    m_finalizedMesh = m_mesh;
     // Would break undo
     //m_solvedMesh.compactNodes();
+    m_finalizedMesh.finalize();
+    m_solvedMesh = m_finalizedMesh;
 
-    m_fvSolver.build();
-    m_fvSolver.sort();
-    m_fvSolver.solve();
+    if(m_solvedMesh.hasUnknowns())
+    {
+        m_fvSolver.build();
+        m_fvSolver.solve();
+
+        if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_WARNING)
+        {
+            std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
+        }
+        else if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_ERROR)
+        {
+            std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
+        }
+    }
 
     emit meshUpdated();
+}
+
+
+Document::Mesh& Document::getMesh(MeshType type)
+{
+    switch(type)
+    {
+    case BASE_MESH:
+        return m_mesh;
+    case FINALIZED_MESH:
+        return m_finalizedMesh;
+    case SOLVED_MESH:
+        return m_solvedMesh;
+    }
+    abort();
+}
+
+
+const Document::Mesh& Document::getMesh(MeshType type) const
+{
+    return const_cast<Document*>(this)->getMesh(type);
 }
 
 
@@ -218,6 +253,18 @@ Document::Mesh& Document::mesh()
 const Document::Mesh& Document::mesh() const
 {
     return m_mesh;
+}
+
+
+Document::Mesh& Document::finalizedMesh()
+{
+    return m_finalizedMesh;
+}
+
+
+const Document::Mesh& Document::finalizedMesh() const
+{
+    return m_finalizedMesh;
 }
 
 
@@ -239,56 +286,14 @@ QUndoStack* Document::undoStack()
 }
 
 
-Document::HalfedgeNode Document::swapNode(HalfedgeNode nid) const
+void Document::splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 {
-    if(nid < MaxVertexNode)
-        return HalfedgeNode(int(nid) ^ 1);
-    return nid;
-}
-
-
-Document::Mesh::Node Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid) const
-{
-    switch(nid)
-    {
-    case FromValueNode:
-        if(m_mesh.hasVertexFromValue())
-            return m_mesh.vertexFromValueNode(h);
-        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
-    case ToValueNode:   return m_mesh.vertexValueNode(h);
-    case EdgeValueNode: return m_mesh.edgeValueNode(h);
-    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
-    default: abort();
-    }
-    return Mesh::Node();
-}
-
-
-Document::Mesh::Node& Document::meshNode(Mesh::Halfedge h, HalfedgeNode nid)
-{
-    switch(nid)
-    {
-    case FromValueNode:
-        if(m_mesh.hasVertexFromValue())
-            return m_mesh.vertexFromValueNode(h);
-        return m_mesh.vertexValueNode(m_mesh.prevHalfedge(h));
-    case ToValueNode:   return m_mesh.vertexValueNode(h);
-    case EdgeValueNode: return m_mesh.edgeValueNode(h);
-    case EdgeGradientNode: return m_mesh.edgeGradientNode(h);
-    default: abort();
-    }
-}
-
-
-void Document::splitNode(Mesh::Halfedge h, HalfedgeNode nid)
-{
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-    HalfedgeNode onid = swapNode(nid);
-    Mesh::Node on = meshNode(oh, onid);
+    Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
 
-    assert(n == on);
+    assert(n == m_mesh.halfedgeNode(oh, onid));
 
     if(!n.isValid())
         return;
@@ -300,30 +305,29 @@ void Document::splitNode(Mesh::Halfedge h, HalfedgeNode nid)
 }
 
 
-void Document::mergeNode(Mesh::Halfedge h, HalfedgeNode nid)
+void Document::mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 {
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-    HalfedgeNode onid = swapNode(nid);
-    Mesh::Node on = meshNode(oh, onid);
+    Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
 
-    assert(n != on);
+    assert(n != m_mesh.halfedgeNode(oh, onid));
 
     undoStack()->push(new SetNode(this, oh, onid, n));
 }
 
 
-void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
+void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
                             const Mesh::NodeValue& value, bool allowMerge)
 {
-    Mesh::Node n = meshNode(h, nid);
+    Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
     if(!n.isValid())
     {
         Mesh::Halfedge oh = m_mesh.oppositeHalfedge(h);
-        HalfedgeNode onid = swapNode(nid);
-        Mesh::Node on = meshNode(oh, onid);
+        Mesh::HalfedgeAttribute onid = m_mesh.oppositeAttribute(nid);
+        Mesh::Node on = m_mesh.halfedgeNode(oh, onid);
 
         Mesh::Node nn = m_mesh.addNode(value);
 
@@ -340,48 +344,20 @@ void Document::setNodeValue(Mesh::Halfedge h, HalfedgeNode nid,
 
 void Document::loadMesh(const std::string& filename)
 {
-    Vitelotte::readMvgFromFile(filename, m_mesh);
-    m_mesh.setAttributes(Mesh::FV);
+    VGMeshWithCurveReader reader;
+    std::ifstream in(filename.c_str());
+    reader.read(in, m_mesh);
+    m_mesh.setAttributes(Mesh::FV_FLAGS);
 
-    Eigen::Matrix<float, 4, 2> g;
-    g << 2, .5,
-         2, .5,
-         2, .5,
-         0, 0;
-    g /= 4;
-//    Eigen::Matrix2f rot;
-//    rot << 0, -1, 1, 0;
-//    g = g*rot;
-    Eigen::Vector4f color(.5, .5, .5, 1.);
-
-    Mesh::Vertex vert(5);
-    Mesh::Node vnode = m_mesh.addNode(color);
-    Mesh::HalfedgeAroundVertexCirculator hit = m_mesh.halfedges(vert);
-    Mesh::HalfedgeAroundVertexCirculator end = hit;
-    do
-    {
-        Eigen::Vector2f e = (m_mesh.position(m_mesh.toVertex(*hit))
-                -m_mesh.position(m_mesh.fromVertex(*hit))).normalized();
-        Eigen::Vector4f v = g * e;
-        std::cerr << "e: " << e.transpose() << " -> " << v.transpose() << "\n";
-
-        Mesh::Halfedge opp = m_mesh.oppositeHalfedge(*hit);
-
-        Mesh::Node n = m_mesh.addNode(v * (m_mesh.halfedgeOrientation(*hit)? -1: 1));
-        m_mesh.edgeGradientNode(*hit) = n;
-        m_mesh.edgeGradientNode(opp) = n;
-
-        m_mesh.vertexFromValueNode(*hit) = vnode;
-        m_mesh.vertexValueNode(opp) = vnode;
-        ++hit;
-    } while(hit != end);
-
-    m_mesh.setVertexGradientConstrained(vert, true);
+    if(m_mesh.nPointConstraints() || m_mesh.nCurves())
+        m_mesh.setNodesFromCurves();
 
     updateBoundingBox();
     setSelection(MeshSelection());
 
     solve();
+
+    emit meshChanged();
 }
 
 
@@ -466,20 +442,20 @@ bool SetNodeValue::mergeWith(const QUndoCommand* command)
 
 
 SetNode::SetNode(Document* doc, Halfedge halfedge,
-                 Document::HalfedgeNode nid, Node node)
+                 Mesh::HalfedgeAttribute nid, Node node)
     : m_document(doc), m_halfedge(halfedge), m_nid(nid), m_newNode(node),
-      m_prevNode(m_document->meshNode(m_halfedge, m_nid))
+      m_prevNode(m_document->mesh().halfedgeNode(m_halfedge, m_nid))
 {
 }
 
 void SetNode::undo()
 {
-    m_document->meshNode(m_halfedge, m_nid) = m_prevNode;
+    m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_prevNode;
     m_document->solve();
 }
 
 
 void SetNode::redo(){
-    m_document->meshNode(m_halfedge, m_nid) = m_newNode;
+    m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_newNode;
     m_document->solve();
 }

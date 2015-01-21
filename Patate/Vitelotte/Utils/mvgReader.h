@@ -1,6 +1,11 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
-#ifndef _MVGREADER_H_
-#define _MVGREADER_H_
+#ifndef _VITELOTTE_MVG_READER_
+#define _VITELOTTE_MVG_READER_
 
 
 #include <cassert>
@@ -96,13 +101,13 @@ namespace Vitelotte
  * \see QMesh QVGWriter
  */
 template < typename _Mesh >
-class MVGReader: public Patate::OBJReader<typename _Mesh::Vector>
+class MVGReader: public PatateCommon::OBJBaseReader
 {
 public:
     typedef _Mesh Mesh;
-    typedef Patate::OBJReader<typename _Mesh::Vector> Base;
 
     typedef typename Mesh::Vector Vector;
+    typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::NodeValue NodeValue;
 
 public:
@@ -110,10 +115,9 @@ public:
     /**
      * \brief Default constructor
      */
-    inline MVGReader(Mesh& mesh);
+    inline MVGReader();
 
-    using Base::error;
-    using Base::parseIndiceList;
+    bool read(std::istream& in, Mesh& mesh);
 
 protected:
     virtual void parseHeader(std::istream& in);
@@ -121,10 +125,8 @@ protected:
                                  std::istream& def);
 
 protected:
-
-    using Base::m_mesh;
-    using Base::m_fVertices;
-
+    Mesh* m_mesh;
+    std::vector<Vertex>  m_fVertices;
     std::string m_tmp;
     std::vector<unsigned> m_faceIndices;
 };

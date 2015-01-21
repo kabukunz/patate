@@ -15,6 +15,8 @@ Editor::Editor(QWidget* parent)
     : QGLWidget(parent),
       m_document(0),
       m_initialized(false),
+      m_showWireframe(true),
+      m_nodeMeshType(Document::BASE_MESH),
       m_drag(false)
 {
 }
@@ -49,15 +51,15 @@ void Editor::centerView()
     Eigen::Vector3f center;
     center << bb.center(), 0;
     Eigen::Vector3f scale;
-    scale.head<2>() = bb.sizes().array() / Eigen::Array2f(width(), height()) * .6;
-    if(scale(0) > scale(1))
-        scale *= float(width());
-    else
-        scale *= float(height());
+    scale(0) = bb.sizes().maxCoeff() * .6;
+    scale(1) = scale(0);
     scale(2) = 1;
     m_camera.setViewBox(OrthographicCamera::ViewBox(
         center - scale,
         center + scale));
+    m_camera.changeAspectRatio(float(width()) / float(height()));
+
+    update();
 }
 
 
@@ -78,6 +80,7 @@ void Editor::setDocument(Document* document)
         if(m_initialized)
             updateBuffers();
 
+        connect(m_document, SIGNAL(meshChanged()), this, SLOT(centerView()));
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateBuffers()));
         connect(m_document, SIGNAL(selectionChanged()),
                 this, SLOT(updateSelection()));
@@ -139,12 +142,47 @@ void Editor::updateSelection()
 }
 
 
+void Editor::setShowWireframe(bool enable)
+{
+    if(enable != m_showWireframe)
+    {
+        m_showWireframe = enable;
+        update();
+    }
+}
+
+
+void Editor::showBaseMeshNodes()
+{
+    m_nodeMeshType = Document::BASE_MESH;
+    update();
+}
+
+
+void Editor::showFinalizedMeshNodes()
+{
+    m_nodeMeshType = Document::FINALIZED_MESH;
+    update();
+}
+
+
+void Editor::showSolvedMeshNodes()
+{
+    m_nodeMeshType = Document::SOLVED_MESH;
+    update();
+}
+
+
+
+
 void Editor::initializeGL()
 {
     std::cout << "OpenGL Vendor:       " << glGetString(GL_VENDOR) << "\n";
     std::cout << "OpenGL Renderer:     " << glGetString(GL_RENDERER) << "\n";
     std::cout << "OpenGL Version:      " << glGetString(GL_VERSION) << "\n";
     std::cout << "OpenGL GLSL Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
+    if(format().sampleBuffers())
+        std::cout << "OpenGL Multisample:  " << format().samples() << "\n";
 
     GLenum res = glewInit();
     if (res != GLEW_OK)
@@ -204,11 +242,18 @@ void Editor::paintGL()
         m_wireframeShader.setLineWidth(.5);
         m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
         m_wireframeShader.setZoom(width() / m_camera.getViewBox().sizes()(0));
-        m_renderer.render(m_wireframeShader);
+        //m_renderer.render(m_wireframeShader);
 
         Eigen::Vector2f viewportSize(width(), height());
         m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+
+        if(m_showWireframe)
+        {
+            m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
+                                  width() / m_camera.getViewBox().sizes()(0));
+            m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+        }
     }
 }
 

@@ -1,5 +1,5 @@
-#ifndef _OBJWRITER_H_
-#define _OBJWRITER_H_
+#ifndef _PATATE_COMMON_SURFACE_MESH_OBJ_WRITER_
+#define _PATATE_COMMON_SURFACE_MESH_OBJ_WRITER_
 
 
 #include <stdexcept>
@@ -9,30 +9,28 @@
 #include "surfaceMesh.h"
 
 
-namespace Patate
+namespace PatateCommon
 {
 
 
-template < typename _Point >
+template < typename _Mesh >
 class OBJWriter
 {
 public:
-    typedef _Point Point;
+    typedef _Mesh Mesh;
+
+    typedef typename Mesh::Vector Vector;
 
 public:
-    inline OBJWriter(const SurfaceMesh& mesh,
-                     const SurfaceMesh::VertexProperty<Point>& positions);
+    inline OBJWriter();
 
-    void write(std::ostream& out);
-
-private:
-    const SurfaceMesh& m_mesh;
-    const SurfaceMesh::VertexProperty<Point>& m_vPos;
+    void write(std::ostream& out, const Mesh& mesh);
 };
 
 
+}  // namespace Patate
+
 #include "objWriter.hpp"
 
-}  // namespace Patate
 
 #endif  // _OBJWRITER_H_

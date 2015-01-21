@@ -1,3 +1,9 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
 #include "femSolver.h"
 
 
@@ -8,8 +14,8 @@ namespace Vitelotte
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& elementBuilder)
   : m_mesh(_mesh),
-    m_solved(false),
-    m_elementBuilder(elementBuilder)
+    m_elementBuilder(elementBuilder),
+    m_solved(false)
 {
 }
 
@@ -19,6 +25,8 @@ void
 FemSolver<_Mesh, _ElementBuilder>::build()
 {
     unsigned nCoefficients = 0;
+    m_elementBuilder.resetStatus();
+    m_solved = false;
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
@@ -31,6 +39,11 @@ FemSolver<_Mesh, _ElementBuilder>::build()
         elem != m_mesh->facesEnd(); ++elem)
     {
         m_elementBuilder.addCoefficients(it, *m_mesh, *elem);
+
+        if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+        {
+            return;
+        }
     }
     assert(it == coefficients.end());
 
@@ -46,6 +59,11 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::sort()
 {
+    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+    {
+        return;
+    }
+
     int n = m_stiffnessMatrix.cols();
     m_perm.resize(n);
 
@@ -109,6 +127,11 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::solve()
 {
+    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+    {
+        return;
+    }
+
     // Apply permutation
     Eigen::PermutationMatrix<Eigen::Dynamic> perm(m_perm), permInv(perm.inverse());
     StiffnessMatrix mat;

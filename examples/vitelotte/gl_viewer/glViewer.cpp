@@ -157,7 +157,7 @@ void GLViewer::initVars()
     m_info.windowHeight = 600;
     m_info.majorVersion = 4;
     m_info.minorVersion = 1;
-    m_info.samples = 64;
+    m_info.samples = 16;
     m_info.flags.all = 0;
     m_info.flags.cursor = 1;
     m_info.flags.fullscreen = 0;
@@ -180,8 +180,8 @@ void GLViewer::initVars()
 
 void GLViewer::shutdown()
 {
-    PATATE_SAFE_DELETE(m_pQvg);
-    PATATE_SAFE_DELETE(m_pQMeshRenderer);
+    delete m_pQvg;
+    delete m_pQMeshRenderer;
         
     glfwDestroyWindow(m_pWindow);
     m_pWindow = NULL;
@@ -225,6 +225,11 @@ void GLViewer::startup(const std::string& filename)
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glEnable(GL_DEPTH_TEST);
 
+    glEnable(GL_FRAMEBUFFER_SRGB);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     m_pQMeshRenderer = new Renderer;
     m_pQMeshRenderer->initialize(m_pQvg);
 
@@ -255,6 +260,7 @@ void GLViewer::render()
         m_wireframeShader.viewMatrix() = m_viewMatrix;
         m_wireframeShader.setZoom(m_zoom);
         m_wireframeShader.setLineWidth(m_lineWidth);
+        m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
         m_pQMeshRenderer->render(m_wireframeShader);
     }
 
@@ -321,7 +327,6 @@ void GLViewer::onKey(int _key, int /*_scancode*/, int _action, int /*_mods*/)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
             m_needRefresh = true;
-            std::cout << "Wireframe : " << (m_wireframe ? "enabled" : "disabled") << std::endl;
             break;
 
         default:
