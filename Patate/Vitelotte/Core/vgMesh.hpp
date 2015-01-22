@@ -519,29 +519,31 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::finalizeEdge(Edge e)
 {
+    Halfedge h0 = halfedge(e, 0);
+    Halfedge h1 = halfedge(e, 1);
     if(hasEdgeValue())
     {
-        Node& n0 = edgeValueNode(halfedge(e, 0));
-        Node& n1 = edgeValueNode(halfedge(e, 1));
+        Node& n0 = edgeValueNode(h0);
+        Node& n1 = edgeValueNode(h1);
         bool n0v = n0.isValid();
         bool n1v = n1.isValid();
 
         // if both are invalid, create a single node. Else, create
         // nodes independently, thus producing a discontinuity.
-        if(!n0v) n0 = addNode();
-        if(!n1v) n1 = n0v? addNode(): n0;
+        if(!n0v && !isBoundary(h0)) n0 = addNode();
+        if(!n1v && !isBoundary(h1)) n1 = n0v? addNode(): n0;
     }
     if(hasEdgeGradient())
     {
-        Node& n0 = edgeGradientNode(halfedge(e, 0));
-        Node& n1 = edgeGradientNode(halfedge(e, 1));
+        Node& n0 = edgeGradientNode(h0);
+        Node& n1 = edgeGradientNode(h1);
         bool n0v = n0.isValid();
         bool n1v = n1.isValid();
 
         // if both are invalid, create a single node. Else, create
         // nodes independently, thus producing a discontinuity.
-        if(!n0v) n0 = addNode();
-        if(!n1v) n1 = n0v? addNode(): n0;
+        if(!n0v && !isBoundary(h0)) n0 = addNode();
+        if(!n1v && !isBoundary(h1)) n1 = n0v? addNode(): n0;
     }
 }
 
