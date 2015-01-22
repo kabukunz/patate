@@ -205,12 +205,28 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         }
 
         L.finalize();
-        Eigen::SimplicialLDLT<StiffnessMatrix> ldlt(L);
-        m_x.middleRows(start,size) = ldlt.solve(m_x.middleRows(start, size));
-//        Eigen::BiCGSTAB<StiffnessMatrix> bicgstab(L);
-//        m_x.middleRows(start,size) = bicgstab.solve(m_x.middleRows(start, size));
-//        Eigen::SparseLU<StiffnessMatrix> lu(L);
-//        m_x.middleRows(start,size) = lu.solve(m_x.middleRows(start, size));
+
+        std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
+
+        Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
+
+//        Eigen::BiCGSTAB<StiffnessMatrix> solver;
+//        solver.compute(L);
+//        std::cout << "BiCGSTAB: " << solver.iterations() << " iters, error = " << solver.error() << "\n";
+
+//        Eigen::SparseLU<StiffnessMatrix> solver;
+//        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
+//        solver.analyzePattern(L);
+//        solver.factorize(L);
+
+        m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+
+        switch(solver.info()) {
+        case Eigen::Success: std::cout << "Success\n"; break;
+        case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; break;
+        case Eigen::NoConvergence: std::cout << "NoConvergence\n"; break;
+        case Eigen::InvalidInput: std::cout << "InvalidInput\n"; break;
+        }
     }
 
     for(unsigned i = 0; i < nUnknowns; ++i)

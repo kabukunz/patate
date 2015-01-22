@@ -14,6 +14,454 @@ namespace Vitelotte
 {
 
 
+template < typename _Scalar >
+class _LinearElement
+{
+public:
+    typedef _Scalar Scalar;
+
+    typedef Eigen::Matrix<Scalar, 2, 1> Vector;
+    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
+
+    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
+    typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
+
+    typedef Eigen::Matrix<Scalar, 3, 2> Matrix3x2;
+    typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
+
+public:
+    inline _LinearElement(const Vector& p0, const Vector& p1, const Vector& p2)
+    {
+        m_points.col(0) = p0;
+        m_points.col(1) = p1;
+        m_points.col(2) = p2;
+
+        computeFromPoints();
+    }
+
+    inline Vector point(unsigned pi, unsigned offset=0) const
+    {
+        assert(pi < 3 && offset < 3);
+        return m_points.col((pi + offset) % 3);
+    }
+
+    inline Scalar doubleArea() const { return m_2delta; }
+
+    inline Vector3 eval(const Vector& p) const
+    {
+        return m_lbf * (Vector3() << p, 1).finished();
+    }
+
+    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector& /*p*/ = Vector()) const
+    {
+        return m_lbf.template block<3, 2>(0, 0);
+    }
+
+    void computeFromPoints()
+    {
+        m_2delta = (point(1).x() - point(0).x()) * (point(2).y() - point(1).y())
+                 - (point(1).y() - point(0).y()) * (point(2).x() - point(1).x());
+
+        for(int li = 0; li < 3; ++li)
+        {
+            m_lbf(li, 0) = point(li, 1).y() - point(li, 2).y();
+            m_lbf(li, 1) = point(li, 2).x() - point(li, 1).x();
+            m_lbf(li, 2) = point(li, 1).x() * point(li, 2).y()
+                         - point(li, 2).x() * point(li, 1).y();
+        }
+        m_lbf /= m_2delta;
+
+#ifndef DNDEBUG
+        std::cout << "Compute Linear:\n";
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  p" << i << ": " << point(i).transpose()
+                      << " (" << eval(point(i)).transpose() << ")\n";
+        std::cout << "  2delta: " << m_2delta << "\n";
+
+        std::cout << "J:\n" << jacobian() << "\n";
+#endif
+    }
+
+protected:
+    Matrix2x3 m_points;
+
+    Scalar m_2delta;
+    Matrix3 m_lbf;
+};
+
+
+template < typename _Scalar >
+class _FVElement : public _LinearElement<_Scalar>
+{
+public:
+    typedef _Scalar Scalar;
+    typedef _LinearElement<Scalar> Base;
+
+    typedef Eigen::Matrix<Scalar, 2, 1> Vector;
+    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
+    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+
+    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
+    typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
+
+    typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
+    typedef Eigen::Matrix<Scalar, 9, 2> Vector9x2;
+
+
+public:
+    inline _FVElement(const Vector& p0, const Vector& p1, const Vector& p2)
+        : Base(p0, p1, p2)
+    {
+        computeFromPoints();
+    }
+
+    using Base::point;
+    using Base::doubleArea;
+
+    inline Scalar edgeLength(unsigned ei) const
+    {
+        assert(ei < 3);
+        return m_eLen(ei);
+    }
+
+    inline Scalar dldn(unsigned li, unsigned ni) const
+    {
+        assert(li < 3 && ni < 3);
+        return m_dldn(li, ni);
+    }
+
+    inline Scalar _gradientFactor(unsigned bi) const
+    {
+        return - m_2delta / edgeLength(bi);
+    }
+
+    inline Scalar _vertexGradientFactor(unsigned bi, unsigned ei) const
+    {
+        return dldn(bi, ei) + dldn(ei, ei) / 2;
+    }
+
+    inline Scalar _bubble(const Vector3& bc) const
+    {
+        return bc.prod();
+    }
+
+    inline Vector _bubbleGradient(const Vector3& bc) const
+    {
+        return Base::jacobian().row(0) * bc(1) * bc(2)
+             + Base::jacobian().row(1) * bc(2) * bc(0)
+             + Base::jacobian().row(2) * bc(0) * bc(1);
+    }
+
+    inline Matrix2 _bubbleHessian(const Vector3& bc) const
+    {
+        Matrix2 h;
+        for(int d0 = 0; d0 < 2; ++d0)
+        {
+            for(int d1 = d0; d1 < 2; ++d1)
+            {
+                h(d0, d1) = Base::jacobian()(0, d0) * Base::jacobian()(1, d1) * bc(2)
+                          + Base::jacobian()(0, d0) * Base::jacobian()(2, d1) * bc(1)
+                          + Base::jacobian()(1, d0) * Base::jacobian()(0, d1) * bc(2)
+                          + Base::jacobian()(1, d0) * Base::jacobian()(2, d1) * bc(0)
+                          + Base::jacobian()(2, d0) * Base::jacobian()(0, d1) * bc(1)
+                          + Base::jacobian()(2, d0) * Base::jacobian()(1, d1) * bc(0);
+            }
+        }
+        h(1, 0) = h(0, 1);
+        return h;
+    }
+
+    inline Scalar _vertexSubExpr(unsigned i, const Vector3& bc) const
+    {
+        return bc(i) * (bc(i) - .5) * (bc(i) + 1);
+    }
+
+    inline Vector _vertexSubExprGradient(unsigned i, const Vector3& bc) const
+    {
+        return Base::jacobian().row(i) * (3 * bc[i] * bc[i] + bc[i] - .5);
+    }
+
+    inline Matrix2 _vertexSubExprHessian(unsigned i, const Vector3& bc) const
+    {
+        Matrix2 h;
+        for(int d0 = 0; d0 < 2; ++d0)
+        {
+            for(int d1 = d0; d1 < 2; ++d1)
+            {
+                h(d0, d1) = Base::jacobian()(i, d0)
+                          * Base::jacobian()(i, d1) *
+                          * (6 * bc(i) + 1);
+            }
+        }
+        h(1, 0) = h(0, 1);
+        return h;
+    }
+
+    inline Scalar _edgeSubExpr(unsigned i, const Vector3& bc) const
+    {
+        return bc((i+1)%3) * bc((i+2)%3);
+    }
+
+    inline Vector _edgeSubExprGradient(unsigned i, const Vector3& bc) const
+    {
+        unsigned i1 = (i+1) % 3;
+        unsigned i2 = (i+2) % 3;
+        return Base::jacobian().row(i1) * bc(i2)
+             + Base::jacobian().row(i2) * bc(i1);
+    }
+
+    inline Matrix2 _edgeSubExprHessian(unsigned i, const Vector3& bc) const
+    {
+        unsigned i1 = (i+1) % 3;
+        unsigned i2 = (i+2) % 3;
+        Matrix2 h;
+        for(int d0 = 0; d0 < 2; ++d0)
+        {
+            for(int d1 = d0; d1 < 2; ++d1)
+            {
+                h(d0, d1) = Base::jacobian()(i1, d0) * Base::jacobian()(i2, d1)
+                          + Base::jacobian()(i2, d0) * Base::jacobian()(i1, d1);
+            }
+        }
+        h(1, 0) = h(0, 1);
+        return h;
+    }
+
+    inline Scalar _gradientSubExpr(unsigned i, const Vector3& bc) const
+    {
+        return bc(i) * (2*bc(i) - 1) * (bc(i) - 1);
+    }
+
+    inline Vector _gradientSubExprGradient(unsigned i, const Vector3& bc) const
+    {
+        return Base::jacobian().row(i) * (6 * bc(i) * bc(i) - 6 * bc(i) + 1);
+    }
+
+    inline Matrix2 _gradientSubExprHessian(unsigned i, const Vector3& bc) const
+    {
+        Matrix2 h;
+        for(int d0 = 0; d0 < 2; ++d0)
+        {
+            for(int d1 = d0; d1 < 2; ++d1)
+            {
+                h(d0, d1) = Base::jacobian()(i, d0)
+                          * Base::jacobian()(i, d1) *
+                          * (12 * bc(i) - 6);
+            }
+        }
+        h(1, 0) = h(0, 1);
+        return h;
+    }
+
+    inline Scalar gradientBasis(unsigned i, const Vector& p) const
+    {
+        Vector3 bc = barycentricCoords(p);
+        return _gradientFactor(i) * _gradientSubExpr(i, bc);
+    }
+
+    inline Scalar edgeBasis(unsigned i, const Vector& p) const
+    {
+        Vector3 bc = barycentricCoords(p);
+        return    4 * _edgeSubExpr(i, bc)
+                + 4 * _gradientSubExpr(i, bc)
+                - 12 * _bubble(bc);
+    }
+
+    inline Scalar vertexBasis(unsigned i, const Vector& p) const
+    {
+        Vector3 bc = barycentricCoords(p);
+        unsigned i1 = (i+1) % 3;
+        unsigned i2 = (i+2) % 3;
+        return    _vertexSubExpr(i, bc)
+                + 3 * _bubble(bc)
+                + _vertexGradientFactor(i, i1) * _gradientFactor(i1) * _gradientSubExpr(i1, bc)
+                + _vertexGradientFactor(i, i2) * _gradientFactor(i2) * _gradientSubExpr(i2, bc);
+    }
+
+    inline Vector9 eval(const Vector& p) const
+    {
+        Vector9 eb;
+        Vector3 bc = Base::eval(p);
+        Scalar bubble = _bubble(bc);
+
+        for(int i = 0; i < 3; ++i)
+        {
+            Scalar gse = _gradientSubExpr(i, bc);
+            eb(i + 3) = 4 * _edgeSubExpr(i, bc)
+                      + 4 * gse
+                      - 12 * bubble;
+            eb(i + 6) = _gradientFactor(i) * gse;
+        }
+
+        for(int i = 0; i < 3; ++i)
+        {
+            unsigned i1 = (i+1) % 3;
+            unsigned i2 = (i+2) % 3;
+            eb(i) = _vertexSubExpr(i, bc)
+                  + 3 * bubble
+                  + _vertexGradientFactor(i, i1) * eb(i1 + 6)
+                  + _vertexGradientFactor(i, i2) * eb(i2 + 6);
+        }
+
+        return eb;
+    }
+
+    inline Vector9x2 gradient(const Vector& p) const
+    {
+        Vector9x2 grad;
+        Vector3 bc = Base::eval(p);
+        Vector bubbleGradient = _bubbleGradient(bc);
+
+        for(int i = 0; i < 3; ++i)
+        {
+            Vector gseGradient = _gradientSubExprGradient(i, bc);
+            grad.row(i + 3) = 4 * _edgeSubExprGradient(i, bc)
+                            + 4 * gseGradient
+                            - 12 * bubbleGradient;
+            grad.row(i + 6) = _gradientFactor(i) * gseGradient;
+        }
+
+        for(int i = 0; i < 3; ++i)
+        {
+            unsigned i1 = (i+1) % 3;
+            unsigned i2 = (i+2) % 3;
+            Vector v1 = grad.row(i1 + 6);
+            Vector v2 = grad.row(i2 + 6);
+            grad.row(i) = _vertexSubExprGradient(i, bc)
+                        + 3 * bubbleGradient
+                        + _vertexGradientFactor(i, i1) * v1 //grad.row(i1 + 6)
+                        + _vertexGradientFactor(i, i2) * v2; //grad.row(i2 + 6);
+        }
+
+        return grad;
+    }
+
+    Vector9 _integrateNormalDerivativeOverSegment(
+            const Vector& p1, const Vector& p2, unsigned nsamples, Scalar delta) const
+    {
+        Vector9 eb = Vector9::Zero();
+        Vector v = p2 - p1;
+        Vector n(-v.y(), v.x());
+        n.normalize();
+        for(int i = 0; i < nsamples; ++i)
+        {
+            Vector lp = p1 + (Scalar(i + .5) / Scalar(nsamples)) * v;
+
+//            std::cout << "indos: " << (lp + n*delta/2).transpose() << " - "
+//                      << (lp - n*delta/2).transpose() << "\n";
+//            std::cout << "indos +: " << evalBasis(lp + n*delta/2).transpose() << "\n";
+//            std::cout << "indos -: " << evalBasis(lp - n*delta/2).transpose() << "\n";
+            eb += eval(lp + n*delta/2);
+            eb -= eval(lp - n*delta/2);
+        }
+        return eb / (delta * nsamples);
+    }
+
+    Vector9 _integrateNormalDerivativeOverSegment2(
+            const Vector& p1, const Vector& p2, unsigned nsamples) const
+    {
+        Vector9 eb = Vector9::Zero();
+        Vector v = p2 - p1;
+        Vector n(-v.y(), v.x());
+        n.normalize();
+        for(int i = 0; i < nsamples; ++i)
+        {
+            Vector lp = p1 + (Scalar(i + .5) / Scalar(nsamples)) * v;
+
+//            std::cout << "indos: " << (lp + n*delta/2).transpose() << " - "
+//                      << (lp - n*delta/2).transpose() << "\n";
+//            std::cout << "indos +: " << evalBasis(lp + n*delta/2).transpose() << "\n";
+//            std::cout << "indos -: " << evalBasis(lp - n*delta/2).transpose() << "\n";
+            eb += gradient(lp) * n;
+        }
+        return eb / nsamples;
+    }
+
+    void computeFromPoints()
+    {
+        Matrix2x3 vs;
+        for(int i = 0; i < 3; ++i)
+            vs.col(i) = point(i, 2) - point(i, 1);
+
+        for(int i = 0; i < 3; ++i)
+            m_eLen(i) = vs.col(i).norm();
+
+        m_rot.row(0) = vs.col(2) / edgeLength(2);
+        m_rot(1, 0) = -m_rot(0, 1);
+        m_rot(1, 1) =  m_rot(0, 0);
+
+        Matrix2x3 pts = m_rot * m_points;
+
+        for(int ni = 0; ni < 3; ++ni)
+            for(int li = 0; li < 3; ++li)
+                m_dldn(li, ni) =
+                        vs.col(li).dot(vs.col(ni)) / (m_2delta * edgeLength(ni));
+
+
+#ifndef DNDEBUG
+        Matrix2x3 vs_;
+        for(int i = 0; i < 3; ++i)
+            vs_.col(i) = pts.col((i+2)%3) - pts.col((i+1)%3);
+
+        std::cout << "Compute FV:\n";
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  v" << i << ": " << vs.col(i).transpose() << "\n";
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  p" << i << "': " << pts.col(i).transpose() << "\n";
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  v" << i << "': " << vs_.col(i).transpose() << "\n";
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  l" << i << ": " << edgeLength(i) << " ("
+                      << vs_.col(i).norm() - edgeLength(i) << ")\n";
+        for(int li = 0; li < 3; ++li)
+        {
+            std::cout << "  dl" << li << ": ";
+            for(int ni = 0; ni < 3; ++ni)
+            {
+                if(ni) std::cout << ", ";
+                std::cout << "dn" << ni << ": " << dldn(li, ni);
+            }
+            std::cout << " (" << dldn(li, 0) + dldn(li, 1) + dldn(li, 2) << ")\n";
+        }
+
+        for(int i = 0; i < 3; ++i)
+            std::cout << "  b(p" << i << "): " << eval(point(i)).transpose() << "\n";
+        for(int i = 0; i < 3; ++i)
+        {
+            std::cout << "  b(e" << i << "): " << eval((point(i, 1) + point(i, 2)) / 2).transpose() << "\n";
+        }
+        for(int i = 0; i < 3; ++i)
+        {
+//            std::cout << "  f: " << _vertexGradientFactor(i, (i+1)%3) << "\n";
+//            std::cout << "  f: " << _vertexGradientFactor(i, (i+2)%3) << "\n";
+            std::cout << "  g(e" << i << "): " << _integrateNormalDerivativeOverSegment(
+                             point(i, 1), point(i, 2), 32, .000001).transpose() << "\n";
+        }
+        for(int i = 0; i < 3; ++i)
+        {
+            std::cout << "  g(e" << i << "): " << _integrateNormalDerivativeOverSegment2(
+                             point(i, 1), point(i, 2), 32).transpose() << "\n";
+        }
+        for(int i = 0; i < 3; ++i)
+        {
+            std::cout << "  g(e" << i << "): " << _integrateNormalDerivativeOverSegment2(
+                             point(i, 1), point(i, 2), 256).transpose() << "\n";
+        }
+#endif
+    }
+
+private:
+    using Base::m_points;
+    using Base::m_2delta;
+    using Base::m_lbf;
+
+    Matrix2 m_rot;
+
+    Vector3 m_eLen;
+    Matrix3 m_dldn;
+};
+
+
 template < class _Mesh, typename _Scalar >
 FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
   : m_sigma(sigma)
@@ -70,21 +518,26 @@ FVElementBuilder<_Mesh, _Scalar>::
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
     bool orient[3];
+    Vector p[3];
     Vector v[3];
     int nodes[9];
-//    int flatVx = -1;
-//    for(int i = 0; i < 3; ++i)
-//    {
+
+// ################# BEGIN TEST CODE
+    int flatVx = -1;
+    for(int i = 0; i < 3; ++i)
+    {
 //        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
-//            flatVx = i;
-//        ++hit;
-//    }
-//    while(flatVx > 0)
-//    {
-//        ++hit;
-//        --flatVx;
-//    }
+        if(mesh.toVertex(*hit).idx() == 0)
+            flatVx = i;
+        ++hit;
+    }
+    while(flatVx > 0)
+    {
+        ++hit;
+        --flatVx;
+    }
 //    std::cerr << flatVx << "\n";
+// ################# END TEST CODE
 
     --hit;
     for(int i = 0; i < 3; ++i)
@@ -96,8 +549,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         nodes[6+i] = mesh.edgeGradientNode(*hit).idx();
         ++hit;
         nodes[i] = mesh.toVertexValueNode(*hit).idx();
-//        if(mesh.vertexGradientConstrained(mesh.toVertex(*hit)))
-//            flatVx = i;
+        p[i] = mesh.position(mesh.toVertex(*hit)).template cast<Scalar>();
     }
 
     for(int i = 0; i < 9; ++i)
@@ -108,13 +560,12 @@ FVElementBuilder<_Mesh, _Scalar>::
             return;
         }
     }
-//    assert(flatVx < 1);
 
-    Vector p[] = {
-        Vector::Zero(),
-        v[2],
-        -v[1]
-    };
+//    Vector p[] = {
+//        Vector::Zero(),
+//        v[2],
+//        -v[1]
+//    };
 
     Scalar area = det2(v[0], v[1]) / 2.;
 
@@ -154,25 +605,30 @@ FVElementBuilder<_Mesh, _Scalar>::
     Vector3 dy2[9];
     Vector3 dxy[9];
 
-//    for(size_t i = 0; i < 3; ++i)
-//    {
-//    // 25%:
-//        dx2[i+0] = funcVertexBasis(i, Deriv_XX, a, b, c, d, l, area);
-//        dx2[i+3] = funcMidpointBasis(i, Deriv_XX, a, b, c, d, l, area);
-//        dx2[i+6] = funcMidpointDerivBasis(i, Deriv_XX, a, b, c, d, l, area);
-//        dy2[i+0] = funcVertexBasis(i, Deriv_YY, a, b, c, d, l, area);
-//        dy2[i+3] = funcMidpointBasis(i, Deriv_YY, a, b, c, d, l, area);
-//        dy2[i+6] = funcMidpointDerivBasis(i, Deriv_YY, a, b, c, d, l, area);
-//        dxy[i+0] = funcVertexBasis(i, Deriv_XY, a, b, c, d, l, area);
-//        dxy[i+3] = funcMidpointBasis(i, Deriv_XY, a, b, c, d, l, area);
-//        dxy[i+6] = funcMidpointDerivBasis(i, Deriv_XY, a, b, c, d, l, area);
-//    };
+    Vector3 dx2_[9];
+    Vector3 dy2_[9];
+    Vector3 dxy_[9];
+    for(size_t i = 0; i < 3; ++i)
+    {
+    // 25%:
+        dx2_[i+0] = funcVertexBasis(i, Deriv_XX, a, b, c, d, l, area);
+        dx2_[i+3] = funcMidpointBasis(i, Deriv_XX, a, b, c, d, l, area);
+        dx2_[i+6] = funcMidpointDerivBasis(i, Deriv_XX, a, b, c, d, l, area);
+        dy2_[i+0] = funcVertexBasis(i, Deriv_YY, a, b, c, d, l, area);
+        dy2_[i+3] = funcMidpointBasis(i, Deriv_YY, a, b, c, d, l, area);
+        dy2_[i+6] = funcMidpointDerivBasis(i, Deriv_YY, a, b, c, d, l, area);
+        dxy_[i+0] = funcVertexBasis(i, Deriv_XY, a, b, c, d, l, area);
+        dxy_[i+3] = funcMidpointBasis(i, Deriv_XY, a, b, c, d, l, area);
+        dxy_[i+6] = funcMidpointDerivBasis(i, Deriv_XY, a, b, c, d, l, area);
+    };
 
     typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
     Vector9 b8p0gcons = Vector9::Zero();
     Vector9 b7p0gcons = Vector9::Zero();
 
     {
+        _FVElement<Scalar> elem(p[0], p[1], p[2]);
+
         Scalar l0 = v[0].norm();
         Scalar l1 = v[1].norm();
         Scalar l2 = v[2].norm();
@@ -362,30 +818,55 @@ FVElementBuilder<_Mesh, _Scalar>::
     //                  << dy2[i].format(fmt) << "\n";
 //        }
 
-//        if(flatVx != 0)
-//        {
-//            b8p0gcons <<
-//                _2delta*dl0dn2/(l1*l2) + 4/l1,
-//                -_2delta*dl1dn0/(l0*l1) + _2delta*dl1dn2/(l1*l2),
-//                -_2delta*dl2dn0/(l0*l1),
-//                4/l1,
-//                -4/l1,
-//                -4/l1,
-//                -_2delta/(l0*l1),
-//                0,
-//                _2delta/(l1*l2);
-//            b7p0gcons <<
-//                -_2delta*dl0dn1/(l1*l2) - 4/l2,
-//                _2delta*dl1dn0/(l0*l2),
-//                _2delta*dl2dn0/(l0*l2) - _2delta*dl2dn1/(l1*l2),
-//                -4/l2,
-//                4/l2,
-//                4/l2,
-//                _2delta/(l0*l2),
-//                -_2delta/(l1*l2),
-//                0;
-//        }
+        if(flatVx == 0)
+        {
+            b8p0gcons <<
+                _2delta*dl0dn2/(l1*l2) + 4/l1,
+                -_2delta*dl1dn0/(l0*l1) + _2delta*dl1dn2/(l1*l2),
+                -_2delta*dl2dn0/(l0*l1),
+                4/l1,
+                -4/l1,
+                -4/l1,
+                -_2delta/(l0*l1),
+                0,
+                _2delta/(l1*l2);
+            b7p0gcons <<
+                -_2delta*dl0dn1/(l1*l2) - 4/l2,
+                _2delta*dl1dn0/(l0*l2),
+                _2delta*dl2dn0/(l0*l2) - _2delta*dl2dn1/(l1*l2),
+                -4/l2,
+                4/l2,
+                4/l2,
+                _2delta/(l0*l2),
+                -_2delta/(l1*l2),
+                0;
+        }
     }
+
+    std::cout << "Element:\n";
+    Eigen::IOFormat fmt(4, 0, ", ", "\n", "    ", "", "", "");
+    for(int i = 0; i < 9; ++i) {
+        Eigen::Matrix<Scalar, 3, 3> m;
+        m << dx2_[i], dx2[i], dx2[i] - dx2_[i];
+        std::cout << "  dx2[" << i << "]:\n" << m.format(fmt) << "\n";
+    }
+    for(int i = 0; i < 9; ++i) {
+        Eigen::Matrix<Scalar, 3, 3> m;
+        m << dy2_[i], dy2[i], dy2[i] - dy2_[i];
+        std::cout << "  dy2[" << i << "]:\n" << m.format(fmt) << "\n";
+    }
+    for(int i = 0; i < 9; ++i) {
+        Eigen::Matrix<Scalar, 3, 3> m;
+        m << dxy_[i], dxy[i], dxy[i] - dxy_[i];
+        std::cout << "  dxy[" << i << "]:\n" << m.format(fmt) << "\n";
+    }
+
+//    for(size_t i = 0; i < 9; ++i)
+//    {
+//        dx2[i] = dx2_[i];
+//        dy2[i] = dy2_[i];
+//        dxy[i] = dxy_[i];
+//    }
 
     Eigen::Matrix<Scalar, 9, 9> m;
     for(size_t i = 0; i < 9; ++i)
@@ -398,7 +879,7 @@ FVElementBuilder<_Mesh, _Scalar>::
             Vector6 basis = multBasis(dx2[i]+dy2[i], dx2[j]+dy2[j])
                                     + (1.-m_sigma) * (2. * multBasis(dxy[i], dxy[j])
                                                     - multBasis(dx2[i], dy2[j])
-                    - multBasis(dy2[i], dx2[j]));
+                                                    - multBasis(dy2[i], dx2[j]));
 
             value = integrateQuadTriangle(v, basis, area);
 
@@ -418,14 +899,20 @@ FVElementBuilder<_Mesh, _Scalar>::
         }
     }
 
-//    if(flatVx != 0)
-//    {
+    if(flatVx == 0)
+    {
+//        std::cout << "Point Gradient Constraint 2\n";
 //        m.row(7) = b7p0gcons;
 //        m.row(8) = b8p0gcons;
 //        m.col(7) = b7p0gcons;
 //        m.col(8) = b8p0gcons;
+
+//        m.row(8) = b7p0gcons;
+//        m.row(7) = b8p0gcons;
+//        m.col(8) = b7p0gcons;
+//        m.col(7) = b8p0gcons;
 //        std::cerr << m << "\n";
-//    }
+    }
 
     for(size_t i = 0; i < 9; ++i)
     {
