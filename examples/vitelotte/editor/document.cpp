@@ -403,37 +403,72 @@ void Document::exportPlot(const std::string& filename)
 {
     std::ofstream out(filename.c_str());
 
-    for(Mesh::VertexIterator vit = m_solvedMesh.verticesBegin();
-        vit != m_solvedMesh.verticesEnd(); ++vit)
-    {
-        Mesh::Halfedge h = m_solvedMesh.halfedge(*vit);
-        Mesh::Halfedge hend = h;
-        Mesh::Node n;
-        do
-        {
-            n = m_solvedMesh.fromVertexValueNode(h);
-            h = m_solvedMesh.oppositeHalfedge(m_solvedMesh.prevHalfedge(h));
-        } while(!m_solvedMesh.isValid(n) && h != hend);
-
-        out << "v " << m_solvedMesh.position(*vit).transpose() << " ";
-        if(m_solvedMesh.isValid(n))
-            out << m_solvedMesh.nodeValue(n)(0);
-        else
-            out << "0";
-        out << "\n";
-    }
+    unsigned layer = 0;
+    unsigned nCount = 0;
+    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
     for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
         fit != m_solvedMesh.facesEnd(); ++fit)
     {
-        Mesh::Halfedge h = m_solvedMesh.halfedge(*fit);
-        Mesh::Vertex v0 = m_solvedMesh.toVertex(h);
-        h = m_solvedMesh.nextHalfedge(h);
-        Mesh::Vertex v1 = m_solvedMesh.toVertex(h);
-        h = m_solvedMesh.nextHalfedge(h);
-        Mesh::Vertex v2 = m_solvedMesh.toVertex(h);
+        Mesh::Halfedge h[3];
+        h[0] = m_solvedMesh.halfedge(*fit);
+        h[1] = m_solvedMesh.nextHalfedge(h[0]);
+        h[2] = m_solvedMesh.nextHalfedge(h[1]);
 
-        if(m_solvedMesh.isValid(v0) && m_solvedMesh.isValid(v1) && m_solvedMesh.isValid(v2))
-            out << "f " << v0.idx()+1 << " " << v1.idx()+1 << " " << v2.idx()+1 << "\n";
+        for(unsigned hi = 0; hi < 3; ++hi)
+        {
+            Mesh::Node n;
+            Mesh::Vertex to = m_solvedMesh.toVertex(h[hi]);
+            Mesh::Vertex from = m_solvedMesh.fromVertex(h[hi]);
+
+            n = m_solvedMesh.toVertexValueNode(h[hi]);
+            if(indexFromNode[n.idx()] == -1)
+            {
+                out << "v " << m_solvedMesh.position(to).transpose() << " ";
+                if(m_solvedMesh.isValid(n))
+                    out << m_solvedMesh.nodeValue(n)(layer);
+                else
+                    out << "0";
+                out << "\n";
+                indexFromNode[n.idx()] = nCount++;
+            }
+
+            n = m_solvedMesh.edgeValueNode(h[hi]);
+            if(indexFromNode[n.idx()] == -1)
+            {
+                Mesh::Vector p = (m_solvedMesh.position(to)
+                                + m_solvedMesh.position(from)) / 2;
+                out << "v " << p.transpose() << " ";
+                if(m_solvedMesh.isValid(n))
+                    out << m_solvedMesh.nodeValue(n)(layer);
+                else
+                    out << "0";
+                out << "\n";
+                indexFromNode[n.idx()] = nCount++;
+            }
+        }
+    }
+
+    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
+        fit != m_solvedMesh.facesEnd(); ++fit)
+    {
+        Mesh::Halfedge h[3];
+        h[0] = m_solvedMesh.halfedge(*fit);
+        h[1] = m_solvedMesh.nextHalfedge(h[0]);
+        h[2] = m_solvedMesh.nextHalfedge(h[1]);
+
+        unsigned vi[3];
+        unsigned ei[3];
+        for(int i = 0; i < 3; ++i)
+        {
+            vi[i] = indexFromNode[m_solvedMesh.toVertexValueNode(h[i]).idx()];
+            ei[(i+1)%3] = indexFromNode[m_solvedMesh.edgeValueNode(h[i]).idx()];
+        }
+
+//        out << "f " << vi[0]+1 << " " << vi[1]+1 << " " << vi[2]+1 << "\n";
+        out << "f " << vi[0]+1 << " " << ei[2]+1 << " " << ei[1]+1 << "\n";
+        out << "f " << vi[1]+1 << " " << ei[0]+1 << " " << ei[2]+1 << "\n";
+        out << "f " << vi[2]+1 << " " << ei[1]+1 << " " << ei[0]+1 << "\n";
+        out << "f " << ei[0]+1 << " " << ei[1]+1 << " " << ei[2]+1 << "\n";
     }
 }
 
