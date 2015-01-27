@@ -113,6 +113,7 @@ public slots:
     void openSaveSourceMeshDialog();
     void openSaveFinalMeshDialog();
 
+    void exportPlot(const std::string& filename);
 
 signals:
     void selectionChanged();

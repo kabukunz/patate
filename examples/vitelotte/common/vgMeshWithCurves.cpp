@@ -148,8 +148,10 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
             if(isGradientConstraint(pc))
             {
                 Eigen::Vector2f v = (position(toVertex(*hit)) - position(fromVertex(*hit))).normalized();
-                v = Eigen::Vector2f(-v(1), v(0));
-                Node gn = addNode(grad * v * (halfedgeOrientation(*hit)? -1: 1));
+                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
+                Node gn = addNode(grad * v);
+//                std::cout << "Point gradient constraint: "
+//                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
                 halfedgeNode(*hit, EDGE_GRADIENT) = gn;
                 halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
             }

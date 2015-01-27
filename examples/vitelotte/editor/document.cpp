@@ -217,6 +217,8 @@ void Document::solve()
         {
             std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
         }
+
+        exportPlot("plot.obj");
     }
 
     emit meshUpdated();
@@ -393,6 +395,45 @@ void Document::openSaveFinalMeshDialog()
     if(!file.isEmpty())
     {
         Vitelotte::writeMvgToFile(file.toStdString(), m_solvedMesh);
+    }
+}
+
+
+void Document::exportPlot(const std::string& filename)
+{
+    std::ofstream out(filename.c_str());
+
+    for(Mesh::VertexIterator vit = m_solvedMesh.verticesBegin();
+        vit != m_solvedMesh.verticesEnd(); ++vit)
+    {
+        Mesh::Halfedge h = m_solvedMesh.halfedge(*vit);
+        Mesh::Halfedge hend = h;
+        Mesh::Node n;
+        do
+        {
+            n = m_solvedMesh.fromVertexValueNode(h);
+            h = m_solvedMesh.oppositeHalfedge(m_solvedMesh.prevHalfedge(h));
+        } while(!m_solvedMesh.isValid(n) && h != hend);
+
+        out << "v " << m_solvedMesh.position(*vit).transpose() << " ";
+        if(m_solvedMesh.isValid(n))
+            out << m_solvedMesh.nodeValue(n)(0);
+        else
+            out << "0";
+        out << "\n";
+    }
+    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
+        fit != m_solvedMesh.facesEnd(); ++fit)
+    {
+        Mesh::Halfedge h = m_solvedMesh.halfedge(*fit);
+        Mesh::Vertex v0 = m_solvedMesh.toVertex(h);
+        h = m_solvedMesh.nextHalfedge(h);
+        Mesh::Vertex v1 = m_solvedMesh.toVertex(h);
+        h = m_solvedMesh.nextHalfedge(h);
+        Mesh::Vertex v2 = m_solvedMesh.toVertex(h);
+
+        if(m_solvedMesh.isValid(v0) && m_solvedMesh.isValid(v1) && m_solvedMesh.isValid(v2))
+            out << "f " << v0.idx()+1 << " " << v1.idx()+1 << " " << v2.idx()+1 << "\n";
     }
 }
 
