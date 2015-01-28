@@ -60,4 +60,19 @@ for r in range(1, nrings+1):
 #			print("f", inner+v, outer+v, outer+v+1)
 #			print("f", inner+v, outer+v+1, inner+v+1)
 #		print("f", inner+r-1, outer+r-1, outer+r)
-		
+
+print("pc x o;", .5/nrings, "0 0 0 0", .5/nrings, "0 0; 0")
+vx = 1 + 3 * nrings * (nrings - 1)
+ring_size = nrings * 6
+grad = [
+           '0:1,.5,0,1',
+    '0.166666:.75,.933,0,1',
+    '0.333333:.25,.933,0,1',
+          '.5:0,.5,0,1',
+    '0.666666:.25,.067,0,1',
+    '0.833333:.75,.067,0,1',
+           '1:1,.5,0,1',
+]
+print("dc o x; ", ' '.join(grad), "; ",
+	' '.join(map(lambda x: str(x + vx) + ':' + str(x / ring_size), range(ring_size))),
+	' ', str(vx), ':1', sep='')

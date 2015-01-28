@@ -676,6 +676,12 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
 
+//        typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
+//        do ++hit;
+//        while(mesh.toVertex(*hit).idx() != 0 && hit != hend);
+//        bool flat = mesh.toVertex(*hit).idx() == 0;
+        bool flat = false;
+
         bool orient[3];
         Vector p[3];
         --hit;
@@ -739,7 +745,7 @@ FVElementBuilder<_Mesh, _Scalar>::
                           - dx2[i] * dy2[j]
                           - dx2[j] * dy2[i]);
 
-                Scalar value = quadPointValue.sum() * (elem.doubleArea() / 3);
+                Scalar value = quadPointValue.sum() * (elem.doubleArea() / 6);
 
                 EIGEN_ASM_COMMENT("MYEND");
 
@@ -755,9 +761,48 @@ FVElementBuilder<_Mesh, _Scalar>::
                 smNew(j, i) = value;
             }
         }
+
+        if(flat)
+        {
+            typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+            Vector9 fde1;
+            Vector9 fde2;
+            fde1 <<
+                -1.0L/2.0L*(2*elem.doubleArea()*elem.dldn(0, 1) + elem.doubleArea()*elem.dldn(1, 1) + 7*elem.edgeLength(1))/(elem.edgeLength(1)*elem.edgeLength(2)),
+                (1.0L/2.0L)*(elem.doubleArea()*elem.dldn(0, 0) + 2*elem.doubleArea()*elem.dldn(1, 0) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(2)),
+                (1.0L/2.0L)*elem.doubleArea()*(elem.dldn(0, 0)*elem.edgeLength(1) - elem.dldn(1, 1)*elem.edgeLength(0) + 2*elem.dldn(2, 0)*elem.edgeLength(1) - 2*elem.dldn(2, 1)*elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+                -4/elem.edgeLength(2),
+                4/elem.edgeLength(2),
+                4/elem.edgeLength(2),
+                elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(2)),
+                -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2)),
+                0;
+            fde2 <<
+                -1.0L/2.0L*(2*elem.doubleArea()*elem.dldn(0, 2) + elem.doubleArea()*elem.dldn(2, 2) + 7*elem.edgeLength(2))/(elem.edgeLength(1)*elem.edgeLength(2)),
+                (1.0L/2.0L)*elem.doubleArea()*(elem.dldn(0, 0)*elem.edgeLength(2) + 2*elem.dldn(1, 0)*elem.edgeLength(2) - 2*elem.dldn(1, 2)*elem.edgeLength(0) - elem.dldn(2, 2)*elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+                (1.0L/2.0L)*(elem.doubleArea()*elem.dldn(0, 0) + 2*elem.doubleArea()*elem.dldn(2, 0) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)),
+                -4/elem.edgeLength(1),
+                4/elem.edgeLength(1),
+                4/elem.edgeLength(1),
+                elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(1)),
+                0,
+                -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
+
+            smNew.row(7) += fde1;
+//            smNew.col(7) = fde1;
+            smNew.row(8) += fde2;
+//            smNew.col(8) = fde2;
+
+            std::cout << "Flat elem:\n";
+            std::cout << "  p0: " << elem.point(0).transpose() << "\n";
+            std::cout << "  p1: " << elem.point(1).transpose() << "\n";
+            std::cout << "  p2: " << elem.point(2).transpose() << "\n";
+            std::cout << "  Stiffness matrix:\n" << smNew << "\n";
+        }
     }
 
     Matrix9& sm = (method & 2)? smNew: smOld;
+
     for(size_t i = 0; i < 9; ++i)
     {
         for(size_t j = 0; j < 9; ++j)
