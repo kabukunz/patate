@@ -195,7 +195,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
     {
         for(int i = 0; i < nparam+1; ++i)
         {
-            while(c != cend && (std::isdigit(*c) || *c == '.')) ++c;
+            while(c != cend && (std::isdigit(*c) || *c == '.' || *c == '-')) ++c;
 
             bool ok = (i == 0)?      c != cend && *c == ':':
                       (i == nparam)? c == cend || std::isspace(*c):
