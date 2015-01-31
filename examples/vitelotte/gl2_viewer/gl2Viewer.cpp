@@ -136,17 +136,22 @@ public:
 
         m_mesh = m_baseMesh;
 
-        unsigned time = SDL_GetTicks();
+        unsigned startTime = SDL_GetTicks();
         std::cout << "Solving '" << filename << "'... ";
         std::cout.flush();
 
         m_mesh.setAttributes(Mesh::FV_FLAGS);
         m_mesh.finalize();
 
+        unsigned finalizeTime = SDL_GetTicks();
+
         FVSolver solver(&m_mesh);
         solver.build();
+        unsigned buildTime = SDL_GetTicks();
         solver.sort();
+        unsigned sortTime = SDL_GetTicks();
         solver.solve();
+        unsigned solveTime = SDL_GetTicks();
 
         if(solver.status() != FVElement::STATUS_OK)
         {
@@ -157,8 +162,11 @@ public:
             std::cerr << "Solve failed./n";
         }
 
-        time = SDL_GetTicks() - time;
-        std::cout << time << "ms" << std::endl;
+        std::cout << "Finalize time: " << finalizeTime -    startTime << "ms" << std::endl;
+        std::cout << "   Build time: " <<    buildTime - finalizeTime << "ms" << std::endl;
+        std::cout << "    Sort time: " <<     sortTime -    buildTime << "ms" << std::endl;
+        std::cout << "   Solve time: " <<    solveTime -     sortTime << "ms" << std::endl;
+        std::cout << "   Total time: " <<    solveTime -    startTime << "ms" << std::endl;
 
         centerView();
         m_renderer.initialize(&m_mesh);

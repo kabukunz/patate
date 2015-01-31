@@ -51,7 +51,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
 
-    sort();
+//    sort();
 }
 
 
