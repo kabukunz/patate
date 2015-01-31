@@ -207,6 +207,7 @@ void Document::solve()
     if(m_solvedMesh.hasUnknowns())
     {
         m_fvSolver.build();
+        m_fvSolver.sort();
         m_fvSolver.solve();
 
         if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_WARNING)

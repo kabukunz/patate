@@ -25,6 +25,7 @@ void solveGeneric(Mesh& mesh)
 {
     Solver solver(&mesh);
     solver.build();
+    solver.sort();
 
     if(solver.status() == Solver::ElementBuilder::STATUS_WARNING)
     {

@@ -7,6 +7,8 @@
 
 #include <Eigen/Dense>
 
+#include "fvElement.h"
+
 #include "fvElementBuilder.h"
 
 
@@ -15,403 +17,11 @@ namespace Vitelotte
 
 
 template < typename _Scalar >
-class _LinearElement
+class FVElementFlat : public FVElement<_Scalar>
 {
 public:
     typedef _Scalar Scalar;
-
-    typedef Eigen::Matrix<Scalar, 2, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-
-    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
-    typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
-
-    typedef Eigen::Matrix<Scalar, 3, 2> Matrix3x2;
-    typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
-
-public:
-    inline _LinearElement(const Vector& p0, const Vector& p1, const Vector& p2)
-    {
-        m_points.col(0) = p0;
-        m_points.col(1) = p1;
-        m_points.col(2) = p2;
-
-        computeFromPoints();
-    }
-
-    inline Vector point(unsigned pi, unsigned offset=0) const
-    {
-        assert(pi < 3 && offset < 3);
-        return m_points.col((pi + offset) % 3);
-    }
-
-    inline Scalar doubleArea() const { return m_2delta; }
-
-    inline Vector3 eval(const Vector& p) const
-    {
-        return m_lbf * (Vector3() << p, 1).finished();
-    }
-
-    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector& /*p*/ = Vector()) const
-    {
-        return m_lbf.template block<3, 2>(0, 0);
-    }
-
-    void computeFromPoints()
-    {
-        m_2delta = (point(1).x() - point(0).x()) * (point(2).y() - point(1).y())
-                 - (point(1).y() - point(0).y()) * (point(2).x() - point(1).x());
-
-        for(int li = 0; li < 3; ++li)
-        {
-            m_lbf(li, 0) = point(li, 1).y() - point(li, 2).y();
-            m_lbf(li, 1) = point(li, 2).x() - point(li, 1).x();
-            m_lbf(li, 2) = point(li, 1).x() * point(li, 2).y()
-                         - point(li, 2).x() * point(li, 1).y();
-        }
-        m_lbf /= m_2delta;
-
-#ifndef DNDEBUG
-//        std::cout << "Compute Linear:\n";
-//        for(int i = 0; i < 3; ++i)
-//            std::cout << "  p" << i << ": " << point(i).transpose()
-//                      << " (" << eval(point(i)).transpose() << ")\n";
-//        std::cout << "  2delta: " << m_2delta << "\n";
-
-//        std::cout << "J:\n" << jacobian() << "\n";
-#endif
-    }
-
-protected:
-    Matrix2x3 m_points;
-
-    Scalar m_2delta;
-    Matrix3 m_lbf;
-};
-
-
-template < typename _Scalar >
-class _FVElement : public _LinearElement<_Scalar>
-{
-public:
-    typedef _Scalar Scalar;
-    typedef _LinearElement<Scalar> Base;
-
-    typedef Eigen::Matrix<Scalar, 2, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
-
-    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
-    typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
-
-    typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
-    typedef Eigen::Matrix<Scalar, 9, 2> Vector9x2;
-
-
-public:
-    inline _FVElement(const Vector& p0, const Vector& p1, const Vector& p2)
-        : Base(p0, p1, p2)
-    {
-        computeFromPoints();
-    }
-
-    using Base::point;
-    using Base::doubleArea;
-
-    inline Scalar edgeLength(unsigned ei) const
-    {
-        assert(ei < 3);
-        return m_eLen(ei);
-    }
-
-    inline const Matrix3& dldn() const
-    {
-        return m_dldn;
-    }
-
-    inline Scalar dldn(unsigned li, unsigned ni) const
-    {
-        assert(li < 3 && ni < 3);
-        return m_dldn(li, ni);
-    }
-
-    inline Scalar _gradientFactor(unsigned bi) const
-    {
-        return - m_2delta / edgeLength(bi);
-    }
-
-    inline Scalar _vertexGradientFactor(unsigned bi, unsigned ei) const
-    {
-        return dldn(bi, ei) + dldn(ei, ei) / 2;
-    }
-
-    inline Scalar _bubble(const Vector3& bc) const
-    {
-        return bc.prod();
-    }
-
-    inline Vector _bubbleGradient(const Vector3& bc) const
-    {
-        return Base::jacobian().row(0) * bc(1) * bc(2)
-             + Base::jacobian().row(1) * bc(2) * bc(0)
-             + Base::jacobian().row(2) * bc(0) * bc(1);
-    }
-
-    inline Matrix2 _bubbleHessian(const Vector3& bc) const
-    {
-        Matrix2 h;
-        for(int d0 = 0; d0 < 2; ++d0)
-        {
-            for(int d1 = d0; d1 < 2; ++d1)
-            {
-                h(d0, d1) = Base::jacobian()(0, d0) * Base::jacobian()(1, d1) * bc(2)
-                          + Base::jacobian()(0, d0) * Base::jacobian()(2, d1) * bc(1)
-                          + Base::jacobian()(1, d0) * Base::jacobian()(0, d1) * bc(2)
-                          + Base::jacobian()(1, d0) * Base::jacobian()(2, d1) * bc(0)
-                          + Base::jacobian()(2, d0) * Base::jacobian()(0, d1) * bc(1)
-                          + Base::jacobian()(2, d0) * Base::jacobian()(1, d1) * bc(0);
-            }
-        }
-        h(1, 0) = h(0, 1);
-        return h;
-    }
-
-    inline Scalar _vertexSubExpr(unsigned i, const Vector3& bc) const
-    {
-        return bc(i) * (bc(i) - .5) * (bc(i) + 1);
-    }
-
-    inline Vector _vertexSubExprGradient(unsigned i, const Vector3& bc) const
-    {
-        return Base::jacobian().row(i) * (3 * bc[i] * bc[i] + bc[i] - .5);
-    }
-
-    inline Matrix2 _vertexSubExprHessian(unsigned i, const Vector3& bc) const
-    {
-        Matrix2 h;
-        for(int d0 = 0; d0 < 2; ++d0)
-        {
-            for(int d1 = d0; d1 < 2; ++d1)
-            {
-                h(d0, d1) = Base::jacobian()(i, d0)
-                          * Base::jacobian()(i, d1)
-                          * (6 * bc(i) + 1);
-            }
-        }
-        h(1, 0) = h(0, 1);
-        return h;
-    }
-
-    inline Scalar _edgeSubExpr(unsigned i, const Vector3& bc) const
-    {
-        return bc((i+1)%3) * bc((i+2)%3);
-    }
-
-    inline Vector _edgeSubExprGradient(unsigned i, const Vector3& bc) const
-    {
-        unsigned i1 = (i+1) % 3;
-        unsigned i2 = (i+2) % 3;
-        return Base::jacobian().row(i1) * bc(i2)
-             + Base::jacobian().row(i2) * bc(i1);
-    }
-
-    inline Matrix2 _edgeSubExprHessian(unsigned i, const Vector3& /*bc*/) const
-    {
-        unsigned i1 = (i+1) % 3;
-        unsigned i2 = (i+2) % 3;
-        Matrix2 h;
-        for(int d0 = 0; d0 < 2; ++d0)
-        {
-            for(int d1 = d0; d1 < 2; ++d1)
-            {
-                h(d0, d1) = Base::jacobian()(i1, d0) * Base::jacobian()(i2, d1)
-                          + Base::jacobian()(i2, d0) * Base::jacobian()(i1, d1);
-            }
-        }
-        h(1, 0) = h(0, 1);
-        return h;
-    }
-
-    inline Scalar _gradientSubExpr(unsigned i, const Vector3& bc) const
-    {
-        return bc(i) * (2.*bc(i) - 1.) * (bc(i) - 1.);
-    }
-
-    inline Vector _gradientSubExprGradient(unsigned i, const Vector3& bc) const
-    {
-        return Base::jacobian().row(i) * (6 * bc(i) * bc(i) - 6 * bc(i) + 1);
-    }
-
-    inline Matrix2 _gradientSubExprHessian(unsigned i, const Vector3& bc) const
-    {
-        Matrix2 h;
-        for(int d0 = 0; d0 < 2; ++d0)
-        {
-            for(int d1 = d0; d1 < 2; ++d1)
-            {
-                h(d0, d1) = Base::jacobian()(i, d0)
-                          * Base::jacobian()(i, d1)
-                          * (12 * bc(i) - 6);
-            }
-        }
-        h(1, 0) = h(0, 1);
-        return h;
-    }
-
-/*    inline Scalar gradientBasis(unsigned i, const Vector& p) const
-    {
-        Vector3 bc = barycentricCoords(p);
-        return _gradientFactor(i) * _gradientSubExpr(i, bc);
-    }
-
-    inline Scalar edgeBasis(unsigned i, const Vector& p) const
-    {
-        Vector3 bc = barycentricCoords(p);
-        return    4 * _edgeSubExpr(i, bc)
-                + 4 * _gradientSubExpr(i, bc)
-                - 12 * _bubble(bc);
-    }
-
-    inline Scalar vertexBasis(unsigned i, const Vector& p) const
-    {
-        Vector3 bc = barycentricCoords(p);
-        unsigned i1 = (i+1) % 3;
-        unsigned i2 = (i+2) % 3;
-        return    _vertexSubExpr(i, bc)
-                + 3 * _bubble(bc)
-                + _vertexGradientFactor(i, i1) * _gradientFactor(i1) * _gradientSubExpr(i1, bc)
-                + _vertexGradientFactor(i, i2) * _gradientFactor(i2) * _gradientSubExpr(i2, bc);
-    }*/
-
-    inline Vector9 eval(const Vector& p) const
-    {
-        Vector9 eb;
-        Vector3 bc = Base::eval(p);
-        Scalar bubble = _bubble(bc);
-
-        for(int i = 0; i < 3; ++i)
-        {
-            Scalar gse = _gradientSubExpr(i, bc);
-            eb(i + 3) = 4 * _edgeSubExpr(i, bc)
-                      + 4 * gse
-                      - 12 * bubble;
-            eb(i + 6) = _gradientFactor(i) * gse;
-        }
-
-        for(int i = 0; i < 3; ++i)
-        {
-            unsigned i1 = (i+1) % 3;
-            unsigned i2 = (i+2) % 3;
-            eb(i) = _vertexSubExpr(i, bc)
-                  + 3 * bubble
-                  + _vertexGradientFactor(i, i1) * eb(i1 + 6)
-                  + _vertexGradientFactor(i, i2) * eb(i2 + 6);
-        }
-
-        return eb;
-    }
-
-    inline Vector9x2 gradient(const Vector& p) const
-    {
-        Vector9x2 grad;
-        Vector3 bc = Base::eval(p);
-        Vector bubbleGradient = _bubbleGradient(bc);
-
-        for(int i = 0; i < 3; ++i)
-        {
-            Vector gseGradient = _gradientSubExprGradient(i, bc);
-            grad.row(i + 3) = 4 * _edgeSubExprGradient(i, bc)
-                            + 4 * gseGradient
-                            - 12 * bubbleGradient;
-            grad.row(i + 6) = _gradientFactor(i) * gseGradient;
-        }
-
-        for(int i = 0; i < 3; ++i)
-        {
-            unsigned i1 = (i+1) % 3;
-            unsigned i2 = (i+2) % 3;
-            Vector v1 = grad.row(i1 + 6);
-            Vector v2 = grad.row(i2 + 6);
-            grad.row(i) = _vertexSubExprGradient(i, bc)
-                        + 3 * bubbleGradient
-                        + _vertexGradientFactor(i, i1) * v1 //grad.row(i1 + 6)
-                        + _vertexGradientFactor(i, i2) * v2; //grad.row(i2 + 6);
-        }
-
-        return grad;
-    }
-
-    inline void hessian(const Vector3& bc, Matrix2* h) const
-    {
-        Matrix2 bubbleHessian = _bubbleHessian(bc);
-
-        for(int i = 0; i < 3; ++i)
-        {
-            Matrix2 gseHessian = _gradientSubExprHessian(i, bc);
-            h[i + 3] = 4 * _edgeSubExprHessian(i, bc)
-                     + 4 * gseHessian
-                     - 12 * bubbleHessian;
-            h[i + 6] = _gradientFactor(i) * gseHessian;
-        }
-
-        for(int i = 0; i < 3; ++i)
-        {
-            unsigned i1 = (i+1) % 3;
-            unsigned i2 = (i+2) % 3;
-            Matrix2 v1 = h[i1 + 6];
-            Matrix2 v2 = h[i2 + 6];
-            h[i] = _vertexSubExprHessian(i, bc)
-                 + 3 * bubbleHessian
-                 + _vertexGradientFactor(i, i1) * v1
-                 + _vertexGradientFactor(i, i2) * v2;
-        }
-    }
-
-    inline void hessian(const Vector& p, Matrix2* h) const
-    {
-        hessian(Base::eval(p), h);
-    }
-
-    void computeFromPoints()
-    {
-        Matrix2x3 vs;
-        for(int i = 0; i < 3; ++i)
-            vs.col(i) = point(i, 2) - point(i, 1);
-
-        for(int i = 0; i < 3; ++i)
-            m_eLen(i) = vs.col(i).norm();
-
-        m_rot.row(0) = vs.col(2) / edgeLength(2);
-        m_rot(1, 0) = -m_rot(0, 1);
-        m_rot(1, 1) =  m_rot(0, 0);
-
-        Matrix2x3 pts = m_rot * m_points;
-
-        for(int ni = 0; ni < 3; ++ni)
-            for(int li = 0; li < 3; ++li)
-                m_dldn(li, ni) =
-                        vs.col(li).dot(vs.col(ni)) / (m_2delta * edgeLength(ni));
-    }
-
-
-protected:
-    using Base::m_points;
-    using Base::m_2delta;
-    using Base::m_lbf;
-
-    Matrix2 m_rot;
-
-    Vector3 m_eLen;
-    Matrix3 m_dldn;
-};
-
-
-template < typename _Scalar >
-class _FVElementFlat : public _FVElement<_Scalar>
-{
-public:
-    typedef _Scalar Scalar;
-    typedef _FVElement<Scalar> Base;
+    typedef FVElement<Scalar> Base;
 
     typedef Eigen::Matrix<Scalar, 2, 1> Vector;
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
@@ -425,7 +35,7 @@ public:
 
 
 public:
-    inline _FVElementFlat(const Vector& p0, const Vector& p1, const Vector& p2)
+    inline FVElementFlat(const Vector& p0, const Vector& p1, const Vector& p2)
         : Base(p0, p1, p2)
     {
     }
@@ -522,8 +132,6 @@ private:
     using Base::m_2delta;
     using Base::m_lbf;
 
-    using Base::m_rot;
-
     using Base::m_eLen;
     using Base::m_dldn;
 };
@@ -556,24 +164,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         return;
     }
 
-    // TODO: remove some code duplication by moving stuff here
-
-//    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
-//    bool flat = false;
-//    for(int i = 0; i < 3; ++i)
-//    {
-//        if(mesh.hasFlatGradient(mesh.toVertex(*hit)))
-//        {
-//            flat = true;
-//            break;
-//        }
-//        ++hit;
-//    }
-
-//    if(flat)
-//        processFV1ElementFlat(it, mesh, element);
-//    else
-        processFV1Element(it, mesh, element);
+    processFV1Element(it, mesh, element);
 }
 
 template < class _Mesh, typename _Scalar >
@@ -711,7 +302,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         do ++hit;
         while(mesh.toVertex(*hit).idx() != 0 && hit != hend);
         bool flat = mesh.toVertex(*hit).idx() == 0;
-//        flat = false;
+        flat = false;
 
         bool orient[3];
         Vector p[3];
@@ -735,8 +326,8 @@ FVElementBuilder<_Mesh, _Scalar>::
             }
         }
 
-        typedef _FVElement<Scalar> Elem;
-        Elem elem(p[0], p[1], p[2]);
+        typedef FVElement<Scalar> Elem;
+        Elem elem(p);
 
         if(elem.doubleArea() <= 0)
         {
@@ -759,7 +350,7 @@ FVElementBuilder<_Mesh, _Scalar>::
             }
             else
             {
-                typedef _FVElementFlat<Scalar> ElemFlat;
+                typedef FVElementFlat<Scalar> ElemFlat;
                 ElemFlat elemFlat(p[0], p[1], p[2]);
                 elemFlat.hessian(bc, hessians);
                 orient[7] = 1;
@@ -837,35 +428,6 @@ FVElementBuilder<_Mesh, _Scalar>::
 
         if(flat)
         {
-//            typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
-//            Vector9 fde1;
-//            Vector9 fde2;
-//            fde1 <<
-//                -1.0L/2.0L*(2*elem.doubleArea()*elem.dldn(0, 1) + elem.doubleArea()*elem.dldn(1, 1) + 7*elem.edgeLength(1))/(elem.edgeLength(1)*elem.edgeLength(2)),
-//                (1.0L/2.0L)*(elem.doubleArea()*elem.dldn(0, 0) + 2*elem.doubleArea()*elem.dldn(1, 0) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(2)),
-//                (1.0L/2.0L)*elem.doubleArea()*(elem.dldn(0, 0)*elem.edgeLength(1) - elem.dldn(1, 1)*elem.edgeLength(0) + 2*elem.dldn(2, 0)*elem.edgeLength(1) - 2*elem.dldn(2, 1)*elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
-//                -4/elem.edgeLength(2),
-//                4/elem.edgeLength(2),
-//                4/elem.edgeLength(2),
-//                elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(2)),
-//                -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2)),
-//                0;
-//            fde2 <<
-//                -1.0L/2.0L*(2*elem.doubleArea()*elem.dldn(0, 2) + elem.doubleArea()*elem.dldn(2, 2) + 7*elem.edgeLength(2))/(elem.edgeLength(1)*elem.edgeLength(2)),
-//                (1.0L/2.0L)*elem.doubleArea()*(elem.dldn(0, 0)*elem.edgeLength(2) + 2*elem.dldn(1, 0)*elem.edgeLength(2) - 2*elem.dldn(1, 2)*elem.edgeLength(0) - elem.dldn(2, 2)*elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
-//                (1.0L/2.0L)*(elem.doubleArea()*elem.dldn(0, 0) + 2*elem.doubleArea()*elem.dldn(2, 0) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)),
-//                -4/elem.edgeLength(1),
-//                4/elem.edgeLength(1),
-//                4/elem.edgeLength(1),
-//                elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(1)),
-//                0,
-//                -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
-
-//            smNew.row(7) += fde1;
-////            smNew.col(7) = fde1;
-//            smNew.row(8) += fde2;
-////            smNew.col(8) = fde2;
-
             std::cout << "Flat elem:\n";
             std::cout << "  p0: " << elem.point(0).transpose() << "\n";
             std::cout << "  p1: " << elem.point(1).transpose() << "\n";
