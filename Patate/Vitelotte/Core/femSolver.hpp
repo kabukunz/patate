@@ -137,6 +137,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     StiffnessMatrix mat;
     mat/*.template selfadjointView<Eigen::Lower>()*/ =
             m_stiffnessMatrix.template selfadjointView<Eigen::Lower>().twistedBy(permInv);
+//            m_stiffnessMatrix.twistedBy(permInv);
 
     // compute RHS
     unsigned nUnknowns = m_ranges.back();
@@ -159,23 +160,25 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     m_x.setZero();
 
 //    Eigen::Matrix<float, 4, 2> g;
-//    g << 2, .5,
-//         2, .5,
-//         2, .5,
+//    g << 1., 0,
+//         0, 1.,
+//         0, 0,
 //         0, 0;
-//    g /= 4;
+////    g.setZero();
 
-//    typename Mesh::Vertex vert(5);
+//    typename Mesh::Vertex vert(0);
 //    typename Mesh::HalfedgeAroundVertexCirculator hit = m_mesh->halfedges(vert);
 //    typename Mesh::HalfedgeAroundVertexCirculator end = hit;
 //    do
 //    {
 //        Eigen::Vector2f e = (m_mesh->position(m_mesh->toVertex(*hit))
-//                -m_mesh->position(m_mesh->fromVertex(*hit))).normalized();
+//                - m_mesh->position(m_mesh->fromVertex(*hit))).normalized();
 //        Eigen::Vector4f v = g * e;
-//        std::cerr << "e: " << e.transpose() << " -> " << v.transpose() << "\n";
 
-//        m_x.row(m_mesh->edgeGradientNode(*hit).idx()) = v.cast<Scalar>();
+//        unsigned ni = m_mesh->edgeGradientNode(*hit).idx();
+//        std::cerr << "e " << ni << ": " << e.transpose() << " -> " << v.transpose() << "\n";
+
+//        m_x.row(ni) = v.cast<Scalar>();
 
 //        ++hit;
 //    } while(hit != end);
@@ -199,6 +202,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
             L.startVec(j);
             for(typename StiffnessMatrix::InnerIterator it(mat, start + j); it; ++it)
             {
+//                if(it.index() >= nUnknowns) continue;
                 if(it.index() < j || it.index() >= nUnknowns) continue;
                 L.insertBackByOuterInnerUnordered(j, it.index() - start) = it.value();
             }

@@ -218,7 +218,10 @@ void Document::solve()
             std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
         }
 
-        exportPlot("plot.obj");
+        exportPlot("plot0.obj", 0);
+        exportPlot("plot1.obj", 1);
+        exportPlot("plot2.obj", 2);
+        exportPlot("plot3.obj", 3);
     }
 
     emit meshUpdated();
@@ -352,7 +355,7 @@ void Document::loadMesh(const std::string& filename)
     m_mesh.setAttributes(Mesh::FV_FLAGS);
 
     if(m_mesh.nPointConstraints() || m_mesh.nCurves())
-        m_mesh.setNodesFromCurves();
+        m_mesh.setNodesFromCurves(0);
 
     updateBoundingBox();
     setSelection(MeshSelection());
@@ -399,11 +402,10 @@ void Document::openSaveFinalMeshDialog()
 }
 
 
-void Document::exportPlot(const std::string& filename)
+void Document::exportPlot(const std::string& filename, unsigned layer)
 {
     std::ofstream out(filename.c_str());
 
-    unsigned layer = 0;
     unsigned nCount = 0;
     std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
     for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();

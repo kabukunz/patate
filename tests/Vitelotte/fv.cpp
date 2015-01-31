@@ -8,15 +8,17 @@
 
 typedef double Scalar;
 
-typedef Eigen::Matrix<Scalar, 2, 1> Vector;
-typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+typedef Vitelotte::_FVElementFlat<Scalar> Elem;
+typedef Vitelotte::_FVElementFlat<Scalar> ElemFlat;
 
-typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
-typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
+typedef Elem::Vector Vector;
+typedef Elem::Vector3 Vector3;
+typedef Elem::Vector9 Vector9;
+
+typedef Elem::Matrix2 Matrix2;
+typedef Elem::Matrix2x3 Matrix2x3;
+typedef Elem::Matrix9x2 Matrix9x2;
 typedef Eigen::Matrix<Scalar, 9, 9> Matrix9;
-
-typedef Vitelotte::_FVElement<Scalar> Elem;
 
 
 class EvalFv
@@ -224,6 +226,14 @@ int main(int argc, char** argv)
     }
     std::cout << "Test basis:\n" << testBasis.format(fmt) << "\n";
 
+    Vector dv1 = (elem.point(1) - elem.point(0)).normalized() * (delta/2);
+    Vector dv2 = (elem.point(2) - elem.point(0)).normalized() * (delta/2);
+    Matrix9x2 testDiffP0;
+    testDiffP0 <<
+        (elem.eval(elem.point(0) + dv2) - elem.eval(elem.point(0) - dv2)) / delta,
+        (elem.eval(elem.point(0) + dv1) - elem.eval(elem.point(0) - dv1)) / delta;
+    std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
+
     typedef Eigen::Matrix<Scalar, 10, 1> TestMatrix;
     TestMatrix tm;
     for(int i = 0; i < 10; ++i)
@@ -254,118 +264,62 @@ int main(int argc, char** argv)
         std::cout << "Test hessian fact:\n" << (testHessian.array() / testHessianNum.array()).format(fmt) << "\n";
     }
 
-//    {
-//        Vector vx = Vector(delta / 2, 0);
-//        Vector vy = Vector(0, delta / 2);
 
-//        Vector3 bc = elem._LinearElement::eval(p);
-//        Eigen::Matrix<Scalar, 3, 3> testFunc;
-//        for(int i = 0; i < 3; ++i)
-//        {
-////            Matrix2 test = elem._bubbleHessian(bc);
-//            Matrix2 test = elem._gradientSubExprHessian(i, bc);
-//            testFunc(i, 0) = test(0, 0);
-//            testFunc(i, 1) = test(1, 1);
-//            testFunc(i, 2) = test(0, 1);
-
-//            std::cout << "hessian " << i << ":\n" << test.format(fmt) << "\n";
-//        }
-
-////        typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
-////        typedef Eigen::Matrix<Scalar, 6, 3> Matrix6;
-////        Matrix6 coeffs;
-////        coeffs.setRandom();
-////        std::cout << "coeffs:\n" << coeffs.format(fmt) << "\n";
-////        for(int i = 0; i < 3; ++i)
-////        {
-////            testFunc(i, 0) = 2 * coeffs(3, i);
-////            testFunc(i, 1) = 2 * coeffs(5, i);
-////            testFunc(i, 2) =     coeffs(4, i);
-////        }
-
-//        Eigen::Matrix<Scalar, 3, 3> testFuncNum;
-//        for(int i = 0; i < 3; ++i)
-//        {
-//            Matrix2 test;
-////#define FUNC(_p) elem._bubble(elem._LinearElement::eval(_p))
-//#define FUNC(_p) elem._gradientSubExpr(i, elem._LinearElement::eval(_p))
-////#define FUNC(_p) (coeffs.col(i).dot((Vector6() << \
-//        1, \
-//        (_p).x(), \
-//        (_p).y(), \
-//        (_p).x()*(_p).x(), \
-//        (_p).x()*(_p).y(), \
-//        (_p).y()*(_p).y()).finished()))
-//            test(0, 0) = (FUNC(p + vx) - 2 * FUNC(p) + FUNC(p - vx)) * 4 / (delta * delta);
-//            test(1, 1) = (FUNC(p + vy) - 2 * FUNC(p) + FUNC(p - vy)) * 4 / (delta * delta);
-//            test(0, 1) = (  FUNC(p + vx + vy)
-//                          - FUNC(p + vx - vy)
-//                          - FUNC(p - vx + vy)
-//                          + FUNC(p - vx - vy)) / (delta * delta);
-//            test(1, 0) = test(0, 1);
-
-//            testFuncNum(i, 0) = test(0, 0);
-//            testFuncNum(i, 1) = test(1, 1);
-//            testFuncNum(i, 2) = test(0, 1);
-
-//            std::cout << "hessian num" << i << ":\n" << test.format(fmt) << "\n";
-//        }
-//        std::cout << "Test func:\n" << (testFunc - testFuncNum).format(fmt) << "\n";
-//        std::cout << "Test func fact:\n" << (testFunc.array() / testFuncNum.array()).format(fmt) << "\n";
-//    }
-
-    Eigen::MatrixXd evalPts;
-    Eigen::MatrixXd evalBasis;
-    unsigned tess = 32;
-    unsigned nPts = (tess+1)*(tess+2) / 2;
-    evalPts.resize(nPts, 2);
-    evalBasis.resize(nPts, 10);
-    Matrix2x3 pm;
-    pm << elem.point(0), elem.point(1), elem.point(2);
-    unsigned count = 0;
-    for(unsigned i = 0; i <= tess; ++i)
     {
-        for(unsigned j = 0; j <= i; ++j)
+        ElemFlat elem(Vector::Random(), Vector::Random(), Vector::Random());
+
+        Eigen::MatrixXd evalPts;
+        Eigen::MatrixXd evalBasis;
+        unsigned tess = 32;
+        unsigned nPts = (tess+1)*(tess+2) / 2;
+        evalPts.resize(nPts, 2);
+        evalBasis.resize(nPts, 10);
+        Matrix2x3 pm;
+        pm << elem.point(0), elem.point(1), elem.point(2);
+        unsigned count = 0;
+        for(unsigned i = 0; i <= tess; ++i)
         {
-            Scalar alpha = 1 - Scalar(i) / Scalar(tess);
-            Scalar beta = Scalar(j) / Scalar(tess);
-            Vector3 bc(alpha, 1 - alpha - beta, beta);
-
-            Vector p = pm * bc;
-            Vector9 e = elem.eval(p);
-            evalPts.row(count) = p;
-            evalBasis.row(count) << e.transpose(), e.head<6>().sum();
-            ++count;
-        }
-    }
-
-    for(unsigned bi = 0; bi < 10; ++bi)
-    {
-        std::ostringstream ns;
-        ns << "basis" << bi << ".obj";
-
-        std::ofstream out(ns.str().c_str());
-
-        for(int pi = 0; pi < nPts; ++pi)
-            out << "v " << evalPts.row(pi) << " " << evalBasis(pi, bi) << "\n";
-
-        unsigned upper = 1; // obj start counting at 1
-        unsigned lower = 2;
-        for(unsigned i = 0; i < tess; ++i)
-        {
-            for(unsigned j = 0; j < i; ++j)
+            for(unsigned j = 0; j <= i; ++j)
             {
-                out << "f " << upper << " " << lower << " " << lower+1 << "\n";
-                out << "f " << upper << " " << lower+1 << " " << upper+1 << "\n";
-                upper += 1;
-                lower += 1;
+                Scalar alpha = 1 - Scalar(i) / Scalar(tess);
+                Scalar beta = Scalar(j) / Scalar(tess);
+                Vector3 bc(alpha, 1 - alpha - beta, beta);
+
+                Vector p = pm * bc;
+                Vector9 e = elem.eval(p);
+                evalPts.row(count) = p;
+                evalBasis.row(count) << e.transpose(), e.head<6>().sum();
+                ++count;
             }
-            out << "f " << upper << " " << lower << " " << lower+1 << "\n";
-            upper += 1;
-            lower += 2;
+        }
+
+        for(unsigned bi = 0; bi < 10; ++bi)
+        {
+            std::ostringstream ns;
+            ns << "basis" << bi << ".obj";
+
+            std::ofstream out(ns.str().c_str());
+
+            for(unsigned pi = 0; pi < nPts; ++pi)
+                out << "v " << evalPts.row(pi) << " " << evalBasis(pi, bi) << "\n";
+
+            unsigned upper = 1; // obj start counting at 1
+            unsigned lower = 2;
+            for(unsigned i = 0; i < tess; ++i)
+            {
+                for(unsigned j = 0; j < i; ++j)
+                {
+                    out << "f " << upper << " " << lower << " " << lower+1 << "\n";
+                    out << "f " << upper << " " << lower+1 << " " << upper+1 << "\n";
+                    upper += 1;
+                    lower += 1;
+                }
+                out << "f " << upper << " " << lower << " " << lower+1 << "\n";
+                upper += 1;
+                lower += 2;
+            }
         }
     }
-
 
     return 0;
 }
