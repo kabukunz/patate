@@ -13,6 +13,7 @@
 #include "../common/vgMeshWithCurves.h"
 
 
+typedef float Scalar;
 typedef VGMeshWithCurves Mesh;
 
 
@@ -23,13 +24,17 @@ public:
     {
         SelectionNone,
         SelectionVertex,
-        SelectionEdge
+        SelectionEdge,
+        SelectionPointConstraint,
+        SelectionCurve
     };
 
 public:
     MeshSelection();
     MeshSelection(Mesh::Vertex v);
     MeshSelection(Mesh::Edge e);
+    MeshSelection(Mesh::PointConstraint pc);
+    MeshSelection(Mesh::Curve c);
 
     bool operator==(const MeshSelection& other) const;
     bool operator!=(const MeshSelection& other) const;
@@ -38,9 +43,13 @@ public:
     bool isNone() const;
     bool isVertex() const;
     bool isEdge() const;
+    bool isPointConstraint() const;
+    bool isCurve() const;
 
     Mesh::Vertex vertex() const;
     Mesh::Edge edge() const;
+    Mesh::PointConstraint pointConstraint() const;
+    Mesh::Curve curve() const;
 
 private:
     SelectionType m_type;
@@ -79,9 +88,11 @@ public:
 
     float vertexSqrDist(Mesh::Vertex v, const Eigen::Vector2f& p) const;
     Mesh::Vertex closestVertex(const Eigen::Vector2f& p, float* sqrDist=0) const;
+    Mesh::PointConstraint closestPointConstraint(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
     float edgeSqrDist(Mesh::Edge e, const Eigen::Vector2f& p) const;
     Mesh::Edge closestEdge(const Eigen::Vector2f& p, float* sqrDist=0) const;
+    Mesh::Curve closestCurve(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
     void solve();
 
@@ -113,7 +124,7 @@ public slots:
     void openSaveSourceMeshDialog();
     void openSaveFinalMeshDialog();
 
-    void exportPlot(const std::string& filename, unsigned layer=3);
+    void exportPlot(const std::string& filename, unsigned layer=0);
 
 signals:
     void selectionChanged();

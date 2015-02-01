@@ -25,15 +25,18 @@
 class QMouseEvent;
 class QWheelEvent;
 
+enum EditMode
+{
+    EDIT_NODES  = 0,
+    EDIT_CURVES = 1
+};
+
 
 class Editor : public QGLWidget
 {
     Q_OBJECT
 
 public:
-    typedef float Scalar;
-
-    typedef Vitelotte::VGMesh<Scalar, 2, 4> Mesh;
     typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
     typedef Mesh::Vector Vector;
@@ -56,9 +59,8 @@ public slots:
     void updateBuffers();
     void updateSelection();
     void setShowWireframe(bool enable);
-    void showBaseMeshNodes();
-    void showFinalizedMeshNodes();
-    void showSolvedMeshNodes();
+    void setShowMesh(int type);
+    void setEditMode(int mode);
 
 public:
     virtual void initializeGL();
@@ -82,6 +84,7 @@ private:
     bool m_initialized;
     bool m_showWireframe;
     Document::MeshType m_nodeMeshType;
+    EditMode m_editMode;
 
     OrthographicCamera m_camera;
     bool m_drag;

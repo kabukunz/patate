@@ -235,8 +235,9 @@ inline void VGMeshRenderer<_Mesh>::updateMesh()
     m_indices.clear();
     m_nodes.clear();
 
-    if(!m_pMesh) return;
-    assert(m_pMesh->hasToVertexValue());
+    if(!m_pMesh || !m_pMesh->hasToVertexValue())
+        return;
+
     m_quadratic = m_pMesh->hasEdgeValue();
 
     int nodePerTriangle = m_quadratic? 6: 3;

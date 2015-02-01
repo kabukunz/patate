@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <QFileDialog>
 
 #include "Patate/vitelotte_io.h"
@@ -22,6 +24,18 @@ MeshSelection::MeshSelection(Mesh::Vertex v)
 MeshSelection::MeshSelection(Mesh::Edge e)
     : m_type(e.isValid()? SelectionEdge: SelectionNone),
       m_index(e.idx())
+{}
+
+
+MeshSelection::MeshSelection(Mesh::PointConstraint pc)
+    : m_type(pc.isValid()? SelectionPointConstraint: SelectionNone),
+      m_index(pc.idx())
+{}
+
+
+MeshSelection::MeshSelection(Mesh::Curve c)
+    : m_type(c.isValid()? SelectionCurve: SelectionNone),
+      m_index(c.idx())
 {}
 
 
@@ -61,6 +75,18 @@ bool MeshSelection::isEdge() const
 }
 
 
+bool MeshSelection::isPointConstraint() const
+{
+    return type() == SelectionPointConstraint;
+}
+
+
+bool MeshSelection::isCurve() const
+{
+    return type() == SelectionCurve;
+}
+
+
 Mesh::Vertex MeshSelection::vertex() const
 {
     assert(isVertex());
@@ -75,9 +101,31 @@ Mesh::Edge MeshSelection::edge() const
 }
 
 
+Mesh::PointConstraint MeshSelection::pointConstraint() const
+{
+    assert(isPointConstraint());
+    return Mesh::PointConstraint(m_index);
+}
+
+
+Mesh::Curve MeshSelection::curve() const
+{
+    assert(isCurve());
+    return Mesh::Curve(m_index);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
 
 Document::Document(QObject *parent)
-    : QObject(parent), m_fvSolver(&m_solvedMesh), m_undoStack(new QUndoStack(this))
+    : QObject(parent),
+      m_mesh(),
+      m_finalizedMesh(),
+      m_solvedMesh(),
+      m_bb(),
+      m_selection(),
+      m_fvSolver(&m_solvedMesh),
+      m_undoStack(new QUndoStack(this))
 {
 
 }
@@ -119,9 +167,11 @@ void Document::setSelection(MeshSelection selection)
 
 bool Document::isSelectionValid(MeshSelection selection)
 {
-    return selection.isNone()                                          ||
-          (selection.isVertex() && mesh().isValid(selection.vertex())) ||
-          (selection.isEdge()   && mesh().isValid(selection.edge()));
+    return selection.isNone()                                                            ||
+          (selection.isVertex()          && mesh().isValid(selection.vertex()))          ||
+          (selection.isEdge()            && mesh().isValid(selection.edge()))            ||
+          (selection.isPointConstraint() && mesh().isValid(selection.pointConstraint()))  ||
+          (selection.isCurve()           && mesh().isValid(selection.curve()));
 }
 
 
@@ -146,6 +196,29 @@ Mesh::Vertex Document::closestVertex(const Eigen::Vector2f& p,
         {
             dist = vdist;
             closest = *vit;
+        }
+    }
+
+    if(sqrDist) *sqrDist = dist;
+    return closest;
+}
+
+
+Mesh::PointConstraint Document::closestPointConstraint(
+        const Eigen::Vector2f& p, float* sqrDist) const
+{
+    Mesh::PointConstraint closest;
+    float dist = std::numeric_limits<float>::infinity();
+
+    for(unsigned pci = 0; pci < m_mesh.nPointConstraints(); ++pci)
+    {
+        Mesh::PointConstraint pc(pci);
+        Mesh::Vertex vx = m_mesh.vertex(pc);
+        float vdist = vertexSqrDist(vx, p);
+        if(vdist < dist)
+        {
+            dist = vdist;
+            closest = pc;
         }
     }
 
@@ -188,6 +261,34 @@ Document::Mesh::Edge Document::closestEdge(const Eigen::Vector2f& p,
         {
             dist = edist;
             closest = *eit;
+        }
+    }
+
+    if(sqrDist) *sqrDist = dist;
+    return closest;
+}
+
+
+Document::Mesh::Curve Document::closestCurve(const Eigen::Vector2f& p,
+                                            float *sqrDist) const
+{
+    Mesh::Curve closest;
+    float dist = std::numeric_limits<float>::infinity();
+
+    for(unsigned ci = 0; ci < m_mesh.nCurves(); ++ci)
+    {
+        Mesh::Curve curve(ci);
+        Mesh::Halfedge h = m_mesh.firstHalfedge(curve);
+        while(m_mesh.isValid(h))
+        {
+            float edist = edgeSqrDist(m_mesh.edge(h), p);
+            if(edist < dist)
+            {
+                dist = edist;
+                closest = curve;
+            }
+
+            h = m_mesh.nextCurveHalfedge(h);
         }
     }
 
@@ -354,9 +455,6 @@ void Document::loadMesh(const std::string& filename)
     std::ifstream in(filename.c_str());
     reader.read(in, m_mesh);
     m_mesh.setAttributes(Mesh::FV_FLAGS);
-
-    if(m_mesh.nPointConstraints() || m_mesh.nCurves())
-        m_mesh.setNodesFromCurves(0);
 
     updateBoundingBox();
     setSelection(MeshSelection());

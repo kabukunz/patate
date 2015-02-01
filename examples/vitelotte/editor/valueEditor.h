@@ -36,9 +36,7 @@ public slots:
 
     void updateSelection();
 
-    void showBaseMeshNodes();
-    void showFinalizedMeshNodes();
-    void showSolvedMeshNodes();
+    void setShowMesh(int type);
 
 
 private:

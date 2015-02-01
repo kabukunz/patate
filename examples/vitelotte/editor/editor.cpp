@@ -17,7 +17,10 @@ Editor::Editor(QWidget* parent)
       m_initialized(false),
       m_showWireframe(true),
       m_nodeMeshType(Document::BASE_MESH),
-      m_drag(false)
+      m_editMode(EDIT_NODES),
+      m_camera(),
+      m_drag(false),
+      m_dragPos()
 {
 }
 
@@ -100,13 +103,16 @@ void Editor::updateSelection()
 {
     assert(m_document);
 
+    Mesh& mesh = m_document->mesh();
     MeshSelection sel = m_document->selection();
     m_pointRenderer.clear();
     m_lineRenderer.clear();
-    if(sel.isVertex())
+    if(sel.isVertex() || sel.isPointConstraint())
     {
-        Mesh::Vertex v = sel.vertex();
-        Eigen::Vector3f p; p << mesh().position(v), 0;
+        Mesh::Vertex v = sel.isVertex()?
+                    sel.vertex():
+                    mesh.vertex(sel.pointConstraint());
+        Eigen::Vector3f p; p << mesh.position(v), 0;
 
         float innerRadius = 3;
         float outerRadius = innerRadius + 1.5;
@@ -120,8 +126,8 @@ void Editor::updateSelection()
     {
         Mesh::Edge e = sel.edge();
 
-        Eigen::Vector3f p0; p0 << mesh().position(mesh().vertex(e, 0)), 0;
-        Eigen::Vector3f p1; p1 << mesh().position(mesh().vertex(e, 1)), 0;
+        Eigen::Vector3f p0; p0 << mesh.position(mesh.vertex(e, 0)), 0;
+        Eigen::Vector3f p1; p1 << mesh.position(mesh.vertex(e, 1)), 0;
 
         float innerWidth = 1.5;
         float outerWidth = 4.5;
@@ -133,6 +139,39 @@ void Editor::updateSelection()
         m_lineRenderer.endLine();
         m_lineRenderer.addPoint(p0, innerWidth, innerColor);
         m_lineRenderer.addPoint(p1, innerWidth, innerColor);
+        m_lineRenderer.endLine();
+    }
+    else if(sel.isCurve())
+    {
+        float innerWidth = 1.5;
+        float outerWidth = 4.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        Mesh::Curve c = sel.curve();
+        Mesh::Halfedge h;
+        Eigen::Vector3f p;
+
+        h = mesh.firstHalfedge(c);
+        p << mesh.position(mesh.fromVertex(h)), 0;
+        m_lineRenderer.addPoint(p, outerWidth, outerColor);
+        while(mesh.isValid(h))
+        {
+            p << mesh.position(mesh.toVertex(h)), 0;
+            m_lineRenderer.addPoint(p, outerWidth, outerColor);
+            h = mesh.nextCurveHalfedge(h);
+        }
+        m_lineRenderer.endLine();
+
+        h = mesh.firstHalfedge(c);
+        p << mesh.position(mesh.fromVertex(h)), 0;
+        m_lineRenderer.addPoint(p, innerWidth, innerColor);
+        while(mesh.isValid(h))
+        {
+            p << mesh.position(mesh.toVertex(h)), 0;
+            m_lineRenderer.addPoint(p, innerWidth, innerColor);
+            h = mesh.nextCurveHalfedge(h);
+        }
         m_lineRenderer.endLine();
     }
     m_pointRenderer.upload();
@@ -152,27 +191,17 @@ void Editor::setShowWireframe(bool enable)
 }
 
 
-void Editor::showBaseMeshNodes()
+void Editor::setShowMesh(int type)
 {
-    m_nodeMeshType = Document::BASE_MESH;
+    m_nodeMeshType = Document::MeshType(type);
     update();
 }
 
 
-void Editor::showFinalizedMeshNodes()
+void Editor::setEditMode(int mode)
 {
-    m_nodeMeshType = Document::FINALIZED_MESH;
-    update();
+    m_editMode = EditMode(mode);
 }
-
-
-void Editor::showSolvedMeshNodes()
-{
-    m_nodeMeshType = Document::SOLVED_MESH;
-    update();
-}
-
-
 
 
 void Editor::initializeGL()
@@ -195,19 +224,6 @@ void Editor::initializeGL()
         std::cerr << "OpenGL 3.0 not supported. Aborting.\n";
         abort();
     }
-    //    if (m_info.flags.debug)
-    //    {
-    //        if (GLEW_VERSION_4_3)
-    //        {
-    //            glDebugMessageCallback(debugCallback, this);
-    //            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    //        }
-    //        else if (glfwExtensionSupported("GL_ARB_debug_output"))
-    //        {
-    //            glDebugMessageCallbackARB(debugCallback, this);
-    //            glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
-    //        }
-    //    }
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -266,20 +282,36 @@ void Editor::mousePressEvent(QMouseEvent* event)
         Eigen::Vector2f cam = m_camera.normalizedToCamera(norm);
 
         float selDist = 8 * m_camera.getViewBox().sizes()(0) / width();
+        MeshSelection sel;
 
-        float vSqrDist;
-        Mesh::Vertex vSel = m_document->closestVertex(cam, &vSqrDist);
+        if(m_editMode == EDIT_NODES)
+        {
+            float vSqrDist;
+            Mesh::Vertex vSel = m_document->closestVertex(cam, &vSqrDist);
 
-        float eSqrDist;
-        Mesh::Edge eSel = m_document->closestEdge(cam, &eSqrDist);
+            float eSqrDist;
+            Mesh::Edge eSel = m_document->closestEdge(cam, &eSqrDist);
 
-        if(vSqrDist < selDist*selDist)
-            m_document->setSelection(MeshSelection(vSel));
-        else if(eSqrDist < selDist*selDist)
-            m_document->setSelection(MeshSelection(eSel));
-        else
-            m_document->setSelection(MeshSelection());
+            if(vSqrDist < selDist*selDist)
+                sel = MeshSelection(vSel);
+            else if(eSqrDist < selDist*selDist)
+                sel = MeshSelection(eSel);
+        }
+        else {
+            float pcSqrDist;
+            Mesh::PointConstraint pcSel =
+                    m_document->closestPointConstraint(cam, &pcSqrDist);
 
+            float cSqrDist;
+            Mesh::Curve cSel = m_document->closestCurve(cam, &cSqrDist);
+
+            if(pcSqrDist < selDist*selDist)
+                sel = MeshSelection(pcSel);
+            else if(cSqrDist < selDist*selDist)
+                sel = MeshSelection(cSel);
+        }
+
+        m_document->setSelection(sel);
     }
     if(!m_drag && event->button() == Qt::MidButton)
     {
@@ -320,13 +352,13 @@ void Editor::wheelEvent(QWheelEvent* event)
 }
 
 
-Editor::Mesh& Editor::mesh()
+Mesh& Editor::mesh()
 {
     return m_document->solvedMesh();
 }
 
 
-const Editor::Mesh& Editor::mesh() const
+const Mesh& Editor::mesh() const
 {
     return m_document->solvedMesh();
 }

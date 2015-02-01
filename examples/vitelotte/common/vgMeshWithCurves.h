@@ -100,19 +100,21 @@ public:
     Curve addCurve(unsigned flags);
 
     using Base::isValid;
+    inline bool isValid(PointConstraint pc) const
+        { return pc.isValid() && unsigned(pc.idx()) < nPointConstraints(); }
     inline bool isValid(Curve c) const { return c.isValid() && unsigned(c.idx()) < nCurves(); }
 
     void addHalfedgeToCurve(Curve c, Halfedge h, float from, float to);
 
-    inline Halfedge  firstHalfedge(Curve c) const { return m_curves[c.idx()].firstHalfedge; }
-    inline Halfedge& firstHalfedge(Curve c)       { return m_curves[c.idx()].firstHalfedge; }
-    inline Halfedge   lastHalfedge(Curve c) const { return m_curves[c.idx()]. lastHalfedge; }
-    inline Halfedge&  lastHalfedge(Curve c)       { return m_curves[c.idx()]. lastHalfedge; }
+    inline Halfedge  firstHalfedge(Curve c) const { return m_curves.at(c.idx()).firstHalfedge; }
+    inline Halfedge& firstHalfedge(Curve c)       { return m_curves.at(c.idx()).firstHalfedge; }
+    inline Halfedge   lastHalfedge(Curve c) const { return m_curves.at(c.idx()). lastHalfedge; }
+    inline Halfedge&  lastHalfedge(Curve c)       { return m_curves.at(c.idx()). lastHalfedge; }
 
-    inline bool valueTear(Curve c)    const { return m_curves[c.idx()].flags & VALUE_TEAR;    }
-    inline bool gradientTear(Curve c) const { return m_curves[c.idx()].flags & GRADIENT_TEAR; }
+    inline bool valueTear(Curve c)    const { return m_curves.at(c.idx()).flags & VALUE_TEAR;    }
+    inline bool gradientTear(Curve c) const { return m_curves.at(c.idx()).flags & GRADIENT_TEAR; }
 
-    inline unsigned flags(Curve c) const { return m_curves[c.idx()].flags; }
+    inline unsigned flags(Curve c) const { return m_curves.at(c.idx()).flags; }
     void setFlags(Curve c, unsigned flags);
 
     const ValueGradient& valueGradient(Curve c, unsigned which) const;

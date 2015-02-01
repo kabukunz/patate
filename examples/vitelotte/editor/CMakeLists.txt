@@ -45,6 +45,7 @@ set(vitelotte_editor_SRCS
     document.cpp
     valueEditor.cpp
     editor.cpp
+    mainWindow.cpp
     main.cpp
 )
 

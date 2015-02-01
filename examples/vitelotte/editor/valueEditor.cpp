@@ -323,23 +323,9 @@ void ValueEditor::updateSelection()
 }
 
 
-void ValueEditor::showBaseMeshNodes()
+void ValueEditor::setShowMesh(int type)
 {
-    m_meshType = Document::BASE_MESH;
-    update();
-}
-
-
-void ValueEditor::showFinalizedMeshNodes()
-{
-    m_meshType = Document::FINALIZED_MESH;
-    update();
-}
-
-
-void ValueEditor::showSolvedMeshNodes()
-{
-    m_meshType = Document::SOLVED_MESH;
+    m_meshType = Document::MeshType(type);
     update();
 }
 
