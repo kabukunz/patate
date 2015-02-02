@@ -112,7 +112,7 @@ void VGMeshWithCurves::clear()
 }
 
 
-void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
+void VGMeshWithCurves::setNodesFromCurves()
 {
     m_nodes.clear();
     for(HalfedgeIterator hit = halfedgesBegin();
@@ -148,7 +148,7 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
             if(isGradientConstraint(pc))
             {
                 Eigen::Vector2f v = (position(toVertex(*hit)) - position(fromVertex(*hit))).normalized();
-//                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
+                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
                 Node gn = addNode(grad * v);
 //                std::cout << "Point gradient constraint: "
 //                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
@@ -215,22 +215,22 @@ void VGMeshWithCurves::setNodesFromCurves(unsigned flags_)
         } while(lh.isValid());
     }
 
-    if(flags_ & FLAT_BOUNDARY)
-    {
-        Halfedge h;
-        for(EdgeIterator eit = edgesBegin();
-            eit != edgesEnd(); ++eit)
-        {
-            if(!isBoundary(*eit))
-                continue;
-            for(int i = 0; i < 2; ++i)
-            {
-                h = halfedge(*eit, i);
-                if(!isBoundary(h))
-                    edgeGradientNode(h) = addNode(NodeValue::Constant(0));
-            }
-        }
-    }
+//    if(flags_ & FLAT_BOUNDARY)
+//    {
+//        Halfedge h;
+//        for(EdgeIterator eit = edgesBegin();
+//            eit != edgesEnd(); ++eit)
+//        {
+//            if(!isBoundary(*eit))
+//                continue;
+//            for(int i = 0; i < 2; ++i)
+//            {
+//                h = halfedge(*eit, i);
+//                if(!isBoundary(h))
+//                    edgeGradientNode(h) = addNode(NodeValue::Constant(0));
+//            }
+//        }
+//    }
 }
 
 

@@ -71,11 +71,6 @@ public:
         GRADIENT_RIGHT  = GRADIENT  | RIGHT
     };
 
-    enum
-    {
-        FLAT_BOUNDARY = 0x01
-    };
-
 public:
     VGMeshWithCurves();
 
@@ -154,7 +149,7 @@ public:
 
 
     void clear();
-    void setNodesFromCurves(unsigned flags_ = FLAT_BOUNDARY);
+    void setNodesFromCurves();
 
     NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
 

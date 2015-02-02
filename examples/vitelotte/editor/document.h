@@ -68,6 +68,17 @@ public:
     typedef Vitelotte::FemSolver<Mesh, Element> FVSolver;
     typedef Eigen::AlignedBox2f BoundingBox;
 
+    enum
+    {
+        CLEAN              = 0,
+        DIRTY_NODE_VALUE   = 1,
+        DIRTY_NODE_TYPE    = 2,
+        DIRTY_CONNECTIVITY = 3,
+
+        DIRTY_LEVEL_MASK   = 0x0f,
+        DIRTY_CURVES_FLAG  = 0x10
+    };
+
     enum MeshType
     {
         BASE_MESH,
@@ -94,6 +105,7 @@ public:
     Mesh::Edge closestEdge(const Eigen::Vector2f& p, float* sqrDist=0) const;
     Mesh::Curve closestCurve(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
+    void markDirty(unsigned flags);
     void solve();
 
     Mesh& getMesh(MeshType type);
@@ -140,6 +152,7 @@ private:
 
     MeshSelection m_selection;
 
+    unsigned m_dirtyFlags;
     FVSolver m_fvSolver;
 
     QUndoStack* m_undoStack;
@@ -190,6 +203,60 @@ private:
     Mesh::HalfedgeAttribute m_nid;
     Node m_newNode;
     Node m_prevNode;
+};
+
+
+class MoveGradientStop : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::Curve Curve;
+
+public:
+    MoveGradientStop(Document* doc, Curve curve, unsigned which, Scalar fromPos, Scalar toPos,
+            bool allowMerge=false);
+
+    virtual void undo();
+    virtual void redo();
+
+    virtual int id() const;
+    virtual bool mergeWith(const QUndoCommand* command);
+
+private:
+    void move(Scalar from, Scalar to);
+
+private:
+    Document* m_document;
+    Curve m_curve;
+    unsigned m_which;
+    Scalar m_fromPos;
+    Scalar m_toPos;
+    bool m_allowMerge;
+};
+
+
+class SetGradientStopValue : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::Curve Curve;
+    typedef Document::Mesh::NodeValue NodeValue;
+
+public:
+    SetGradientStopValue(Document* doc, Curve curve, unsigned which,
+                         Scalar pos, const NodeValue& value);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    void move(Scalar from, Scalar to);
+
+private:
+    Document* m_document;
+    Curve m_curve;
+    unsigned m_which;
+    Scalar m_pos;
+    NodeValue m_prevValue;
+    NodeValue m_newValue;
 };
 
 

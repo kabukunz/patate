@@ -21,8 +21,8 @@ Editor::Editor(QWidget* parent)
       m_camera(),
       m_inputState(STATE_IDLE),
       m_dragPos(),
-      m_paintColor(0., 0., 0., 1.),
-      m_dragGradientStop()
+      m_dragGradientStop(),
+      m_paintColor(0., 0., 0., 1.)
 {
 }
 
@@ -245,6 +245,9 @@ void Editor::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if(m_document) {
+        if(m_editMode == EDIT_CURVES)
+            updateSelection();
+
         m_defaultShader.viewMatrix() = m_camera.projectionMatrix();
         m_renderer.render(m_defaultShader);
 
@@ -341,14 +344,10 @@ void Editor::mouseReleaseEvent(QMouseEvent* event)
     {
         if(m_inputState == STATE_GRABED_GRADIENT_STOP)
         {
-            Mesh& mesh = m_document->mesh();
-            Mesh::ValueGradient& grad = mesh.valueGradient(m_dragGradientStop.curve,
-                                                           m_dragGradientStop.which);
-            grad[m_dragGradientStop.gpos] = m_paintColor;
+            m_document->undoStack()->push(new SetGradientStopValue(
+                m_document, m_dragGradientStop.curve, m_dragGradientStop.which,
+                m_dragGradientStop.gpos, m_paintColor));
 
-            mesh.setNodesFromCurves(0);
-            m_document->solve();
-            updateSelection();
             update();
         }
 
@@ -369,8 +368,6 @@ void Editor::mouseMoveEvent(QMouseEvent* event)
     else if(m_inputState == STATE_DRAG_GRADIENT_STOP ||
             m_inputState == STATE_GRABED_GRADIENT_STOP)
     {
-        m_inputState = STATE_DRAG_GRADIENT_STOP;
-
         Mesh& mesh = m_document->mesh();
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         Eigen::Vector2f cam = m_camera.normalizedToCamera(norm);
@@ -398,16 +395,15 @@ void Editor::mouseMoveEvent(QMouseEvent* event)
         float pos1 = mesh.toCurvePos(closest);
         float newPos = (1 - alpha) * pos0 + alpha * pos1;
 
-        Mesh::ValueGradient& grad = mesh.valueGradient(m_dragGradientStop.curve,
-                                                       m_dragGradientStop.which);
-        grad.erase(m_dragGradientStop.gpos);
-        grad.insert(std::make_pair(newPos, m_dragGradientStop.color));
+        m_document->undoStack()->push(new MoveGradientStop(
+            m_document, m_dragGradientStop.curve, m_dragGradientStop.which,
+            m_dragGradientStop.gpos, newPos,
+            m_inputState == STATE_DRAG_GRADIENT_STOP));
         m_dragGradientStop.gpos = newPos;
 
-        mesh.setNodesFromCurves(0);
-        m_document->solve();
-        updateSelection();
         update();
+
+        m_inputState = STATE_DRAG_GRADIENT_STOP;
     }
 }
 

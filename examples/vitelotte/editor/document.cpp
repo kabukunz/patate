@@ -297,8 +297,24 @@ Document::Mesh::Curve Document::closestCurve(const Eigen::Vector2f& p,
 }
 
 
+void Document::markDirty(unsigned flags)
+{
+    unsigned currentLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
+    unsigned newLevel     =        flags & DIRTY_LEVEL_MASK;
+    unsigned newFlags = (m_dirtyFlags | flags) & ~DIRTY_LEVEL_MASK;
+
+    m_dirtyFlags = std::max(currentLevel, newLevel) | newFlags;
+}
+
+
 void Document::solve()
 {
+    if(m_dirtyFlags == CLEAN)
+        return;
+
+    if(m_dirtyFlags & DIRTY_CURVES_FLAG)
+        m_mesh.setNodesFromCurves();
+
     m_finalizedMesh = m_mesh;
     // Would break undo
     //m_solvedMesh.compactNodes();
@@ -307,9 +323,18 @@ void Document::solve()
 
     if(m_solvedMesh.hasUnknowns())
     {
-        m_fvSolver.build();
-        m_fvSolver.sort();
-        m_fvSolver.solve();
+        unsigned dirtyLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
+
+        // TODO: m_fvSolver.clearErrors();
+        switch(dirtyLevel)
+        {
+        case DIRTY_CONNECTIVITY:
+            m_fvSolver.build();
+        case DIRTY_NODE_TYPE:
+            m_fvSolver.sort();
+        case DIRTY_NODE_VALUE:
+            m_fvSolver.solve();
+        }
 
         if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_WARNING)
         {
@@ -325,6 +350,7 @@ void Document::solve()
         exportPlot("plot2.obj", 2);
         exportPlot("plot3.obj", 3);
     }
+    m_dirtyFlags = CLEAN;
 
     emit meshUpdated();
 }
@@ -459,6 +485,9 @@ void Document::loadMesh(const std::string& filename)
     updateBoundingBox();
     setSelection(MeshSelection());
 
+    unsigned dirtyCurves = (m_mesh.nCurves() || m_mesh.nPointConstraints())?
+                DIRTY_CURVES_FLAG: 0;
+    markDirty(DIRTY_CONNECTIVITY | dirtyCurves);
     solve();
 
     emit meshChanged();
@@ -574,6 +603,8 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
 SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
                            bool allowMerge)
     : m_document(doc), m_node(node), m_newValue(value),
@@ -586,6 +617,11 @@ SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
 void SetNodeValue::undo()
 {
     m_document->mesh().nodeValue(m_node) = m_prevValue;
+
+    bool prevConstrained = (m_prevValue != Mesh::UnconstrainedNode);
+    bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
+    m_document->markDirty((prevConstrained != newConstrained)?
+        Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
     m_document->solve();
 }
 
@@ -593,6 +629,11 @@ void SetNodeValue::undo()
 void SetNodeValue::redo()
 {
     m_document->mesh().nodeValue(m_node) = m_newValue;
+
+    bool prevConstrained = (m_prevValue != Mesh::UnconstrainedNode);
+    bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
+    m_document->markDirty((prevConstrained != newConstrained)?
+        Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
     m_document->solve();
 }
 
@@ -618,6 +659,8 @@ bool SetNodeValue::mergeWith(const QUndoCommand* command)
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
 SetNode::SetNode(Document* doc, Halfedge halfedge,
                  Mesh::HalfedgeAttribute nid, Node node)
     : m_document(doc), m_halfedge(halfedge), m_nid(nid), m_newNode(node),
@@ -628,11 +671,94 @@ SetNode::SetNode(Document* doc, Halfedge halfedge,
 void SetNode::undo()
 {
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_prevNode;
+    m_document->markDirty(Document::DIRTY_CONNECTIVITY);
     m_document->solve();
 }
 
 
 void SetNode::redo(){
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_newNode;
+    m_document->markDirty(Document::DIRTY_CONNECTIVITY);
+    m_document->solve();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+MoveGradientStop::MoveGradientStop(
+        Document* doc, Curve curve, unsigned which, Scalar fromPos, Scalar toPos,
+        bool allowMerge)
+    : m_document(doc), m_curve(curve), m_which(which),
+      m_fromPos(fromPos), m_toPos(toPos), m_allowMerge(allowMerge)
+{
+}
+
+void MoveGradientStop::undo()
+{
+    move(m_toPos, m_fromPos);
+}
+
+void MoveGradientStop::redo()
+{
+    move(m_fromPos, m_toPos);
+}
+
+int MoveGradientStop::id() const
+{
+    return 1;
+}
+
+bool MoveGradientStop::mergeWith(const QUndoCommand* command)
+{
+    if(command->id() != id())
+        return false;
+    const MoveGradientStop* mgs = static_cast<const MoveGradientStop*>(command);
+
+    if(!mgs->m_allowMerge || mgs->m_document != m_document || mgs->m_curve != m_curve ||
+            mgs->m_fromPos != m_toPos)
+        return false;
+
+    m_toPos = mgs->m_toPos;
+
+    return true;
+}
+
+
+void MoveGradientStop::move(Scalar from, Scalar to)
+{
+    Mesh& mesh = m_document->mesh();
+    Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
+    Mesh::NodeValue color = grad.at(from);
+    grad.erase(from);
+    grad.insert(std::make_pair(to, color));
+
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->solve();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+SetGradientStopValue::SetGradientStopValue(
+        Document* doc, Curve curve, unsigned which,
+        Scalar pos, const NodeValue& value)
+    : m_document(doc), m_curve(curve), m_which(which), m_pos(pos),
+      m_prevValue(doc->mesh().valueGradient(curve, which).at(pos)),
+      m_newValue(value)
+{
+}
+
+void SetGradientStopValue::undo()
+{
+    m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = m_prevValue;
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->solve();
+}
+
+
+void SetGradientStopValue::redo()
+{
+    m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = m_newValue;
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
     m_document->solve();
 }
