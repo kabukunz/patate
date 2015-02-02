@@ -19,8 +19,10 @@ Editor::Editor(QWidget* parent)
       m_nodeMeshType(Document::BASE_MESH),
       m_editMode(EDIT_NODES),
       m_camera(),
-      m_drag(false),
-      m_dragPos()
+      m_inputState(STATE_IDLE),
+      m_dragPos(),
+      m_paintColor(0., 0., 0., 1.),
+      m_dragGradientStop()
 {
 }
 
@@ -105,6 +107,7 @@ void Editor::updateSelection()
 
     Mesh& mesh = m_document->mesh();
     MeshSelection sel = m_document->selection();
+    m_gradientStops.clear();
     m_pointRenderer.clear();
     m_lineRenderer.clear();
     if(sel.isVertex() || sel.isPointConstraint())
@@ -148,31 +151,22 @@ void Editor::updateSelection()
         Eigen::Vector4f innerColor(1., 1., 1., 1.);
         Eigen::Vector4f outerColor(0., 0., 0., 1.);
 
-        Mesh::Curve c = sel.curve();
-        Mesh::Halfedge h;
-        Eigen::Vector3f p;
+        Mesh::Curve curve = sel.curve();
 
-        h = mesh.firstHalfedge(c);
-        p << mesh.position(mesh.fromVertex(h)), 0;
-        m_lineRenderer.addPoint(p, outerWidth, outerColor);
-        while(mesh.isValid(h))
-        {
-            p << mesh.position(mesh.toVertex(h)), 0;
-            m_lineRenderer.addPoint(p, outerWidth, outerColor);
-            h = mesh.nextCurveHalfedge(h);
-        }
-        m_lineRenderer.endLine();
+        drawCurve(curve, outerWidth, outerColor);
+        drawCurve(curve, innerWidth, innerColor);
 
-        h = mesh.firstHalfedge(c);
-        p << mesh.position(mesh.fromVertex(h)), 0;
-        m_lineRenderer.addPoint(p, innerWidth, innerColor);
-        while(mesh.isValid(h))
-        {
-            p << mesh.position(mesh.toVertex(h)), 0;
-            m_lineRenderer.addPoint(p, innerWidth, innerColor);
-            h = mesh.nextCurveHalfedge(h);
-        }
-        m_lineRenderer.endLine();
+        float innerRadius = 3;
+        float outerRadius = innerRadius + 1.5;
+
+        bool tear = mesh.valueTear(curve);
+        Scalar offset = tear? 8: 0;
+
+        addGradientStops(curve, Mesh::VALUE_LEFT, offset);
+
+        if(tear)
+            addGradientStops(curve, Mesh::VALUE_RIGHT, -offset);
+        drawGradientStops(innerRadius, outerRadius);
     }
     m_pointRenderer.upload();
     m_lineRenderer.upload();
@@ -257,7 +251,7 @@ void Editor::paintGL()
         m_wireframeShader.viewMatrix() = m_camera.projectionMatrix();
         m_wireframeShader.setLineWidth(.5);
         m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
-        m_wireframeShader.setZoom(width() / m_camera.getViewBox().sizes()(0));
+        m_wireframeShader.setZoom(zoom());
         //m_renderer.render(m_wireframeShader);
 
         Eigen::Vector2f viewportSize(width(), height());
@@ -267,7 +261,7 @@ void Editor::paintGL()
         if(m_showWireframe)
         {
             m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
-                                  width() / m_camera.getViewBox().sizes()(0));
+                                  zoom());
             m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
         }
     }
@@ -276,47 +270,64 @@ void Editor::paintGL()
 
 void Editor::mousePressEvent(QMouseEvent* event)
 {
-    if(!m_drag && event->button() == Qt::LeftButton)
+    if(m_inputState == STATE_IDLE && event->button() == Qt::LeftButton)
     {
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         Eigen::Vector2f cam = m_camera.normalizedToCamera(norm);
 
         float selDist = 8 * m_camera.getViewBox().sizes()(0) / width();
-        MeshSelection sel;
 
-        if(m_editMode == EDIT_NODES)
+        if(m_document->selection().isCurve())
         {
-            float vSqrDist;
-            Mesh::Vertex vSel = m_document->closestVertex(cam, &vSqrDist);
+            float gsSqrDist;
+            GradientStop* gs = closestGradientStop(cam, &gsSqrDist);
 
-            float eSqrDist;
-            Mesh::Edge eSel = m_document->closestEdge(cam, &eSqrDist);
-
-            if(vSqrDist < selDist*selDist)
-                sel = MeshSelection(vSel);
-            else if(eSqrDist < selDist*selDist)
-                sel = MeshSelection(eSel);
-        }
-        else {
-            float pcSqrDist;
-            Mesh::PointConstraint pcSel =
-                    m_document->closestPointConstraint(cam, &pcSqrDist);
-
-            float cSqrDist;
-            Mesh::Curve cSel = m_document->closestCurve(cam, &cSqrDist);
-
-            if(pcSqrDist < selDist*selDist)
-                sel = MeshSelection(pcSel);
-            else if(cSqrDist < selDist*selDist)
-                sel = MeshSelection(cSel);
+            if(gs && gsSqrDist < selDist*selDist)
+            {
+                grabMouse();
+                m_inputState = STATE_GRABED_GRADIENT_STOP;
+                m_dragGradientStop = *gs;
+            }
         }
 
-        m_document->setSelection(sel);
+        if(m_inputState == STATE_IDLE)
+        {
+            MeshSelection sel;
+            if(m_editMode == EDIT_NODES)
+            {
+                float vSqrDist;
+                Mesh::Vertex vSel = m_document->closestVertex(cam, &vSqrDist);
+
+                float eSqrDist;
+                Mesh::Edge eSel = m_document->closestEdge(cam, &eSqrDist);
+
+                if(vSqrDist < selDist*selDist)
+                    sel = MeshSelection(vSel);
+                else if(eSqrDist < selDist*selDist)
+                    sel = MeshSelection(eSel);
+            }
+            else {
+                float pcSqrDist;
+                Mesh::PointConstraint pcSel =
+                        m_document->closestPointConstraint(cam, &pcSqrDist);
+
+                float cSqrDist;
+                Mesh::Curve cSel = m_document->closestCurve(cam, &cSqrDist);
+
+                if(pcSqrDist < selDist*selDist)
+                    sel = MeshSelection(pcSel);
+                else if(cSqrDist < selDist*selDist)
+                    sel = MeshSelection(cSel);
+            }
+
+            m_document->setSelection(sel);
+        }
     }
-    if(!m_drag && event->button() == Qt::MidButton)
+    if(m_inputState == STATE_IDLE &&
+            event->button() == Qt::MidButton && m_inputState == STATE_IDLE)
     {
         grabMouse();
-        m_drag = true;
+        m_inputState = STATE_PAN_VIEW;
         m_dragPos = screenToNormalized(event->localPos());
     }
 }
@@ -324,20 +335,78 @@ void Editor::mousePressEvent(QMouseEvent* event)
 
 void Editor::mouseReleaseEvent(QMouseEvent* event)
 {
-    if(m_drag && event->button() == Qt::MidButton)
+    if((m_inputState == STATE_PAN_VIEW && event->button() == Qt::MidButton) ||
+            ((m_inputState == STATE_DRAG_GRADIENT_STOP ||
+              m_inputState == STATE_GRABED_GRADIENT_STOP) && event->button() == Qt::LeftButton))
     {
+        if(m_inputState == STATE_GRABED_GRADIENT_STOP)
+        {
+            Mesh& mesh = m_document->mesh();
+            Mesh::ValueGradient& grad = mesh.valueGradient(m_dragGradientStop.curve,
+                                                           m_dragGradientStop.which);
+            grad[m_dragGradientStop.gpos] = m_paintColor;
+
+            mesh.setNodesFromCurves(0);
+            m_document->solve();
+            updateSelection();
+            update();
+        }
+
         releaseMouse();
-        m_drag = false;
+        m_inputState = STATE_IDLE;
     }
 }
 
 void Editor::mouseMoveEvent(QMouseEvent* event)
 {
-    if(m_drag)
+    if(m_inputState == STATE_PAN_VIEW)
     {
         Eigen::Vector2f norm = screenToNormalized(event->localPos());
         m_camera.normalizedTranslate(norm - m_dragPos);
         m_dragPos = norm;
+        update();
+    }
+    else if(m_inputState == STATE_DRAG_GRADIENT_STOP ||
+            m_inputState == STATE_GRABED_GRADIENT_STOP)
+    {
+        m_inputState = STATE_DRAG_GRADIENT_STOP;
+
+        Mesh& mesh = m_document->mesh();
+        Eigen::Vector2f norm = screenToNormalized(event->localPos());
+        Eigen::Vector2f cam = m_camera.normalizedToCamera(norm);
+
+        Mesh::Halfedge h = mesh.firstHalfedge(m_dragGradientStop.curve);
+        Mesh::Halfedge closest;
+        float closestSqrDist = std::numeric_limits<float>::infinity();
+        while(mesh.isValid(h))
+        {
+            float dist = m_document->edgeSqrDist(mesh.edge(h), cam);
+            if(dist < closestSqrDist)
+            {
+                closest = h;
+                closestSqrDist = dist;
+            }
+            h = mesh.nextCurveHalfedge(h);
+        }
+
+        Vector p0 = mesh.position(mesh.fromVertex(closest));
+        Vector p1 = mesh.position(mesh.toVertex(closest));
+        Vector v = cam - p0;
+        Vector e =  p1 - p0;
+        float alpha = std::min(std::max(v.dot(e) / e.squaredNorm(), 0.f), 1.f);
+        float pos0 = mesh.fromCurvePos(closest);
+        float pos1 = mesh.toCurvePos(closest);
+        float newPos = (1 - alpha) * pos0 + alpha * pos1;
+
+        Mesh::ValueGradient& grad = mesh.valueGradient(m_dragGradientStop.curve,
+                                                       m_dragGradientStop.which);
+        grad.erase(m_dragGradientStop.gpos);
+        grad.insert(std::make_pair(newPos, m_dragGradientStop.color));
+        m_dragGradientStop.gpos = newPos;
+
+        mesh.setNodesFromCurves(0);
+        m_document->solve();
+        updateSelection();
         update();
     }
 }
@@ -348,7 +417,105 @@ void Editor::wheelEvent(QWheelEvent* event)
     m_camera.normalizedZoom(
                 screenToNormalized(event->posF()),
                 event->delta() > 0? 1.1: 1/1.1);
+    updateSelection();
     update();
+}
+
+
+float Editor::zoom() const
+{
+    return width() / m_camera.getViewBox().sizes()(0);
+}
+
+
+void Editor::addGradientStops(Mesh::Curve curve, unsigned which, float offset)
+{
+    Mesh& mesh = m_document->mesh();
+
+    Mesh::Halfedge h = mesh.firstHalfedge(curve);
+
+    Mesh::ValueGradient::const_iterator sit =
+            mesh.valueGradient(curve, which).begin();
+    Mesh::ValueGradient::const_iterator send =
+            mesh.valueGradient(curve, which).end();
+    for(; sit != send; ++sit)
+    {
+        float pos = sit->first;
+        const Mesh::NodeValue& color = sit->second;
+
+        if(pos < mesh.fromCurvePos(h)) continue;
+        while(mesh.isValid(h) && pos > mesh.toCurvePos(h))
+            h = mesh.nextCurveHalfedge(h);
+        if(!mesh.isValid(h)) break;
+
+        Vector p0 = mesh.position(mesh.fromVertex(h));
+        Vector p1 = mesh.position(mesh.toVertex(h));
+        float pos0 = mesh.fromCurvePos(h);
+        float pos1 = mesh.toCurvePos(h);
+
+        Vector v = p1 - p0;
+        Vector n = Vector(-v.y(), v.x()).normalized();
+        float alpha = (pos - pos0) / (pos1 - pos0);
+        Vector p = p0 + v * alpha + n * offset / zoom();
+
+        m_gradientStops.push_back(GradientStop(
+            curve, which, pos, p, color));
+    }
+}
+
+
+Editor::GradientStop* Editor::closestGradientStop(const Vector& p, float* sqrDist)
+{
+    GradientStop* closest = 0;
+    float closestSqrDist = std::numeric_limits<float>::infinity();
+    for(GradientStopList::iterator gsit = m_gradientStops.begin();
+        gsit != m_gradientStops.end(); ++gsit)
+    {
+        float dist = (p - gsit->position).squaredNorm();
+        if(dist < closestSqrDist)
+        {
+            closest = &(*gsit);
+            closestSqrDist = dist;
+        }
+    }
+
+    if(sqrDist)
+        *sqrDist = closestSqrDist;
+    return closest;
+}
+
+
+void Editor::drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color)
+{
+    Mesh& mesh = m_document->mesh();
+
+    Mesh::Halfedge h = mesh.firstHalfedge(curve);
+    Eigen::Vector3f p; p << mesh.position(mesh.fromVertex(h)), 0;
+
+    m_lineRenderer.addPoint(p, width, color);
+    while(mesh.isValid(h))
+    {
+        p << mesh.position(mesh.toVertex(h)), 0;
+        m_lineRenderer.addPoint(p, width, color);
+        h = mesh.nextCurveHalfedge(h);
+    }
+    m_lineRenderer.endLine();
+}
+
+
+void Editor::drawGradientStops(float innerRadius, float outerRadius)
+{
+    for(GradientStopList::const_iterator gsit = m_gradientStops.begin();
+        gsit != m_gradientStops.end(); ++gsit)
+    {
+        Eigen::Vector3f p;
+        p << gsit->position, 0;
+        Mesh::NodeValue outerColor = (gsit->color.head<3>().sum() < 1.5)?
+                    Mesh::NodeValue(1, 1, 1, 1):
+                    Mesh::NodeValue(0, 0, 0, 1);
+        m_pointRenderer.addPoint(p, outerRadius, outerColor);
+        m_pointRenderer.addPoint(p, innerRadius, gsit->color);
+    }
 }
 
 

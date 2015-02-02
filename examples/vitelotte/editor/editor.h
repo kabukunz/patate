@@ -74,11 +74,49 @@ public:
     virtual void wheelEvent(QWheelEvent* event);
 
 
-private:
+protected:
+    struct GradientStop
+    {
+        Eigen::Vector2f position;
+        Eigen::Vector4f color;
+
+        Mesh::Curve curve;
+        unsigned which;
+        float gpos;
+
+        inline GradientStop()
+            : position(), color(), curve(), which(), gpos()
+        {}
+        inline GradientStop(Mesh::Curve curve, unsigned which, float gpos,
+                     const Eigen::Vector2f& position, const Eigen::Vector4f& color)
+            : position(position), color(color), curve(curve), which(which), gpos(gpos)
+        {}
+    };
+
+    typedef std::vector<GradientStop> GradientStopList;
+
+    enum InputState
+    {
+        STATE_IDLE,
+        STATE_PAN_VIEW,
+        STATE_GRABED_GRADIENT_STOP,
+        STATE_DRAG_GRADIENT_STOP
+    };
+
+protected:
+    float zoom() const;
+
+    void addGradientStops(Mesh::Curve curve, unsigned which, float offset);
+    GradientStop* closestGradientStop(const Vector& p, float* dist);
+
+    void drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color);
+    void drawGradientStops(float innerRadius, float outerRadius);
+
+protected:
     Mesh& mesh();
     const Mesh& mesh() const;
 
-private:
+protected:
     Document* m_document;
 
     bool m_initialized;
@@ -87,12 +125,16 @@ private:
     EditMode m_editMode;
 
     OrthographicCamera m_camera;
-    bool m_drag;
+    InputState m_inputState;
     Eigen::Vector2f m_dragPos;
+    GradientStop m_dragGradientStop;
 
     Renderer m_renderer;
     Vitelotte::VGMeshRendererDefaultShader m_defaultShader;
     Vitelotte::VGMeshRendererWireframeShader m_wireframeShader;
+
+    Mesh::NodeValue m_paintColor;
+    GradientStopList m_gradientStops;
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
