@@ -35,6 +35,7 @@ public slots:
 protected slots:
     void handleMeshChange();
     void changeShowMesh(QAction* action);
+    void changeEditMode(QAction* action);
 
 signals:
     void editModeChanged(int editMode);
@@ -58,6 +59,9 @@ private:
 
     QAction* m_undoAction;
     QAction* m_redoAction;
+    QActionGroup* m_editModeGroup;
+    QAction* m_editCurvesAction;
+    QAction* m_editNodesAction;
 
     QAction* m_wireframeAction;
 

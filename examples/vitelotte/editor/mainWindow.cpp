@@ -25,6 +25,9 @@ MainWindow::MainWindow(QWidget* parent)
       m_exitAction(0),
       m_undoAction(0),
       m_redoAction(0),
+      m_editModeGroup(0),
+      m_editCurvesAction(0),
+      m_editNodesAction(0),
       m_wireframeAction(0),
       m_showMeshGroup(0),
       m_showBaseMeshAction(0),
@@ -90,6 +93,24 @@ MainWindow::MainWindow(QWidget* parent)
     m_redoAction->setShortcut(QKeySequence::Redo);
     m_editMenu->addAction(m_redoAction);
 
+    m_editMenu->addSeparator();
+
+    m_editModeGroup = new QActionGroup(this);
+    connect(m_editModeGroup, SIGNAL(triggered(QAction*)),
+            this, SLOT(changeEditMode(QAction*)));
+
+    m_editCurvesAction = new QAction("Edit curves", this);
+    m_editCurvesAction->setCheckable(true);
+    m_editCurvesAction->setChecked(true);
+    m_editModeGroup->addAction(m_editCurvesAction);
+    m_editMenu->addAction(m_editCurvesAction);
+
+    m_editNodesAction = new QAction("Edit nodes", this);
+    m_editNodesAction->setCheckable(true);
+    m_editNodesAction->setChecked(false);
+    m_editModeGroup->addAction(m_editNodesAction);
+    m_editMenu->addAction(m_editNodesAction);
+
 
     // View Menu
     m_viewMenu = menuBar()->addMenu("View");
@@ -142,6 +163,8 @@ void MainWindow::setEditMode(EditMode editMode)
         m_editMode = editMode;
         m_editor->setEditMode(m_editMode);
         m_valueEditor->setVisible(m_editMode == EDIT_NODES);
+        m_editCurvesAction->setChecked(m_editMode == EDIT_CURVES);
+        m_editNodesAction->setChecked(m_editMode == EDIT_NODES);
         emit editModeChanged(m_editMode);
     }
 }
@@ -184,4 +207,12 @@ void MainWindow::changeShowMesh(QAction* action)
     updateInteractionEnabled();
     m_editor->setShowMesh(m_showMesh);
     m_valueEditor->setShowMesh(m_showMesh);
+}
+
+void MainWindow::changeEditMode(QAction* action)
+{
+    if(action == m_editCurvesAction)
+        setEditMode(EDIT_CURVES);
+    else if(action == m_editNodesAction)
+        setEditMode(EDIT_NODES);
 }
