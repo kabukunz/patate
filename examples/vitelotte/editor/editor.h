@@ -109,15 +109,15 @@ protected:
     float zoom() const;
 
     void beginPanView(const Vector& scenePos);
-    void endPanView(const Vector& scenePos);
+    void endPanView();
     void panView(const Vector& scenePos);
 
     void pickVertexOrEdge(const Vector& scenePos);
     void pickConstraint(const Vector& scenePos);
 
     GradientStop* pickGradientStop(const Vector& scenePos);
-    void beginDragStop(const Vector& scenePos, GradientStop* gs);
-    void endDragStop(const Vector& scenePos);
+    void beginDragStop(GradientStop* gs);
+    void endDragStop();
     void dragStop(const Vector& scenePos);
 
     void makeNewStop(GradientStop& gs, const Vector& scenePos);

@@ -792,29 +792,52 @@ void SetGradientStopValue::setColor(const NodeValue& color)
 
 // ////////////////////////////////////////////////////////////////////////////
 
-AddGradientStop::AddGradientStop(
+AddRemoveGradientStop::AddRemoveGradientStop(
         Document* doc, Curve curve, unsigned which,
         Scalar pos, const NodeValue& value)
     : m_document(doc), m_curve(curve), m_which(which),
-      m_pos(pos), m_value(value)
+      m_pos(pos), m_value(value), m_add(true)
 {
 }
 
-void AddGradientStop::undo()
+AddRemoveGradientStop::AddRemoveGradientStop(
+        Document* doc, Curve curve, unsigned which,
+        Scalar pos)
+    : m_document(doc), m_curve(curve), m_which(which),
+      m_pos(pos), m_value(), m_add(false)
 {
     Mesh& mesh = m_document->mesh();
     Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
-    grad.erase(m_pos);
+    m_value = grad.at(m_pos);
+}
+
+void AddRemoveGradientStop::undo()
+{
+    if(m_add) remove();
+    else      add();
+}
+
+void AddRemoveGradientStop::redo()
+{
+    if(m_add) add();
+    else      remove();
+}
+
+void AddRemoveGradientStop::add()
+{
+    Mesh& mesh = m_document->mesh();
+    Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
+    grad.insert(std::make_pair(m_pos, m_value));
 
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
     m_document->solve();
 }
 
-void AddGradientStop::redo()
+void AddRemoveGradientStop::remove()
 {
     Mesh& mesh = m_document->mesh();
     Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
-    grad.insert(std::make_pair(m_pos, m_value));
+    grad.erase(m_pos);
 
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
     m_document->solve();

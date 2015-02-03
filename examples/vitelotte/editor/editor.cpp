@@ -287,7 +287,7 @@ void Editor::mousePressEvent(QMouseEvent* event)
     {
         Vector scenePos = sceneFromView(event->localPos());
         GradientStop* gs = pickGradientStop(scenePos);
-        if(gs) beginDragStop(scenePos, gs);
+        if(gs) beginDragStop(gs);
     }
     else if(   m_inputState == STATE_IDLE
        && event->button() == Qt::MidButton)
@@ -333,18 +333,18 @@ void Editor::mouseReleaseEvent(QMouseEvent* event)
     case STATE_PAN_VIEW:
         if(event->button() != Qt::MidButton)
             break;
-        endPanView(sceneFromView(event->localPos()));
+        endPanView();
         break;
     case STATE_GRABED_GRADIENT_STOP:
         if(event->button() != Qt::LeftButton)
             break;
         setStopColor(m_dragGradientStop);
-        endDragStop(sceneFromView(event->localPos()));
+        endDragStop();
         break;
     case STATE_DRAG_GRADIENT_STOP:
         if(event->button() != Qt::LeftButton)
             break;
-        endDragStop(sceneFromView(event->localPos()));
+        endDragStop();
         break;
     }
 }
@@ -398,7 +398,7 @@ void Editor::beginPanView(const Vector& scenePos)
     m_dragPos = m_camera.cameraToNormalized(scenePos);
 }
 
-void Editor::endPanView(const Vector& scenePos)
+void Editor::endPanView()
 {
     releaseMouse();
     m_inputState = STATE_IDLE;
@@ -473,14 +473,14 @@ Editor::GradientStop* Editor::pickGradientStop(const Vector& scenePos)
     return 0;
 }
 
-void Editor::beginDragStop(const Vector& scenePos, GradientStop* gs)
+void Editor::beginDragStop(GradientStop* gs)
 {
     grabMouse();
     m_inputState = STATE_GRABED_GRADIENT_STOP;
     m_dragGradientStop = *gs;
 }
 
-void Editor::endDragStop(const Vector& scenePos)
+void Editor::endDragStop()
 {
     releaseMouse();
     m_inputState = STATE_IDLE;
@@ -554,13 +554,14 @@ void Editor::setStopColor(const GradientStop& gs)
 
 void Editor::addGradientStop(const GradientStop& gs)
 {
-    m_document->undoStack()->push(new AddGradientStop(
+    m_document->undoStack()->push(new AddRemoveGradientStop(
         m_document, gs.curve, gs.which, gs.gpos, m_paintColor));
 }
 
 void Editor::removeGradientStop(const GradientStop& gs)
 {
-
+    m_document->undoStack()->push(new AddRemoveGradientStop(
+        m_document, gs.curve, gs.which, gs.gpos));
 }
 
 

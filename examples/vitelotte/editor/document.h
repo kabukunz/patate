@@ -263,18 +263,26 @@ private:
 };
 
 
-class AddGradientStop : public QUndoCommand
+class AddRemoveGradientStop : public QUndoCommand
 {
 public:
     typedef Document::Mesh::Curve Curve;
     typedef Document::Mesh::NodeValue NodeValue;
 
 public:
-    AddGradientStop(Document* doc, Curve curve, unsigned which,
-                    Scalar pos, const NodeValue& value);
+    // Add
+    AddRemoveGradientStop(Document* doc, Curve curve, unsigned which,
+                          Scalar pos, const NodeValue& value);
+    // Remove
+    AddRemoveGradientStop(Document* doc, Curve curve, unsigned which,
+                          Scalar pos);
 
     virtual void undo();
     virtual void redo();
+
+private:
+    void add();
+    void remove();
 
 private:
     Document* m_document;
@@ -282,6 +290,7 @@ private:
     unsigned m_which;
     Scalar m_pos;
     NodeValue m_value;
+    bool m_add;
 };
 
 
