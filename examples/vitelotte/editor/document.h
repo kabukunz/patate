@@ -145,6 +145,9 @@ signals:
 
 
 private:
+    bool connectivityChanged() const;
+
+private:
     Mesh m_mesh;
     Mesh m_finalizedMesh;
     Mesh m_solvedMesh;
@@ -248,7 +251,7 @@ public:
     virtual void redo();
 
 private:
-    void move(Scalar from, Scalar to);
+    void setColor(const NodeValue& color);
 
 private:
     Document* m_document;
@@ -257,6 +260,28 @@ private:
     Scalar m_pos;
     NodeValue m_prevValue;
     NodeValue m_newValue;
+};
+
+
+class AddGradientStop : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::Curve Curve;
+    typedef Document::Mesh::NodeValue NodeValue;
+
+public:
+    AddGradientStop(Document* doc, Curve curve, unsigned which,
+                    Scalar pos, const NodeValue& value);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    Document* m_document;
+    Curve m_curve;
+    unsigned m_which;
+    Scalar m_pos;
+    NodeValue m_value;
 };
 
 

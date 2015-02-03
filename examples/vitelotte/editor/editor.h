@@ -50,6 +50,8 @@ public:
 
     bool showWireframe() const { return m_showWireframe; }
 
+    Eigen::Vector2f sceneFromView(const QPointF& view) const;
+
     Eigen::Vector2f screenToNormalized(const QPointF& screen) const;
     QPointF normalizedToScreen(const Eigen::Vector2f& normalized) const;
 
@@ -106,8 +108,34 @@ protected:
 protected:
     float zoom() const;
 
+    void beginPanView(const Vector& scenePos);
+    void endPanView(const Vector& scenePos);
+    void panView(const Vector& scenePos);
+
+    void pickVertexOrEdge(const Vector& scenePos);
+    void pickConstraint(const Vector& scenePos);
+
+    GradientStop* pickGradientStop(const Vector& scenePos);
+    void beginDragStop(const Vector& scenePos, GradientStop* gs);
+    void endDragStop(const Vector& scenePos);
+    void dragStop(const Vector& scenePos);
+
+    void makeNewStop(GradientStop& gs, const Vector& scenePos);
+    void showDummyStop(const Vector& scenePos);
+    void hideDummyStop();
+
+    void setStopColor(const GradientStop& gs);
+    void addGradientStop(const GradientStop& gs);
+    void removeGradientStop(const GradientStop& gs);
+
+    void selectGradientStop(GradientStop* gs);
+
+    Mesh::Vector computeStopPosition(Mesh::Curve curve, float pos, float offset,
+                                     Mesh::Halfedge* from = 0);
     void addGradientStops(Mesh::Curve curve, unsigned which, float offset);
     GradientStop* closestGradientStop(const Vector& p, float* dist);
+    float closestPos(Mesh::Curve curve, const Vector& p,
+                     unsigned* which=0, float* sqrDist=0);
 
     void drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color);
     void drawGradientStops(float innerRadius, float outerRadius);
@@ -135,6 +163,7 @@ protected:
 
     Mesh::NodeValue m_paintColor;
     GradientStopList m_gradientStops;
+    GradientStop m_dummyStop;
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;

@@ -319,12 +319,15 @@ void Document::solve()
     // Would break undo
     //m_solvedMesh.compactNodes();
     m_finalizedMesh.finalize();
+    if(connectivityChanged())
+        markDirty(DIRTY_CONNECTIVITY);
     m_solvedMesh = m_finalizedMesh;
 
     if(m_solvedMesh.hasUnknowns())
     {
         unsigned dirtyLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
 
+        std::cout << "Solve level: " << dirtyLevel << "\n";
         // TODO: m_fvSolver.clearErrors();
         switch(dirtyLevel)
         {
@@ -603,6 +606,26 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 }
 
 
+bool Document::connectivityChanged() const
+{
+    Mesh::HalfedgeIterator fhit  = m_finalizedMesh.halfedgesBegin();
+    Mesh::HalfedgeIterator fhend = m_finalizedMesh.halfedgesEnd();
+    Mesh::HalfedgeIterator shit  =    m_solvedMesh.halfedgesBegin();
+    Mesh::HalfedgeIterator shend =    m_solvedMesh.halfedgesEnd();
+
+    for(; fhit != fhend && shit != shend; ++fhit, ++shit)
+    {
+        for(unsigned i = 0; i < 4; ++i)
+        {
+            if(m_finalizedMesh.halfedgeNode(*fhit, Mesh::HalfedgeAttribute(i)) !=
+                    m_solvedMesh.halfedgeNode(*shit, Mesh::HalfedgeAttribute(i)))
+                return true;
+        }
+    }
+    return false;
+}
+
+
 // ////////////////////////////////////////////////////////////////////////////
 
 SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
@@ -750,15 +773,49 @@ SetGradientStopValue::SetGradientStopValue(
 
 void SetGradientStopValue::undo()
 {
-    m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = m_prevValue;
-    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
+    setColor(m_prevValue);
 }
 
 
 void SetGradientStopValue::redo()
 {
-    m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = m_newValue;
+    setColor(m_newValue);
+}
+
+void SetGradientStopValue::setColor(const NodeValue& color)
+{
+    m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = color;
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->solve();
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+AddGradientStop::AddGradientStop(
+        Document* doc, Curve curve, unsigned which,
+        Scalar pos, const NodeValue& value)
+    : m_document(doc), m_curve(curve), m_which(which),
+      m_pos(pos), m_value(value)
+{
+}
+
+void AddGradientStop::undo()
+{
+    Mesh& mesh = m_document->mesh();
+    Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
+    grad.erase(m_pos);
+
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->solve();
+}
+
+void AddGradientStop::redo()
+{
+    Mesh& mesh = m_document->mesh();
+    Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
+    grad.insert(std::make_pair(m_pos, m_value));
+
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
     m_document->solve();
 }
