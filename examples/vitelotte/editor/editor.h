@@ -168,8 +168,6 @@ protected:
     GradientStop m_dragGradientStop;
 
     Renderer m_renderer;
-    Vitelotte::VGMeshRendererDefaultShader m_defaultShader;
-    Vitelotte::VGMeshRendererWireframeShader m_wireframeShader;
 
     Mesh::NodeValue m_paintColor;
     GradientStopList m_gradientStops;

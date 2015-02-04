@@ -108,7 +108,7 @@ void Editor::setDocument(Document* document)
 void Editor::updateBuffers()
 {
     assert(m_document);
-    m_renderer.setMesh(&mesh());
+    m_renderer.updateBuffers(mesh());
     update();
 }
 
@@ -174,7 +174,7 @@ void Editor::initializeGL()
     m_initialized = true;
     m_renderer.initialize();
     if(m_document) {
-        m_renderer.setMesh(&mesh());
+        m_renderer.updateBuffers(mesh());
         centerView();
     }
 }
@@ -192,24 +192,21 @@ void Editor::paintGL()
     if(m_document) {
         doUpdateRenderers();
 
-        m_defaultShader.viewMatrix() = m_camera.projectionMatrix();
-        m_renderer.render(m_defaultShader);
+        Eigen::Matrix4f viewMatrix = m_camera.projectionMatrix();
+        m_renderer.render(viewMatrix);
 
-        m_wireframeShader.viewMatrix() = m_camera.projectionMatrix();
-        m_wireframeShader.setLineWidth(.5);
-        m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
-        m_wireframeShader.setZoom(zoom());
-        //m_renderer.render(m_wireframeShader);
+//        m_renderer.renderWireframe(viewMatrix,
+//                                   zoom(), .5, Eigen::Vector4f(.5, .5, .5, 1.));
 
         Eigen::Vector2f viewportSize(width(), height());
-        m_lineRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
-        m_pointRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+        m_lineRenderer.render(viewMatrix, viewportSize);
+        m_pointRenderer.render(viewMatrix, viewportSize);
 
         if(m_showWireframe)
         {
             m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
                                   zoom());
-            m_nodeRenderer.render(m_wireframeShader.viewMatrix(), viewportSize);
+            m_nodeRenderer.render(viewMatrix, viewportSize);
         }
     }
 }
