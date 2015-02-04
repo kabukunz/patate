@@ -14,18 +14,42 @@
 
 
 #ifndef PATATE_ASSERT_NO_GL_ERROR
-#define PATATE_ASSERT_NO_GL_ERROR()                                             \
-{                                                                               \
-    GLenum Error = glGetError();                                                \
-                                                                                \
-    if (Error != GL_NO_ERROR) {                                                 \
-        printf("OpenGL error in %s:%d: 0x%x\n", __FILE__, __LINE__, Error);     \
-        exit(0);                                                                \
-    }                                                                           \
-}
+#define PATATE_ASSERT_NO_GL_ERROR() _assertNoGlError(__FILE__, __LINE__)
 #endif
 
 #define PATATE_FIELD_OFFSET(_struct, _field) &(static_cast<_struct*>(0)->_field)
+
+inline const char* glErrorString(GLenum error)
+{
+    switch(error)
+    {
+    case GL_NO_ERROR:
+        return "NO_ERROR";
+    case GL_INVALID_ENUM:
+        return "INVALID_ENUM";
+    case GL_INVALID_VALUE:
+        return "INVALID_VALUE";
+    case GL_INVALID_OPERATION:
+        return "INVALID_OPERATION";
+    case GL_INVALID_FRAMEBUFFER_OPERATION:
+        return "INVALID_FRAMEBUFFER_OPERATION";
+    case GL_OUT_OF_MEMORY:
+        return "OUT_OF_MEMORY";
+    }
+    return "Unknown error";
+}
+
+inline void _assertNoGlError(const char* file, int line)
+{
+    GLenum error = glGetError();
+
+    if (error != GL_NO_ERROR) {
+        printf("OpenGL error in %s:%d: %s (0x%x)\n",
+               file, line, glErrorString(error), error);
+        abort();
+    }
+}
+
 
 
 #endif

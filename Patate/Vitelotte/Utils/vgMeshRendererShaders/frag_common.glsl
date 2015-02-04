@@ -63,7 +63,7 @@ vec4 quadraticInterp(in vec4 colors[6])
 
 float interpFactor(float dist, float radius)
 {
-	return clamp(.5 + radius - dist*zoom, 0, 1);
+        return clamp(.5 + radius - dist*zoom, 0, 1);
 }
 
 vec4 colorWithBordersAndPoints(in vec4 colorNodes[6])
@@ -78,12 +78,12 @@ vec4 colorWithBordersAndPoints(in vec4 colorNodes[6])
 
     if(showWireframe)
     {
-		color = mix(color, wireframeColor,
-					interpFactor(edgeDist[closestEdge], halfLineWidth));
+        color = mix(color, wireframeColor,
+                    interpFactor(edgeDist[closestEdge], halfLineWidth));
 //        color = mix(color, colorNodes[closestEdge + 3]*.5,
 //                    interpFactor(edgeDist[closestEdge], halfLineWidth));
-		color = mix(color, pointColor,
-					interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
+        color = mix(color, pointColor,
+                    interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
 //        color = mix(color, colorNodes[closestVx],
 //                    interpFactor(sqrt(vertexSqrDist[closestVx]), pointRadius));
     }

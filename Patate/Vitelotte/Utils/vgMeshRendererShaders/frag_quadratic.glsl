@@ -34,13 +34,13 @@ void main(void)
         texelFetch(nodes, baseEdgeIndex + 2)
     );
 
-	if(singularTriangles)
-	{
-		colorNodes[0] = mix(colorNodes[0],
-							texelFetch(nodes, baseVxIndex + 6),
-							irlerp(normalize(position - vertices[0]),
-									normEdges[2], -normEdges[1]));
-	}
+    if(singularTriangles)
+    {
+        colorNodes[0] = mix(colorNodes[0],
+                            texelFetch(nodes, baseVxIndex + 6),
+                            irlerp(normalize(position - vertices[0]),
+                            normEdges[2], -normEdges[1]));
+    }
 
-	out_color = quadraticInterp(colorNodes);
+        out_color = quadraticInterp(colorNodes);
 }

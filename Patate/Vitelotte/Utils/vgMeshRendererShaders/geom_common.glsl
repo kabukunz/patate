@@ -25,10 +25,10 @@ const vec3 basis[3] = vec3[3](
 
 void main()
 {
-	for(int i=0; i<3; ++i)
-	{
-		gl_Position = gl_in[i].gl_Position;
-		gl_PrimitiveID = gl_PrimitiveIDIn;
+    for(int i=0; i<3; ++i)
+    {
+        gl_Position = gl_in[i].gl_Position;
+        gl_PrimitiveID = gl_PrimitiveIDIn;
         linearBasis = basis[i];
         position = position_obj[i];//gl_in[i].gl_Position.xy;
         for(int j=0; j<3; ++j)

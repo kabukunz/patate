@@ -224,6 +224,7 @@ void GLViewer::startup(const std::string& filename)
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
@@ -231,7 +232,9 @@ void GLViewer::startup(const std::string& filename)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     m_pQMeshRenderer = new Renderer;
-    m_pQMeshRenderer->initialize(m_pQvg);
+    bool ok = m_pQMeshRenderer->initialize();
+    assert(ok);
+    m_pQMeshRenderer->updateBuffers(*m_pQvg);
 
     PATATE_ASSERT_NO_GL_ERROR();
 }
@@ -252,16 +255,11 @@ void GLViewer::render()
         m_viewCenter.y() + yOffset,
         -1, 1);
 
-    m_defaultShader.viewMatrix() = m_viewMatrix;
-    m_pQMeshRenderer->render(m_defaultShader);
+    m_pQMeshRenderer->render(m_viewMatrix);
 
     if(m_showShaderWireframe)
     {
-        m_wireframeShader.viewMatrix() = m_viewMatrix;
-        m_wireframeShader.setZoom(m_zoom);
-        m_wireframeShader.setLineWidth(m_lineWidth);
-        m_wireframeShader.setWireframeColor(Eigen::Vector4f(.5, .5, .5, 1.));
-        m_pQMeshRenderer->render(m_wireframeShader);
+        m_pQMeshRenderer->renderWireframe(m_viewMatrix, m_zoom, m_lineWidth);
     }
 
     PATATE_ASSERT_NO_GL_ERROR();

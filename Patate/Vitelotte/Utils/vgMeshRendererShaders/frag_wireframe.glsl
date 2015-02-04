@@ -23,11 +23,11 @@ float interpFactor(float dist, float radius);
 
 void main(void)
 {
-	vec3 edgeDist = computeEdgeDist();
-	int closestEdge = minIndex(edgeDist);
-	float intensity = interpFactor(edgeDist[closestEdge], lineWidth/2.);
-	if(intensity < 0.001)
-		discard;
+    vec3 edgeDist = computeEdgeDist();
+    int closestEdge = minIndex(edgeDist);
+    float intensity = interpFactor(edgeDist[closestEdge], lineWidth/2.);
+    if(intensity < 0.001)
+        discard;
 
-	out_color = vec4(wireframeColor.rgb, wireframeColor.a * intensity);
+    out_color = vec4(wireframeColor.rgb, wireframeColor.a * intensity);
 }
