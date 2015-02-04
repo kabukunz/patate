@@ -194,6 +194,11 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     {
         int start = m_ranges[k];
         int size  = m_ranges[k+1]-start;
+
+        // Skip unused, isolated nodes
+        if(size == 1 && mat.coeffRef(start, start) == 0)
+            continue;
+
         StiffnessMatrix L(size,size);
         L.reserve(size*20);
 

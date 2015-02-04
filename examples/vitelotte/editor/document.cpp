@@ -316,12 +316,12 @@ void Document::solve()
         m_mesh.setNodesFromCurves();
 
     m_finalizedMesh = m_mesh;
-    // Would break undo
-    //m_solvedMesh.compactNodes();
     m_finalizedMesh.finalize();
     if(connectivityChanged())
         markDirty(DIRTY_CONNECTIVITY);
+
     m_solvedMesh = m_finalizedMesh;
+    m_solvedMesh.compactNodes();
 
     if(m_solvedMesh.hasUnknowns())
     {

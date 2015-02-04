@@ -466,7 +466,7 @@ VGMesh<_Scalar, _Dim, _Chan>::finalize()
         std::vector<Halfedge>::iterator cit = consEdges.begin();
         for(; cit != consEdges.end(); ++cit)
         {
-            if(!isBoundary(*cit))
+            if(!isBoundary(prev))
                 finalizeVertexArc(prev, *cit);
 
             prev = *cit;
@@ -675,7 +675,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
         {
             simplifyOppositeNodes(np, n0);
 
-            if(np.isValid() || n0.isValid())
+            if(np.isValid() || n0.isValid() || boundary)
             {
                 consEdges.push_back(*hit);
             }
