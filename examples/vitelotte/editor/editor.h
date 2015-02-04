@@ -59,7 +59,7 @@ public slots:
     void centerView();
     void setDocument(Document* document);
     void updateBuffers();
-    void updateSelection();
+    void updateRenderers();
     void setShowWireframe(bool enable);
     void setShowMesh(int type);
     void setEditMode(int mode);
@@ -93,6 +93,14 @@ protected:
                      const Eigen::Vector2f& position, const Eigen::Vector4f& color)
             : position(position), color(color), curve(curve), which(which), gpos(gpos)
         {}
+
+        inline bool operator==(const GradientStop& other) const
+        {
+            return position == other.position && color == other.color &&
+                    curve == other.curve && which == other.which && gpos == other.gpos;
+        }
+        inline bool operator!=(const GradientStop& other) const
+        { return !(*this == other); }
     };
 
     typedef std::vector<GradientStop> GradientStopList;
@@ -130,6 +138,8 @@ protected:
 
     void selectGradientStop(GradientStop* gs);
 
+    void doUpdateRenderers();
+
     Mesh::Vector computeStopPosition(Mesh::Curve curve, float pos, float offset,
                                      Mesh::Halfedge* from = 0);
     void addGradientStops(Mesh::Curve curve, unsigned which, float offset);
@@ -165,6 +175,7 @@ protected:
     GradientStopList m_gradientStops;
     GradientStop m_dummyStop;
 
+    bool m_rendererDirty;
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
     VGNodeRenderer m_nodeRenderer;

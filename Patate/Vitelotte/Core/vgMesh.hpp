@@ -267,8 +267,8 @@ VGMesh<_Scalar, _Dim, _Chan>::
     assert(hasToVertexValue() && hasFromVertexValue());
     assert(isConstraint(fromNode) && isConstraint(toNode));
 
-    const NodeValue& fromValue = nodeValue(fromNode);
-    const NodeValue&   toValue = nodeValue(  toNode);
+    NodeValue fromValue = nodeValue(fromNode);
+    NodeValue   toValue = nodeValue(  toNode);
 
     const Vector& v = position(fromVertex(from));
     Vector fromVec = position(toVertex(from)) - v;

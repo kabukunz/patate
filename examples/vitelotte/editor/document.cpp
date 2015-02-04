@@ -312,6 +312,8 @@ void Document::solve()
     if(m_dirtyFlags == CLEAN)
         return;
 
+    std::cout << "Dirty flags: " << m_dirtyFlags << ", " << (m_dirtyFlags & DIRTY_LEVEL_MASK) << "\n";
+
     if(m_dirtyFlags & DIRTY_CURVES_FLAG)
         m_mesh.setNodesFromCurves();
 
@@ -321,7 +323,7 @@ void Document::solve()
         markDirty(DIRTY_CONNECTIVITY);
 
     m_solvedMesh = m_finalizedMesh;
-    m_solvedMesh.compactNodes();
+    //m_solvedMesh.compactNodes();
 
     if(m_solvedMesh.hasUnknowns())
     {

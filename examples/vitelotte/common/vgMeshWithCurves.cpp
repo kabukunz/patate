@@ -140,10 +140,13 @@ void VGMeshWithCurves::setNodesFromCurves()
         HalfedgeAroundVertexCirculator hit = halfedges(vx);
         HalfedgeAroundVertexCirculator hend = hit;
         do {
+            Halfedge opp = oppositeHalfedge(*hit);
             if(isValueConstraint(pc))
             {
-                halfedgeNode(*hit, FROM_VERTEX_VALUE) = vn;
-                halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = vn;
+                if(!isBoundary(*hit))
+                    halfedgeNode(*hit, FROM_VERTEX_VALUE) = vn;
+                if(!isBoundary(opp))
+                    halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = vn;
             }
             if(isGradientConstraint(pc))
             {
@@ -152,8 +155,10 @@ void VGMeshWithCurves::setNodesFromCurves()
                 Node gn = addNode(grad * v);
 //                std::cout << "Point gradient constraint: "
 //                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
-                halfedgeNode(*hit, EDGE_GRADIENT) = gn;
-                halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
+                if(!isBoundary(*hit))
+                    halfedgeNode(*hit, EDGE_GRADIENT) = gn;
+                if(!isBoundary(opp))
+                    halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
             }
             ++hit;
         } while(hit != hend);
@@ -176,35 +181,38 @@ void VGMeshWithCurves::setNodesFromCurves()
             Halfedge rh = oppositeHalfedge(lh);
             float midPos = (fromCurvePos(lh) + toCurvePos(lh)) / 2.f;
 
+            bool lhnb = !isBoundary(lh);
+            bool rhnb = !isBoundary(rh);
+
             if(hasFromVertexValue())
             {
-                fromVertexValueNode(lh) = fromNode[LEFT];
-                fromVertexValueNode(rh) =   toNode[RIGHT];
+                if(lhnb) fromVertexValueNode(lh) = fromNode[LEFT];
+                if(rhnb) fromVertexValueNode(rh) =   toNode[RIGHT];
             }
             if(hasToVertexValue())
             {
-                toVertexValueNode(lh) =   toNode[LEFT];
-                toVertexValueNode(rh) = fromNode[RIGHT];
+                if(lhnb) toVertexValueNode(lh) =   toNode[LEFT];
+                if(rhnb) toVertexValueNode(rh) = fromNode[RIGHT];
             }
 
             if(hasEdgeValue())
             {
                 Node midNode[2];
                 addGradientNodes(midNode, c, VALUE, midPos);
-                edgeValueNode(lh) = midNode[LEFT];
-                edgeValueNode(rh) = midNode[RIGHT];
+                if(lhnb) edgeValueNode(lh) = midNode[LEFT];
+                if(rhnb) edgeValueNode(rh) = midNode[RIGHT];
             }
 
             if(hasEdgeGradient())
             {
                 Node gNode[2];
                 addGradientNodes(gNode, c, GRADIENT, midPos);
-                edgeGradientNode(lh) = gNode[LEFT];
-                edgeGradientNode(rh) = gNode[RIGHT];
+                if(lhnb) edgeGradientNode(lh) = gNode[LEFT];
+                if(rhnb) edgeGradientNode(rh) = gNode[RIGHT];
 
-                if(halfedgeOrientation(lh))
+                if(halfedgeOrientation(lh) && lhnb)
                     nodeValue(gNode[LEFT]) *= -1;
-                if(gNode[LEFT] != gNode[RIGHT] && halfedgeOrientation(lh))
+                if(gNode[LEFT] != gNode[RIGHT] && halfedgeOrientation(lh) && rhnb)
                     nodeValue(gNode[RIGHT]) *= -1;
 
             }

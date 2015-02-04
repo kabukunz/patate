@@ -22,7 +22,8 @@ Editor::Editor(QWidget* parent)
       m_inputState(STATE_IDLE),
       m_dragPos(),
       m_dragGradientStop(),
-      m_paintColor(0., 0., 0., 1.)
+      m_paintColor(0., 0., 0., 1.),
+      m_rendererDirty(true)
 {
     setMouseTracking(true);
 }
@@ -77,6 +78,9 @@ void Editor::centerView()
 
 void Editor::setDocument(Document* document)
 {
+    if(document == m_document)
+        return;
+
     if(m_document)
     {
         disconnect(m_document);
@@ -94,8 +98,9 @@ void Editor::setDocument(Document* document)
 
         connect(m_document, SIGNAL(meshChanged()), this, SLOT(centerView()));
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateBuffers()));
+        connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateRenderers()));
         connect(m_document, SIGNAL(selectionChanged()),
-                this, SLOT(updateSelection()));
+                this, SLOT(updateRenderers()));
     }
 }
 
@@ -108,76 +113,9 @@ void Editor::updateBuffers()
 }
 
 
-void Editor::updateSelection()
+void Editor::updateRenderers()
 {
-    assert(m_document);
-
-    Mesh& mesh = m_document->mesh();
-    MeshSelection sel = m_document->selection();
-    m_gradientStops.clear();
-    m_pointRenderer.clear();
-    m_lineRenderer.clear();
-    if(sel.isVertex() || sel.isPointConstraint())
-    {
-        Mesh::Vertex v = sel.isVertex()?
-                    sel.vertex():
-                    mesh.vertex(sel.pointConstraint());
-        Eigen::Vector3f p; p << mesh.position(v), 0;
-
-        float innerRadius = 3;
-        float outerRadius = innerRadius + 1.5;
-        Eigen::Vector4f innerColor(1., 1., 1., 1.);
-        Eigen::Vector4f outerColor(0., 0., 0., 1.);
-
-        m_pointRenderer.addPoint(p, outerRadius, outerColor);
-        m_pointRenderer.addPoint(p, innerRadius, innerColor);
-    }
-    else if(sel.isEdge())
-    {
-        Mesh::Edge e = sel.edge();
-
-        Eigen::Vector3f p0; p0 << mesh.position(mesh.vertex(e, 0)), 0;
-        Eigen::Vector3f p1; p1 << mesh.position(mesh.vertex(e, 1)), 0;
-
-        float innerWidth = 1.5;
-        float outerWidth = 4.5;
-        Eigen::Vector4f innerColor(1., 1., 1., 1.);
-        Eigen::Vector4f outerColor(0., 0., 0., 1.);
-
-        m_lineRenderer.addPoint(p0, outerWidth, outerColor);
-        m_lineRenderer.addPoint(p1, outerWidth, outerColor);
-        m_lineRenderer.endLine();
-        m_lineRenderer.addPoint(p0, innerWidth, innerColor);
-        m_lineRenderer.addPoint(p1, innerWidth, innerColor);
-        m_lineRenderer.endLine();
-    }
-    else if(sel.isCurve())
-    {
-        float innerWidth = 1.5;
-        float outerWidth = 4.5;
-        Eigen::Vector4f innerColor(1., 1., 1., 1.);
-        Eigen::Vector4f outerColor(0., 0., 0., 1.);
-
-        Mesh::Curve curve = sel.curve();
-
-        drawCurve(curve, outerWidth, outerColor);
-        drawCurve(curve, innerWidth, innerColor);
-
-        float innerRadius = 3;
-        float outerRadius = innerRadius + 1.5;
-
-        bool tear = mesh.valueTear(curve);
-        Scalar offset = tear? 8: 0;
-
-        addGradientStops(curve, Mesh::VALUE_LEFT, offset);
-
-        if(tear)
-            addGradientStops(curve, Mesh::VALUE_RIGHT, -offset);
-        drawGradientStops(innerRadius, outerRadius);
-    }
-    m_pointRenderer.upload();
-    m_lineRenderer.upload();
-
+    m_rendererDirty = true;
     update();
 }
 
@@ -252,8 +190,7 @@ void Editor::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if(m_document) {
-        if(m_editMode == EDIT_CURVES)
-            updateSelection();
+        doUpdateRenderers();
 
         m_defaultShader.viewMatrix() = m_camera.projectionMatrix();
         m_renderer.render(m_defaultShader);
@@ -380,8 +317,10 @@ void Editor::wheelEvent(QWheelEvent* event)
     m_camera.normalizedZoom(
                 screenToNormalized(event->posF()),
                 event->delta() > 0? 1.1: 1/1.1);
-    updateSelection();
-    update();
+
+    // Force update selection
+//    m_currentSelection = MeshSelection();
+    updateRenderers();
 }
 
 
@@ -407,9 +346,12 @@ void Editor::endPanView()
 void Editor::panView(const Vector& scenePos)
 {
     Eigen::Vector2f norm = m_camera.cameraToNormalized(scenePos);
-    m_camera.normalizedTranslate(norm - m_dragPos);
-    m_dragPos = norm;
-    update();
+    if(norm != m_dragPos)
+    {
+        m_camera.normalizedTranslate(norm - m_dragPos);
+        m_dragPos = norm;
+        update();
+    }
 }
 
 
@@ -503,6 +445,8 @@ void Editor::dragStop(const Vector& scenePos)
 
     m_inputState = STATE_DRAG_GRADIENT_STOP;
     m_dragGradientStop.gpos = newPos;
+
+    updateRenderers();
 }
 
 
@@ -535,14 +479,19 @@ void Editor::makeNewStop(GradientStop& gs, const Vector& scenePos)
 
 void Editor::showDummyStop(const Vector& scenePos)
 {
+    GradientStop gs = m_dummyStop;
     makeNewStop(m_dummyStop, scenePos);
-    update();
+    if(m_dummyStop != gs)
+        updateRenderers();
 }
 
 void Editor::hideDummyStop()
 {
-    m_dummyStop.curve = Mesh::Curve();
-    update();
+    if(m_dummyStop.curve.isValid())
+    {
+        m_dummyStop.curve = Mesh::Curve();
+        updateRenderers();
+    }
 }
 
 
@@ -568,6 +517,83 @@ void Editor::removeGradientStop(const GradientStop& gs)
 void Editor::selectGradientStop(GradientStop* gs)
 {
 
+}
+
+
+void Editor::doUpdateRenderers()
+{
+    assert(m_document);
+
+    Mesh& mesh = m_document->mesh();
+    MeshSelection sel = m_document->selection();
+
+    if(!m_rendererDirty)
+        return;
+    m_rendererDirty = false;
+
+    m_gradientStops.clear();
+    m_pointRenderer.clear();
+    m_lineRenderer.clear();
+    if(sel.isVertex() || sel.isPointConstraint())
+    {
+        Mesh::Vertex v = sel.isVertex()?
+                    sel.vertex():
+                    mesh.vertex(sel.pointConstraint());
+        Eigen::Vector3f p; p << mesh.position(v), 0;
+
+        float innerRadius = 3;
+        float outerRadius = innerRadius + 1.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        m_pointRenderer.addPoint(p, outerRadius, outerColor);
+        m_pointRenderer.addPoint(p, innerRadius, innerColor);
+    }
+    else if(sel.isEdge())
+    {
+        Mesh::Edge e = sel.edge();
+
+        Eigen::Vector3f p0; p0 << mesh.position(mesh.vertex(e, 0)), 0;
+        Eigen::Vector3f p1; p1 << mesh.position(mesh.vertex(e, 1)), 0;
+
+        float innerWidth = 1.5;
+        float outerWidth = 4.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        m_lineRenderer.addPoint(p0, outerWidth, outerColor);
+        m_lineRenderer.addPoint(p1, outerWidth, outerColor);
+        m_lineRenderer.endLine();
+        m_lineRenderer.addPoint(p0, innerWidth, innerColor);
+        m_lineRenderer.addPoint(p1, innerWidth, innerColor);
+        m_lineRenderer.endLine();
+    }
+    else if(sel.isCurve())
+    {
+        float innerWidth = 1.5;
+        float outerWidth = 4.5;
+        Eigen::Vector4f innerColor(1., 1., 1., 1.);
+        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+
+        Mesh::Curve curve = sel.curve();
+
+        drawCurve(curve, outerWidth, outerColor);
+        drawCurve(curve, innerWidth, innerColor);
+
+        float innerRadius = 3;
+        float outerRadius = innerRadius + 1.5;
+
+        bool tear = mesh.valueTear(curve);
+        Scalar offset = tear? 8: 0;
+
+        addGradientStops(curve, Mesh::VALUE_LEFT, offset);
+
+        if(tear)
+            addGradientStops(curve, Mesh::VALUE_RIGHT, -offset);
+        drawGradientStops(innerRadius, outerRadius);
+    }
+    m_pointRenderer.upload();
+    m_lineRenderer.upload();
 }
 
 
