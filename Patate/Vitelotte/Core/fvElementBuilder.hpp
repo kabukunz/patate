@@ -146,9 +146,20 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
+    nCoefficients(const Mesh& mesh, Face element) const
 {
-    return 81;
+    typename Mesh::template VertexProperty<bool> isGc =
+            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
+
+    typename Mesh::VertexAroundFaceCirculator vit = mesh.vertices(element);
+    typename Mesh::VertexAroundFaceCirculator vend = vit;
+    do ++vit;
+    while(!isGc[*vit] && vit != vend);
+    bool isPgc = isGc[*vit];
+
+    if(isPgc) std::cout << "pgc1: " << element.idx() << "\n";
+
+    return isPgc? 117: 81;
 }
 
 
@@ -178,12 +189,19 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     int nodes[9];
 
+    typename Mesh::template VertexProperty<bool> isGc =
+            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
+
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
     do ++hit;
-    while(mesh.toVertex(*hit).idx() != 0 && hit != hend);
-    bool flat = mesh.toVertex(*hit).idx() == 0;
-    flat = false;
+    while(!isGc[mesh.toVertex(*hit)] && hit != hend);
+    bool isPgc = isGc[mesh.toVertex(*hit)];
+    typename Mesh::Edge e2 = mesh.edge(*hit);
+    ++hit;
+    typename Mesh::Edge e1 = mesh.edge(*hit);
+    --hit;
+    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
     bool orient[3];
     Vector p[3];
@@ -225,49 +243,49 @@ FVElementBuilder<_Mesh, _Scalar>::
                    (pi == 1)? 0: .5,
                    (pi == 2)? 0: .5);
         typename Elem::Matrix2 hessians[9];
-        if(!flat)
-        {
+//        if(!flat)
+//        {
             elem.hessian(bc, hessians);
-        }
-        else
-        {
-            typedef FVElementFlat<Scalar> ElemFlat;
-            ElemFlat elemFlat(p[0], p[1], p[2]);
-            elemFlat.hessian(bc, hessians);
-            orient[7] = 1;
-            orient[8] = 1;
+//        }
+//        else
+//        {
+//            typedef FVElementFlat<Scalar> ElemFlat;
+//            ElemFlat elemFlat(p[0], p[1], p[2]);
+//            elemFlat.hessian(bc, hessians);
+//            orient[7] = 1;
+//            orient[8] = 1;
 
-            Scalar delta = 1.e-6;
+//            Scalar delta = 1.e-6;
 
-            Vector dx(delta/2, 0);
-            Vector dy(0, delta/2);
-            for(unsigned bi = 0; bi < 9; ++bi)
-            {
-                hessians[bi](0, 0) = elemFlat.eval(elemFlat.point(pi) + dx + dx)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) + dx - dx)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) - dx + dx)(bi)
-                                   + elemFlat.eval(elemFlat.point(pi) - dx - dx)(bi);
-                hessians[bi](0, 1) = elemFlat.eval(elemFlat.point(pi) + dx + dy)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) + dx - dy)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) - dx + dy)(bi)
-                                   + elemFlat.eval(elemFlat.point(pi) - dx - dy)(bi);
-                hessians[bi](1, 0) = hessians[bi](0, 1);
-                hessians[bi](1, 1) = elemFlat.eval(elemFlat.point(pi) + dy + dy)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) + dy - dy)(bi)
-                                   - elemFlat.eval(elemFlat.point(pi) - dy + dy)(bi)
-                                   + elemFlat.eval(elemFlat.point(pi) - dy - dy)(bi);
-                hessians[bi] /= delta * delta;
-            }
+//            Vector dx(delta/2, 0);
+//            Vector dy(0, delta/2);
+//            for(unsigned bi = 0; bi < 9; ++bi)
+//            {
+//                hessians[bi](0, 0) = elemFlat.eval(elemFlat.point(pi) + dx + dx)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) + dx - dx)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) - dx + dx)(bi)
+//                                   + elemFlat.eval(elemFlat.point(pi) - dx - dx)(bi);
+//                hessians[bi](0, 1) = elemFlat.eval(elemFlat.point(pi) + dx + dy)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) + dx - dy)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) - dx + dy)(bi)
+//                                   + elemFlat.eval(elemFlat.point(pi) - dx - dy)(bi);
+//                hessians[bi](1, 0) = hessians[bi](0, 1);
+//                hessians[bi](1, 1) = elemFlat.eval(elemFlat.point(pi) + dy + dy)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) + dy - dy)(bi)
+//                                   - elemFlat.eval(elemFlat.point(pi) - dy + dy)(bi)
+//                                   + elemFlat.eval(elemFlat.point(pi) - dy - dy)(bi);
+//                hessians[bi] /= delta * delta;
+//            }
 
-            typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
-            Vector dv1 = (elemFlat.point(1) - elemFlat.point(0)).normalized() * (delta/2);
-            Vector dv2 = (elemFlat.point(2) - elemFlat.point(0)).normalized() * (delta/2);
-            Matrix9x2 testDiffP0;
-            testDiffP0 <<
-                (elemFlat.eval(elemFlat.point(0) + dv2) - elemFlat.eval(elemFlat.point(0) - dv2)) / delta,
-                (elemFlat.eval(elemFlat.point(0) + dv1) - elemFlat.eval(elemFlat.point(0) - dv1)) / delta;
-            std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
-        }
+//            typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
+//            Vector dv1 = (elemFlat.point(1) - elemFlat.point(0)).normalized() * (delta/2);
+//            Vector dv2 = (elemFlat.point(2) - elemFlat.point(0)).normalized() * (delta/2);
+//            Matrix9x2 testDiffP0;
+//            testDiffP0 <<
+//                (elemFlat.eval(elemFlat.point(0) + dv2) - elemFlat.eval(elemFlat.point(0) - dv2)) / delta,
+//                (elemFlat.eval(elemFlat.point(0) + dv1) - elemFlat.eval(elemFlat.point(0) - dv1)) / delta;
+//            std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
+//        }
 
         for(int bi = 0; bi < 9; ++bi)
         {
@@ -305,17 +323,6 @@ FVElementBuilder<_Mesh, _Scalar>::
             sm(i, j) = value;
             sm(j, i) = value;
         }
-
-        if(flat)
-        {
-            std::cout << "Flat elem:\n";
-            std::cout << "  p0: " << elem.point(0).transpose() << "\n";
-            std::cout << "  p1: " << elem.point(1).transpose() << "\n";
-            std::cout << "  p2: " << elem.point(2).transpose() << "\n";
-            std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
-            std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
-            std::cout << "  Stiffness matrix:\n" << sm << "\n";
-        }
     }
 
     for(size_t i = 0; i < 9; ++i)
@@ -323,6 +330,60 @@ FVElementBuilder<_Mesh, _Scalar>::
         for(size_t j = 0; j < 9; ++j)
         {
             *(it++) = Triplet(nodes[i], nodes[j], sm(i, j));
+        }
+    }
+    if(isPgc)
+    {
+        std::cout << "Flat elem:\n";
+        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
+        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
+        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
+        std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
+        std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
+        std::cout << "  Stiffness matrix:\n" << sm << "\n";
+
+        typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+        Vector9 fde1, fde2;
+        fde1 <<
+            -1.0L/2.0L*(elem.doubleArea()*(2*elem.dldn(0, 1) + elem.dldn(1, 1)) + 7*elem.edgeLength(1))/(elem.edgeLength(1)*elem.edgeLength(2)),
+            (1.0L/2.0L)*(elem.doubleArea()*(elem.dldn(0, 0) + 2*elem.dldn(1, 0)) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(2)),
+            -1.0L/2.0L*elem.doubleArea()*(elem.edgeLength(0)*(elem.dldn(1, 1) + 2*elem.dldn(2, 1)) - elem.edgeLength(1)*(elem.dldn(0, 0) + 2*elem.dldn(2, 0)))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+            -4/elem.edgeLength(2),
+            4/elem.edgeLength(2),
+            4/elem.edgeLength(2),
+            elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(2)),
+            -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2)),
+            0;
+        fde2 <<
+            -1.0L/2.0L*(elem.doubleArea()*(2*elem.dldn(0, 2) + elem.dldn(2, 2)) + 7*elem.edgeLength(2))/(elem.edgeLength(1)*elem.edgeLength(2)),
+            -1.0L/2.0L*elem.doubleArea()*(elem.edgeLength(0)*(2*elem.dldn(1, 2) + elem.dldn(2, 2)) - elem.edgeLength(2)*(elem.dldn(0, 0) + 2*elem.dldn(1, 0)))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+            (1.0L/2.0L)*(elem.doubleArea()*(elem.dldn(0, 0) + 2*elem.dldn(2, 0)) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)),
+            -4/elem.edgeLength(1),
+            4/elem.edgeLength(1),
+            4/elem.edgeLength(1),
+            elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(1)),
+            0,
+            -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
+
+        typename Mesh::template EdgeProperty<typename Mesh::Node> pgcNode =
+                mesh.template getEdgeProperty<typename Mesh::Node>("e:pgcNode");
+        int ce1 = pgcNode[e1].idx();
+        int ce2 = pgcNode[e2].idx();
+        if(ce1 < 0 || ce2 < 0)
+        {
+            error(STATUS_ERROR, "Invalid node");
+            return;
+        }
+        std::cout << "  ce1: " << e1 << ", " << ce1 << ", "
+                  << mesh.nodeValue(pgcNode[e1]).transpose() << "\n";
+        std::cout << "  ce2: " << e2 << ", " << ce2 << ", "
+                  << mesh.nodeValue(pgcNode[e2]).transpose() << "\n";
+        for(size_t i = 0; i < 9; ++i)
+        {
+            *(it++) = Triplet(nodes[i], ce1, fde1(i));
+            *(it++) = Triplet(ce1, nodes[i], fde1(i));
+            *(it++) = Triplet(nodes[i], ce2, fde2(i));
+            *(it++) = Triplet(ce2, nodes[i], fde2(i));
         }
     }
 }

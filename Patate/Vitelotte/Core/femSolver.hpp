@@ -50,8 +50,6 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     m_stiffnessMatrix.resize(m_mesh->nNodes(), m_mesh->nNodes());
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
-
-//    sort();
 }
 
 
@@ -221,7 +219,6 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
 //        Eigen::BiCGSTAB<StiffnessMatrix> solver;
 //        solver.compute(L);
-//        std::cout << "BiCGSTAB: " << solver.iterations() << " iters, error = " << solver.error() << "\n";
 
 //        Eigen::SparseLU<StiffnessMatrix> solver;
 //        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
@@ -229,6 +226,8 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 //        solver.factorize(L);
 
         m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+
+//        std::cout << "BiCGSTAB: " << solver.iterations() << " iters, error = " << solver.error() << "\n";
 
         switch(solver.info()) {
         case Eigen::Success: std::cout << "Success\n"; break;
