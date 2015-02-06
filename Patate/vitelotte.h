@@ -11,6 +11,10 @@
 
 #include "common/surface_mesh/surfaceMesh.h"
 
+#include "Vitelotte/Core/linearElement.h"
+#include "Vitelotte/Core/quadraticElement.h"
+//#include "Vitelotte/Core/morleyElement.h"
+#include "Vitelotte/Core/fvElement.h"
 #include "Vitelotte/Core/vgMesh.h"
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/linearElementBuilder.h"

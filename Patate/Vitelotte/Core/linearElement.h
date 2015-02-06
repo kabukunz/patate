@@ -82,17 +82,17 @@ public:
         return bc(bi);
     }
 
-    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector& /*p*/ = Vector()) const
+    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector& /*p*/) const
     {
         return m_lbf.template block<3, 2>(0, 0);
     }
 
-    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector3& /*bc*/) const
+    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector3& /*bc*/ = Vector3()) const
     {
         return m_lbf.template block<3, 2>(0, 0);
     }
 
-    inline const Vector gradient(unsigned bi, const Vector& /*p*/ = Vector()) const
+    inline const Vector gradient(unsigned bi, const Vector& /*p*/) const
     {
         assert(bi < 3);
         return m_lbf.template block<1, 2>(bi, 0);

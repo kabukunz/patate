@@ -539,72 +539,132 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 {
     std::ofstream out(filename.c_str());
 
-    unsigned nCount = 0;
-    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
-    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
-        fit != m_solvedMesh.facesEnd(); ++fit)
-    {
-        Mesh::Halfedge h[3];
-        h[0] = m_solvedMesh.halfedge(*fit);
-        h[1] = m_solvedMesh.nextHalfedge(h[0]);
-        h[2] = m_solvedMesh.nextHalfedge(h[1]);
-
-        for(unsigned hi = 0; hi < 3; ++hi)
-        {
-            Mesh::Node n;
-            Mesh::Vertex to = m_solvedMesh.toVertex(h[hi]);
-            Mesh::Vertex from = m_solvedMesh.fromVertex(h[hi]);
-
-            n = m_solvedMesh.toVertexValueNode(h[hi]);
-            if(indexFromNode[n.idx()] == -1)
-            {
-                out << "v " << m_solvedMesh.position(to).transpose() << " ";
-                if(m_solvedMesh.isValid(n))
-                    out << m_solvedMesh.nodeValue(n)(layer);
-                else
-                    out << "0";
-                out << "\n";
-                indexFromNode[n.idx()] = nCount++;
-            }
-
-            n = m_solvedMesh.edgeValueNode(h[hi]);
-            if(indexFromNode[n.idx()] == -1)
-            {
-                Mesh::Vector p = (m_solvedMesh.position(to)
-                                + m_solvedMesh.position(from)) / 2;
-                out << "v " << p.transpose() << " ";
-                if(m_solvedMesh.isValid(n))
-                    out << m_solvedMesh.nodeValue(n)(layer);
-                else
-                    out << "0";
-                out << "\n";
-                indexFromNode[n.idx()] = nCount++;
-            }
-        }
-    }
+    unsigned nSubdiv = 8;
+    unsigned vxPerEdge = nSubdiv + 1;
+    unsigned vxPerFace = (vxPerEdge * (vxPerEdge + 1)) / 2;
 
     for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
         fit != m_solvedMesh.facesEnd(); ++fit)
     {
-        Mesh::Halfedge h[3];
-        h[0] = m_solvedMesh.halfedge(*fit);
-        h[1] = m_solvedMesh.nextHalfedge(h[0]);
-        h[2] = m_solvedMesh.nextHalfedge(h[1]);
+        Eigen::Matrix<float, 2, 3> points;
+        Eigen::Matrix<float, 6, 1> nodeValues;
 
-        unsigned vi[3];
-        unsigned ei[3];
-        for(int i = 0; i < 3; ++i)
+        Mesh::Halfedge h = m_solvedMesh.halfedge(*fit);
+        for(unsigned i = 0; i < 3; ++i)
         {
-            vi[i] = indexFromNode[m_solvedMesh.toVertexValueNode(h[i]).idx()];
-            ei[(i+1)%3] = indexFromNode[m_solvedMesh.edgeValueNode(h[i]).idx()];
+            nodeValues(i + 3) = m_solvedMesh.nodeValue(m_solvedMesh.edgeValueNode(h))(layer);
+            h = m_solvedMesh.nextHalfedge(h);
+            points.col(i) = m_solvedMesh.position(m_solvedMesh.toVertex(h));
+            nodeValues(i) = m_solvedMesh.nodeValue(m_solvedMesh.toVertexValueNode(h))(layer);
         }
 
-//        out << "f " << vi[0]+1 << " " << vi[1]+1 << " " << vi[2]+1 << "\n";
-        out << "f " << vi[0]+1 << " " << ei[2]+1 << " " << ei[1]+1 << "\n";
-        out << "f " << vi[1]+1 << " " << ei[0]+1 << " " << ei[2]+1 << "\n";
-        out << "f " << vi[2]+1 << " " << ei[1]+1 << " " << ei[0]+1 << "\n";
-        out << "f " << ei[0]+1 << " " << ei[1]+1 << " " << ei[2]+1 << "\n";
+        Vitelotte::QuadraticElement<float> elem(points.col(0), points.col(1), points.col(2));
+        for(unsigned i = 0; i < vxPerEdge; ++i)
+        {
+            for(unsigned j = 0; j < (i + 1); ++j)
+            {
+                Eigen::Vector3f bc;
+                bc(0) = 1.f - float(i) / float(nSubdiv);
+                bc(2) = float(j) / float(nSubdiv);
+                bc(1) = 1.f - bc(0) - bc(2);
+
+                float value = nodeValues.dot(elem.eval(bc));
+                out << "v " << (points * bc).transpose() << " " << value << "\n";
+            }
+        }
     }
+
+    unsigned count = 0;
+    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
+        fit != m_solvedMesh.facesEnd(); ++fit)
+    {
+        unsigned first = count * vxPerFace + 1; // first vertex is 1 in .obj
+        unsigned v0 = first;
+        unsigned v1 = first + 1;
+        for(int i = 0; i < nSubdiv; ++i)
+        {
+            for(int j = 0; j < i; ++j)
+            {
+                out << "f " << v0 << " " << v1 << " " << v1 + 1 << "\n";
+                out << "f " << v0 << " " << v1 + 1 << " " << v0 + 1 << "\n";
+                ++v0;
+                ++v1;
+            }
+            out << "f " << v0 << " " << v1 << " " << v1 + 1 << "\n";
+            ++v0;
+            v1 += 2;
+        }
+        ++count;
+    }
+//    unsigned nCount = 0;
+//    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
+//    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
+//        fit != m_solvedMesh.facesEnd(); ++fit)
+//    {
+//        Mesh::Vector pts[3];
+//        Eigen::Matrix<float, 4, 6> nodeValues;
+
+//        Mesh::Halfedge h[3];
+//        h[0] = m_solvedMesh.halfedge(*fit);
+//        h[1] = m_solvedMesh.nextHalfedge(h[0]);
+//        h[2] = m_solvedMesh.nextHalfedge(h[1]);
+
+//        for(unsigned hi = 0; hi < 3; ++hi)
+//        {
+//            Mesh::Node n;
+//            Mesh::Vertex to = m_solvedMesh.toVertex(h[hi]);
+//            Mesh::Vertex from = m_solvedMesh.fromVertex(h[hi]);
+
+//            n = m_solvedMesh.toVertexValueNode(h[hi]);
+//            if(indexFromNode[n.idx()] == -1)
+//            {
+//                out << "v " << m_solvedMesh.position(to).transpose() << " ";
+//                if(m_solvedMesh.isValid(n))
+//                    out << m_solvedMesh.nodeValue(n)(layer);
+//                else
+//                    out << "0";
+//                out << "\n";
+//                indexFromNode[n.idx()] = nCount++;
+//            }
+
+//            n = m_solvedMesh.edgeValueNode(h[hi]);
+//            if(indexFromNode[n.idx()] == -1)
+//            {
+//                Mesh::Vector p = (m_solvedMesh.position(to)
+//                                + m_solvedMesh.position(from)) / 2;
+//                out << "v " << p.transpose() << " ";
+//                if(m_solvedMesh.isValid(n))
+//                    out << m_solvedMesh.nodeValue(n)(layer);
+//                else
+//                    out << "0";
+//                out << "\n";
+//                indexFromNode[n.idx()] = nCount++;
+//            }
+//        }
+//    }
+
+//    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
+//        fit != m_solvedMesh.facesEnd(); ++fit)
+//    {
+//        Mesh::Halfedge h[3];
+//        h[0] = m_solvedMesh.halfedge(*fit);
+//        h[1] = m_solvedMesh.nextHalfedge(h[0]);
+//        h[2] = m_solvedMesh.nextHalfedge(h[1]);
+
+//        unsigned vi[3];
+//        unsigned ei[3];
+//        for(int i = 0; i < 3; ++i)
+//        {
+//            vi[i] = indexFromNode[m_solvedMesh.toVertexValueNode(h[i]).idx()];
+//            ei[(i+1)%3] = indexFromNode[m_solvedMesh.edgeValueNode(h[i]).idx()];
+//        }
+
+////        out << "f " << vi[0]+1 << " " << vi[1]+1 << " " << vi[2]+1 << "\n";
+//        out << "f " << vi[0]+1 << " " << ei[2]+1 << " " << ei[1]+1 << "\n";
+//        out << "f " << vi[1]+1 << " " << ei[0]+1 << " " << ei[2]+1 << "\n";
+//        out << "f " << vi[2]+1 << " " << ei[1]+1 << " " << ei[0]+1 << "\n";
+//        out << "f " << ei[0]+1 << " " << ei[1]+1 << " " << ei[2]+1 << "\n";
+//    }
 }
 
 

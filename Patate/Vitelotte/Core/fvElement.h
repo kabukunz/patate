@@ -18,7 +18,7 @@ namespace Vitelotte
 
 
 template < typename _Scalar >
-class FVElement : public LinearElement<_Scalar>
+class FVElement : protected LinearElement<_Scalar>
 {
 public:
     typedef _Scalar Scalar;
