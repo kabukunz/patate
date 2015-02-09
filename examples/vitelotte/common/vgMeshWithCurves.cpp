@@ -125,7 +125,9 @@ void VGMeshWithCurves::setNodesFromCurves()
     }
 
     VertexProperty<bool> isGc = vertexProperty<bool>("v:isGradientConstraint", false);
-    EdgeProperty<Node> pgcNode = edgeProperty<Node>("e:pgcNode");
+//    EdgeProperty<Node> pgcNode = EdgeProperty<Node>("e:pgcNode");
+    HalfedgeProperty<Node> pgcNode = halfedgeProperty<Node>("h:pgcNode");
+    EdgeProperty<NodeValue> pgConstraint = edgeProperty<NodeValue>("e:pgConstraint");
     for(unsigned pci = 0; pci < nPointConstraints(); ++pci)
     {
         PointConstraint pc(pci);
@@ -164,9 +166,10 @@ void VGMeshWithCurves::setNodesFromCurves()
                     halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
 
 //                isGc[vx] = true;
-//                pgcNode[edge(*hit)] = gn;
-//                std::cout << "Point gradient constraint: " << edge(*hit) << ", " << gn.idx() << ", "
-//                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
+//                pgcNode[Edge(*hit)] = addNode();
+//                pgcNode[*hit] = addNode();
+//                pgcNode[oppositeHalfedge(*hit)] = addNode();
+//                pgConstraint[edge(*hit)] = grad * v;
             }
             ++hit;
         } while(hit != hend);

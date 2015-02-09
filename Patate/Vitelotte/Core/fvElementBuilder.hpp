@@ -44,6 +44,7 @@ public:
     using Base::doubleArea;
     using Base::edgeLength;
     using Base::dldn;
+    using Base::barycentricCoordinates;
 
     using Base::_gradientFactor;
     using Base::_vertexGradientFactor;
@@ -88,9 +89,9 @@ public:
         ).finished();
     }
 
-    inline Vector9 eval(const Vector& p) const
+    inline Vector9 eval(const Vector3& bc) const
     {
-        Vector9 fv = Base::eval(p);
+        Vector9 fv = Base::eval(bc);
         Matrix9x2 diffP0 = _diffP0AlongEdges();
 
         fv[7] /= diffP0(7, 0);
@@ -104,6 +105,11 @@ public:
         std::swap(fv[7], fv[8]);
 
         return fv;
+    }
+
+    inline Vector9 eval(const Vector& p) const
+    {
+        return eval(barycentricCoordinates(p));
     }
 
     inline void hessian(const Vector3& bc, Matrix2* h) const
@@ -160,6 +166,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     if(isPgc) std::cout << "pgc1: " << element.idx() << "\n";
 
     return isPgc? 117: 81;
+//    return 81;
 }
 
 
@@ -198,8 +205,10 @@ FVElementBuilder<_Mesh, _Scalar>::
     while(!isGc[mesh.toVertex(*hit)] && hit != hend);
     bool isPgc = isGc[mesh.toVertex(*hit)];
     typename Mesh::Edge e2 = mesh.edge(*hit);
+    typename Mesh::Halfedge h2 = *hit;
     ++hit;
     typename Mesh::Edge e1 = mesh.edge(*hit);
+    typename Mesh::Halfedge h1 = *hit;
     --hit;
     if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
@@ -243,7 +252,7 @@ FVElementBuilder<_Mesh, _Scalar>::
                    (pi == 1)? 0: .5,
                    (pi == 2)? 0: .5);
         typename Elem::Matrix2 hessians[9];
-//        if(!flat)
+//        if(!isPgc)
 //        {
             elem.hessian(bc, hessians);
 //        }
@@ -257,33 +266,35 @@ FVElementBuilder<_Mesh, _Scalar>::
 
 //            Scalar delta = 1.e-6;
 
-//            Vector dx(delta/2, 0);
-//            Vector dy(0, delta/2);
-//            for(unsigned bi = 0; bi < 9; ++bi)
-//            {
-//                hessians[bi](0, 0) = elemFlat.eval(elemFlat.point(pi) + dx + dx)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) + dx - dx)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) - dx + dx)(bi)
-//                                   + elemFlat.eval(elemFlat.point(pi) - dx - dx)(bi);
-//                hessians[bi](0, 1) = elemFlat.eval(elemFlat.point(pi) + dx + dy)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) + dx - dy)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) - dx + dy)(bi)
-//                                   + elemFlat.eval(elemFlat.point(pi) - dx - dy)(bi);
-//                hessians[bi](1, 0) = hessians[bi](0, 1);
-//                hessians[bi](1, 1) = elemFlat.eval(elemFlat.point(pi) + dy + dy)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) + dy - dy)(bi)
-//                                   - elemFlat.eval(elemFlat.point(pi) - dy + dy)(bi)
-//                                   + elemFlat.eval(elemFlat.point(pi) - dy - dy)(bi);
-//                hessians[bi] /= delta * delta;
-//            }
+////            Vector dx(delta/2, 0);
+////            Vector dy(0, delta/2);
+////            for(unsigned bi = 0; bi < 9; ++bi)
+////            {
+////                hessians[bi](0, 0) = elemFlat.eval(elemFlat.point(pi) + dx + dx)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) + dx - dx)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) - dx + dx)(bi)
+////                                   + elemFlat.eval(elemFlat.point(pi) - dx - dx)(bi);
+////                hessians[bi](0, 1) = elemFlat.eval(elemFlat.point(pi) + dx + dy)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) + dx - dy)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) - dx + dy)(bi)
+////                                   + elemFlat.eval(elemFlat.point(pi) - dx - dy)(bi);
+////                hessians[bi](1, 0) = hessians[bi](0, 1);
+////                hessians[bi](1, 1) = elemFlat.eval(elemFlat.point(pi) + dy + dy)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) + dy - dy)(bi)
+////                                   - elemFlat.eval(elemFlat.point(pi) - dy + dy)(bi)
+////                                   + elemFlat.eval(elemFlat.point(pi) - dy - dy)(bi);
+////                hessians[bi] /= delta * delta;
+////            }
 
 //            typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
 //            Vector dv1 = (elemFlat.point(1) - elemFlat.point(0)).normalized() * (delta/2);
 //            Vector dv2 = (elemFlat.point(2) - elemFlat.point(0)).normalized() * (delta/2);
 //            Matrix9x2 testDiffP0;
 //            testDiffP0 <<
-//                (elemFlat.eval(elemFlat.point(0) + dv2) - elemFlat.eval(elemFlat.point(0) - dv2)) / delta,
-//                (elemFlat.eval(elemFlat.point(0) + dv1) - elemFlat.eval(elemFlat.point(0) - dv1)) / delta;
+//                (elemFlat.eval(Vector(elemFlat.point(0) + dv2))
+//               - elemFlat.eval(Vector(elemFlat.point(0) - dv2))) / delta,
+//                (elemFlat.eval(Vector(elemFlat.point(0) + dv1))
+//               - elemFlat.eval(Vector(elemFlat.point(0) - dv1))) / delta;
 //            std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
 //        }
 
@@ -365,19 +376,21 @@ FVElementBuilder<_Mesh, _Scalar>::
             0,
             -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
 
-        typename Mesh::template EdgeProperty<typename Mesh::Node> pgcNode =
-                mesh.template getEdgeProperty<typename Mesh::Node>("e:pgcNode");
-        int ce1 = pgcNode[e1].idx();
-        int ce2 = pgcNode[e2].idx();
+//        typename Mesh::template EdgeProperty<typename Mesh::Node> pgcNode =
+//                mesh.template getEdgeProperty<typename Mesh::Node>("e:pgcNode");
+        typename Mesh::template HalfedgeProperty<typename Mesh::Node> pgcNode =
+                mesh.template getHalfedgeProperty<typename Mesh::Node>("h:pgcNode");
+        int ce1 = pgcNode[h1].idx();
+        int ce2 = pgcNode[h2].idx();
         if(ce1 < 0 || ce2 < 0)
         {
             error(STATUS_ERROR, "Invalid node");
             return;
         }
         std::cout << "  ce1: " << e1 << ", " << ce1 << ", "
-                  << mesh.nodeValue(pgcNode[e1]).transpose() << "\n";
+                  << mesh.nodeValue(pgcNode[h1]).transpose() << "\n";
         std::cout << "  ce2: " << e2 << ", " << ce2 << ", "
-                  << mesh.nodeValue(pgcNode[e2]).transpose() << "\n";
+                  << mesh.nodeValue(pgcNode[h2]).transpose() << "\n";
         for(size_t i = 0; i < 9; ++i)
         {
             *(it++) = Triplet(nodes[i], ce1, fde1(i));

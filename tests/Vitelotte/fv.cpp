@@ -8,8 +8,8 @@
 
 typedef double Scalar;
 
-typedef Vitelotte::_FVElementFlat<Scalar> Elem;
-typedef Vitelotte::_FVElementFlat<Scalar> ElemFlat;
+typedef Vitelotte::FVElement<Scalar> Elem;
+typedef Vitelotte::FVElementFlat<Scalar> ElemFlat;
 
 typedef Elem::Vector Vector;
 typedef Elem::Vector3 Vector3;
@@ -17,7 +17,7 @@ typedef Elem::Vector9 Vector9;
 
 typedef Elem::Matrix2 Matrix2;
 typedef Elem::Matrix2x3 Matrix2x3;
-typedef Elem::Matrix9x2 Matrix9x2;
+typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
 typedef Eigen::Matrix<Scalar, 9, 9> Matrix9;
 
 
@@ -153,21 +153,21 @@ public:
 Vector9 diffX2(const Elem& elem, Scalar delta, const Vector& p)
 {
     Vector v = Vector(delta, 0);
-    return (elem.eval(p + v) - 2 * elem.eval(p) + elem.eval(p - v)) / (delta * delta);
+    return (elem.eval(Vector(p + v)) - 2 * elem.eval(p) + elem.eval(Vector(p - v))) / (delta * delta);
 }
 
 Vector9 diffY2(const Elem& elem, Scalar delta, const Vector& p)
 {
     Vector v = Vector(0, delta);
-    return (elem.eval(p + v) - 2 * elem.eval(p) + elem.eval(p - v)) / (delta * delta);
+    return (elem.eval(Vector(p + v)) - 2 * elem.eval(p) + elem.eval(Vector(p - v))) / (delta * delta);
 }
 
 Vector9 diffXY(const Elem& elem, Scalar delta, const Vector& p)
 {
     Vector vx = Vector(delta / 2, 0);
     Vector vy = Vector(0, delta / 2);
-    return (elem.eval(p + vx + vy) - elem.eval(p + vx - vy)
-            - elem.eval(p - vx + vy)+ elem.eval(p - vx - vy)) / (delta * delta);
+    return (elem.eval(Vector(p + vx + vy)) - elem.eval(Vector(p + vx - vy))
+            - elem.eval(Vector(p - vx + vy))+ elem.eval(Vector(p - vx - vy))) / (delta * delta);
 }
 
 
@@ -215,7 +215,7 @@ int main(int argc, char** argv)
         const Vector& p2 = elem.point((i+2)%3);
 
         testBasis.col(i) = elem.eval(elem.point(i));
-        testBasis.col(i + 3) = elem.eval((p1 + p2) / 2);
+        testBasis.col(i + 3) = elem.eval(Vector((p1 + p2) / 2));
 
         Vector n(p2 - p1);
         n = Vector(-n.y(), n.x());
@@ -230,14 +230,14 @@ int main(int argc, char** argv)
     Vector dv2 = (elem.point(2) - elem.point(0)).normalized() * (delta/2);
     Matrix9x2 testDiffP0;
     testDiffP0 <<
-        (elem.eval(elem.point(0) + dv2) - elem.eval(elem.point(0) - dv2)) / delta,
-        (elem.eval(elem.point(0) + dv1) - elem.eval(elem.point(0) - dv1)) / delta;
+        (elem.eval(Vector(elem.point(0) + dv2)) - elem.eval(Vector(elem.point(0) - dv2))) / delta,
+        (elem.eval(Vector(elem.point(0) + dv1)) - elem.eval(Vector(elem.point(0) - dv1))) / delta;
     std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
 
     typedef Eigen::Matrix<Scalar, 10, 1> TestMatrix;
     TestMatrix tm;
     for(int i = 0; i < 10; ++i)
-        tm(i) = elem.eval(Vector::Random()).head<6>().sum();
+        tm(i) = elem.eval(Vector(Vector::Random())).head<6>().sum();
     std::cout << "Random evals: " << tm.transpose() << "\n";
 
     Vector p(.5, .5);
@@ -266,7 +266,8 @@ int main(int argc, char** argv)
 
 
     {
-        ElemFlat elem(Vector::Random(), Vector::Random(), Vector::Random());
+//        ElemFlat elem(Vector::Random(), Vector::Random(), Vector::Random());
+        ElemFlat elem(Vector(0, 0), Vector(1, 0), Vector(.5, std::sqrt(3)/2));
 
         Eigen::MatrixXd evalPts;
         Eigen::MatrixXd evalBasis;

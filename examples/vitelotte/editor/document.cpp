@@ -535,7 +535,29 @@ void Document::openSaveFinalMeshDialog()
 }
 
 
-void Document::exportPlot(const std::string& filename, unsigned layer)
+template <typename Elem>
+void printPlotElementVertices(std::ostream& out, const Elem& elem,
+                              const Eigen::Matrix<float, 2, 3>& points,
+                              const Eigen::Matrix<float, 9, 1>& nodeValues,
+                              unsigned nSubdiv) {
+    for(unsigned i = 0; i < nSubdiv+1; ++i)
+    {
+        for(unsigned j = 0; j < (i + 1); ++j)
+        {
+            Eigen::Vector3f bc;
+            bc(0) = 1.f - float(i) / float(nSubdiv);
+            bc(2) = float(j) / float(nSubdiv);
+            bc(1) = 1.f - bc(0) - bc(2);
+
+            float value = nodeValues.dot(elem.eval(bc));
+            out << "v " << (points * bc).transpose() << " " << value << "\n";
+        }
+    }
+}
+
+
+template <typename Mesh, typename Elem, typename PGElem>
+void exportPlot(const Mesh& mesh, const std::string& filename, unsigned layer)
 {
     std::ofstream out(filename.c_str());
 
@@ -543,40 +565,61 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
     unsigned vxPerEdge = nSubdiv + 1;
     unsigned vxPerFace = (vxPerEdge * (vxPerEdge + 1)) / 2;
 
-    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
-        fit != m_solvedMesh.facesEnd(); ++fit)
+    typename Mesh::template VertexProperty<bool> isGc =
+            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
+
+    for(typename Mesh::FaceIterator fit = mesh.facesBegin();
+        fit != mesh.facesEnd(); ++fit)
     {
         Eigen::Matrix<float, 2, 3> points;
-        Eigen::Matrix<float, 6, 1> nodeValues;
+        Eigen::Matrix<float, 9, 1> nodeValues;
 
-        Mesh::Halfedge h = m_solvedMesh.halfedge(*fit);
+        typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
+        typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
+        do ++hit;
+        while(!isGc[mesh.toVertex(*hit)] && hit != hend);
+        bool isPgc = isGc[mesh.toVertex(*hit)];
+        --hit;
+        isPgc = false;
+
         for(unsigned i = 0; i < 3; ++i)
         {
-            nodeValues(i + 3) = m_solvedMesh.nodeValue(m_solvedMesh.edgeValueNode(h))(layer);
-            h = m_solvedMesh.nextHalfedge(h);
-            points.col(i) = m_solvedMesh.position(m_solvedMesh.toVertex(h));
-            nodeValues(i) = m_solvedMesh.nodeValue(m_solvedMesh.toVertexValueNode(h))(layer);
+            nodeValues(i + 3) = mesh.nodeValue(mesh.edgeValueNode(*hit))(layer);
+            nodeValues(i + 6) = mesh.nodeValue(mesh.edgeGradientNode(*hit))(layer);
+            if((!isPgc || i == 0) && !mesh.halfedgeOrientation(*hit))
+                nodeValues(i + 6) *= -1;
+            ++hit;
+            points.col(i) = mesh.position(mesh.toVertex(*hit));
+            nodeValues(i) = mesh.nodeValue(mesh.toVertexValueNode(*hit))(layer);
         }
 
-        Vitelotte::QuadraticElement<float> elem(points.col(0), points.col(1), points.col(2));
-        for(unsigned i = 0; i < vxPerEdge; ++i)
-        {
-            for(unsigned j = 0; j < (i + 1); ++j)
-            {
-                Eigen::Vector3f bc;
-                bc(0) = 1.f - float(i) / float(nSubdiv);
-                bc(2) = float(j) / float(nSubdiv);
-                bc(1) = 1.f - bc(0) - bc(2);
+        if(!isPgc)
+            printPlotElementVertices(out, Elem(points.col(0), points.col(1), points.col(2)),
+                                     points, nodeValues, nSubdiv);
+        else
+            printPlotElementVertices(out, PGElem(points.col(0), points.col(1), points.col(2)),
+                                     points, nodeValues, nSubdiv);
 
-                float value = nodeValues.dot(elem.eval(bc));
-                out << "v " << (points * bc).transpose() << " " << value << "\n";
-            }
-        }
+//        Vitelotte::QuadraticElement<float> elem(points.col(0), points.col(1), points.col(2));
+//        Vitelotte::FVElement<float> elem(points.col(0), points.col(1), points.col(2));
+//        for(unsigned i = 0; i < vxPerEdge; ++i)
+//        {
+//            for(unsigned j = 0; j < (i + 1); ++j)
+//            {
+//                Eigen::Vector3f bc;
+//                bc(0) = 1.f - float(i) / float(nSubdiv);
+//                bc(2) = float(j) / float(nSubdiv);
+//                bc(1) = 1.f - bc(0) - bc(2);
+
+//                float value = nodeValues.dot(elem.eval(bc));
+//                out << "v " << (points * bc).transpose() << " " << value << "\n";
+//            }
+//        }
     }
 
     unsigned count = 0;
-    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
-        fit != m_solvedMesh.facesEnd(); ++fit)
+    for(typename Mesh::FaceIterator fit = mesh.facesBegin();
+        fit != mesh.facesEnd(); ++fit)
     {
         unsigned first = count * vxPerFace + 1; // first vertex is 1 in .obj
         unsigned v0 = first;
@@ -596,6 +639,17 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
         }
         ++count;
     }
+}
+
+
+void Document::exportPlot(const std::string& filename, unsigned layer)
+{
+    typedef Vitelotte::FVElement<float> FVElem;
+    typedef Vitelotte::FVElementFlat<float> FVPGElem;
+
+    ::exportPlot<Mesh, FVElem, FVElem>(m_solvedMesh, filename, layer);
+//    ::exportPlot<Mesh, FVElem, FVPGElem>(m_solvedMesh, filename, layer);
+
 //    unsigned nCount = 0;
 //    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
 //    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
