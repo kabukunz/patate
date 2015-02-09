@@ -1,51 +1,77 @@
-#ifndef _SHADER_H_
-#define	_SHADER_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
+#ifndef _PATATE_COMMON_GL_UTILS_SHADER_
+#define _PATATE_COMMON_GL_UTILS_SHADER_
+
+#include <cstdio>
+#include <cstring>
+#include <cassert>
+#include <string>
 #include <list>
-#include <GL/glew.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
+
 
 #include "macros.h"
 
 
-namespace Patate {
+namespace PatateCommon {
 
 class Shader
 {
 public:
+    enum Status
+    {
+        UNINITIALIZED,
+        NOT_COMPILED,
+        COMPILATION_SUCCESSFULL,
+        COMPILATION_FAILED
+    };
+
+public:
 
     inline Shader();
-    inline ~Shader();
+    inline virtual ~Shader();
 
-    inline virtual bool Init();
+    inline bool create();
+    inline void destroy();
 
-    inline void Enable();
+    inline void use();
 
-    inline bool AddShaderFromFile(GLenum _ShaderType, const char* _pFilename);
-    inline bool AddShader(GLenum _ShaderType, const char* _pShaderText);
-    inline bool Finalize();
+    inline Status status() const { return m_status; }
 
-    GLuint GetShaderId() { return m_shaderProg; }
+    inline void setGLSLVersionHeader(const std::string& header);
+    inline bool addShaderFromFile(GLenum _ShaderType, const char* _pFilename);
+    inline bool addShader(GLenum _ShaderType, const char* _pShaderText);
+    inline void clearShaderList();
+    inline bool finalize();
 
-    inline GLint GetUniformLocation(const char* _pUniformName);
-    inline GLint GetProgramParam(GLint _param);
+    inline GLuint getShaderId() { return m_shaderProg; }
+
+    inline void bindAttributeLocation(const char* name, unsigned location);
+    inline GLint getUniformLocation(const char* _pUniformName);
+    inline GLint getProgramParam(GLint _param);
   
 protected:
     GLuint m_shaderProg;
     
 private:
     typedef std::list<GLuint> ShaderObjList;
+
+    Status m_status;
+    std::string m_versionHeader;
     ShaderObjList m_shaderObjList;
 };
 
 //#define INVALID_UNIFORM_LOCATION 0xFFFFFFFF
 
 
+}
+
 #include "shader.hpp"
 
-}
 
 #endif
 

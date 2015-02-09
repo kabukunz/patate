@@ -1,0 +1,189 @@
+<!doctype html>
+
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		
+		<link href="style.css" rel="stylesheet" type="text/css" media="all">
+		
+		<title>Vitelotte Viewer</title>
+	</head>
+	
+	<body>
+		<header>
+			<h1 class="mainTitle">Vitelotte Viewer</h1>
+			<h2 class="mainSubtitle">A demo of <a href="http://patate.gforge.inria.fr/html/" rel="external" title="Patate Lib's website">Patate Lib</a>'s Vitelotte package</h2>
+		</header>
+		
+		<nav class="mainSidebar">
+			<ul class="mainSidebarSections">
+				<ul class="mainMenuEntries">
+					<li><a href="about.html">About this demo</a></li>
+				</ul>
+				<hr class="mainMenuSeparator" />
+				<ul class="mainMenuEntries">
+					<li><a onclick="Module.GL2Viewer.getInstance().centerView()">Center view</a></li>
+					<li><a id="wireframeButton" onclick="Module.toggleWireframe()">Hide wireframe</a></li>
+				</ul>
+				<hr class="mainMenuSeparator" />
+				<ul class="mainMenuEntries">
+					<li><a onclick="Module.loadMeshFromHttp('samples/neko.mvg');">Neko</a></li>
+					<li><a onclick="Module.loadMeshFromHttp('samples/poring.mvg');">Poring</a></li>
+					<li><a onclick="Module.loadMeshFromHttp('samples/simple.mvg');">Simple</a></li>
+					<li><a onclick="Module.loadMeshFromHttp('samples/sphere.mvg');">Sphere</a></li>
+					<li><a onclick="Module.loadMeshFromHttp('samples/umbrella.mvg');">Umbrella</a></li>
+					<li><a onclick="Module.loadMeshFromHttp('samples/yin-yang.mvg');">Yin-yang</a></li>
+				</ul>
+			</ul>
+		</nav>
+		
+		<div class="canvasContainer">
+			<canvas class="emscripten vitelotteCanvas" id="vitelotteCanvas" oncontextmenu="event.preventDefault()">
+				Sorry, your browser does not support the canvas element. Try updating your browser or an other one.
+			</canvas>
+		</div>
+		
+		<footer>
+			Powered by
+			<a href="http://patate.gforge.inria.fr/html/" rel="external" title="Patate Lib website">Patate Lib</a>
+			and
+			<a href="http://eigen.tuxfamily.org/" rel="external" title="Eigen's website">Eigen</a>
+			-- Compiled from C++ to Javascript with
+			<a href="http://kripken.github.io/emscripten-site/" rel="external" title="Emscripten's website">Emscripten</a>
+		</footer>
+
+		<script type='text/javascript'>
+			var statusElement = document.getElementById('status');
+			var progressElement = document.getElementById('progress');
+			var spinnerElement = document.getElementById('spinner');
+
+			var Module = {
+				preRun: [
+					function() {
+						Module.requestResize();
+						FS.mkdir('/samples')
+					}
+				],
+				postRun: [],
+				print: function(text) {
+					console.log(text);
+				},
+				printErr: function(text) {
+					console.error(text);
+				},
+				canvas: (function() {
+					var canvas = document.getElementById('vitelotteCanvas');
+
+					// As a default initial behavior, pop up an alert when webgl context is lost. To make your
+					// application robust, you may want to override this behavior before shipping!
+					// See http://www.khronos.org/registry/webgl/specs/latest/1.0/#5.15.2
+					canvas.addEventListener("webglcontextlost", function(e) { alert('WebGL context lost. You will need to reload the page.'); e.preventDefault(); }, false);
+					
+					window.addEventListener("resize", function(e) {
+						Module.requestResize();
+					});
+
+					return canvas;
+				})(),
+				
+				resizePending: false,
+				requestResize: function() {
+					var canvas = document.getElementById('vitelotteCanvas');
+					if(Module.resizePending) {
+						return;
+					}
+					
+					Module.resizePending = true;
+					window.requestAnimationFrame(function() {
+						var supersampling = 2;
+						Module.resizePending = false;
+						canvas.width = canvas.clientWidth * supersampling;
+						canvas.height = canvas.clientHeight * supersampling;
+						Module.GL2Viewer.getInstance().resize(
+							canvas.clientWidth * supersampling,
+							canvas.clientHeight * supersampling);
+					});
+				},
+				
+				updateWireframeButton: function(wireframe) {
+					var button = document.getElementById("wireframeButton");
+					if(wireframe)
+						button.innerHTML = "Hide wireframe"
+					else
+						button.innerHTML = "Show wireframe"
+				},
+				toggleWireframe: function() {
+					var viewer = Module.GL2Viewer.getInstance()
+					var wireframe = !viewer.showWireframe();
+					
+					viewer.setShowWireframe(wireframe);
+					Module.updateWireframeButton(wireframe);
+				},
+				
+				// File loading
+				loadRequest: null,
+				loadUrl: null,
+				terminateLoadFromHttp: function() {
+					if(Module.loadRequest !== null && Module.loadRequest.readyState !== 4) {
+						console.log("Abort loading file '"+Module.loadUrl+"' from HTTP.");
+						Module.loadRequest.abort();
+					}
+					Module.loadRequest = null;
+					Module.loadUrl = null;
+				},
+				loadMeshFromHttp: function(url) {
+					Module.terminateLoadFromHttp();
+
+					Module.loadUrl = url;
+					console.log("Loading '"+url+"' from HTTP...");
+
+					try {
+						Module.loadRequest = new XMLHttpRequest();
+						Module.loadRequest.open("GET", url, true);
+						Module.loadRequest.responseType = "arraybuffer";
+
+						Module.loadRequest.addEventListener("load", function(e) {
+							if(Module.loadRequest.status === 200) {
+								console.log("Successfully loaded '"+url+"' from HTTP.");
+								FS.writeFile('/'+url, new Uint8Array(e.target.response), { encoding: 'binary' });
+								
+								var viewer = Module.GL2Viewer.getInstance();
+								viewer.loadMesh(url);
+								viewer.centerView();
+							}
+							else
+								console.log("Failed to load '"+url+"' from HTTP ("+Module.loadRequest.status+").");
+							Module.terminateLoadFromHttp();
+						}, false);
+						Module.loadRequest.addEventListener("error", function(e) {
+							console.log("'"+url+"' loading failed.");
+							Module.terminateLoadFromHttp();
+						}, false);
+						//Module.loadRequest.addEventListener("progress", function(e) {
+						//	if(e.lengthComputable)
+						//		progressBar.value = e.loaded / e.total;
+						//}, false);
+
+						//var sampleElem = document.getElementById(sampleId);
+						//if(sampleElem)
+						//	sampleElem.classList.add("selected_sample");
+
+						//var progressBar = sampleElem.getElementsByTagName("progress")[0];
+						//progressBar.style.display = "block";
+						//progressBar.value = 0;
+
+						Module.loadRequest.send();
+					}
+					catch(e) {
+						console.error("Failed to load '"+url+"' from HTTP.");
+						console.error(e.name + ": " + e.message);
+						Module.terminateLoadFromHttp();
+					}
+				}
+
+			};
+		</script>
+		<script async type="text/javascript" src="gl2_viewer.js"></script>
+	</body>
+</html>

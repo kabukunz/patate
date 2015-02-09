@@ -1,106 +1,86 @@
-#ifndef _FEM_SOLVER_H_
-#define _FEM_SOLVER_H_
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
 
-#include <iostream>
+#ifndef _VITELOTTE_FEM_SOLVER_
+#define _VITELOTTE_FEM_SOLVER_
+
 #include <cassert>
 
+#include <Eigen/Core>
+#include <Eigen/Sparse>
+
 #include "femUtils.h"
-#include "femInMesh.h"
+#include "vgMesh.h"
 
 
 namespace Vitelotte
 {
 
 
+template < class _Mesh, class _ElementBuilder >
 class FemSolver
 {
 public:
-    enum
-    {
-        nbChannels = FemColor::RowsAtCompileTime
-    };
+    typedef _Mesh Mesh;
+    typedef _ElementBuilder ElementBuilder;
 
-    typedef surface_mesh::Surface_mesh::Vertex Vertex;
-    typedef surface_mesh::Surface_mesh::Vertex_around_face_circulator Vertex_around_face_circulator;
-    typedef surface_mesh::Surface_mesh::Face Face;
-    typedef surface_mesh::Surface_mesh::Face_iterator Face_iterator;
+    typedef typename ElementBuilder::Scalar Scalar;
 
-public:
-    static FemMatrix33 m_linM1;
-    static FemMatrix33 m_linM2;
-    static FemMatrix33 m_linM3;
+    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+    typedef Eigen::Triplet<Scalar> Triplet;
+    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrix;
 
-    static FemMatrix66 m_quadM1;
-    static FemMatrix66 m_quadM2;
-    static FemMatrix66 m_quadM3;
 
-    static FemMatrix1010 m_cubM1;
-    static FemMatrix1010 m_cubM2;
-    static FemMatrix1010 m_cubM3;
+    typedef std::vector<Triplet> TripletVector;
+    typedef typename TripletVector::iterator TripletVectorIterator;
+
+    typedef typename Mesh::Node Node;
+    typedef typename Mesh::Vertex Vertex;
+    typedef typename Mesh::Face Face;
+    typedef typename Mesh::FaceIterator FaceIterator;
+
+    typedef std::vector<unsigned> RangeVector;
 
 public:
-    static void initMatrices();
+    inline FemSolver(Mesh* _inMesh,
+                     const ElementBuilder& elementBuilder = ElementBuilder());
 
-public:
-    inline FemSolver(FemInMesh* _inMesh, FemScalar _sigma=0.5);
-
-    inline void buildMatrices(bool _biharmonic);
-    inline void solve();
+    void build();
+    void sort();
+    void solve();
 
     inline bool isSolved() const { return m_solved; }
+    inline typename ElementBuilder::Status status() const { return m_elementBuilder.status(); }
+    inline const std::string& errorString() const { return m_elementBuilder.errorString(); }
 
-private:
-    inline void processElement(const Face& _elem, FemVector* _v, bool* _orient);
-    inline void processQuadraticElement(const Face& _elem, FemVector* _v, FemMatrixX& _elemStiffness);
-    inline void processFV1Element(const Face& _elem, FemVector* _v, bool* _orient, FemMatrixX& _elemStiffness);
-    inline void processFV1ElementFlat(const Face& _elem, FemVector* _v, bool* _orient, FemMatrixX& _elemStiffness);
-
-    inline void addToStiffness(Node _i, Node _j, FemScalar _value);
-    inline size_t rowFromNode(Node _node);
-
-    inline void updateResult();
-
+protected:
     template<typename SpMatrix, typename Rhs, typename Res>
     inline void multiSolve(const SpMatrix& _A, const Rhs& _b, Res& _x, unsigned& _nbRanges);
 
     template<typename SpMatrix>
     inline void depthFirstOrdering(const SpMatrix& _mat, Eigen::VectorXi& _p, std::vector<int>& _ranges);
 
-private:
-    FemInMesh* m_inMesh;
+protected:
+    Mesh* m_mesh;
+    ElementBuilder m_elementBuilder;
+    Eigen::VectorXi m_perm;
+    RangeVector m_ranges;
 
-    bool m_biharmonic;
     bool m_solved;
-    FemScalar m_sigma;
 
-    FemSMatrixX m_stiffnessMatrixTopLeft;
-    FemSMatrixX m_stiffnessMatrixTopRight;
-    FemMatrixX m_b;
-    FemMatrixX m_rhs;
-    FemMatrixX m_x;
+    StiffnessMatrix m_stiffnessMatrix;
+    Matrix m_x;
 
     unsigned m_nbCells;
 };
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////Implementation//////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FemMatrix33 FemSolver::m_linM1;
-FemMatrix33 FemSolver::m_linM2;
-FemMatrix33 FemSolver::m_linM3;
-
-FemMatrix66 FemSolver::m_quadM1;
-FemMatrix66 FemSolver::m_quadM2;
-FemMatrix66 FemSolver::m_quadM3;
-
-FemMatrix1010 FemSolver::m_cubM1;
-FemMatrix1010 FemSolver::m_cubM2;
-FemMatrix1010 FemSolver::m_cubM3;
-
+} // namespace Vitelotte
 
 #include "femSolver.hpp"
 
-} // namespace Vitelotte
 
 #endif

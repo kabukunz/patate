@@ -1,39 +1,42 @@
 #include <cstdlib>
-#include <iostream>
 #include <string>
+#include <iostream>
+#include <sstream>
 
 #include "Patate/vitelotte.h"
+#include "Patate/Vitelotte/Utils/mvgReader.h"
+#include "Patate/Vitelotte/Utils/mvgWriter.h"
+
+
+typedef Vitelotte::VGMesh<float> Mesh;
+typedef Vitelotte::MVGReader<Mesh> Reader;
+typedef Vitelotte::MVGWriter<Mesh> Writer;
 
 
 void usage(char* progName)
 {
-    std::cout << "usage: " << progName << " mesh attributes out\n";
+    std::cout << "usage: " << progName << " mesh output\n";
     exit(1);
 }
 
 
-int main(int argc, char** argv)
+template <typename Solver>
+void solveGeneric(Mesh& mesh)
 {
-    std::string meshFilename;
-    std::string attrFilename;
-    std::string outFilename;
+    Solver solver(&mesh);
+    solver.build();
+    solver.sort();
 
-    if(argc == 4)
+    if(solver.status() == Solver::ElementBuilder::STATUS_WARNING)
     {
-        meshFilename = argv[1];
-        attrFilename = argv[2];
-        outFilename = argv[3];
+        std::cerr << "Warning: " << solver.errorString() << "\n";
     }
-    else
-        usage(argv[0]);
+    else if(solver.status() == Solver::ElementBuilder::STATUS_ERROR)
+    {
+        std::cerr << "Error: " << solver.errorString() << "\n";
+        return;
+    }
 
-    Vitelotte::FemInMesh inMesh(Vitelotte::FemInMesh::Fraeijs);
-    inMesh.read(meshFilename);
-    inMesh.loadConstraintMap(attrFilename);
-    inMesh.buildElements(true, true);
-
-    Vitelotte::FemSolver solver(&inMesh);
-    solver.buildMatrices(true);
     solver.solve();
 
     if(!solver.isSolved())
@@ -41,8 +44,90 @@ int main(int argc, char** argv)
         std::cerr << "Failed to solve the diffusion.\n";
         exit(2);
     }
+}
 
-    inMesh.saveTriangulationIntoQvg(outFilename);
+
+void solveHarmonicLinear(Mesh& mesh)
+{
+    typedef Vitelotte::LinearElementBuilder<Mesh, double> LinearElement;
+    typedef Vitelotte::SingularElementDecorator<LinearElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Harmonic linear diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveHarmonicQuadratic(Mesh& mesh)
+{
+    typedef Vitelotte::QuadraticElementBuilder<Mesh, double> QuadraticElement;
+    typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Harmonic quadratic diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveBiharmonicLinear(Mesh& mesh)
+{
+    typedef Vitelotte::MorleyElementBuilder<Mesh, double> MorleyElement;
+    typedef Vitelotte::SingularElementDecorator<MorleyElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Biharmonic linear diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+void solveBiharmonicQuadratic(Mesh& mesh)
+{
+    typedef Vitelotte::FVElementBuilder<Mesh, double> FVElement;
+    typedef Vitelotte::SingularElementDecorator<FVElement> Element;
+    typedef Vitelotte::FemSolver<Mesh, Element> Solver;
+
+    std::cout << "Biharmonic quadratic diffusion.\n";
+    solveGeneric<Solver>(mesh);
+}
+
+
+int main(int argc, char** argv)
+{
+    std::string meshFilename;
+    std::string outFilename;
+
+    if(argc == 3)
+    {
+        meshFilename = argv[1];
+        outFilename = argv[2];
+    }
+    else
+        usage(argv[0]);
+
+    Mesh mesh;
+
+    Vitelotte::readMvgFromFile(meshFilename, mesh);
+
+    switch(mesh.getAttributes())
+    {
+    case Mesh::LINEAR_FLAGS:
+        solveHarmonicLinear(mesh);
+        break;
+    case Mesh::QUADRATIC_FLAGS:
+        solveHarmonicQuadratic(mesh);
+        break;
+    case Mesh::MORLEY_FLAGS:
+        solveBiharmonicLinear(mesh);
+        break;
+    case Mesh::FV_FLAGS:
+        solveBiharmonicQuadratic(mesh);
+        break;
+    default:
+        std::cerr << "Mesh type not supported.\n";
+        return 3;
+    }
+
+    Vitelotte::writeMvgToFile(outFilename, mesh);
 
     return EXIT_SUCCESS;
 }

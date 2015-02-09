@@ -9,10 +9,18 @@
 
 #include <Eigen/Core>
 
-#include "common/surface_mesh/Surface_mesh.h"
+#include "common/surface_mesh/surfaceMesh.h"
 
-#include "Vitelotte/Core/femInMesh.h"
+#include "Vitelotte/Core/linearElement.h"
+#include "Vitelotte/Core/quadraticElement.h"
+//#include "Vitelotte/Core/morleyElement.h"
+#include "Vitelotte/Core/fvElement.h"
+#include "Vitelotte/Core/vgMesh.h"
 #include "Vitelotte/Core/femSolver.h"
-#include "Vitelotte/Core/qMesh.h"
+#include "Vitelotte/Core/linearElementBuilder.h"
+#include "Vitelotte/Core/quadraticElementBuilder.h"
+#include "Vitelotte/Core/morleyElementBuilder.h"
+#include "Vitelotte/Core/fvElementBuilder.h"
+#include "Vitelotte/Core/singularElementDecorator.h"
 
 #endif

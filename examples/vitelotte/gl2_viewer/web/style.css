@@ -1,0 +1,104 @@
+* {
+	margin: 0px;
+	padding: 0px;
+}
+
+/*--------------------------------------------------------------------*/
+
+html {
+	/* Required to allow the body to take the full height. */
+	height: 100%;
+}
+
+body {
+	font: 12pt Verdana, sans-serif;
+
+	color: #303030;
+	background-color: #fcfcfc;
+	
+	width: 100%;
+	height: 100%;
+
+	min-width: 45em;
+	min-height: 35em;
+
+	/* Required so that absolute positioned child elements are
+	 * positioned with respect to this.
+	 */
+	position: relative;
+}
+
+a {
+	color: #606060;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+a:hover {
+	color: #909090;
+}
+
+h1.mainTitle {
+}
+
+h2.mainSubtitle {
+	margin-left: 3em;
+}
+
+/*--------------------------------------------------------------------*/
+
+header {
+	position: absolute;
+	top: .5em;
+	left: 1em;
+	right: 1em;
+}
+
+div.canvasContainer {
+	position: absolute;
+	top: 6.5em;
+	left: 1em;
+	right: 13em;
+	bottom: 2.75em;
+}
+
+canvas.emscripten {
+	border: 0px none;
+	
+	width: 100%;
+	height: 100%;
+}
+
+nav.mainSidebar {
+	position: absolute;
+	top: 6.5em;
+	width: 11em;
+	right: 1em;
+	bottom: 2.75em;
+	
+	border-left: 1px solid #303030;
+	
+	text-align: right;
+}
+
+footer {
+	text-align: right;
+
+	position: absolute;
+	left: 1em;
+	right: 1em;
+	bottom: .25em;
+}
+
+/*--------------------------------------------------------------------*/
+
+ul.mainMenuEntries {
+	list-style-type: none;
+}
+
+hr.mainMenuSeparator {
+	border: none;
+	border-top: .5px solid #909090;
+	
+	margin: .5em 0em .5em .5em;
+}

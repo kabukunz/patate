@@ -32,11 +32,8 @@
 #include <cstdio>
 #include <Eigen/Dense>
 
+#include <Patate/vitelotte_gl.h>
 
-namespace Vitelotte {
-    class QMesh;
-    class QMeshRenderer;
-}
 
 class GLViewer
 {
@@ -63,6 +60,13 @@ public:
             unsigned int        all;
         } flags;
     };
+
+    typedef float Scalar;
+
+    typedef Vitelotte::VGMesh<Scalar, 2, 4> Mesh;
+    typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
+
+    typedef Eigen::AlignedBox<Scalar, 2> Box;
 
 public:
 
@@ -190,8 +194,10 @@ private:
     float m_pointRadius;
     float m_lineWidth;
 
-    Vitelotte::QMesh*          m_pQvg;
-    Vitelotte::QMeshRenderer*  m_pQMeshRenderer;
+    Mesh*     m_pQvg;
+    Box       m_boundingBox;
+
+    Renderer* m_pQMeshRenderer;
 
     bool m_wireframe;
     bool m_showShaderWireframe;

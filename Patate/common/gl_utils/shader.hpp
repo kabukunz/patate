@@ -1,3 +1,14 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+#include "shader.h"
+
+
+namespace PatateCommon
+{
 
 
 static const char* pVSName = "VS";
@@ -6,7 +17,7 @@ static const char* pTessESName = "TessES";
 static const char* pGSName = "GS";
 static const char* pFSName = "FS";
 
-const char* ShaderType2ShaderName(GLuint _Type)
+inline const char* ShaderType2ShaderName(GLuint _Type)
 {
     switch (_Type)
     {
@@ -28,27 +39,21 @@ const char* ShaderType2ShaderName(GLuint _Type)
 }
 
 Shader::Shader()
+    : m_shaderProg(0), m_status(UNINITIALIZED)
 {
-    m_shaderProg = 0;
 }
 
 
 Shader::~Shader()
 {
-    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    if(getShaderId())
     {
-        glDeleteShader(*it);
-    }
-
-    if (m_shaderProg != 0)
-    {
-        glDeleteProgram(m_shaderProg);
-        m_shaderProg = 0;
+        destroy();
     }
 }
 
 
-bool Shader::Init()
+bool Shader::create()
 {
     m_shaderProg = glCreateProgram();
 
@@ -58,11 +63,39 @@ bool Shader::Init()
         return false;
     }
 
+    m_status = NOT_COMPILED;
     return true;
 }
 
-bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
+
+void Shader::destroy()
 {
+    PATATE_ASSERT_NO_GL_ERROR();
+
+    glDeleteProgram(m_shaderProg);
+
+    if(glGetError() == GL_NO_ERROR)
+        m_shaderProg = 0;
+    m_status = UNINITIALIZED;
+}
+
+
+void Shader::use()
+{
+    glUseProgram(m_shaderProg);
+}
+
+
+void Shader::setGLSLVersionHeader(const std::string& header)
+{
+    m_versionHeader = header;
+}
+
+
+bool Shader::addShader(GLenum _ShaderType, const char* _pShaderText)
+{
+    PATATE_ASSERT_NO_GL_ERROR();
+
     GLuint ShaderObj = glCreateShader(_ShaderType);
 
     if (ShaderObj == 0)
@@ -73,11 +106,13 @@ bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
 
     m_shaderObjList.push_back(ShaderObj);
 
-    const GLchar* p[1];
-    p[0] = _pShaderText;
-    GLint Lengths[1];
-    Lengths[0]= strlen(_pShaderText);
-    glShaderSource(ShaderObj, 1, p, Lengths);
+    const GLchar* p[2];
+    p[0] = m_versionHeader.empty()? 0: &m_versionHeader[0];
+    p[1] = _pShaderText;
+    GLint Lengths[2];
+    Lengths[0] = m_versionHeader.size();
+    Lengths[1] = strlen(_pShaderText);
+    glShaderSource(ShaderObj, 2, p, Lengths);
 
     glCompileShader(ShaderObj);
 
@@ -94,10 +129,11 @@ bool Shader::AddShader(GLenum _ShaderType, const char* _pShaderText)
 
     glAttachShader(m_shaderProg, ShaderObj);
 
-    return PATATE_GLCheckError();
+    return glGetError() == GL_NO_ERROR;
 }
 
-bool Shader::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
+
+bool Shader::addShaderFromFile(GLenum _ShaderType, const char* _pFilename)
 {
     FILE* fp;
     size_t filesize;
@@ -124,17 +160,33 @@ bool Shader::AddShaderFromFile(GLenum _ShaderType, const char* _pFilename)
     pShaderText[filesize] = 0;
     fclose(fp);
 
-    bool res = AddShader(_ShaderType, pShaderText);
+    bool res = addShader(_ShaderType, pShaderText);
 
     delete [] pShaderText;
 
     return res;
 }
 
-bool Shader::Finalize()
+
+void Shader::clearShaderList()
 {
+    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    {
+        glDetachShader(m_shaderProg, *it);
+        glDeleteShader(*it);
+    }
+    m_shaderObjList.clear();
+}
+
+
+bool Shader::finalize()
+{
+    PATATE_ASSERT_NO_GL_ERROR();
+
     GLint Success = 0;
     GLchar ErrorLog[1024] = { 0 };
+
+    m_status = COMPILATION_FAILED;
 
     glLinkProgram(m_shaderProg);
 
@@ -155,39 +207,40 @@ bool Shader::Finalize()
         return false;
     }
 
-    for (ShaderObjList::iterator it = m_shaderObjList.begin() ; it != m_shaderObjList.end() ; it++)
+    if(glGetError() == GL_NO_ERROR)
     {
-        glDeleteShader(*it);
+        clearShaderList();
+        m_status = COMPILATION_SUCCESSFULL;
     }
 
-    m_shaderObjList.clear();
-
-    return PATATE_GLCheckError();
+    return m_status == COMPILATION_SUCCESSFULL;
 }
 
 
-void Shader::Enable()
+void Shader::bindAttributeLocation(const char* name, unsigned location)
 {
-    glUseProgram(m_shaderProg);
+    glBindAttribLocation(m_shaderProg, location, name);
 }
 
 
-GLint Shader::GetUniformLocation(const char* _pUniformName)
+GLint Shader::getUniformLocation(const char* _pUniformName)
 {
-    GLuint Location = glGetUniformLocation(m_shaderProg, _pUniformName);
+    GLint location = glGetUniformLocation(m_shaderProg, _pUniformName);
 
-    if (Location == PATATE_INVALID_OGL_VALUE)
+    if (location < 0)
     {
         fprintf(stderr, "Warning! Unable to get the location of uniform '%s'\n", _pUniformName);
     }
 
-    return Location;
+    return location;
 }
 
-GLint Shader::GetProgramParam(GLint _param)
+GLint Shader::getProgramParam(GLint _param)
 {
     GLint ret;
     glGetProgramiv(m_shaderProg, _param, &ret);
     return ret;
 }
 
+
+}

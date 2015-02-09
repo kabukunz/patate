@@ -4,8 +4,8 @@
 
 #include "glViewer.h"
 #include "Patate/vitelotte_gl.h"
-#include "Patate/Vitelotte/Utils/qvgReader.h"
-#include "Patate/Vitelotte/Utils/qvgWriter.h"
+#include "Patate/Vitelotte/Utils/mvgReader.h"
+#include "Patate/Vitelotte/Utils/mvgWriter.h"
 
 
 Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float _top, float _near, float _far)
@@ -95,6 +95,7 @@ bool GLViewer::init()
 
     glewExperimental = GL_TRUE;
     GLenum res = glewInit();
+    glGetError();  // FIXME: avoid a GL error, but why glewInit fail ?
     if (res != GLEW_OK)
     {
         fprintf(stderr, "Error: '%s'\n", glewGetErrorString(res));
@@ -114,6 +115,8 @@ bool GLViewer::init()
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB);
         }
     }
+
+    PATATE_ASSERT_NO_GL_ERROR();
 
     return true;
 }
@@ -154,7 +157,7 @@ void GLViewer::initVars()
     m_info.windowHeight = 600;
     m_info.majorVersion = 4;
     m_info.minorVersion = 1;
-    m_info.samples = 64;
+    m_info.samples = 16;
     m_info.flags.all = 0;
     m_info.flags.cursor = 1;
     m_info.flags.fullscreen = 0;
@@ -177,8 +180,8 @@ void GLViewer::initVars()
 
 void GLViewer::shutdown()
 {
-    PATATE_SAFE_DELETE(m_pQvg);
-    PATATE_SAFE_DELETE(m_pQMeshRenderer);
+    delete m_pQvg;
+    delete m_pQMeshRenderer;
         
     glfwDestroyWindow(m_pWindow);
     m_pWindow = NULL;
@@ -186,41 +189,59 @@ void GLViewer::shutdown()
 
 void GLViewer::startup(const std::string& filename)
 {
-    m_pQvg = new Vitelotte::QMesh();
-    Vitelotte::QVGReader reader;
+    PATATE_ASSERT_NO_GL_ERROR();
+
+    m_pQvg = new Mesh;
 
     try
     {
-        std::ifstream in(filename.c_str());
-        reader.read(*m_pQvg, in);
+        Vitelotte::readMvgFromFile(filename, *m_pQvg);
     }
-    catch (Vitelotte::QVGReadError& e)
+    catch(std::runtime_error& e)
     {
         fprintf(stderr, "error reading .qvg : %s\n", e.what());
         abort();
     }
 
-    assert(m_pQvg->isValid());
-    std::cout << "Nb vertices : " << m_pQvg->nbVertices() << "\n";
-    std::cout << "Nb nodes : " << m_pQvg->nbNodes() << "\n";
-    std::cout << "Nb curves : " << m_pQvg->nbCurves() << "\n";
-    std::cout << "Nb triangles : " << m_pQvg->nbTriangles() << "\n";
-    std::cout << "Nb singular : " << m_pQvg->nbSingularTriangles() << "\n";
+    //assert(m_pQvg->isValid());
+    unsigned nSingular = m_pQvg->nSingularFaces();
+    std::cout << "Nb vertices : " << m_pQvg->nVertices() << "\n";
+    std::cout << "Nb nodes : " << m_pQvg->nNodes() << "\n";
+    //std::cout << "Nb curves : " << m_pQvg->nbCurves() << "\n";
+    std::cout << "Nb triangles : " << m_pQvg->nFaces()-nSingular << "\n";
+    std::cout << "Nb singular : " << nSingular << "\n";
     std::cout << std::flush;
 
-    m_viewCenter = m_pQvg->getBoundingBox().center();
-    m_zoom = 550.f / m_pQvg->getBoundingBox().sizes().maxCoeff();
+    m_boundingBox.setEmpty();
+    for(Mesh::VertexIterator vit = m_pQvg->verticesBegin();
+        vit != m_pQvg->verticesEnd(); ++vit)
+    {
+        m_boundingBox.extend(m_pQvg->position(*vit));
+    }
+
+    m_viewCenter = m_boundingBox.center();
+    m_zoom = 550.f / m_boundingBox.sizes().maxCoeff();
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
 
-    m_pQMeshRenderer = new Vitelotte::QMeshRenderer();
-    m_pQMeshRenderer->init(m_pQvg);
+    glEnable(GL_FRAMEBUFFER_SRGB);
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    m_pQMeshRenderer = new Renderer;
+    bool ok = m_pQMeshRenderer->initialize();
+    assert(ok);
+    m_pQMeshRenderer->updateBuffers(*m_pQvg);
+
+    PATATE_ASSERT_NO_GL_ERROR();
 }
 
 void GLViewer::render()
 {
-    PATATE_GLCheckError();
+    PATATE_ASSERT_NO_GL_ERROR();
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -234,9 +255,14 @@ void GLViewer::render()
         m_viewCenter.y() + yOffset,
         -1, 1);
 
-    m_pQMeshRenderer->render(m_viewMatrix, m_zoom, m_pointRadius, m_lineWidth, m_showShaderWireframe);
+    m_pQMeshRenderer->render(m_viewMatrix);
 
-    PATATE_GLCheckError();
+    if(m_showShaderWireframe)
+    {
+        m_pQMeshRenderer->renderWireframe(m_viewMatrix, m_zoom, m_lineWidth);
+    }
+
+    PATATE_ASSERT_NO_GL_ERROR();
 }
 
 void GLViewer::onRefresh() {
@@ -256,7 +282,7 @@ void GLViewer::onResize(int _w, int _h)
     m_needRefresh = true;
 }
 
-void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
+void GLViewer::onKey(int _key, int /*_scancode*/, int _action, int /*_mods*/)
 {
     if(_action == GLFW_PRESS || _action == GLFW_REPEAT)
     {
@@ -299,7 +325,6 @@ void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
                 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
             }
             m_needRefresh = true;
-            std::cout << "Wireframe : " << (m_wireframe ? "enabled" : "disabled") << std::endl;
             break;
 
         default:
@@ -308,7 +333,7 @@ void GLViewer::onKey(int _key, int _scancode, int _action, int _mods)
     }
 }
 
-void GLViewer::onMouseButton(int _button, int _action, int _mods)
+void GLViewer::onMouseButton(int _button, int _action, int /*_mods*/)
 {
     if(_button == GLFW_MOUSE_BUTTON_LEFT)
     {
@@ -331,18 +356,20 @@ void GLViewer::onMouseMove(double _x, double _y)
     }
 }
 
-void GLViewer::onMouseWheel(double _xOffset, double _yOffset)
+void GLViewer::onMouseWheel(double /*_xOffset*/, double _yOffset)
 {
     m_zoom *= (_yOffset > 0.) ? 1.1f : 1.f/1.1f; 
     m_needRefresh = true;
 }
 
-void GLViewer::onError(int _error, const char* _description)
+void GLViewer::onError(int /*_error*/, const char* _description)
 {
     fprintf(stderr, "Error Message : %s \n", _description);
 }
 
-void GLViewer::onDebugMessage(GLenum _source, GLenum _type, GLuint _id, GLenum _severity, GLsizei _length, const GLchar* _message) const
+void GLViewer::onDebugMessage(GLenum /*_source*/, GLenum /*_type*/,
+                              GLuint /*_id*/, GLenum /*_severity*/,
+                              GLsizei /*_length*/, const GLchar* _message) const
 {
     fprintf(stderr, "Debug Message : %s \n", _message);
 }
