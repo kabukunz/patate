@@ -205,8 +205,8 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
             L.startVec(j);
             for(typename StiffnessMatrix::InnerIterator it(mat, start + j); it; ++it)
             {
-                if(it.index() >= nUnknowns) continue;
-//                if(it.index() < j || it.index() >= nUnknowns) continue;
+//                if(it.index() >= nUnknowns) continue;
+                if(it.index() < j || it.index() >= nUnknowns) continue;
                 L.insertBackByOuterInnerUnordered(j, it.index() - start) = it.value();
             }
         }
