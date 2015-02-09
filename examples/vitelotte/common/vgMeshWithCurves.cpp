@@ -155,21 +155,21 @@ void VGMeshWithCurves::setNodesFromCurves()
             if(isGradientConstraint(pc))
             {
                 Eigen::Vector2f v = (position(toVertex(*hit)) - position(fromVertex(*hit))).normalized();
-                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
-                Node gn = addNode(grad * v);
+//                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
+//                Node gn = addNode(grad * v);
 //                std::cout << "Point gradient constraint: "
 //                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
 
-                if(!isBoundary(*hit))
-                    halfedgeNode(*hit, EDGE_GRADIENT) = gn;
-                if(!isBoundary(opp))
-                    halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
+//                if(!isBoundary(*hit))
+//                    halfedgeNode(*hit, EDGE_GRADIENT) = gn;
+//                if(!isBoundary(opp))
+//                    halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
 
-//                isGc[vx] = true;
+                isGc[vx] = true;
 //                pgcNode[Edge(*hit)] = addNode();
-//                pgcNode[*hit] = addNode();
-//                pgcNode[oppositeHalfedge(*hit)] = addNode();
-//                pgConstraint[edge(*hit)] = grad * v;
+                pgcNode[*hit] = addNode();
+                pgcNode[oppositeHalfedge(*hit)] = addNode();
+                pgConstraint[edge(*hit)] = grad * v;
             }
             ++hit;
         } while(hit != hend);

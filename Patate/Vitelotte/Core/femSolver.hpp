@@ -215,15 +215,15 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
         std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
 
-        Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
+//        Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
 
 //        Eigen::BiCGSTAB<StiffnessMatrix> solver;
 //        solver.compute(L);
 
-//        Eigen::SparseLU<StiffnessMatrix> solver;
+        Eigen::SparseLU<StiffnessMatrix> solver;
 //        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
-//        solver.analyzePattern(L);
-//        solver.factorize(L);
+        solver.analyzePattern(L);
+        solver.factorize(L);
 
         m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
 
