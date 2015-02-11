@@ -393,10 +393,11 @@ FVElementBuilder<_Mesh, _Scalar>::
                   << mesh.nodeValue(pgcNode[h2]).transpose() << "\n";
         for(size_t i = 0; i < 9; ++i)
         {
-            *(it++) = Triplet(nodes[i], ce1, fde1(i));
-            *(it++) = Triplet(ce1, nodes[i], fde1(i));
-            *(it++) = Triplet(nodes[i], ce2, fde2(i));
-            *(it++) = Triplet(ce2, nodes[i], fde2(i));
+            Scalar f = (i < 6 || orient[i%3])? 1: -1;
+            *(it++) = Triplet(nodes[i], ce1, fde1(i) * f);
+            *(it++) = Triplet(ce1, nodes[i], fde1(i) * f);
+            *(it++) = Triplet(nodes[i], ce2, fde2(i) * f);
+            *(it++) = Triplet(ce2, nodes[i], fde2(i) * f);
         }
     }
 }

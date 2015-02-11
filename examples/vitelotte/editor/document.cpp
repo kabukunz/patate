@@ -556,7 +556,7 @@ void printPlotElementVertices(std::ostream& out, const Elem& elem,
 }
 
 
-template <typename Mesh, typename Elem, typename PGElem>
+template <typename Mesh, typename Elem>
 void exportPlot(const Mesh& mesh, const std::string& filename, unsigned layer)
 {
     std::ofstream out(filename.c_str());
@@ -576,29 +576,20 @@ void exportPlot(const Mesh& mesh, const std::string& filename, unsigned layer)
 
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
         typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
-        do ++hit;
-        while(!isGc[mesh.toVertex(*hit)] && hit != hend);
-        bool isPgc = isGc[mesh.toVertex(*hit)];
-        --hit;
-        isPgc = false;
 
         for(unsigned i = 0; i < 3; ++i)
         {
             nodeValues(i + 3) = mesh.nodeValue(mesh.edgeValueNode(*hit))(layer);
             nodeValues(i + 6) = mesh.nodeValue(mesh.edgeGradientNode(*hit))(layer);
-            if((!isPgc || i == 0) && !mesh.halfedgeOrientation(*hit))
+            if(!mesh.halfedgeOrientation(*hit))
                 nodeValues(i + 6) *= -1;
             ++hit;
             points.col(i) = mesh.position(mesh.toVertex(*hit));
             nodeValues(i) = mesh.nodeValue(mesh.toVertexValueNode(*hit))(layer);
         }
 
-        if(!isPgc)
-            printPlotElementVertices(out, Elem(points.col(0), points.col(1), points.col(2)),
-                                     points, nodeValues, nSubdiv);
-        else
-            printPlotElementVertices(out, PGElem(points.col(0), points.col(1), points.col(2)),
-                                     points, nodeValues, nSubdiv);
+        printPlotElementVertices(out, Elem(points.col(0), points.col(1), points.col(2)),
+                                 points, nodeValues, nSubdiv);
 
 //        Vitelotte::QuadraticElement<float> elem(points.col(0), points.col(1), points.col(2));
 //        Vitelotte::FVElement<float> elem(points.col(0), points.col(1), points.col(2));
@@ -645,9 +636,8 @@ void exportPlot(const Mesh& mesh, const std::string& filename, unsigned layer)
 void Document::exportPlot(const std::string& filename, unsigned layer)
 {
     typedef Vitelotte::FVElement<float> FVElem;
-    typedef Vitelotte::FVElementFlat<float> FVPGElem;
 
-    ::exportPlot<Mesh, FVElem, FVElem>(m_solvedMesh, filename, layer);
+    ::exportPlot<Mesh, FVElem>(m_solvedMesh, filename, layer);
 //    ::exportPlot<Mesh, FVElem, FVPGElem>(m_solvedMesh, filename, layer);
 
 //    unsigned nCount = 0;
