@@ -12,6 +12,7 @@
 #include <climits>
 #include <limits>
 #include <vector>
+#include <map>
 
 #include <Eigen/Core>
 
@@ -56,6 +57,7 @@ public:
 
     typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
     typedef Eigen::Matrix<Scalar, Chan, 1> NodeValue;
+    typedef Eigen::Matrix<Scalar, Chan, Dim> Gradient;
 
     typedef std::vector<NodeValue> NodeVector;
 
@@ -68,29 +70,42 @@ public:
     /// \brief A special NodeValue used for unconstrained nodes.
     static const NodeValue UnconstrainedNode;
 
-    enum HalfedgeAttribute{
+    enum HalfedgeAttribute
+    {
         TO_VERTEX_VALUE,
         FROM_VERTEX_VALUE,
         EDGE_VALUE,
         EDGE_GRADIENT,
+
+        HALFEDGE_ATTRIB_COUNT
     };
 
-    enum {
+    // TODO: Unused now. Use it or remove it ?
+    enum VertexAttribute
+    {
+        VERTEX_POSITION,
+        VERTEX_GRADIENT_CONSTRAINT,
+
+        VERTEX_ATTRIB_COUNT
+    };
+
+    enum
+    {
         // Nodes
         TO_VERTEX_VALUE_FLAG    = (1 << TO_VERTEX_VALUE),
         FROM_VERTEX_VALUE_FLAG  = (1 << FROM_VERTEX_VALUE),
         EDGE_VALUE_FLAG         = (1 << EDGE_VALUE),
         EDGE_GRADIENT_FLAG      = (1 << EDGE_GRADIENT),
 
-        // Specials
-//        VertexGradientConstraint = 0x10,
+        // Other
+        VERTEX_GRADIENT_CONSTRAINT_FLAG = 0x100 | (1 << VERTEX_GRADIENT_CONSTRAINT),
 
         // Aggregates
         LINEAR_FLAGS = TO_VERTEX_VALUE_FLAG | FROM_VERTEX_VALUE_FLAG,
         QUADRATIC_FLAGS = LINEAR_FLAGS | EDGE_VALUE_FLAG,
 
         MORLEY_FLAGS = LINEAR_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/,
-        FV_FLAGS = QUADRATIC_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/
+        FV_FLAGS = QUADRATIC_FLAGS | EDGE_GRADIENT_FLAG | VERTEX_GRADIENT_CONSTRAINT_FLAG
     };
 
 
@@ -127,11 +142,12 @@ public:
 //    inline const VertexProperty<Vector>& positionProperty() const
 //        { return m_positions; }
 
-    inline bool isValid(Vertex v) const { return PatateCommon::SurfaceMesh::isValid(v); }
-    inline bool isValid(Halfedge h) const { return PatateCommon::SurfaceMesh::isValid(h); }
-    inline bool isValid(Edge e) const { return PatateCommon::SurfaceMesh::isValid(e); }
-    inline bool isValid(Face f) const { return PatateCommon::SurfaceMesh::isValid(f); }
+//    inline bool isValid(Vertex v) const { return PatateCommon::SurfaceMesh::isValid(v); }
+//    inline bool isValid(Halfedge h) const { return PatateCommon::SurfaceMesh::isValid(h); }
+//    inline bool isValid(Edge e) const { return PatateCommon::SurfaceMesh::isValid(e); }
+//    inline bool isValid(Face f) const { return PatateCommon::SurfaceMesh::isValid(f); }
 
+    using PatateCommon::SurfaceMesh::isValid;
     inline bool isValid(Node n) const;
 
     /**
@@ -172,7 +188,8 @@ public:
     inline bool hasFromVertexValue() const { return m_attributes & FROM_VERTEX_VALUE_FLAG; }
     inline bool hasEdgeValue() const { return m_attributes & EDGE_VALUE_FLAG; }
     inline bool hasEdgeGradient() const { return m_attributes & EDGE_GRADIENT_FLAG; }
-//    bool hasVertexGradientSpecial() const { return m_attributes & VertexGradientSpecial; }
+    inline bool hasVertexGradientConstraint() const
+        { return m_attributes & VERTEX_GRADIENT_CONSTRAINT_FLAG; }
 
 
 //    bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
@@ -197,11 +214,6 @@ public:
     inline Node& edgeValueNode(Halfedge h)
         { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
 
-//    inline Node vertexGradientNode(Vertex v) const
-//        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
-//    inline Node& vertexGradientNode(Vertex v)
-//        { assert(m_attributes | VertexGradient); return m_vertexGradientNodes[v]; }
-
     inline Node edgeGradientNode(Halfedge h) const
         { assert(hasEdgeGradient()); return m_edgeGradientNodes[h]; }
     inline Node& edgeGradientNode(Halfedge h)
@@ -214,6 +226,30 @@ public:
 
     inline Node halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr) const;
     inline Node& halfedgeOppositeNode(Halfedge h, HalfedgeAttribute attr);
+
+    /// \}
+
+
+    /// \name Point gradient constraints
+    /// \{
+
+    inline bool isGradientConstraint(Vertex v) const
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.count(v); }
+    inline Gradient& gradientConstraint(Vertex v)
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.at(v); }
+    inline const Gradient& gradientConstraint(Vertex v) const
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.at(v); }
+    inline void setGradientConstraint(Vertex v, const Gradient& grad);
+    inline void removeGradientConstraint(Vertex v);
+
+    inline int nVertexGradientConstraints() const
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.size(); }
+    inline unsigned nVertexGradientConstraints(Halfedge h) const;
+    inline unsigned nVertexGradientConstraints(Face f) const;
+
+    inline Node vertexGradientDummyNode(Halfedge h) const
+        { assert(hasVertexGradientConstraint());
+          return m_vertexGradientDummyNodes.at(h); }
 
     /// \}
 
@@ -240,7 +276,7 @@ public:
 
     /// \brief Return true iff `node` is a constraint.
     inline bool isConstraint(Node node) const
-    { return isValid(node) && !isnan(nodeValue(node)[0]); }
+    { return isValid(node) && !std::isnan(nodeValue(node)[0]); }
 
     /**
      * \brief Return true if the mesh has unknown nodes.
@@ -379,6 +415,12 @@ public:
 
 
 protected:
+    // FIXME: Would likely be better to use a hash map, but this is only
+    // available in C++11...
+    typedef std::map<Vertex, Gradient> VertexGradientMap;
+    typedef std::map<Halfedge, Node> HalfedgeNodeMap;
+
+protected:
     /// \name Removed topological operations
     /// \{
 
@@ -419,16 +461,16 @@ protected:
     unsigned m_attributes;
 
     VertexProperty<Vector> m_positions;
-//    VertexProperty<bool> m_vertexGradientConstrained;
+    VertexGradientMap m_vertexGradientConstraint;
 
     HalfedgeProperty<Node> m_toVertexValueNodes;
     HalfedgeProperty<Node> m_fromVertexValueNodes;
     HalfedgeProperty<Node> m_edgeValueNodes;
     HalfedgeProperty<Node> m_edgeGradientNodes;
 
-    EdgeProperty<bool> m_edgeConstraintFlag;
+    HalfedgeNodeMap m_vertexGradientDummyNodes;
+    //    EdgeProperty<bool> m_edgeConstraintFlag;
 };
-
 
 } // namespace Vitelotte
 

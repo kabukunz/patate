@@ -16,133 +16,6 @@ namespace Vitelotte
 {
 
 
-template < typename _Scalar >
-class FVElementFlat : public FVElement<_Scalar>
-{
-public:
-    typedef _Scalar Scalar;
-    typedef FVElement<Scalar> Base;
-
-    typedef Eigen::Matrix<Scalar, 2, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
-
-    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
-    typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
-
-    typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
-    typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
-
-
-public:
-    inline FVElementFlat(const Vector& p0, const Vector& p1, const Vector& p2)
-        : Base(p0, p1, p2)
-    {
-    }
-
-    using Base::point;
-    using Base::doubleArea;
-    using Base::edgeLength;
-    using Base::dldn;
-    using Base::barycentricCoordinates;
-
-    using Base::_gradientFactor;
-    using Base::_vertexGradientFactor;
-    using Base::_bubble;
-    using Base::_bubbleGradient;
-    using Base::_bubbleHessian;
-    using Base::_vertexSubExpr;
-    using Base::_vertexSubExprGradient;
-    using Base::_vertexSubExprHessian;
-    using Base::_edgeSubExpr;
-    using Base::_edgeSubExprGradient;
-    using Base::_edgeSubExprHessian;
-    using Base::_gradientSubExpr;
-    using Base::_gradientSubExprGradient;
-    using Base::_gradientSubExprHessian;
-
-//    using Base::eval;
-//    using Base::gradient;
-//    using Base::hessian;
-
-    Matrix9x2 _diffP0AlongEdges() const
-    {
-        return (Matrix9x2() <<
-                -1.0L/2.0L*(2*m_dldn(0, 1)*m_2delta + m_dldn(1, 1)*m_2delta + 7*m_eLen(1))/(m_eLen(1)*m_eLen(2)),
-                -1.0L/2.0L*(2*m_dldn(0, 2)*m_2delta + m_dldn(2, 2)*m_2delta + 7*m_eLen(2))/(m_eLen(1)*m_eLen(2)),
-                (1.0L/2.0L)*(m_dldn(0, 0)*m_2delta + 2*m_dldn(1, 0)*m_2delta - m_eLen(0))/(m_eLen(0)*m_eLen(2)),
-                (1.0L/2.0L)*m_2delta*(m_dldn(0, 0)*m_eLen(2) + 2*m_dldn(1, 0)*m_eLen(2) - 2*m_dldn(1, 2)*m_eLen(0) - m_dldn(2, 2)*m_eLen(0))/(m_eLen(0)*m_eLen(1)*m_eLen(2)),
-                (1.0L/2.0L)*m_2delta*(m_dldn(0, 0)*m_eLen(1) - m_dldn(1, 1)*m_eLen(0) + 2*m_dldn(2, 0)*m_eLen(1) - 2*m_dldn(2, 1)*m_eLen(0))/(m_eLen(0)*m_eLen(1)*m_eLen(2)),
-                (1.0L/2.0L)*(m_dldn(0, 0)*m_2delta + 2*m_dldn(2, 0)*m_2delta - m_eLen(0))/(m_eLen(0)*m_eLen(1)),
-                -4/m_eLen(2),
-                -4/m_eLen(1),
-                4/m_eLen(2),
-                4/m_eLen(1),
-                4/m_eLen(2),
-                4/m_eLen(1),
-                m_2delta/(m_eLen(0)*m_eLen(2)),
-                m_2delta/(m_eLen(0)*m_eLen(1)),
-                -m_2delta/(m_eLen(1)*m_eLen(2)),
-                0,
-                0,
-                -m_2delta/(m_eLen(1)*m_eLen(2))
-        ).finished();
-    }
-
-    inline Vector9 eval(const Vector3& bc) const
-    {
-        Vector9 fv = Base::eval(bc);
-        Matrix9x2 diffP0 = _diffP0AlongEdges();
-
-        fv[7] /= diffP0(7, 0);
-        fv[8] /= diffP0(8, 1);
-        for(unsigned i = 0; i < 7; ++i)
-        {
-            fv[i] -= diffP0(i, 0) * fv[7];
-            fv[i] -= diffP0(i, 1) * fv[8];
-        }
-
-        std::swap(fv[7], fv[8]);
-
-        return fv;
-    }
-
-    inline Vector9 eval(const Vector& p) const
-    {
-        return eval(barycentricCoordinates(p));
-    }
-
-    inline void hessian(const Vector3& bc, Matrix2* h) const
-    {
-        Base::hessian(bc, h);
-        Matrix9x2 diffP0 = _diffP0AlongEdges();
-
-        h[7] /= diffP0(7, 0);
-        h[8] /= diffP0(8, 1);
-        for(unsigned i = 0; i < 7; ++i)
-        {
-            h[i] -= diffP0(i, 0) * h[7];
-            h[i] -= diffP0(i, 1) * h[8];
-        }
-
-        std::swap(h[7], h[8]);
-    }
-
-    inline void hessian(const Vector& p, Matrix2* h) const
-    {
-        hessian(Base::Base::eval(p), h);
-    }
-
-private:
-    using Base::m_points;
-    using Base::m_2delta;
-    using Base::m_lbf;
-
-    using Base::m_eLen;
-    using Base::m_dldn;
-};
-
-
 template < class _Mesh, typename _Scalar >
 FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
   : m_sigma(sigma)
@@ -154,19 +27,7 @@ unsigned
 FVElementBuilder<_Mesh, _Scalar>::
     nCoefficients(const Mesh& mesh, Face element) const
 {
-    typename Mesh::template VertexProperty<bool> isGc =
-            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
-
-    typename Mesh::VertexAroundFaceCirculator vit = mesh.vertices(element);
-    typename Mesh::VertexAroundFaceCirculator vend = vit;
-    do ++vit;
-    while(!isGc[*vit] && vit != vend);
-    bool isPgc = isGc[*vit];
-
-    if(isPgc) std::cout << "pgc1: " << element.idx() << "\n";
-
-    return isPgc? 117: 81;
-//    return 81;
+    return mesh.nVertexGradientConstraints(element)? 117: 81;
 }
 
 
@@ -196,14 +57,11 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     int nodes[9];
 
-    typename Mesh::template VertexProperty<bool> isGc =
-            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
-
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
     do ++hit;
-    while(!isGc[mesh.toVertex(*hit)] && hit != hend);
-    bool isPgc = isGc[mesh.toVertex(*hit)];
+    while(!mesh.isGradientConstraint(mesh.toVertex(*hit)) && hit != hend);
+    bool isPgc = mesh.isGradientConstraint(mesh.toVertex(*hit));
     typename Mesh::Edge e2 = mesh.edge(*hit);
     typename Mesh::Halfedge h2 = *hit;
     ++hit;
@@ -252,51 +110,7 @@ FVElementBuilder<_Mesh, _Scalar>::
                    (pi == 1)? 0: .5,
                    (pi == 2)? 0: .5);
         typename Elem::Matrix2 hessians[9];
-//        if(!isPgc)
-//        {
-            elem.hessian(bc, hessians);
-//        }
-//        else
-//        {
-//            typedef FVElementFlat<Scalar> ElemFlat;
-//            ElemFlat elemFlat(p[0], p[1], p[2]);
-//            elemFlat.hessian(bc, hessians);
-//            orient[7] = 1;
-//            orient[8] = 1;
-
-//            Scalar delta = 1.e-6;
-
-////            Vector dx(delta/2, 0);
-////            Vector dy(0, delta/2);
-////            for(unsigned bi = 0; bi < 9; ++bi)
-////            {
-////                hessians[bi](0, 0) = elemFlat.eval(elemFlat.point(pi) + dx + dx)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) + dx - dx)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) - dx + dx)(bi)
-////                                   + elemFlat.eval(elemFlat.point(pi) - dx - dx)(bi);
-////                hessians[bi](0, 1) = elemFlat.eval(elemFlat.point(pi) + dx + dy)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) + dx - dy)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) - dx + dy)(bi)
-////                                   + elemFlat.eval(elemFlat.point(pi) - dx - dy)(bi);
-////                hessians[bi](1, 0) = hessians[bi](0, 1);
-////                hessians[bi](1, 1) = elemFlat.eval(elemFlat.point(pi) + dy + dy)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) + dy - dy)(bi)
-////                                   - elemFlat.eval(elemFlat.point(pi) - dy + dy)(bi)
-////                                   + elemFlat.eval(elemFlat.point(pi) - dy - dy)(bi);
-////                hessians[bi] /= delta * delta;
-////            }
-
-//            typedef Eigen::Matrix<Scalar, 9, 2> Matrix9x2;
-//            Vector dv1 = (elemFlat.point(1) - elemFlat.point(0)).normalized() * (delta/2);
-//            Vector dv2 = (elemFlat.point(2) - elemFlat.point(0)).normalized() * (delta/2);
-//            Matrix9x2 testDiffP0;
-//            testDiffP0 <<
-//                (elemFlat.eval(Vector(elemFlat.point(0) + dv2))
-//               - elemFlat.eval(Vector(elemFlat.point(0) - dv2))) / delta,
-//                (elemFlat.eval(Vector(elemFlat.point(0) + dv1))
-//               - elemFlat.eval(Vector(elemFlat.point(0) - dv1))) / delta;
-//            std::cout << "Test diff p0:\n" << testDiffP0.transpose() << "\n";
-//        }
+        elem.hessian(bc, hessians);
 
         for(int bi = 0; bi < 9; ++bi)
         {
@@ -376,21 +190,13 @@ FVElementBuilder<_Mesh, _Scalar>::
             0,
             -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
 
-//        typename Mesh::template EdgeProperty<typename Mesh::Node> pgcNode =
-//                mesh.template getEdgeProperty<typename Mesh::Node>("e:pgcNode");
-        typename Mesh::template HalfedgeProperty<typename Mesh::Node> pgcNode =
-                mesh.template getHalfedgeProperty<typename Mesh::Node>("h:pgcNode");
-        int ce1 = pgcNode[h1].idx();
-        int ce2 = pgcNode[h2].idx();
+        int ce1 = mesh.vertexGradientDummyNode(h1).idx();
+        int ce2 = mesh.vertexGradientDummyNode(h2).idx();
         if(ce1 < 0 || ce2 < 0)
         {
             error(STATUS_ERROR, "Invalid node");
             return;
         }
-        std::cout << "  ce1: " << e1 << ", " << ce1 << ", "
-                  << mesh.nodeValue(pgcNode[h1]).transpose() << "\n";
-        std::cout << "  ce2: " << e2 << ", " << ce2 << ", "
-                  << mesh.nodeValue(pgcNode[h2]).transpose() << "\n";
         for(size_t i = 0; i < 9; ++i)
         {
             Scalar f = (i < 6 || orient[i%3])? 1: -1;
