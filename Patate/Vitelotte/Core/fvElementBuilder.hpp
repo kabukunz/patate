@@ -46,6 +46,35 @@ FVElementBuilder<_Mesh, _Scalar>::
     processFV1Element(it, mesh, element);
 }
 
+
+template < class _Mesh, typename _Scalar >
+void
+FVElementBuilder<_Mesh, _Scalar>::
+        setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs) {
+
+    rhs.setZero();
+
+    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
+        hit != mesh.halfedgesEnd(); ++hit) {
+
+        if(mesh.nVertexGradientConstraints(*hit) == 0)
+            continue;
+
+        typename Mesh::Vertex from = mesh.fromVertex(*hit);
+        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
+        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
+        if(n.isValid()) {
+            bool v0c = mesh.isGradientConstraint(from);
+            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+            if(!v0c) v = -v;
+            typename Mesh::NodeValue cons = grad * v;
+            rhs.row(imap(n.idx())) = cons.template cast<Scalar>();
+        }
+    }
+}
+
+
 template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void

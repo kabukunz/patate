@@ -341,11 +341,11 @@ void Document::solve()
             m_fvSolver.solve();
         }
 
-        if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_WARNING)
+        if(m_fvSolver.status() == FVElement::STATUS_WARNING)
         {
             std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
         }
-        else if(m_fvSolver.status() == Vitelotte::ElementBuilderBase::STATUS_ERROR)
+        else if(m_fvSolver.status() == FVElement::STATUS_ERROR)
         {
             std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
         }

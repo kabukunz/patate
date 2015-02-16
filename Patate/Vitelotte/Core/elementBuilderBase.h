@@ -10,14 +10,32 @@
 
 #include <string>
 
+#include <Eigen/Dense>
+#include <Eigen/Sparse>
+
 
 namespace Vitelotte
 {
 
 
+template < class _Mesh, typename _Scalar >
 class ElementBuilderBase
 {
 public:
+    typedef _Scalar Scalar;
+    typedef _Mesh Mesh;
+
+    typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
+    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+    typedef Eigen::MatrixXi IndexMap;
+    typedef Eigen::Triplet<Scalar> Triplet;
+
+    typedef typename Mesh::Face Face;
+
+    enum MatrixType {
+        MATRIX_SPD,
+        MATRIX_SYMETRIC
+    };
 
     enum Status
     {
@@ -31,6 +49,14 @@ public:
     inline Status status() const { return m_status; }
     inline const std::string& errorString() const { return m_errorString; }
     inline void resetStatus() { m_status = STATUS_OK; m_errorString.clear(); }
+
+    inline void setRhs(const Mesh& /*mesh*/, IndexMap /*imap*/, Matrix& rhs) {
+        rhs.setZero();
+    }
+
+    MatrixType matrixType(const Mesh& /*mesh*/) const {
+        return MATRIX_SPD;
+    }
 
 protected:
     inline void error(Status status, const std::string& errorString)
