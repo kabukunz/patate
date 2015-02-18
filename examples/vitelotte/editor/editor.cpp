@@ -15,7 +15,8 @@ Editor::Editor(QWidget* parent)
     : QGLWidget(parent),
       m_document(0),
       m_initialized(false),
-      m_showWireframe(true),
+      m_showConstraints(true),
+      m_showWireframe(false),
       m_nodeMeshType(Document::BASE_MESH),
       m_editMode(EDIT_NODES),
       m_camera(),
@@ -120,12 +121,22 @@ void Editor::updateRenderers()
 }
 
 
+void Editor::setShowConstraints(bool enable)
+{
+    if(enable != m_showConstraints)
+    {
+        m_showConstraints = enable;
+        updateRenderers();
+    }
+}
+
+
 void Editor::setShowWireframe(bool enable)
 {
     if(enable != m_showWireframe)
     {
         m_showWireframe = enable;
-        update();
+        updateRenderers();
     }
 }
 
@@ -140,6 +151,12 @@ void Editor::setShowMesh(int type)
 void Editor::setEditMode(int mode)
 {
     m_editMode = EditMode(mode);
+}
+
+
+void Editor::setPaintColor(const QColor& color) {
+    m_paintColor = NodeValue(color.redF(), color.greenF(),
+                             color.blueF(), color.alphaF());
 }
 
 
@@ -163,8 +180,6 @@ void Editor::initializeGL()
         std::cerr << "OpenGL 3.0 not supported. Aborting.\n";
         abort();
     }
-
-    glEnable(GL_FRAMEBUFFER_SRGB);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -193,10 +208,16 @@ void Editor::paintGL()
         doUpdateRenderers();
 
         Eigen::Matrix4f viewMatrix = m_camera.projectionMatrix();
+
+        // TODO: what to do about SRGB ?
+        glDisable(GL_FRAMEBUFFER_SRGB);
+
         m_renderer.render(viewMatrix);
 
 //        m_renderer.renderWireframe(viewMatrix,
 //                                   zoom(), .5, Eigen::Vector4f(.5, .5, .5, 1.));
+
+        glEnable(GL_FRAMEBUFFER_SRGB);
 
         Eigen::Vector2f viewportSize(width(), height());
         m_lineRenderer.render(viewMatrix, viewportSize);
@@ -204,8 +225,6 @@ void Editor::paintGL()
 
         if(m_showWireframe)
         {
-            m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
-                                  zoom());
             m_nodeRenderer.render(viewMatrix, viewportSize);
         }
     }
@@ -246,14 +265,19 @@ void Editor::mouseReleaseEvent(QMouseEvent* event)
             }
             else if(m_editMode == EDIT_CURVES)
             {
-                GradientStop gs;
-                makeNewStop(gs, scenePos);
-                if(gs.curve.isValid()) {
-                    addGradientStop(gs);
-                    hideDummyStop();
+                if(!trySetPointConstraint(scenePos))
+                {
+                    GradientStop gs;
+                    makeNewStop(gs, scenePos);
+                    if(gs.curve.isValid()) {
+                        addGradientStop(gs);
+                        hideDummyStop();
+                    }
+                    else
+                    {
+                        pickConstraint(scenePos);
+                    }
                 }
-                else
-                    pickConstraint(scenePos);
             }
         }
         else if(   event->button() == Qt::RightButton
@@ -511,6 +535,27 @@ void Editor::removeGradientStop(const GradientStop& gs)
 }
 
 
+bool Editor::trySetPointConstraint(const Vector& pos)
+{
+    if(!m_document->selection().isPointConstraint())
+        return false;
+
+    Mesh& mesh = m_document->mesh();
+
+    const Mesh::PointConstraint pc = m_document->selection().pointConstraint();
+    const Vector& pcp = mesh.position(mesh.vertex(pc));
+
+    float selDist = 8 / zoom();
+
+    if((pcp - pos).squaredNorm() < selDist*selDist) {
+        m_document->undoStack()->push(new SetPointConstraint(
+            m_document, pc, m_paintColor));
+        return true;
+    }
+    return false;
+}
+
+
 void Editor::selectGradientStop(GradientStop* gs)
 {
 
@@ -531,6 +576,24 @@ void Editor::doUpdateRenderers()
     m_gradientStops.clear();
     m_pointRenderer.clear();
     m_lineRenderer.clear();
+
+    if(m_showConstraints && !m_showWireframe) {
+        for(unsigned pci = 0; pci < mesh.nPointConstraints(); ++pci)
+        {
+            Eigen::Vector3f p;
+            p << mesh.position(mesh.vertex(Mesh::PointConstraint(pci))), 0;
+            m_pointRenderer.addPoint(p, 3, Eigen::Vector4f(0, 0, 0, 1));
+        }
+        for(unsigned ci = 0; ci < mesh.nCurves(); ++ci)
+            drawCurve(Mesh::Curve(ci), 2, Eigen::Vector4f(0, 0, 0, 1));
+    }
+
+    if(m_showWireframe) {
+        m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
+                              zoom());
+    }
+
+
     if(sel.isVertex() || sel.isPointConstraint())
     {
         Mesh::Vertex v = sel.isVertex()?

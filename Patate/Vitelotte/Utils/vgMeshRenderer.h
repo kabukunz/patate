@@ -52,6 +52,9 @@ public:
     VGMeshRenderer();
     ~VGMeshRenderer();
 
+    bool convertSrgbToLinear() const;
+    void setConvertSrgbToLinear(bool enable);
+
     bool initialize();
     void releaseGLRessources();
     void updateBuffers(const Mesh& mesh);
@@ -99,6 +102,7 @@ private:
 private:
     bool m_initialized;
     bool m_useVao;
+    bool m_convertSrgbToLinear;
 
     PatateCommon::Shader m_solidLinearShader;
     PatateCommon::Shader m_solidQuadraticShader;

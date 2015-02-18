@@ -1,7 +1,10 @@
 #include <QSplitter>
 #include <QMenuBar>
 #include <QMenu>
+#include <QToolBar>
 #include <QAction>
+#include <QPushButton>
+#include <QColorDialog>
 
 #include "document.h"
 #include "editor.h"
@@ -15,6 +18,7 @@ MainWindow::MainWindow(QWidget* parent)
       m_document(0),
       m_editor(0),
       m_valueEditor(0),
+      m_currentColor(Qt::black),
       m_splitter(0),
       m_fileMenu(0),
       m_editMenu(0),
@@ -33,6 +37,7 @@ MainWindow::MainWindow(QWidget* parent)
       m_showBaseMeshAction(0),
       m_showFinalizedMeshAction(0),
       m_showSolvedMeshAction(0),
+      m_colorButton(0),
       m_showMesh(Document::BASE_MESH),
       m_editMode(EDIT_NODES),
       m_interactionEnabled(false)
@@ -52,6 +57,9 @@ MainWindow::MainWindow(QWidget* parent)
     m_valueEditor->setDocument(m_document);
     connect(m_document, SIGNAL(meshChanged()),
             this, SLOT(handleMeshChange()));
+
+    connect(this, SIGNAL(currentColorChanged(QColor)),
+            m_editor, SLOT(setPaintColor(QColor)));
 
     // File menu
     m_fileMenu = menuBar()->addMenu("File");
@@ -115,6 +123,13 @@ MainWindow::MainWindow(QWidget* parent)
     // View Menu
     m_viewMenu = menuBar()->addMenu("View");
 
+    m_showConstraintsAction = new QAction("Show constraints", this);
+    m_showConstraintsAction->setCheckable(true);
+    m_showConstraintsAction->setChecked(m_editor->showConstraints());
+    m_viewMenu->addAction(m_showConstraintsAction);
+    connect(m_showConstraintsAction, SIGNAL(triggered(bool)),
+            m_editor, SLOT(setShowConstraints(bool)));
+
     m_wireframeAction = new QAction("Show wireframe", this);
     m_wireframeAction->setCheckable(true);
     m_wireframeAction->setChecked(m_editor->showWireframe());
@@ -145,6 +160,15 @@ MainWindow::MainWindow(QWidget* parent)
     m_showSolvedMeshAction->setChecked(false);
     m_showMeshGroup->addAction(m_showSolvedMeshAction);
     m_viewMenu->addAction(m_showSolvedMeshAction);
+
+
+    // Toolbar
+    m_mainToolBar = addToolBar("main");
+
+    m_colorButton = new QPushButton("Choose color");
+    m_mainToolBar->addWidget(m_colorButton);
+    connect(m_colorButton, SIGNAL(clicked()),
+            this, SLOT(pickColor()));
 
     updateInteractionEnabled();
 }
@@ -209,10 +233,33 @@ void MainWindow::changeShowMesh(QAction* action)
     m_valueEditor->setShowMesh(m_showMesh);
 }
 
+
 void MainWindow::changeEditMode(QAction* action)
 {
     if(action == m_editCurvesAction)
         setEditMode(EDIT_CURVES);
     else if(action == m_editNodesAction)
         setEditMode(EDIT_NODES);
+}
+
+
+void MainWindow::setCurrentColor(const QColor& color)
+{
+    if(m_currentColor != color)
+    {
+        m_currentColor = color;
+        emit currentColorChanged(color);
+    }
+}
+
+
+void MainWindow::pickColor()
+{
+    QColor color = QColorDialog::getColor(m_currentColor, this,
+                                          "Choose pen color",
+                                          QColorDialog::ShowAlphaChannel);
+    if(color.isValid())
+    {
+        setCurrentColor(color);
+    }
 }

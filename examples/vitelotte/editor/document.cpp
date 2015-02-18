@@ -349,11 +349,6 @@ void Document::solve()
         {
             std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
         }
-
-        exportPlot("plot0.obj", 0);
-        exportPlot("plot1.obj", 1);
-        exportPlot("plot2.obj", 2);
-        exportPlot("plot3.obj", 3);
     }
     m_dirtyFlags = CLEAN;
 
@@ -948,3 +943,34 @@ void AddRemoveGradientStop::remove()
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
     m_document->solve();
 }
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+SetPointConstraint::SetPointConstraint(Document* doc, PointConstraint pc,
+                                       const NodeValue& value)
+    : m_document(doc), m_pc(pc),
+      m_prevValue(doc->mesh().value(m_pc)),
+      m_newValue(value)
+{
+}
+
+void SetPointConstraint::undo()
+{
+    setColor(m_prevValue);
+}
+
+
+void SetPointConstraint::redo()
+{
+    setColor(m_newValue);
+}
+
+void SetPointConstraint::setColor(const NodeValue& color)
+{
+    m_document->mesh().value(m_pc) = color;
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->solve();
+}
+
+
