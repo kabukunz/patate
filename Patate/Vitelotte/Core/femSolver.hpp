@@ -125,6 +125,8 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::solve()
 {
+    m_solved = false;
+
     if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
     {
         return;
@@ -154,36 +156,21 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     }
     assert(count == nConstraints);
 
+    Eigen::VectorXi iperm(m_perm.rows());
+    for(int i=0; i<m_perm.rows(); ++i)
+        iperm(m_perm(i)) = i;
+
     m_x.resize(nUnknowns, Mesh::Chan);
-    m_x.setZero();
-
-//    Eigen::Matrix<float, 4, 2> g;
-//    g << 1., 0,
-//         0, 1.,
-//         0, 0,
-//         0, 0;
-////    g.setZero();
-
-//    typename Mesh::Vertex vert(0);
-//    typename Mesh::HalfedgeAroundVertexCirculator hit = m_mesh->halfedges(vert);
-//    typename Mesh::HalfedgeAroundVertexCirculator end = hit;
-//    do
-//    {
-//        Eigen::Vector2f e = (m_mesh->position(m_mesh->toVertex(*hit))
-//                - m_mesh->position(m_mesh->fromVertex(*hit))).normalized();
-//        Eigen::Vector4f v = g * e;
-
-//        unsigned ni = m_mesh->edgeGradientNode(*hit).idx();
-//        std::cerr << "e " << ni << ": " << e.transpose() << " -> " << v.transpose() << "\n";
-
-//        m_x.row(ni) = v.cast<Scalar>();
-
-//        ++hit;
-//    } while(hit != end);
+    m_elementBuilder.setRhs(*m_mesh, iperm, m_x);
 
     m_x -= mat.topRightCorner(nUnknowns, nConstraints) * constraints;
 
     unsigned nbRanges = m_ranges.size()-1;
+
+    typename ElementBuilder::MatrixType matrixType =
+            m_elementBuilder.matrixType(*m_mesh);
+    std::cout << ((matrixType == ElementBuilder::MATRIX_SPD)?
+                      "SPD\n": "Symetric\n");
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static,1)
@@ -215,26 +202,33 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
         std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
 
-        Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
+        if(matrixType == ElementBuilder::MATRIX_SPD)
+        {
+            Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
+            m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+        }
+        else
+        {
+            Eigen::SparseLU<StiffnessMatrix> solver;
+    //        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
+            solver.analyzePattern(L);
+            solver.factorize(L);
+            m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+        }
 
 //        Eigen::BiCGSTAB<StiffnessMatrix> solver;
 //        solver.compute(L);
 
-//        Eigen::SparseLU<StiffnessMatrix> solver;
-//        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
-//        solver.analyzePattern(L);
-//        solver.factorize(L);
 
-        m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
 
 //        std::cout << "BiCGSTAB: " << solver.iterations() << " iters, error = " << solver.error() << "\n";
 
-        switch(solver.info()) {
-        case Eigen::Success: std::cout << "Success\n"; break;
-        case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; break;
-        case Eigen::NoConvergence: std::cout << "NoConvergence\n"; break;
-        case Eigen::InvalidInput: std::cout << "InvalidInput\n"; break;
-        }
+//        switch(solver.info()) {
+//        case Eigen::Success: std::cout << "Success\n"; break;
+//        case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; break;
+//        case Eigen::NoConvergence: std::cout << "NoConvergence\n"; break;
+//        case Eigen::InvalidInput: std::cout << "InvalidInput\n"; break;
+//        }
     }
 
     for(unsigned i = 0; i < nUnknowns; ++i)

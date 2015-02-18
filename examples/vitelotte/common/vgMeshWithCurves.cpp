@@ -124,10 +124,6 @@ void VGMeshWithCurves::setNodesFromCurves()
         if(hasEdgeGradient())       edgeGradientNode(*hit)      = Node();
     }
 
-    VertexProperty<bool> isGc = vertexProperty<bool>("v:isGradientConstraint", false);
-//    EdgeProperty<Node> pgcNode = EdgeProperty<Node>("e:pgcNode");
-    HalfedgeProperty<Node> pgcNode = halfedgeProperty<Node>("h:pgcNode");
-    EdgeProperty<NodeValue> pgConstraint = edgeProperty<NodeValue>("e:pgConstraint");
     for(unsigned pci = 0; pci < nPointConstraints(); ++pci)
     {
         PointConstraint pc(pci);
@@ -137,9 +133,6 @@ void VGMeshWithCurves::setNodesFromCurves()
         Node vn;
         if(isValueConstraint(pc))
             vn = addNode(value(pc));
-
-        Eigen::Matrix<float, 4, 2> grad;
-        grad << xGradient(pc), yGradient(pc);
 
         HalfedgeAroundVertexCirculator hit = halfedges(vx);
         HalfedgeAroundVertexCirculator hend = hit;
@@ -152,27 +145,17 @@ void VGMeshWithCurves::setNodesFromCurves()
                 if(!isBoundary(opp))
                     halfedgeOppositeNode(*hit, FROM_VERTEX_VALUE) = vn;
             }
-            if(isGradientConstraint(pc))
-            {
-                Eigen::Vector2f v = (position(toVertex(*hit)) - position(fromVertex(*hit))).normalized();
-                v = Eigen::Vector2f(-v(1), v(0)) * (halfedgeOrientation(*hit)? -1: 1);
-                Node gn = addNode(grad * v);
-//                std::cout << "Point gradient constraint: "
-//                          << v.transpose() << ": " << nodeValue(gn).transpose() << "\n";
-
-                if(!isBoundary(*hit))
-                    halfedgeNode(*hit, EDGE_GRADIENT) = gn;
-                if(!isBoundary(opp))
-                    halfedgeOppositeNode(*hit, EDGE_GRADIENT) = gn;
-
-//                isGc[vx] = true;
-//                pgcNode[Edge(*hit)] = addNode();
-//                pgcNode[*hit] = addNode();
-//                pgcNode[oppositeHalfedge(*hit)] = addNode();
-//                pgConstraint[edge(*hit)] = grad * v;
-            }
             ++hit;
         } while(hit != hend);
+
+        if(isGradientConstraint(pc))
+        {
+            Gradient grad;
+            grad << xGradient(pc), yGradient(pc);
+            std::cout << "Set gradient constraint: " << position(vx).transpose() << "\n"
+                      << grad << "\n";
+            setGradientConstraint(vertex(pc), grad);
+        }
     }
 
     for(unsigned ci = 0; ci < nCurves(); ++ci)

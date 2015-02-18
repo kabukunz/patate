@@ -42,13 +42,15 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
         m_attributes = rhs.m_attributes;
 
         m_positions = vertexProperty<Vector>("v:position");
+        m_vertexGradientConstraint = rhs.m_vertexGradientConstraint;
 
         m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
         m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
         m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
         m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
-        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+        m_vertexGradientDummyNodes = rhs.m_vertexGradientDummyNodes;
+//        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
     }
     return *this;
 }
@@ -212,6 +214,75 @@ VGMesh<_Scalar, _Dim, _Chan>::
     return halfedgeNode(oppositeHalfedge(h), oppositeAttribute(attr));
 }
 
+
+template < typename _Scalar, int _Dim, int _Chan >
+void VGMesh<_Scalar, _Dim, _Chan>::
+    setGradientConstraint(Vertex v, const Gradient& grad)
+{
+    assert(hasVertexGradientConstraint());
+
+    bool newConstraint = !isGradientConstraint(v);
+
+    m_vertexGradientConstraint[v] = grad;
+
+    if(newConstraint)
+    {
+        HalfedgeAroundVertexCirculator hit = halfedges(v);
+        HalfedgeAroundVertexCirculator hend = hit;
+        do
+        {
+            m_vertexGradientDummyNodes[*hit] = addNode();
+            m_vertexGradientDummyNodes[oppositeHalfedge(*hit)] = addNode();
+            ++hit;
+        } while(hit != hend);
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void VGMesh<_Scalar, _Dim, _Chan>::removeGradientConstraint(Vertex v)
+{
+    assert(hasVertexGradientConstraint());
+
+    m_vertexGradientConstraint.erase(v);
+
+    HalfedgeAroundVertexCirculator hit = halfedges(v);
+    HalfedgeAroundVertexCirculator hend = hit;
+    do
+    {
+        m_vertexGradientDummyNodes.erase(*hit);
+        m_vertexGradientDummyNodes.erase(oppositeHalfedge(*hit));
+        ++hit;
+    } while(hit != hend);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+unsigned VGMesh<_Scalar, _Dim, _Chan>::nVertexGradientConstraints(Halfedge h) const
+{
+    assert(hasVertexGradientConstraint());
+
+    return isGradientConstraint(fromVertex(h)) + isGradientConstraint(toVertex(h));
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+unsigned VGMesh<_Scalar, _Dim, _Chan>::nVertexGradientConstraints(Face f) const
+{
+    assert(hasVertexGradientConstraint());
+
+    VertexAroundFaceCirculator vit = vertices(f);
+    VertexAroundFaceCirculator vend = vit;
+    unsigned count = 0;
+
+    do
+    {
+        if(isGradientConstraint(*vit)) ++count;
+        ++vit;
+    } while(vit != vend);
+
+    return count;
+}
 
 
 template < typename _Scalar, int _Dim, int _Chan >

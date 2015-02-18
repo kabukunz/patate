@@ -15,6 +15,7 @@ template < class _Mesh >
 VGMeshRenderer<_Mesh>::VGMeshRenderer() :
     m_initialized(false),
     m_useVao(true),
+    m_convertSrgbToLinear(false),
 
     m_verticesBuffer(0),
     m_indicesBuffer(0),
@@ -30,6 +31,20 @@ VGMeshRenderer<_Mesh>::~VGMeshRenderer()
 {
     if(m_initialized)
         releaseGLRessources();
+}
+
+
+template < class _Mesh >
+bool VGMeshRenderer<_Mesh>::convertSrgbToLinear() const
+{
+    return m_convertSrgbToLinear;
+}
+
+
+template < class _Mesh >
+void VGMeshRenderer<_Mesh>::setConvertSrgbToLinear(bool enable)
+{
+    m_convertSrgbToLinear = enable;
 }
 
 
@@ -357,7 +372,10 @@ VGMeshRenderer<_Mesh>::nodeValue(const Mesh& mesh, Node node) const
 {
     if(mesh.isValid(node) && mesh.isConstraint(node))
     {
-        return PatateCommon::srgbToLinear(mesh.nodeValue(node));
+        if(m_convertSrgbToLinear)
+            return PatateCommon::srgbToLinear(mesh.nodeValue(node));
+        else
+            return mesh.nodeValue(node);
     }
     return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }

@@ -15,6 +15,7 @@ public:
     typedef Base::Vector Vector;
     typedef Base::NodeValue NodeValue;
 
+    // TODO: rename it PicewiseLinearFunction ?
     typedef std::map<float, NodeValue> ValueGradient;
 
     struct Curve : public BaseHandle
@@ -127,6 +128,7 @@ public:
 
     inline bool isValueConstraint(PointConstraint pc) const
         { return !isnan(m_pointConstraints[pc.idx()].value(0)); }
+    using Base::isGradientConstraint;
     inline bool isGradientConstraint(PointConstraint pc) const
         { return !isnan(m_pointConstraints[pc.idx()].xGradient(0)); }
 

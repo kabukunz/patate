@@ -27,7 +27,7 @@ unsigned
 FVElementBuilder<_Mesh, _Scalar>::
     nCoefficients(const Mesh& mesh, Face element) const
 {
-    return 81;
+    return mesh.nVertexGradientConstraints(element)? 117: 81;
 }
 
 
@@ -46,6 +46,35 @@ FVElementBuilder<_Mesh, _Scalar>::
     processFV1Element(it, mesh, element);
 }
 
+
+template < class _Mesh, typename _Scalar >
+void
+FVElementBuilder<_Mesh, _Scalar>::
+        setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs) {
+
+    rhs.setZero();
+
+    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
+        hit != mesh.halfedgesEnd(); ++hit) {
+
+        if(mesh.nVertexGradientConstraints(*hit) == 0)
+            continue;
+
+        typename Mesh::Vertex from = mesh.fromVertex(*hit);
+        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
+        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
+        if(n.isValid()) {
+            bool v0c = mesh.isGradientConstraint(from);
+            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+            if(!v0c) v = -v;
+            typename Mesh::NodeValue cons = grad * v;
+            rhs.row(imap(n.idx())) = cons.template cast<Scalar>();
+        }
+    }
+}
+
+
 template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
@@ -59,6 +88,16 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
     typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
+    do ++hit;
+    while(!mesh.isGradientConstraint(mesh.toVertex(*hit)) && hit != hend);
+    bool isPgc = mesh.isGradientConstraint(mesh.toVertex(*hit));
+    typename Mesh::Edge e2 = mesh.edge(*hit);
+    typename Mesh::Halfedge h2 = *hit;
+    ++hit;
+    typename Mesh::Edge e1 = mesh.edge(*hit);
+    typename Mesh::Halfedge h1 = *hit;
+    --hit;
+    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
     bool orient[3];
     Vector p[3];
@@ -145,6 +184,56 @@ FVElementBuilder<_Mesh, _Scalar>::
         for(size_t j = 0; j < 9; ++j)
         {
             *(it++) = Triplet(nodes[i], nodes[j], sm(i, j));
+        }
+    }
+
+    if(isPgc)
+    {
+        std::cout << "Flat elem:\n";
+        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
+        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
+        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
+        std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
+        std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
+        std::cout << "  Stiffness matrix:\n" << sm << "\n";
+
+        typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
+        Vector9 fde1, fde2;
+        fde1 <<
+            -1.0L/2.0L*(elem.doubleArea()*(2*elem.dldn(0, 1) + elem.dldn(1, 1)) + 7*elem.edgeLength(1))/(elem.edgeLength(1)*elem.edgeLength(2)),
+            (1.0L/2.0L)*(elem.doubleArea()*(elem.dldn(0, 0) + 2*elem.dldn(1, 0)) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(2)),
+            -1.0L/2.0L*elem.doubleArea()*(elem.edgeLength(0)*(elem.dldn(1, 1) + 2*elem.dldn(2, 1)) - elem.edgeLength(1)*(elem.dldn(0, 0) + 2*elem.dldn(2, 0)))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+            -4/elem.edgeLength(2),
+            4/elem.edgeLength(2),
+            4/elem.edgeLength(2),
+            elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(2)),
+            -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2)),
+            0;
+        fde2 <<
+            -1.0L/2.0L*(elem.doubleArea()*(2*elem.dldn(0, 2) + elem.dldn(2, 2)) + 7*elem.edgeLength(2))/(elem.edgeLength(1)*elem.edgeLength(2)),
+            -1.0L/2.0L*elem.doubleArea()*(elem.edgeLength(0)*(2*elem.dldn(1, 2) + elem.dldn(2, 2)) - elem.edgeLength(2)*(elem.dldn(0, 0) + 2*elem.dldn(1, 0)))/(elem.edgeLength(0)*elem.edgeLength(1)*elem.edgeLength(2)),
+            (1.0L/2.0L)*(elem.doubleArea()*(elem.dldn(0, 0) + 2*elem.dldn(2, 0)) - elem.edgeLength(0))/(elem.edgeLength(0)*elem.edgeLength(1)),
+            -4/elem.edgeLength(1),
+            4/elem.edgeLength(1),
+            4/elem.edgeLength(1),
+            elem.doubleArea()/(elem.edgeLength(0)*elem.edgeLength(1)),
+            0,
+            -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
+
+        int ce1 = mesh.vertexGradientDummyNode(h1).idx();
+        int ce2 = mesh.vertexGradientDummyNode(h2).idx();
+        if(ce1 < 0 || ce2 < 0)
+        {
+            error(STATUS_ERROR, "Invalid node");
+            return;
+        }
+        for(size_t i = 0; i < 9; ++i)
+        {
+            Scalar f = (i < 6 || orient[i%3])? 1: -1;
+            *(it++) = Triplet(nodes[i], ce1, fde1(i) * f);
+            *(it++) = Triplet(ce1, nodes[i], fde1(i) * f);
+            *(it++) = Triplet(nodes[i], ce2, fde2(i) * f);
+            *(it++) = Triplet(ce2, nodes[i], fde2(i) * f);
         }
     }
 }

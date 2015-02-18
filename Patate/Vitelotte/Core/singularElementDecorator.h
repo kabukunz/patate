@@ -30,9 +30,7 @@ public:
     typedef typename Base::Vector Vector;
     typedef typename Base::Triplet Triplet;
 
-
-protected:
-    typedef typename Mesh::Face Face;
+    typedef typename Base::Face Face;
 
 
 public:

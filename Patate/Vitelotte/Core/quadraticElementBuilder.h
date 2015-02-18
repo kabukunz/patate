@@ -20,17 +20,24 @@ namespace Vitelotte
 
 
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class QuadraticElementBuilder : public ElementBuilderBase
+class QuadraticElementBuilder : public ElementBuilderBase<_Mesh, _Scalar>
 {
 public:
     typedef _Scalar Scalar;
     typedef _Mesh Mesh;
 
-    typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
-    typedef Eigen::Triplet<Scalar> Triplet;
+    typedef ElementBuilderBase<_Mesh, _Scalar> Base;
 
-    typedef typename Mesh::Face Face;
+    typedef typename Base::Vector Vector;
+    typedef typename Base::Matrix Matrix;
+    typedef typename Base::IndexMap IndexMap;
+    typedef typename Base::Triplet Triplet;
 
+    typedef typename Base::Face Face;
+
+    using Base::STATUS_OK;
+    using Base::STATUS_ERROR;
+    using Base::STATUS_WARNING;
 
 protected:
     typedef Eigen::Matrix<Scalar, 6, 6> ElementStiffnessMatrix;
@@ -41,10 +48,17 @@ protected:
 public:
     inline QuadraticElementBuilder();
 
+    using Base::status;
+    using Base::errorString;
+    using Base::resetStatus;
+
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
     void addCoefficients(InIt& it, const Mesh& mesh, Face element);
+
+protected:
+    using Base::error;
 
 private:
     static bool m_matricesInitialized;

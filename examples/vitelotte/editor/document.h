@@ -294,4 +294,28 @@ private:
 };
 
 
+class SetPointConstraint : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::PointConstraint PointConstraint;
+    typedef Document::Mesh::NodeValue NodeValue;
+
+public:
+    SetPointConstraint(Document* doc, PointConstraint pc,
+                         const NodeValue& value);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    void setColor(const NodeValue& color);
+
+private:
+    Document* m_document;
+    PointConstraint m_pc;
+    NodeValue m_prevValue;
+    NodeValue m_newValue;
+};
+
+
 #endif

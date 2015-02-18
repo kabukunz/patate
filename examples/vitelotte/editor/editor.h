@@ -48,6 +48,7 @@ public:
     explicit Editor(QWidget* parent=0);
     virtual ~Editor();
 
+    bool showConstraints() const { return m_showConstraints; }
     bool showWireframe() const { return m_showWireframe; }
 
     Eigen::Vector2f sceneFromView(const QPointF& view) const;
@@ -60,9 +61,11 @@ public slots:
     void setDocument(Document* document);
     void updateBuffers();
     void updateRenderers();
+    void setShowConstraints(bool enable);
     void setShowWireframe(bool enable);
     void setShowMesh(int type);
     void setEditMode(int mode);
+    void setPaintColor(const QColor& color);
 
 public:
     virtual void initializeGL();
@@ -136,6 +139,8 @@ protected:
     void addGradientStop(const GradientStop& gs);
     void removeGradientStop(const GradientStop& gs);
 
+    bool trySetPointConstraint(const Vector& pos);
+
     void selectGradientStop(GradientStop* gs);
 
     void doUpdateRenderers();
@@ -158,6 +163,7 @@ protected:
     Document* m_document;
 
     bool m_initialized;
+    bool m_showConstraints;
     bool m_showWireframe;
     Document::MeshType m_nodeMeshType;
     EditMode m_editMode;

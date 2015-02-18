@@ -3,16 +3,22 @@
 
 
 #include <QMainWindow>
+#include <QColor>
+
 
 #include "document.h"
 #include "editor.h"
+
 
 class QSplitter;
 class QAction;
 class QActionGroup;
 class QMenu;
+class QToolBar;
+class QPushButton;
 
 class ValueEditor;
+
 
 class MainWindow : public QMainWindow
 {
@@ -36,9 +42,12 @@ protected slots:
     void handleMeshChange();
     void changeShowMesh(QAction* action);
     void changeEditMode(QAction* action);
+    void setCurrentColor(const QColor& color);
+    void pickColor();
 
 signals:
     void editModeChanged(int editMode);
+    void currentColorChanged(const QColor& color);
 
 
 private:
@@ -46,11 +55,15 @@ private:
     Editor* m_editor;
     ValueEditor* m_valueEditor;
 
+    QColor m_currentColor;
+
     QSplitter* m_splitter;
 
     QMenu* m_fileMenu;
     QMenu* m_editMenu;
     QMenu* m_viewMenu;
+
+    QToolBar* m_mainToolBar;
 
     QAction* m_openAction;
     QAction* m_saveSourceAction;
@@ -63,12 +76,15 @@ private:
     QAction* m_editCurvesAction;
     QAction* m_editNodesAction;
 
+    QAction* m_showConstraintsAction;
     QAction* m_wireframeAction;
 
     QActionGroup* m_showMeshGroup;
     QAction* m_showBaseMeshAction;
     QAction* m_showFinalizedMeshAction;
     QAction* m_showSolvedMeshAction;
+
+    QPushButton* m_colorButton;
 
     Document::MeshType m_showMesh;
     EditMode m_editMode;

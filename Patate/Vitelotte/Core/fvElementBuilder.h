@@ -42,29 +42,54 @@ namespace Vitelotte
  * functions can be obtained by cyclic permutation of the indices.
  */
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
-class FVElementBuilder : public ElementBuilderBase
+class FVElementBuilder : public ElementBuilderBase<_Mesh, _Scalar>
 {
 public:
     typedef _Scalar Scalar;
     typedef _Mesh Mesh;
 
-    typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
-    typedef Eigen::Triplet<Scalar> Triplet;
+    typedef ElementBuilderBase<_Mesh, _Scalar> Base;
+
+    typedef typename Base::Vector Vector;
+    typedef typename Base::Matrix Matrix;
+    typedef typename Base::IndexMap IndexMap;
+    typedef typename Base::Triplet Triplet;
+
+    typedef typename Base::Face Face;
+
+    typedef typename Base::MatrixType MatrixType;
+    using Base::MATRIX_SPD;
+    using Base::MATRIX_SYMETRIC;
+
+    using Base::STATUS_OK;
+    using Base::STATUS_ERROR;
+    using Base::STATUS_WARNING;
 
 protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
     typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
-    typedef typename Mesh::Face Face;
 
 public:
     inline FVElementBuilder(Scalar sigma = Scalar(.5));
+
+    using Base::status;
+    using Base::errorString;
+    using Base::resetStatus;
 
     unsigned nCoefficients(const Mesh& mesh, Face element) const;
 
     template < typename InIt >
     void addCoefficients(InIt& it, const Mesh& mesh, Face element);
 
+    void setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs);
+
+    MatrixType matrixType(const Mesh& mesh) const {
+        return mesh.nVertexGradientConstraints()? MATRIX_SYMETRIC: MATRIX_SPD;
+    }
+
 protected:
+    using Base::error;
+
     template < typename InIt >
     void processFV1Element(InIt& it, const Mesh& mesh, Face element);
 
