@@ -5,6 +5,7 @@
 #include "Patate/vitelotte_io.h"
 
 #include "../common/vgMeshWithCurvesReader.h"
+#include "../common/plotObj.h"
 
 #include "document.h"
 
@@ -530,109 +531,11 @@ void Document::openSaveFinalMeshDialog()
 }
 
 
-template <typename Elem>
-void printPlotElementVertices(std::ostream& out, const Elem& elem,
-                              const Eigen::Matrix<float, 2, 3>& points,
-                              const Eigen::Matrix<float, 9, 1>& nodeValues,
-                              unsigned nSubdiv) {
-    for(unsigned i = 0; i < nSubdiv+1; ++i)
-    {
-        for(unsigned j = 0; j < (i + 1); ++j)
-        {
-            Eigen::Vector3f bc;
-            bc(0) = 1.f - float(i) / float(nSubdiv);
-            bc(2) = float(j) / float(nSubdiv);
-            bc(1) = 1.f - bc(0) - bc(2);
-
-            float value = nodeValues.dot(elem.eval(bc));
-            out << "v " << (points * bc).transpose() << " " << value << "\n";
-        }
-    }
-}
-
-
-template <typename Mesh, typename Elem>
-void exportPlot(const Mesh& mesh, const std::string& filename, unsigned layer)
-{
-    std::ofstream out(filename.c_str());
-
-    unsigned nSubdiv = 8;
-    unsigned vxPerEdge = nSubdiv + 1;
-    unsigned vxPerFace = (vxPerEdge * (vxPerEdge + 1)) / 2;
-
-    typename Mesh::template VertexProperty<bool> isGc =
-            mesh.template getVertexProperty<bool>("v:isGradientConstraint");
-
-    for(typename Mesh::FaceIterator fit = mesh.facesBegin();
-        fit != mesh.facesEnd(); ++fit)
-    {
-        Eigen::Matrix<float, 2, 3> points;
-        Eigen::Matrix<float, 9, 1> nodeValues;
-
-        typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
-        typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
-
-        for(unsigned i = 0; i < 3; ++i)
-        {
-            nodeValues(i + 3) = mesh.nodeValue(mesh.edgeValueNode(*hit))(layer);
-            nodeValues(i + 6) = mesh.nodeValue(mesh.edgeGradientNode(*hit))(layer);
-            if(!mesh.halfedgeOrientation(*hit))
-                nodeValues(i + 6) *= -1;
-            ++hit;
-            points.col(i) = mesh.position(mesh.toVertex(*hit));
-            nodeValues(i) = mesh.nodeValue(mesh.toVertexValueNode(*hit))(layer);
-        }
-
-        printPlotElementVertices(out, Elem(points.col(0), points.col(1), points.col(2)),
-                                 points, nodeValues, nSubdiv);
-
-//        Vitelotte::QuadraticElement<float> elem(points.col(0), points.col(1), points.col(2));
-//        Vitelotte::FVElement<float> elem(points.col(0), points.col(1), points.col(2));
-//        for(unsigned i = 0; i < vxPerEdge; ++i)
-//        {
-//            for(unsigned j = 0; j < (i + 1); ++j)
-//            {
-//                Eigen::Vector3f bc;
-//                bc(0) = 1.f - float(i) / float(nSubdiv);
-//                bc(2) = float(j) / float(nSubdiv);
-//                bc(1) = 1.f - bc(0) - bc(2);
-
-//                float value = nodeValues.dot(elem.eval(bc));
-//                out << "v " << (points * bc).transpose() << " " << value << "\n";
-//            }
-//        }
-    }
-
-    unsigned count = 0;
-    for(typename Mesh::FaceIterator fit = mesh.facesBegin();
-        fit != mesh.facesEnd(); ++fit)
-    {
-        unsigned first = count * vxPerFace + 1; // first vertex is 1 in .obj
-        unsigned v0 = first;
-        unsigned v1 = first + 1;
-        for(int i = 0; i < nSubdiv; ++i)
-        {
-            for(int j = 0; j < i; ++j)
-            {
-                out << "f " << v0 << " " << v1 << " " << v1 + 1 << "\n";
-                out << "f " << v0 << " " << v1 + 1 << " " << v0 + 1 << "\n";
-                ++v0;
-                ++v1;
-            }
-            out << "f " << v0 << " " << v1 << " " << v1 + 1 << "\n";
-            ++v0;
-            v1 += 2;
-        }
-        ++count;
-    }
-}
-
-
 void Document::exportPlot(const std::string& filename, unsigned layer)
 {
     typedef Vitelotte::FVElement<float> FVElem;
 
-    ::exportPlot<Mesh, FVElem>(m_solvedMesh, filename, layer);
+    ::exportPlot<Mesh, FVElem>(m_solvedMesh, filename, layer, 4);
 
 //    unsigned nCount = 0;
 //    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);

@@ -18,6 +18,16 @@ include_directories(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(vitelotte_mvgtk_SRCS
+    ../common/vgMeshWithCurves.cpp
+    ../common/vgMeshWithCurvesReader.cpp
     mvgtk.cpp
+    checkCommand.cpp
+    convertCommand.cpp
+    curvesToNodesCommand.cpp
+    finalizeCommand.cpp
+    plotCommand.cpp
+    simplifyCommand.cpp
+    solveCommand.cpp
+    main.cpp
 )
 add_executable(mvgtk ${vitelotte_mvgtk_SRCS})
