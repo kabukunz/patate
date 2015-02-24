@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+#include "../../common/defines.h"
+
 #include "linearElement.h"
 
 
@@ -25,22 +27,27 @@ public:
     typedef LinearElement<Scalar> Base;
 
     typedef Eigen::Matrix<Scalar, 2, 1> Vector;
+    typedef Eigen::Matrix<Scalar, 6, 1> Values;
+    typedef Eigen::Matrix<Scalar, 6, 2> Jacobian;
+    typedef Eigen::Matrix<Scalar, 2, 2> Hessian;
+
+    typedef Eigen::Matrix<Scalar, 3, 1> BarycentricCoord;
+
+protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-    typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
 
     typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
-    typedef Eigen::Matrix<Scalar, 6, 2> Matrix6x2;
-
 public:
-    inline MorleyElement(const Vector* pts)
+    MULTIARCH inline MorleyElement(const Vector* pts)
         : Base(pts)
     {
         computeFromPoints();
     }
 
-    inline MorleyElement(const Vector& p0, const Vector& p1, const Vector& p2)
+    MULTIARCH inline MorleyElement(
+            const Vector& p0, const Vector& p1, const Vector& p2)
         : Base(p0, p1, p2)
     {
         computeFromPoints();
@@ -51,26 +58,15 @@ public:
 
     using Base::barycentricCoordinates;
 
-    inline Vector6 eval(const Vector& p) const
+    MULTIARCH inline Values eval(const BarycentricCoord& bc) const
     {
-        return eval(barycentricCoordinates(p));
-    }
-
-    inline Vector6 eval(const Vector3& bc) const
-    {
-        Vector6 basis;
+        Values basis;
         for(unsigned i = 0; i < 6; ++i)
             basis(i) = eval(i, bc);
         return basis;
     }
 
-    inline Scalar eval(unsigned bi, const Vector& p) const
-    {
-        assert(bi < 6);
-        return eval(bi, barycentricCoordinates(p));
-    }
-
-    inline Scalar eval(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline Scalar eval(unsigned bi, const BarycentricCoord& bc) const
     {
         assert(bi < 6);
         if(bi < 3)
@@ -85,26 +81,16 @@ public:
         return bc(bi) * (bc(bi) - 1) / m_dldn(bi, bi);
     }
 
-    inline const Matrix6x2 jacobian(const Vector& p) const
+    MULTIARCH inline const Jacobian jacobian(const BarycentricCoord& bc) const
     {
-        return jacobian(barycentricCoordinates(p));
-    }
-
-    inline const Matrix6x2 jacobian(const Vector3& bc) const
-    {
-        Matrix6x2 j;
+        Jacobian j;
         for(unsigned i = 0; i < 6; ++i)
             j.row(i) = gradient(i, bc);
-        return bc;
+        return j;
     }
 
-    inline const Vector gradient(unsigned bi, const Vector& p) const
-    {
-        assert(bi < 6);
-        return gradient(bi, barycentricCoordinates(p));
-    }
-
-    inline const Vector gradient(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline const Vector gradient(unsigned bi,
+                                           const BarycentricCoord& bc) const
     {
         assert(bi < 6);
         if(bi < 3)
@@ -119,9 +105,42 @@ public:
         return Base::gradient(bi, bc) * ((2 * bc(bi) - 1) / m_dldn(bi, bi));
     }
 
+    MULTIARCH inline void hessian(const BarycentricCoord& bc, Hessian* h) const
+    {
+        for(unsigned i = 0; i < 6; ++i)
+            h[i] = hessian(i, bc);
+    }
+
+    MULTIARCH inline Hessian hessian(unsigned bi,
+                                     const BarycentricCoord& bc) const
+    {
+        Hessian h;
+        for(int d0 = 0; d0 < 2; ++d0)
+        {
+            for(int d1 = d0; d1 < 2; ++d1)
+            {
+                h(d0, d1) = 2.
+                          * Base::jacobian()(bi%3, d0)
+                          * Base::jacobian()(bi%3, d1);
+            }
+        }
+        h(1, 0) = h(0, 1);
+
+        if(bi < 3)
+        {
+            unsigned bi1 = (bi + 1) % 3;
+            unsigned bi2 = (bi + 2) % 3;
+            return h
+                 + m_dldn(bi, bi1) * hessian(bi1 + 3, bc)
+                 + m_dldn(bi, bi2) * hessian(bi2 + 3, bc);
+        }
+
+        bi -= 3;
+        return h / m_dldn(bi, bi);
+    }
 
 protected:
-    void computeFromPoints()
+    MULTIARCH inline void computeFromPoints()
     {
         Matrix2x3 vs;
         for(int i = 0; i < 3; ++i)

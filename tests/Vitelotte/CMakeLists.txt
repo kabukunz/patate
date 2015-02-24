@@ -4,11 +4,13 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 # Vitelotte                                                                    #
 ################################################################################
 
+add_multi_test(element.cpp)
+
 #############################################
-set(fv_SRCS
-    fv.cpp
-)
-add_executable(fv ${fv_SRCS})
+#set(fv_SRCS
+#    fv.cpp
+#)
+#add_executable(fv ${fv_SRCS})
 
 
 #############################################

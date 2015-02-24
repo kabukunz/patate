@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+#include "../../common/defines.h"
+
 #include "linearElement.h"
 
 
@@ -25,24 +27,26 @@ public:
     typedef LinearElement<Scalar> Base;
 
     typedef Eigen::Matrix<Scalar, 2, 1> Vector;
+    typedef Eigen::Matrix<Scalar, 9, 1> Values;
+    typedef Eigen::Matrix<Scalar, 9, 2> Jacobian;
+    typedef Eigen::Matrix<Scalar, 2, 2> Hessian;
+
+    typedef Eigen::Matrix<Scalar, 3, 1> BarycentricCoord;
+
+protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
-    typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
-
-    typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
-
     typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
-    typedef Eigen::Matrix<Scalar, 9, 2> Vector9x2;
-
 
 public:
-    inline FVElement(const Vector* pts)
+    MULTIARCH inline FVElement(const Vector* pts)
         : Base(pts)
     {
         computeFromPoints();
     }
 
-    inline FVElement(const Vector& p0, const Vector& p1, const Vector& p2)
+    MULTIARCH inline FVElement(
+            const Vector& p0, const Vector& p1, const Vector& p2)
         : Base(p0, p1, p2)
     {
         computeFromPoints();
@@ -51,18 +55,18 @@ public:
     using Base::point;
     using Base::doubleArea;
 
-    inline Scalar edgeLength(unsigned ei) const
+    MULTIARCH inline Scalar edgeLength(unsigned ei) const
     {
         assert(ei < 3);
         return m_eLen(ei);
     }
 
-    inline const Matrix3& dldn() const
+    MULTIARCH inline const Matrix3& dldn() const
     {
         return m_dldn;
     }
 
-    inline Scalar dldn(unsigned li, unsigned ni) const
+    MULTIARCH inline Scalar dldn(unsigned li, unsigned ni) const
     {
         assert(li < 3 && ni < 3);
         return m_dldn(li, ni);
@@ -70,15 +74,9 @@ public:
 
     using Base::barycentricCoordinates;
 
-    inline Vector9 eval(const Vector& p) const
+    MULTIARCH inline Values eval(const BarycentricCoord& bc) const
     {
-        Vector3 bc = barycentricCoordinates(p);
-        return eval(bc);
-    }
-
-    inline Vector9 eval(const Vector3& bc) const
-    {
-        Vector9 eb;
+        Values eb;
         Scalar bubble = _bubble(bc);
 
         for(int i = 0; i < 3; ++i)
@@ -103,14 +101,7 @@ public:
         return eb;
     }
 
-    Scalar eval(unsigned bi, const Vector& p) const
-    {
-        assert(bi < 9);
-        Vector3 bc = barycentricCoordinates(p);
-        return eval(bi, bc);
-    }
-
-    inline Scalar eval(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline Scalar eval(unsigned bi, const BarycentricCoord& bc) const
     {
         assert(bi < 9);
 
@@ -145,15 +136,9 @@ public:
         return v;
     }
 
-    inline Vector9x2 jacobian(const Vector& p) const
+    MULTIARCH inline Jacobian jacobian(const BarycentricCoord& bc) const
     {
-        Vector3 bc = barycentricCoordinates(p);
-        return jacobian(bc);
-    }
-
-    inline Vector9x2 jacobian(const Vector3& bc) const
-    {
-        Vector9x2 grad;
+        Jacobian grad;
         Vector bubbleGradient = _bubbleGradient(bc);
 
         for(int i = 0; i < 3; ++i)
@@ -173,20 +158,14 @@ public:
             Vector v2 = grad.row(i2 + 6);
             grad.row(i) = _vertexSubExprGradient(i, bc)
                         + 3 * bubbleGradient
-                        + _vertexGradientFactor(i, i1) * v1 //grad.row(i1 + 6)
-                        + _vertexGradientFactor(i, i2) * v2; //grad.row(i2 + 6);
+                        + _vertexGradientFactor(i, i1) * v1
+                        + _vertexGradientFactor(i, i2) * v2;
         }
 
         return grad;
     }
 
-    inline Vector gradient(unsigned bi, const Vector& p) const
-    {
-        Vector3 bc = barycentricCoordinates(p);
-        return gradient(bi, bc);
-    }
-
-    inline Vector gradient(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline Vector gradient(unsigned bi, const BarycentricCoord& bc) const
     {
         assert(bi < 9);
 
@@ -221,13 +200,13 @@ public:
         return grad;
     }
 
-    inline void hessian(const Vector3& bc, Matrix2* h) const
+    MULTIARCH inline void hessian(const BarycentricCoord& bc, Hessian* h) const
     {
-        Matrix2 bubbleHessian = _bubbleHessian(bc);
+        Hessian bubbleHessian = _bubbleHessian(bc);
 
         for(int i = 0; i < 3; ++i)
         {
-            Matrix2 gseHessian = _gradientSubExprHessian(i, bc);
+            Hessian gseHessian = _gradientSubExprHessian(i, bc);
             h[i + 3] = 4 * _edgeSubExprHessian(i, bc)
                      + 4 * gseHessian
                      - 12 * bubbleHessian;
@@ -238,8 +217,8 @@ public:
         {
             unsigned i1 = (i+1) % 3;
             unsigned i2 = (i+2) % 3;
-            Matrix2 v1 = h[i1 + 6];
-            Matrix2 v2 = h[i2 + 6];
+            Hessian& v1 = h[i1 + 6];
+            Hessian& v2 = h[i2 + 6];
             h[i] = _vertexSubExprHessian(i, bc)
                  + 3 * bubbleHessian
                  + _vertexGradientFactor(i, i1) * v1
@@ -247,22 +226,12 @@ public:
         }
     }
 
-    inline void hessian(const Vector& p, Matrix2* h) const
-    {
-        hessian(barycentricCoordinates(p), h);
-    }
-
-    inline Matrix2 hessian(unsigned bi, const Vector& p) const
-    {
-        Vector3 bc = barycentricCoordinates(p);
-        return hessian(bi, bc);
-    }
-
-    inline Matrix2 hessian(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline Hessian hessian(unsigned bi,
+                                     const BarycentricCoord& bc) const
     {
         assert(bi < 9);
 
-        Matrix2 h;
+        Hessian h;
         unsigned i = bi % 3;
         switch(bi/3)
         {
@@ -295,31 +264,32 @@ public:
 
 
 public:
-    inline Scalar _gradientFactor(unsigned bi) const
+    MULTIARCH inline Scalar _gradientFactor(unsigned bi) const
     {
         return - m_2delta / edgeLength(bi);
     }
 
-    inline Scalar _vertexGradientFactor(unsigned bi, unsigned ei) const
+    MULTIARCH inline Scalar _vertexGradientFactor(unsigned bi,
+                                                  unsigned ei) const
     {
         return dldn(bi, ei) + dldn(ei, ei) / 2;
     }
 
-    inline Scalar _bubble(const Vector3& bc) const
+    MULTIARCH inline Scalar _bubble(const BarycentricCoord& bc) const
     {
         return bc.prod();
     }
 
-    inline Vector _bubbleGradient(const Vector3& bc) const
+    MULTIARCH inline Vector _bubbleGradient(const BarycentricCoord& bc) const
     {
         return Base::jacobian().row(0) * bc(1) * bc(2)
              + Base::jacobian().row(1) * bc(2) * bc(0)
              + Base::jacobian().row(2) * bc(0) * bc(1);
     }
 
-    inline Matrix2 _bubbleHessian(const Vector3& bc) const
+    MULTIARCH inline Hessian _bubbleHessian(const BarycentricCoord& bc) const
     {
-        Matrix2 h;
+        Hessian h;
         for(int d0 = 0; d0 < 2; ++d0)
         {
             for(int d1 = d0; d1 < 2; ++d1)
@@ -336,19 +306,22 @@ public:
         return h;
     }
 
-    inline Scalar _vertexSubExpr(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Scalar _vertexSubExpr(unsigned i,
+                                           const BarycentricCoord& bc) const
     {
         return bc(i) * (bc(i) - .5) * (bc(i) + 1);
     }
 
-    inline Vector _vertexSubExprGradient(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Vector _vertexSubExprGradient(
+            unsigned i,const BarycentricCoord& bc) const
     {
         return Base::jacobian().row(i) * (3 * bc[i] * bc[i] + bc[i] - .5);
     }
 
-    inline Matrix2 _vertexSubExprHessian(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Hessian _vertexSubExprHessian(
+            unsigned i, const BarycentricCoord& bc) const
     {
-        Matrix2 h;
+        Hessian h;
         for(int d0 = 0; d0 < 2; ++d0)
         {
             for(int d1 = d0; d1 < 2; ++d1)
@@ -362,12 +335,14 @@ public:
         return h;
     }
 
-    inline Scalar _edgeSubExpr(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Scalar _edgeSubExpr(unsigned i,
+                                         const BarycentricCoord& bc) const
     {
         return bc((i+1)%3) * bc((i+2)%3);
     }
 
-    inline Vector _edgeSubExprGradient(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Vector _edgeSubExprGradient(
+            unsigned i, const BarycentricCoord& bc) const
     {
         unsigned i1 = (i+1) % 3;
         unsigned i2 = (i+2) % 3;
@@ -375,11 +350,12 @@ public:
              + Base::jacobian().row(i2) * bc(i1);
     }
 
-    inline Matrix2 _edgeSubExprHessian(unsigned i, const Vector3& /*bc*/) const
+    MULTIARCH inline Hessian _edgeSubExprHessian(
+            unsigned i, const BarycentricCoord& /*bc*/) const
     {
         unsigned i1 = (i+1) % 3;
         unsigned i2 = (i+2) % 3;
-        Matrix2 h;
+        Hessian h;
         for(int d0 = 0; d0 < 2; ++d0)
         {
             for(int d1 = d0; d1 < 2; ++d1)
@@ -392,19 +368,22 @@ public:
         return h;
     }
 
-    inline Scalar _gradientSubExpr(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Scalar _gradientSubExpr(unsigned i,
+                                             const BarycentricCoord& bc) const
     {
         return bc(i) * (2.*bc(i) - 1.) * (bc(i) - 1.);
     }
 
-    inline Vector _gradientSubExprGradient(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Vector _gradientSubExprGradient(
+            unsigned i, const BarycentricCoord& bc) const
     {
         return Base::jacobian().row(i) * (6 * bc(i) * bc(i) - 6 * bc(i) + 1);
     }
 
-    inline Matrix2 _gradientSubExprHessian(unsigned i, const Vector3& bc) const
+    MULTIARCH inline Hessian _gradientSubExprHessian(
+            unsigned i, const BarycentricCoord& bc) const
     {
-        Matrix2 h;
+        Hessian h;
         for(int d0 = 0; d0 < 2; ++d0)
         {
             for(int d1 = d0; d1 < 2; ++d1)
@@ -419,7 +398,7 @@ public:
     }
 
 protected:
-    void computeFromPoints()
+    MULTIARCH inline void computeFromPoints()
     {
         Matrix2x3 vs;
         for(int i = 0; i < 3; ++i)
@@ -427,12 +406,6 @@ protected:
 
         for(int i = 0; i < 3; ++i)
             m_eLen(i) = vs.col(i).norm();
-
-//        m_rot.row(0) = vs.col(2) / edgeLength(2);
-//        m_rot(1, 0) = -m_rot(0, 1);
-//        m_rot(1, 1) =  m_rot(0, 0);
-
-//        Matrix2x3 pts = m_rot * m_points;
 
         for(int ni = 0; ni < 3; ++ni)
             for(int li = 0; li < 3; ++li)
@@ -445,8 +418,6 @@ protected:
     using Base::m_points;
     using Base::m_2delta;
     using Base::m_lbf;
-
-//    Matrix2 m_rot;
 
     Vector3 m_eLen;
     Matrix3 m_dldn;

@@ -10,6 +10,8 @@
 
 #include <Eigen/Core>
 
+#include "../../common/defines.h"
+
 
 namespace Vitelotte
 {
@@ -22,8 +24,13 @@ public:
     typedef _Scalar Scalar;
 
     typedef Eigen::Matrix<Scalar, 2, 1> Vector;
-    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
+    typedef Eigen::Matrix<Scalar, 3, 1> Values;
+    typedef Eigen::Matrix<Scalar, 3, 2> Jacobian;
+    typedef Eigen::Matrix<Scalar, 2, 2> Hessian;
 
+    typedef Eigen::Matrix<Scalar, 3, 1> BarycentricCoord;
+
+protected:
     typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
@@ -31,14 +38,15 @@ public:
     typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
 
 public:
-    inline LinearElement(const Vector* pts)
+    MULTIARCH inline LinearElement(const Vector* pts)
     {
         for(unsigned i = 0; i < 3; ++i)
             m_points.col(i) = pts[i];
         computeFromPoints();
     }
 
-    inline LinearElement(const Vector& p0, const Vector& p1, const Vector& p2)
+    MULTIARCH inline LinearElement(
+            const Vector& p0, const Vector& p1, const Vector& p2)
     {
         m_points.col(0) = p0;
         m_points.col(1) = p1;
@@ -47,65 +55,47 @@ public:
         computeFromPoints();
     }
 
-    inline Vector point(unsigned pi, unsigned offset=0) const
+    MULTIARCH inline Vector point(unsigned pi, unsigned offset=0) const
     {
         assert(pi < 3 && offset < 3);
         return m_points.col((pi + offset) % 3);
     }
 
-    inline Scalar doubleArea() const { return m_2delta; }
+    MULTIARCH inline Scalar doubleArea() const { return m_2delta; }
 
-    inline Vector3 barycentricCoordinates(const Vector& p) const
+    MULTIARCH inline BarycentricCoord barycentricCoordinates(
+            const Vector& p) const
     {
-        return m_lbf * (Vector3() << p, 1).finished();
+        return m_lbf * (BarycentricCoord() << p, 1).finished();
     }
 
-    inline Vector3 eval(const Vector& p) const
-    {
-        return barycentricCoordinates(p);
-    }
-
-    inline Vector3 eval(const Vector3& bc) const
+    MULTIARCH inline Values eval(const BarycentricCoord& bc) const
     {
         return bc;
     }
 
-    inline Scalar eval(unsigned bi, const Vector& p) const
-    {
-        assert(bi < 3);
-        return m_lbf.row(bi) * (Vector3() << p, 1).finished();
-    }
-
-    inline Scalar eval(unsigned bi, const Vector3& bc) const
+    MULTIARCH inline Scalar eval(unsigned bi, const BarycentricCoord& bc) const
     {
         assert(bi < 3);
         return bc(bi);
     }
 
-    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector& /*p*/) const
+    MULTIARCH inline const Eigen::Block<const Matrix3, 3, 2> jacobian(
+            const BarycentricCoord& /*bc*/ = BarycentricCoord()) const
     {
         return m_lbf.template block<3, 2>(0, 0);
     }
 
-    inline const Eigen::Block<const Matrix3, 3, 2> jacobian(const Vector3& /*bc*/ = Vector3()) const
-    {
-        return m_lbf.template block<3, 2>(0, 0);
-    }
-
-    inline const Vector gradient(unsigned bi, const Vector& /*p*/) const
-    {
-        assert(bi < 3);
-        return m_lbf.template block<1, 2>(bi, 0);
-    }
-
-    inline const Vector gradient(unsigned bi, const Vector3& /*bc*/ = Vector3()) const
+    MULTIARCH inline const Vector gradient(
+            unsigned bi,
+            const BarycentricCoord& /*bc*/ = BarycentricCoord()) const
     {
         assert(bi < 3);
         return m_lbf.template block<1, 2>(bi, 0);
     }
 
 protected:
-    void computeFromPoints()
+    MULTIARCH inline void computeFromPoints()
     {
         m_2delta = (point(1).x() - point(0).x()) * (point(2).y() - point(1).y())
                  - (point(1).y() - point(0).y()) * (point(2).x() - point(1).x());

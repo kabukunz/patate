@@ -138,7 +138,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         Vector3 bc((pi == 0)? 0: .5,
                    (pi == 1)? 0: .5,
                    (pi == 2)? 0: .5);
-        typename Elem::Matrix2 hessians[9];
+        typename Elem::Hessian hessians[9];
         elem.hessian(bc, hessians);
 
         for(int bi = 0; bi < 9; ++bi)
