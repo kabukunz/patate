@@ -5,6 +5,7 @@
 #include <QAction>
 #include <QPushButton>
 #include <QColorDialog>
+#include <QIcon>
 
 #include "document.h"
 #include "editor.h"
@@ -32,6 +33,15 @@ MainWindow::MainWindow(QWidget* parent)
       m_editModeGroup(0),
       m_editCurvesAction(0),
       m_editNodesAction(0),
+      m_setValueTypeGroup(0),
+      m_setValueNoConitunous(0),
+      m_setValueDiscontinuous(0),
+      m_setDerivTypeGroup(0),
+      m_setDerivContinuous(0),
+      m_setDerivDiscontinuous(0),
+      m_setDerivFlatLeft(0),
+      m_setDerivFlatRight(0),
+      m_setDerivFlat(0),
       m_wireframeAction(0),
       m_showMeshGroup(0),
       m_showBaseMeshAction(0),
@@ -57,6 +67,10 @@ MainWindow::MainWindow(QWidget* parent)
     m_valueEditor->setDocument(m_document);
     connect(m_document, SIGNAL(meshChanged()),
             this, SLOT(handleMeshChange()));
+    connect(m_document, SIGNAL(meshUpdated()),
+            this, SLOT(updateConstraintTypeActions()));
+    connect(m_document, SIGNAL(selectionChanged()),
+            this, SLOT(updateConstraintTypeActions()));
 
     connect(this, SIGNAL(currentColorChanged(QColor)),
             m_editor, SLOT(setPaintColor(QColor)));
@@ -119,6 +133,33 @@ MainWindow::MainWindow(QWidget* parent)
     m_editModeGroup->addAction(m_editNodesAction);
     m_editMenu->addAction(m_editNodesAction);
 
+    m_editMenu->addSeparator();
+
+    m_setValueTypeGroup = new QActionGroup(this);
+    connect(m_setValueTypeGroup, SIGNAL(triggered(QAction*)),
+            this, SLOT(setConstraintType(QAction*)));
+
+    m_setDerivTypeGroup = new QActionGroup(this);
+    connect(m_setDerivTypeGroup, SIGNAL(triggered(QAction*)),
+            this, SLOT(setConstraintType(QAction*)));
+
+    setupGroupAction(&m_setValueNoConitunous,         m_setValueTypeGroup,
+                     m_editMenu, "Continuous value", ":/icons/consNoTear.png");
+    setupGroupAction(&m_setValueDiscontinuous,           m_setValueTypeGroup,
+                     m_editMenu, "Discontinuous value", ":/icons/consTear.png");
+
+    m_editMenu->addSeparator();
+
+    setupGroupAction(&m_setDerivContinuous,      m_setDerivTypeGroup,
+                     m_editMenu, "Continuous gradient", ":/icons/consDerivNoTear.png");
+    setupGroupAction(&m_setDerivDiscontinuous,        m_setDerivTypeGroup,
+                     m_editMenu, "Discontinuous gradient", ":/icons/consDerivTear.png");
+    setupGroupAction(&m_setDerivFlatLeft,    m_setDerivTypeGroup,
+                     m_editMenu, "Flat left", ":/icons/consDerivFlatLeft.png");
+    setupGroupAction(&m_setDerivFlatRight,   m_setDerivTypeGroup,
+                     m_editMenu, "Flat right", ":/icons/consDerivFlatRight.png");
+    setupGroupAction(&m_setDerivFlat,        m_setDerivTypeGroup,
+                     m_editMenu, "Flat", ":/icons/consDerivFlat.png");
 
     // View Menu
     m_viewMenu = menuBar()->addMenu("View");
@@ -170,6 +211,19 @@ MainWindow::MainWindow(QWidget* parent)
     connect(m_colorButton, SIGNAL(clicked()),
             this, SLOT(pickColor()));
 
+    m_mainToolBar->addSeparator();
+
+    m_mainToolBar->addAction(m_setValueNoConitunous);
+    m_mainToolBar->addAction(m_setValueDiscontinuous);
+
+    m_mainToolBar->addSeparator();
+
+    m_mainToolBar->addAction(m_setDerivContinuous);
+    m_mainToolBar->addAction(m_setDerivDiscontinuous);
+    m_mainToolBar->addAction(m_setDerivFlatLeft);
+    m_mainToolBar->addAction(m_setDerivFlatRight);
+    m_mainToolBar->addAction(m_setDerivFlat);
+
     updateInteractionEnabled();
 }
 
@@ -213,6 +267,7 @@ void MainWindow::handleMeshChange()
     setEditMode((mesh.nPointConstraints() || mesh.nCurves())?
                     EDIT_CURVES: EDIT_NODES);
     updateInteractionEnabled();
+    updateConstraintTypeActions();
 }
 
 
@@ -261,5 +316,133 @@ void MainWindow::pickColor()
     if(color.isValid())
     {
         setCurrentColor(color);
+    }
+}
+
+
+void MainWindow::updateConstraintTypeActions()
+{
+    Mesh& mesh = m_document->mesh();
+
+    if(m_document->selection().isPointConstraint())
+    {
+        m_setValueTypeGroup->setEnabled(false);
+    }
+    else if(m_document->selection().isCurve())
+    {
+        m_setValueTypeGroup->setEnabled(true);
+        m_setDerivTypeGroup->setEnabled(true);
+
+        Mesh::Curve c = m_document->selection().curve();
+        if(mesh.valueTear(c))   m_setValueDiscontinuous->setChecked(true);
+        else                    m_setValueNoConitunous->setChecked(true);
+
+        bool gtear = mesh.gradientTear(c);
+        bool cleft = !mesh.valueGradient(c, Mesh::GRADIENT_LEFT).empty();
+        bool cright = !mesh.valueGradient(c, Mesh::GRADIENT_RIGHT).empty();
+//        std::cout << "plop: " << ((gtear << 2) | (cright << 1) | cleft) << ": "
+//                  << (gtear? "gDisc": "gCont") << ", "
+//                  << (cleft? "consL": "freeL") << ", "
+//                  << (cright? "consR": "freeR") << "\n";
+        switch((gtear << 2) | (cright << 1) | cleft)
+        {
+        case 0: m_setDerivContinuous->setChecked(true); break;
+        case 1: m_setDerivFlat->setChecked(true); break;
+        case 2: m_setDerivContinuous->setChecked(true); break;
+        case 3: m_setDerivFlat->setChecked(true); break;
+        case 4: m_setDerivDiscontinuous->setChecked(true); break;
+        case 5: m_setDerivFlatLeft->setChecked(true); break;
+        case 6: m_setDerivFlatRight->setChecked(true); break;
+        case 7: m_setDerivFlat->setChecked(true); break;
+        }
+    }
+    else
+    {
+        m_setValueTypeGroup->setEnabled(false);
+        m_setDerivTypeGroup->setEnabled(false);
+    }
+}
+
+
+void MainWindow::setConstraintType(QAction* action)
+{
+    assert(m_document->selection().isCurve());
+    Mesh::Curve c = m_document->selection().curve();
+    Mesh& mesh = m_document->mesh();
+
+    bool prevVTear = mesh.valueTear(c);
+    bool prevGTear = mesh.gradientTear(c);
+    bool prevCLeft = !mesh.valueGradient(c, Mesh::GRADIENT_LEFT).empty();
+    bool prevCRight = !mesh.valueGradient(c, Mesh::GRADIENT_RIGHT).empty();
+
+    bool nextVTear = m_setValueDiscontinuous->isChecked();
+    bool nextGTear = !(m_setDerivContinuous->isChecked() || m_setDerivFlat->isChecked());
+    bool nextCLeft = m_setDerivFlatLeft->isChecked() || m_setDerivFlat->isChecked();
+    bool nextCRight = m_setDerivFlatRight->isChecked() || m_setDerivFlat->isChecked();
+
+    bool doSetFlags = (prevVTear != nextVTear) || (prevGTear != nextGTear);
+    bool doSetValueRight = prevVTear && !nextVTear;
+    bool doSetDerivLeft = prevCLeft != nextCLeft;
+    bool doSetDerivRight = prevCRight != nextCRight;
+    unsigned nOp = doSetFlags + doSetValueRight + doSetDerivLeft + doSetDerivRight;
+
+    if(nOp == 0) return;
+
+    if(nOp != 1) m_document->undoStack()->beginMacro("Set curve type");
+
+    // It is important to set gradients before flags, because Mesh::setFlags
+    // modify gradients.
+    if(doSetValueRight)
+    {
+//        std::cout << "Set value right\n";
+        m_document->undoStack()->push(new SetGradient(
+                m_document, c, Mesh::VALUE_RIGHT,
+                mesh.valueGradient(c, Mesh::GRADIENT_LEFT)));
+    }
+
+    Mesh::ValueGradient flatGradient;
+    flatGradient[0] = Mesh::NodeValue::Zero();
+    if(doSetDerivLeft)
+    {
+//        std::cout << "Set deriv left\n";
+        m_document->undoStack()->push(new SetGradient(
+                m_document, c, Mesh::GRADIENT_LEFT, nextCLeft?
+                        flatGradient: Mesh::ValueGradient()));
+    }
+    if(doSetDerivRight)
+    {
+//        std::cout << "Set deriv right\n";
+        m_document->undoStack()->push(new SetGradient(
+                m_document, c, Mesh::GRADIENT_RIGHT, nextCRight?
+                        flatGradient: Mesh::ValueGradient()));
+    }
+
+    if(doSetFlags)
+    {
+        unsigned flags = (nextVTear? Mesh::VALUE_TEAR: 0) | (nextGTear? Mesh::GRADIENT_TEAR: 0);
+//        std::cout << "Set flags: " << flags << "\n";
+        m_document->undoStack()->push(new SetCurveFlags(m_document, c, flags));
+    }
+
+    if(nOp != 1) m_document->undoStack()->endMacro();
+
+    m_document->solve();
+}
+
+
+void MainWindow::setupGroupAction(QAction** act, QActionGroup* group,
+                                  QMenu* menu, const char* name, const char* icon)
+{
+    (*act) = new QAction(name, this);
+    (*act)->setCheckable(true);
+    (*act)->setChecked(false);
+    group->addAction(*act);
+    menu->addAction(*act);
+
+    if(icon)
+    {
+        QIcon iconObj(icon);
+        assert(!iconObj.isNull());
+        (*act)->setIcon(iconObj);
     }
 }

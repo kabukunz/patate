@@ -1,0 +1,18 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+	<file>icons/consNoTear.svg</file>
+	<file>icons/consTear.svg</file>
+	<file>icons/consDerivNoTear.svg</file>
+	<file>icons/consDerivTear.svg</file>
+	<file>icons/consDerivFlatLeft.svg</file>
+	<file>icons/consDerivFlatRight.svg</file>
+	<file>icons/consDerivFlat.svg</file>
+	<file>icons/consNoTear.png</file>
+	<file>icons/consTear.png</file>
+	<file>icons/consDerivNoTear.png</file>
+	<file>icons/consDerivTear.png</file>
+	<file>icons/consDerivFlatLeft.png</file>
+	<file>icons/consDerivFlatRight.png</file>
+	<file>icons/consDerivFlat.png</file>
+</qresource>
+</RCC>

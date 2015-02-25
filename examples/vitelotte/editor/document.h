@@ -106,7 +106,6 @@ public:
     Mesh::Curve closestCurve(const Eigen::Vector2f& p, float* sqrDist=0) const;
 
     void markDirty(unsigned flags);
-    void solve();
 
     Mesh& getMesh(MeshType type);
     const Mesh& getMesh(MeshType type) const;
@@ -130,6 +129,8 @@ public:
     QUndoStack* undoStack();
 
 public slots:
+    void solve();
+
     void loadMesh(const std::string& filename);
 
     void openLoadMeshDialog();
@@ -268,6 +269,7 @@ class AddRemoveGradientStop : public QUndoCommand
 public:
     typedef Document::Mesh::Curve Curve;
     typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::ValueGradient ValueGradient;
 
 public:
     // Add
@@ -294,6 +296,31 @@ private:
 };
 
 
+class SetGradient : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::Curve Curve;
+    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::ValueGradient ValueGradient;
+
+public:
+    SetGradient(Document* doc, Curve curve, unsigned which, const ValueGradient& grad);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    void setGradient(const ValueGradient& grad);
+
+private:
+    Document* m_document;
+    Curve m_curve;
+    unsigned m_which;
+    ValueGradient m_prevGrad;
+    ValueGradient m_newGrad;
+};
+
+
 class SetPointConstraint : public QUndoCommand
 {
 public:
@@ -315,6 +342,30 @@ private:
     PointConstraint m_pc;
     NodeValue m_prevValue;
     NodeValue m_newValue;
+};
+
+
+class SetCurveFlags : public QUndoCommand
+{
+public:
+    typedef Document::Mesh Mesh;
+    typedef Mesh::Curve Curve;
+
+public:
+    SetCurveFlags(Document* doc, Curve curve,
+                      unsigned flags);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    void setFlags(unsigned flags);
+
+private:
+    Document* m_document;
+    Curve m_curve;
+    unsigned m_prevFlags;
+    unsigned m_newFlags;
 };
 
 

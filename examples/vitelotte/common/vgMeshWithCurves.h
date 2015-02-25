@@ -12,8 +12,10 @@ class VGMeshWithCurves : public Vitelotte::VGMesh<float>
 public:
     typedef Vitelotte::VGMesh<float> Base;
 
+    typedef Base::Scalar Scalar;
     typedef Base::Vector Vector;
     typedef Base::NodeValue NodeValue;
+    typedef Eigen::Matrix<Scalar, Base::Chan, Base::Dim> NodeGradient;
 
     // TODO: rename it PicewiseLinearFunction ?
     typedef std::map<float, NodeValue> ValueGradient;
@@ -45,12 +47,14 @@ public:
         ValueGradient gradient[4];
     };
 
+    /// \brief A special NodeValue used for unconstrained gradient.
+    static const NodeGradient UnconstrainedGradient;
+
     struct PointConstraintInfo
     {
         Vertex vertex;
         NodeValue value;
-        NodeValue xGradient;
-        NodeValue yGradient;
+        NodeGradient gradient;
     };
 
     enum
@@ -112,9 +116,12 @@ public:
 
     inline unsigned flags(Curve c) const { return m_curves.at(c.idx()).flags; }
     void setFlags(Curve c, unsigned flags);
+    void setFlagsRaw(Curve c, unsigned flags);
 
     const ValueGradient& valueGradient(Curve c, unsigned which) const;
           ValueGradient& valueGradient(Curve c, unsigned which);
+    const ValueGradient& valueGradientRaw(Curve c, unsigned which) const;
+          ValueGradient& valueGradientRaw(Curve c, unsigned which);
 
 
     inline PointConstraint  pointConstraint(Vertex v) const
@@ -130,21 +137,17 @@ public:
         { return !isnan(m_pointConstraints[pc.idx()].value(0)); }
     using Base::isGradientConstraint;
     inline bool isGradientConstraint(PointConstraint pc) const
-        { return !isnan(m_pointConstraints[pc.idx()].xGradient(0)); }
+        { return !isnan(m_pointConstraints[pc.idx()].gradient(0, 0)); }
 
     inline const NodeValue& value(PointConstraint pc) const
         { return m_pointConstraints[pc.idx()].value; }
     inline       NodeValue& value(PointConstraint pc)
         { return m_pointConstraints[pc.idx()].value; }
 
-    inline const NodeValue& xGradient(PointConstraint pc) const
-        { return m_pointConstraints[pc.idx()].xGradient; }
-    inline       NodeValue& xGradient(PointConstraint pc)
-        { return m_pointConstraints[pc.idx()].xGradient; }
-    inline const NodeValue& yGradient(PointConstraint pc) const
-        { return m_pointConstraints[pc.idx()].yGradient; }
-    inline       NodeValue& yGradient(PointConstraint pc)
-        { return m_pointConstraints[pc.idx()].yGradient; }
+    inline const NodeGradient& gradient(PointConstraint pc) const
+        { return m_pointConstraints[pc.idx()].gradient; }
+    inline       NodeGradient& gradient(PointConstraint pc)
+        { return m_pointConstraints[pc.idx()].gradient; }
 
     inline unsigned nPointConstraints() const { return m_pointConstraints.size(); }
     PointConstraint addPointConstraint();

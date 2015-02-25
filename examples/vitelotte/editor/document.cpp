@@ -1,6 +1,7 @@
 #include <limits>
 
 #include <QFileDialog>
+#include <QTime>
 
 #include "Patate/vitelotte_io.h"
 
@@ -128,7 +129,8 @@ Document::Document(QObject *parent)
       m_fvSolver(&m_solvedMesh),
       m_undoStack(new QUndoStack(this))
 {
-
+    connect(m_undoStack, SIGNAL(indexChanged(int)),
+            this, SLOT(solve()));
 }
 
 
@@ -308,55 +310,6 @@ void Document::markDirty(unsigned flags)
 }
 
 
-void Document::solve()
-{
-    if(m_dirtyFlags == CLEAN)
-        return;
-
-    std::cout << "Dirty flags: " << m_dirtyFlags << ", " << (m_dirtyFlags & DIRTY_LEVEL_MASK) << "\n";
-
-    if(m_dirtyFlags & DIRTY_CURVES_FLAG)
-        m_mesh.setNodesFromCurves();
-
-    m_finalizedMesh = m_mesh;
-    m_finalizedMesh.finalize();
-    if(connectivityChanged())
-        markDirty(DIRTY_CONNECTIVITY);
-
-    m_solvedMesh = m_finalizedMesh;
-    //m_solvedMesh.compactNodes();
-
-    if(m_solvedMesh.hasUnknowns())
-    {
-        unsigned dirtyLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
-
-        std::cout << "Solve level: " << dirtyLevel << "\n";
-        // TODO: m_fvSolver.clearErrors();
-        switch(dirtyLevel)
-        {
-        case DIRTY_CONNECTIVITY:
-            m_fvSolver.build();
-        case DIRTY_NODE_TYPE:
-            m_fvSolver.sort();
-        case DIRTY_NODE_VALUE:
-            m_fvSolver.solve();
-        }
-
-        if(m_fvSolver.status() == FVElement::STATUS_WARNING)
-        {
-            std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
-        }
-        else if(m_fvSolver.status() == FVElement::STATUS_ERROR)
-        {
-            std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
-        }
-    }
-    m_dirtyFlags = CLEAN;
-
-    emit meshUpdated();
-}
-
-
 Document::Mesh& Document::getMesh(MeshType type)
 {
     switch(type)
@@ -473,6 +426,65 @@ void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
     }
     else
         undoStack()->push(new SetNodeValue(this, n, value, allowMerge));
+}
+
+
+void Document::solve()
+{
+    if(m_dirtyFlags == CLEAN)
+        return;
+
+    QTime time;
+    time.start();
+    if(m_dirtyFlags & DIRTY_CURVES_FLAG) {
+        std::cout << "Set nodes from curves...  " << std::flush;
+        m_mesh.setNodesFromCurves();
+        std::cout << time.restart() << " ms" << std::endl;
+    }
+
+    std::cout << "Finalize...               " << std::flush;
+    m_finalizedMesh = m_mesh;
+    m_finalizedMesh.finalize();
+    if(connectivityChanged())
+        markDirty(DIRTY_CONNECTIVITY);
+
+    m_solvedMesh = m_finalizedMesh;
+    //m_solvedMesh.compactNodes();
+
+    std::cout << time.restart() << " ms" << std::endl;
+    if(m_solvedMesh.hasUnknowns())
+    {
+        unsigned dirtyLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
+
+        // TODO: m_fvSolver.clearErrors();
+        switch(dirtyLevel)
+        {
+        case DIRTY_CONNECTIVITY:
+            std::cout << "Build matrix...           " << std::flush;
+            m_fvSolver.build();
+            std::cout << time.restart() << " ms" << std::endl;
+        case DIRTY_NODE_TYPE:
+            std::cout << "Sort matrix...            " << std::flush;
+            m_fvSolver.sort();
+            std::cout << time.restart() << " ms" << std::endl;
+        case DIRTY_NODE_VALUE:
+            std::cout << "Solve...                  " << std::flush;
+            m_fvSolver.solve();
+            std::cout << time.restart() << " ms" << std::endl;
+        }
+
+        if(m_fvSolver.status() == FVElement::STATUS_WARNING)
+        {
+            std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
+        }
+        else if(m_fvSolver.status() == FVElement::STATUS_ERROR)
+        {
+            std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
+        }
+    }
+    m_dirtyFlags = CLEAN;
+
+    emit meshUpdated();
 }
 
 
@@ -648,7 +660,6 @@ void SetNodeValue::undo()
     bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
-    m_document->solve();
 }
 
 
@@ -660,7 +671,6 @@ void SetNodeValue::redo()
     bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
-    m_document->solve();
 }
 
 
@@ -698,14 +708,12 @@ void SetNode::undo()
 {
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_prevNode;
     m_document->markDirty(Document::DIRTY_CONNECTIVITY);
-    m_document->solve();
 }
 
 
 void SetNode::redo(){
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_newNode;
     m_document->markDirty(Document::DIRTY_CONNECTIVITY);
-    m_document->solve();
 }
 
 
@@ -759,7 +767,6 @@ void MoveGradientStop::move(Scalar from, Scalar to)
     grad.insert(std::make_pair(to, color));
 
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
 }
 
 
@@ -789,7 +796,6 @@ void SetGradientStopValue::setColor(const NodeValue& color)
 {
     m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = color;
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
 }
 
 
@@ -832,8 +838,9 @@ void AddRemoveGradientStop::add()
     Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
     grad.insert(std::make_pair(m_pos, m_value));
 
-    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
+    unsigned dFlag = (grad.size() == 1)? Document::DIRTY_NODE_TYPE:
+                                         Document::DIRTY_NODE_VALUE;
+    m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
 }
 
 void AddRemoveGradientStop::remove()
@@ -842,8 +849,44 @@ void AddRemoveGradientStop::remove()
     Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
     grad.erase(m_pos);
 
-    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
+    unsigned dFlag = (grad.size() == 0)? Document::DIRTY_NODE_TYPE:
+                                         Document::DIRTY_NODE_VALUE;
+    m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+SetGradient::SetGradient(Document* doc, Curve curve, unsigned which,
+            const ValueGradient& grad)
+    : m_document(doc),
+      m_curve(curve),
+      m_which(which),
+      m_prevGrad(m_document->mesh().valueGradientRaw(m_curve, m_which)),
+      m_newGrad(grad)
+{
+}
+
+void SetGradient::undo()
+{
+    setGradient(m_prevGrad);
+}
+
+void SetGradient::redo()
+{
+    setGradient(m_newGrad);
+}
+
+void SetGradient::setGradient(const ValueGradient& grad)
+{
+    ValueGradient& cgrad = m_document->mesh().valueGradientRaw(m_curve, m_which);
+    bool prevFree = cgrad.empty();
+    bool newFree = grad.empty();
+    cgrad = grad;
+
+    unsigned dFlag = (prevFree == newFree)? Document::DIRTY_NODE_VALUE:
+                                            Document::DIRTY_NODE_TYPE;
+    m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
 }
 
 
@@ -872,7 +915,36 @@ void SetPointConstraint::setColor(const NodeValue& color)
 {
     m_document->mesh().value(m_pc) = color;
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
-    m_document->solve();
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
+
+SetCurveFlags::SetCurveFlags(Document* doc, Curve curve,
+                  unsigned flags)
+    : m_document(doc),
+      m_curve(curve),
+      m_prevFlags(m_document->mesh().flags(curve)),
+      m_newFlags(flags)
+{
+}
+
+
+void SetCurveFlags::undo()
+{
+    setFlags(m_prevFlags);
+}
+
+
+void SetCurveFlags::redo()
+{
+    setFlags(m_newFlags);
+}
+
+
+void SetCurveFlags::setFlags(unsigned flags)
+{
+    m_document->mesh().setFlagsRaw(m_curve, flags);
+    m_document->markDirty(Document::DIRTY_CONNECTIVITY | Document::DIRTY_CURVES_FLAG);
+}

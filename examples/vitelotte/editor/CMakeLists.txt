@@ -34,6 +34,10 @@ set(vitelotte_editor_SHADERS
 	shaders/frag_lines.glsl
 )
 
+qt5_add_resources(vitelotte_editor_RES
+	editor.qrc
+)
+
 set(vitelotte_editor_SRCS
     ../common/orthographicCamera.cpp
     ../common/glPointRenderer.cpp
@@ -46,6 +50,7 @@ set(vitelotte_editor_SRCS
     valueEditor.cpp
     editor.cpp
     mainWindow.cpp
+    ${vitelotte_editor_RES}
     main.cpp
 )
 

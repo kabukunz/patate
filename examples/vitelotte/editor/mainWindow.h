@@ -44,11 +44,18 @@ protected slots:
     void changeEditMode(QAction* action);
     void setCurrentColor(const QColor& color);
     void pickColor();
+    void updateConstraintTypeActions();
+    void setConstraintType(QAction* action);
 
 signals:
     void editModeChanged(int editMode);
     void currentColorChanged(const QColor& color);
 
+
+private:
+    void setupGroupAction(
+            QAction** act, QActionGroup* group, QMenu* menu, const char* name,
+            const char* icon = 0);
 
 private:
     Document* m_document;
@@ -75,6 +82,15 @@ private:
     QActionGroup* m_editModeGroup;
     QAction* m_editCurvesAction;
     QAction* m_editNodesAction;
+    QActionGroup* m_setValueTypeGroup;
+    QAction* m_setValueNoConitunous;
+    QAction* m_setValueDiscontinuous;
+    QActionGroup* m_setDerivTypeGroup;
+    QAction* m_setDerivContinuous;
+    QAction* m_setDerivDiscontinuous;
+    QAction* m_setDerivFlatLeft;
+    QAction* m_setDerivFlatRight;
+    QAction* m_setDerivFlat;
 
     QAction* m_showConstraintsAction;
     QAction* m_wireframeAction;

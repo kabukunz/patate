@@ -57,11 +57,14 @@ public:
     inline const std::string& errorString() const { return m_elementBuilder.errorString(); }
 
 protected:
-    template<typename SpMatrix, typename Rhs, typename Res>
-    inline void multiSolve(const SpMatrix& _A, const Rhs& _b, Res& _x, unsigned& _nbRanges);
+//    template<typename SpMatrix, typename Rhs, typename Res>
+//    inline void multiSolve(const SpMatrix& _A, const Rhs& _b, Res& _x, unsigned& _nbRanges);
 
-    template<typename SpMatrix>
-    inline void depthFirstOrdering(const SpMatrix& _mat, Eigen::VectorXi& _p, std::vector<int>& _ranges);
+//    template<typename SpMatrix>
+//    inline void depthFirstOrdering(const SpMatrix& _mat, Eigen::VectorXi& _p, std::vector<int>& _ranges);
+
+    template<typename Solver>
+    bool checkSolveError(const Solver& solver) const;
 
 protected:
     Mesh* m_mesh;

@@ -205,7 +205,9 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         if(matrixType == ElementBuilder::MATRIX_SPD)
         {
             Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
+            if(solver.info() != Eigen::Success) return;
             m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+            if(solver.info() != Eigen::Success) return;
         }
         else
         {
@@ -213,22 +215,15 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     //        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
             solver.analyzePattern(L);
             solver.factorize(L);
+            if(checkSolveError(solver)) return;
             m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
+            if(checkSolveError(solver)) return;
         }
 
 //        Eigen::BiCGSTAB<StiffnessMatrix> solver;
 //        solver.compute(L);
-
-
-
 //        std::cout << "BiCGSTAB: " << solver.iterations() << " iters, error = " << solver.error() << "\n";
 
-//        switch(solver.info()) {
-//        case Eigen::Success: std::cout << "Success\n"; break;
-//        case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; break;
-//        case Eigen::NoConvergence: std::cout << "NoConvergence\n"; break;
-//        case Eigen::InvalidInput: std::cout << "InvalidInput\n"; break;
-//        }
     }
 
     for(unsigned i = 0; i < nUnknowns; ++i)
@@ -239,6 +234,26 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     }
 
     m_solved = true;
+}
+
+
+template < class _Mesh, class _ElementBuilder >
+template<typename Solver>
+bool
+FemSolver<_Mesh, _ElementBuilder>::
+    checkSolveError(const Solver& solver) const
+{
+//    switch(solver.info()) {
+//    case Eigen::Success: std::cout << "Success\n"; return false;
+//    case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; return true;
+//    case Eigen::NoConvergence: std::cout << "NoConvergence\n"; return true;
+//    case Eigen::InvalidInput: std::cout << "InvalidInput\n"; return true;
+//    }
+    if(solver.info() != Eigen::Success) {
+        std::cout << solver.lastErrorMessage() << "\n";
+        return true;
+    }
+    return false;
 }
 
 

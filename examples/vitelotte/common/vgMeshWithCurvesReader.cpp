@@ -70,12 +70,10 @@ void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
         m_in.str(m_part);
         m_in.seekg(std::ios_base::beg);
 
-        Mesh::NodeValue& ngx = m_mesh->xGradient(pc);
+        Mesh::NodeGradient& ng = m_mesh->gradient(pc);
         for(int i = 0; i < Mesh::Chan; ++i)
-            m_in >> ngx(i);
-        Mesh::NodeValue& ngy = m_mesh->yGradient(pc);
-        for(int i = 0; i < Mesh::Chan; ++i)
-            m_in >> ngy(i);
+            for(int j = 0; j < Mesh::Dim; ++j)
+                m_in >> ng(i, j);
 
         m_in >> std::ws;
         if(m_in.fail() || !m_in.eof())

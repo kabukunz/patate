@@ -1,6 +1,11 @@
 #include "vgMeshWithCurves.h"
 
 
+const VGMeshWithCurves::NodeGradient VGMeshWithCurves::UnconstrainedGradient =
+        VGMeshWithCurves::NodeGradient::Constant(
+            std::numeric_limits<VGMeshWithCurves::Scalar>::quiet_NaN());
+
+
 VGMeshWithCurves::VGMeshWithCurves()
 {
     m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
@@ -54,11 +59,20 @@ void VGMeshWithCurves::setFlags(Curve c, unsigned flags)
 {
     assert(isValid(c));
 
-    CurveInfo ci = m_curves[c.idx()];
+    CurveInfo& ci = m_curves[c.idx()];
     if(flags & VALUE_TEAR && !(ci.flags & VALUE_TEAR))
         ci.gradient[VALUE_RIGHT] = ci.gradient[VALUE_LEFT];
     if(flags & GRADIENT_TEAR && !(ci.flags & GRADIENT_TEAR))
         ci.gradient[GRADIENT_RIGHT] = ci.gradient[GRADIENT_LEFT];
+    ci.flags = flags;
+}
+
+
+void VGMeshWithCurves::setFlagsRaw(Curve c, unsigned flags)
+{
+    assert(isValid(c));
+
+    CurveInfo& ci = m_curves[c.idx()];
     ci.flags = flags;
 }
 
@@ -92,13 +106,29 @@ VGMeshWithCurves::valueGradient(Curve c, unsigned which)
 }
 
 
+const VGMeshWithCurves::ValueGradient&
+VGMeshWithCurves::valueGradientRaw(Curve c, unsigned which) const
+{
+    return const_cast<VGMeshWithCurves*>(this)->valueGradientRaw(c, which);
+}
+
+
+VGMeshWithCurves::ValueGradient&
+VGMeshWithCurves::valueGradientRaw(Curve c, unsigned which)
+{
+    assert(isValid(c));
+    assert(which < 4);
+
+    return m_curves[c.idx()].gradient[which];
+}
+
+
 VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint()
 {
     PointConstraint pc(nPointConstraints());
     PointConstraintInfo pci;
     pci.value = UnconstrainedNode;
-    pci.xGradient = UnconstrainedNode;
-    pci.yGradient = UnconstrainedNode;
+    pci.gradient = UnconstrainedGradient;
     m_pointConstraints.push_back(pci);
     return pc;
 }
@@ -150,11 +180,9 @@ void VGMeshWithCurves::setNodesFromCurves()
 
         if(isGradientConstraint(pc))
         {
-            Gradient grad;
-            grad << xGradient(pc), yGradient(pc);
             std::cout << "Set gradient constraint: " << position(vx).transpose() << "\n"
-                      << grad << "\n";
-            setGradientConstraint(vertex(pc), grad);
+                      << gradient(pc) << "\n";
+            setGradientConstraint(vertex(pc), gradient(pc));
         }
     }
 
