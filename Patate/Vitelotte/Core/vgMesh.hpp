@@ -231,8 +231,10 @@ void VGMesh<_Scalar, _Dim, _Chan>::
         HalfedgeAroundVertexCirculator hend = hit;
         do
         {
-            m_vertexGradientDummyNodes[*hit] = addNode();
-            m_vertexGradientDummyNodes[oppositeHalfedge(*hit)] = addNode();
+            if(!m_vertexGradientDummyNodes[*hit].isValid())
+                m_vertexGradientDummyNodes[*hit] = addNode();
+            if(!m_vertexGradientDummyNodes[oppositeHalfedge(*hit)].isValid())
+                m_vertexGradientDummyNodes[oppositeHalfedge(*hit)] = addNode();
             ++hit;
         } while(hit != hend);
     }
@@ -695,6 +697,11 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
             if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
                 edgeGradientNode(*hit)    = Node(map[edgeGradientNode(*hit).idx()]);
         }
+    }
+    for(typename HalfedgeNodeMap::iterator it = m_vertexGradientDummyNodes.begin();
+        it != m_vertexGradientDummyNodes.end(); ++it)
+    {
+        it->second = Node(map[it->second.idx()]);
     }
 }
 

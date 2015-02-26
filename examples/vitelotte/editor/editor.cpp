@@ -548,7 +548,7 @@ bool Editor::trySetPointConstraint(const Vector& pos)
     float selDist = 8 / zoom();
 
     if((pcp - pos).squaredNorm() < selDist*selDist) {
-        m_document->undoStack()->push(new SetPointConstraint(
+        m_document->undoStack()->push(new SetPointConstraintValue(
             m_document, pc, m_paintColor));
         return true;
     }

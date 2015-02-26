@@ -321,27 +321,51 @@ private:
 };
 
 
-class SetPointConstraint : public QUndoCommand
+class SetPointConstraintValue : public QUndoCommand
 {
 public:
     typedef Document::Mesh::PointConstraint PointConstraint;
     typedef Document::Mesh::NodeValue NodeValue;
 
 public:
-    SetPointConstraint(Document* doc, PointConstraint pc,
-                         const NodeValue& value);
+    SetPointConstraintValue(Document* doc, PointConstraint pc,
+                            const NodeValue& value);
 
     virtual void undo();
     virtual void redo();
 
 private:
-    void setColor(const NodeValue& color);
+    void setValue(const NodeValue& value);
 
 private:
     Document* m_document;
     PointConstraint m_pc;
     NodeValue m_prevValue;
     NodeValue m_newValue;
+};
+
+
+class SetPointConstraintGradient : public QUndoCommand
+{
+public:
+    typedef Document::Mesh::PointConstraint PointConstraint;
+    typedef Document::Mesh::NodeGradient NodeGradient;
+
+public:
+    SetPointConstraintGradient(Document* doc, PointConstraint pc,
+                               const NodeGradient& gradient);
+
+    virtual void undo();
+    virtual void redo();
+
+private:
+    void setGradient(const NodeGradient& gradient);
+
+private:
+    Document* m_document;
+    PointConstraint m_pc;
+    NodeGradient m_prevGradient;
+    NodeGradient m_newGradient;
 };
 
 

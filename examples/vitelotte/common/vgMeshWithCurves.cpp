@@ -182,6 +182,10 @@ void VGMeshWithCurves::setNodesFromCurves()
         {
             setGradientConstraint(vertex(pc), gradient(pc));
         }
+        else
+        {
+            removeGradientConstraint(vertex(pc));
+        }
     }
 
     for(unsigned ci = 0; ci < nCurves(); ++ci)

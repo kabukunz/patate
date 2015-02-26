@@ -892,7 +892,7 @@ void SetGradient::setGradient(const ValueGradient& grad)
 
 // ////////////////////////////////////////////////////////////////////////////
 
-SetPointConstraint::SetPointConstraint(Document* doc, PointConstraint pc,
+SetPointConstraintValue::SetPointConstraintValue(Document* doc, PointConstraint pc,
                                        const NodeValue& value)
     : m_document(doc), m_pc(pc),
       m_prevValue(doc->mesh().value(m_pc)),
@@ -900,20 +900,49 @@ SetPointConstraint::SetPointConstraint(Document* doc, PointConstraint pc,
 {
 }
 
-void SetPointConstraint::undo()
+void SetPointConstraintValue::undo()
 {
-    setColor(m_prevValue);
+    setValue(m_prevValue);
 }
 
 
-void SetPointConstraint::redo()
+void SetPointConstraintValue::redo()
 {
-    setColor(m_newValue);
+    setValue(m_newValue);
 }
 
-void SetPointConstraint::setColor(const NodeValue& color)
+void SetPointConstraintValue::setValue(const NodeValue& value)
 {
-    m_document->mesh().value(m_pc) = color;
+    m_document->mesh().value(m_pc) = value;
+    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+}
+
+
+// ////////////////////////////////////////////////////////////////////////////
+
+SetPointConstraintGradient::SetPointConstraintGradient(Document* doc, PointConstraint pc,
+                                       const NodeGradient& gradient)
+    : m_document(doc), m_pc(pc),
+      m_prevGradient(doc->mesh().gradient(m_pc)),
+      m_newGradient(gradient)
+{
+}
+
+void SetPointConstraintGradient::undo()
+{
+    setGradient(m_prevGradient);
+}
+
+
+void SetPointConstraintGradient::redo()
+{
+    setGradient(m_newGradient);
+}
+
+void SetPointConstraintGradient::setGradient(const NodeGradient& gradient)
+{
+    Mesh& mesh = m_document->mesh();
+    m_document->mesh().gradient(m_pc) = gradient;
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
 }
 
