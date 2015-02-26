@@ -445,11 +445,11 @@ void Document::solve()
     std::cout << "Finalize...               " << std::flush;
     m_finalizedMesh = m_mesh;
     m_finalizedMesh.finalize();
+    m_finalizedMesh.compactNodes();
     if(connectivityChanged())
         markDirty(DIRTY_CONNECTIVITY);
 
     m_solvedMesh = m_finalizedMesh;
-    //m_solvedMesh.compactNodes();
 
     std::cout << time.restart() << " ms" << std::endl;
     if(m_solvedMesh.hasUnknowns())

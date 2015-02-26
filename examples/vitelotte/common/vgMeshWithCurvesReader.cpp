@@ -71,8 +71,8 @@ void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
         m_in.seekg(std::ios_base::beg);
 
         Mesh::NodeGradient& ng = m_mesh->gradient(pc);
-        for(int i = 0; i < Mesh::Chan; ++i)
-            for(int j = 0; j < Mesh::Dim; ++j)
+        for(int j = 0; j < Mesh::Dim; ++j)
+            for(int i = 0; i < Mesh::Chan; ++i)
                 m_in >> ng(i, j);
 
         m_in >> std::ws;

@@ -180,8 +180,6 @@ void VGMeshWithCurves::setNodesFromCurves()
 
         if(isGradientConstraint(pc))
         {
-            std::cout << "Set gradient constraint: " << position(vx).transpose() << "\n"
-                      << gradient(pc) << "\n";
             setGradientConstraint(vertex(pc), gradient(pc));
         }
     }

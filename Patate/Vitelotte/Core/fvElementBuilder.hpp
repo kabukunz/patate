@@ -97,7 +97,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     typename Mesh::Edge e1 = mesh.edge(*hit);
     typename Mesh::Halfedge h1 = *hit;
     --hit;
-    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
+//    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
     bool orient[3];
     Vector p[3];
@@ -189,13 +189,13 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     if(isPgc)
     {
-        std::cout << "Flat elem:\n";
-        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
-        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
-        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
-        std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
-        std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
-        std::cout << "  Stiffness matrix:\n" << sm << "\n";
+//        std::cout << "Flat elem:\n";
+//        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
+//        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
+//        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
+//        std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
+//        std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
+//        std::cout << "  Stiffness matrix:\n" << sm << "\n";
 
         typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
         Vector9 fde1, fde2;

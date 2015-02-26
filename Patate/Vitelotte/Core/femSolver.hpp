@@ -169,8 +169,8 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
     typename ElementBuilder::MatrixType matrixType =
             m_elementBuilder.matrixType(*m_mesh);
-    std::cout << ((matrixType == ElementBuilder::MATRIX_SPD)?
-                      "SPD\n": "Symetric\n");
+//    std::cout << ((matrixType == ElementBuilder::MATRIX_SPD)?
+//                      "SPD\n": "Symetric\n");
 
 #ifdef _OPENMP
 #pragma omp parallel for schedule(static,1)
@@ -192,15 +192,15 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
             L.startVec(j);
             for(typename StiffnessMatrix::InnerIterator it(mat, start + j); it; ++it)
             {
-//                if(it.index() >= nUnknowns) continue;
-                if(it.index() < j || it.index() >= nUnknowns) continue;
+                if(it.index() >= nUnknowns) continue;
+//                if(it.index() < j || it.index() >= nUnknowns) continue;
                 L.insertBackByOuterInnerUnordered(j, it.index() - start) = it.value();
             }
         }
 
         L.finalize();
 
-        std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
+//        std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
 
         if(matrixType == ElementBuilder::MATRIX_SPD)
         {

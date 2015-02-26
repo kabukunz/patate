@@ -316,12 +316,16 @@ VGMesh<_Scalar, _Dim, _Chan>::
     do
     {
         if(hasFromVertexValue() && !isBoundary(h))
+        {
             fromVertexValueNode(h) = node;
+        }
 
         h = prevHalfedge(h);
 
         if(!isBoundary(h))
+        {
             toVertexValueNode(h) = node;
+        }
 
         h = oppositeHalfedge(h);
     }
@@ -468,49 +472,52 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::simplifyEdgeConstraints(Edge e)
 {
+    Halfedge h0 = halfedge(e, 0);
+    Halfedge h1 = halfedge(e, 1);
     if(hasEdgeValue())
     {
-        Node& n0 = edgeValueNode(halfedge(e, 0));
-        Node& n1 = edgeValueNode(halfedge(e, 1));
-        simplifyOppositeNodes(n0, n1);
+        Node& n0 = edgeValueNode(h0);
+        Node& n1 = edgeValueNode(h1);
+        simplifyOppositeNodes(n0, n1, isBoundary(h0), isBoundary(h1));
     }
     if(hasEdgeGradient())
     {
-        Node& n0 = edgeGradientNode(halfedge(e, 0));
-        Node& n1 = edgeGradientNode(halfedge(e, 1));
-        simplifyOppositeNodes(n0, n1);
+        Node& n0 = edgeGradientNode(h0);
+        Node& n1 = edgeGradientNode(h1);
+        simplifyOppositeNodes(n0, n1, isBoundary(h0), isBoundary(h1));
     }
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMesh<_Scalar, _Dim, _Chan>::simplifyOppositeNodes(Node& n0, Node& n1) const
+VGMesh<_Scalar, _Dim, _Chan>::simplifyOppositeNodes(Node& n0, Node& n1,
+                                                    bool b0, bool b1) const
 {
-    bool n0c = n0.isValid() && isConstraint(n0);
-    bool n1c = n1.isValid() && isConstraint(n1);
+    bool n0c = !b0 && n0.isValid() && isConstraint(n0);
+    bool n1c = !b1 && n1.isValid() && isConstraint(n1);
 
     // if not a discontinuity, merge nodes.
     if(n0c && n1c && nodeValue(n0) == nodeValue(n1))
     {
-        n0 = Node(std::min(n1.idx(), n0.idx()));
-        n1 = n0;
+        if(!b0) n0 = Node(std::min(n1.idx(), n0.idx()));
+        if(!b1) n1 = Node(std::min(n1.idx(), n0.idx()));
     }
     else if(!n0c && !n1c && n0 == n1)
     {
         // It is useless to use an unknown node here
         // FIXME: Assume that these unknown node are only used
         // around this vertex.
-        n0 = Node();
-        n1 = Node();
+        if(!b0) n0 = Node();
+        if(!b1) n1 = Node();
     }
     else if(n0c && !n1.isValid())
     {
-        n1 = n0;
+        if(!b1) n1 = n0;
     }
     else if(n1c && !n0.isValid())
     {
-        n0 = n1;
+        if(!b0) n0 = n1;
     }
 }
 
@@ -645,6 +652,11 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
                 buf[edgeGradientNode(*hit).idx()]    = 1;
         }
     }
+    for(typename HalfedgeNodeMap::const_iterator it = m_vertexGradientDummyNodes.begin();
+        it != m_vertexGradientDummyNodes.end(); ++it)
+    {
+        buf[it->second.idx()] = 1;
+    }
 
     // Compute remapping
     int size=0;
@@ -744,7 +756,8 @@ VGMesh<_Scalar, _Dim, _Chan>::
         bool boundary = isBoundary(edge(*hit));
         if(np.isValid() || n0.isValid() || boundary)
         {
-            simplifyOppositeNodes(np, n0);
+            simplifyOppositeNodes(np, n0, isBoundary(oppositeHalfedge(*hit)),
+                                  isBoundary(*hit));
 
             if(np.isValid() || n0.isValid() || boundary)
             {

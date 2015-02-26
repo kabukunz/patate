@@ -363,7 +363,8 @@ public:
      * effects like color "teleportation". Using it in such case may lead to
      * unexpected results.
      */
-    void simplifyOppositeNodes(Node& n0, Node& n1) const;
+    void simplifyOppositeNodes(Node& n0, Node& n1,
+                               bool b0 = false, bool b1 = false) const;
 
     /**
      * /brief Finalize a mesh with invalid node so that it can be send to a
