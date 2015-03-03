@@ -63,7 +63,8 @@ QuadraticElementBuilder<_Mesh, _Scalar>::QuadraticElementBuilder()
 template < class _Mesh, typename _Scalar >
 unsigned
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/,
+                  SolverError* /*error*/) const
 {
     return 36;
 }
@@ -73,9 +74,14 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element)
+    addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                    SolverError* error)
 {
-    assert(mesh.valence(element) == 3);
+    if(mesh.valence(element) != 3)
+    {
+        if(error) error->error("Non-triangular face");
+        return;
+    }
 
     Vector v[3];
     int nodes[6];
@@ -95,16 +101,16 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(STATUS_ERROR, "Invalid node");
+            if(error) error->error("Invalid node");
             return;
         }
     }
 
     Scalar _2area = det2(v[0], v[1]);
 
-    if(_2area <= 0)
+    if(_2area <= 0 && error)
     {
-        error(STATUS_WARNING, "Degenerated or reversed triangle");
+        error->warning("Degenerated or reversed triangle");
     }
 
     Scalar inv4A = 1. / (2. * _2area);

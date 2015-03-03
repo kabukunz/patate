@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "solverError.h"
 #include "elementBuilderBase.h"
 
 namespace Vitelotte
@@ -61,10 +62,6 @@ public:
     using Base::MATRIX_SPD;
     using Base::MATRIX_SYMETRIC;
 
-    using Base::STATUS_OK;
-    using Base::STATUS_ERROR;
-    using Base::STATUS_WARNING;
-
 protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
     typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
@@ -72,26 +69,19 @@ protected:
 public:
     inline FVElementBuilder(Scalar sigma = Scalar(.5));
 
-    using Base::status;
-    using Base::errorString;
-    using Base::resetStatus;
-
-    unsigned nCoefficients(const Mesh& mesh, Face element) const;
+    unsigned nCoefficients(const Mesh& mesh, Face element,
+                           SolverError* error=0) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                         SolverError* error=0);
 
-    void setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs);
+    void setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs,
+                SolverError* error=0);
 
     MatrixType matrixType(const Mesh& mesh) const {
         return mesh.nVertexGradientConstraints()? MATRIX_SYMETRIC: MATRIX_SPD;
     }
-
-protected:
-    using Base::error;
-
-    template < typename InIt >
-    void processFV1Element(InIt& it, const Mesh& mesh, Face element);
 
 private:
     Scalar m_sigma;

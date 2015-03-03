@@ -37,39 +37,17 @@ public:
         MATRIX_SYMETRIC
     };
 
-    enum Status
-    {
-        STATUS_OK,
-        STATUS_WARNING,
-        STATUS_ERROR
-    };
-
 public:
-    inline ElementBuilderBase() : m_status(STATUS_OK), m_errorString() {}
-    inline Status status() const { return m_status; }
-    inline const std::string& errorString() const { return m_errorString; }
-    inline void resetStatus() { m_status = STATUS_OK; m_errorString.clear(); }
+    inline ElementBuilderBase() {}
 
-    inline void setRhs(const Mesh& /*mesh*/, IndexMap /*imap*/, Matrix& rhs) {
+    inline void setRhs(const Mesh& /*mesh*/, IndexMap /*imap*/, Matrix& rhs,
+                       SolverError* /*error*/=0) {
         rhs.setZero();
     }
 
     MatrixType matrixType(const Mesh& /*mesh*/) const {
         return MATRIX_SPD;
     }
-
-protected:
-    inline void error(Status status, const std::string& errorString)
-    {
-        if(m_status > status)
-            return;
-        m_status = status;
-        m_errorString = errorString;
-    }
-
-private:
-    Status m_status;
-    std::string m_errorString;
 };
 
 

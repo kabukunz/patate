@@ -473,13 +473,13 @@ void Document::solve()
             std::cout << time.restart() << " ms" << std::endl;
         }
 
-        if(m_fvSolver.status() == FVElement::STATUS_WARNING)
+        if(m_fvSolver.error().status() == Vitelotte::SolverError::STATUS_WARNING)
         {
-            std::cout << "Solver warning: " << m_fvSolver.errorString() << "\n";
+            std::cout << "Solver warning: " << m_fvSolver.error().message() << "\n";
         }
-        else if(m_fvSolver.status() == FVElement::STATUS_ERROR)
+        else if(m_fvSolver.error().status() == Vitelotte::SolverError::STATUS_ERROR)
         {
-            std::cout << "Solver error: " << m_fvSolver.errorString() << "\n";
+            std::cout << "Solver error: " << m_fvSolver.error().message() << "\n";
         }
     }
     m_dirtyFlags = CLEAN;

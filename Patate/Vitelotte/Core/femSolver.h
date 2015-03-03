@@ -12,6 +12,7 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "solverError.h"
 #include "femUtils.h"
 #include "vgMesh.h"
 
@@ -53,21 +54,11 @@ public:
     void solve();
 
     inline bool isSolved() const { return m_solved; }
-    inline typename ElementBuilder::Status status() const { return m_elementBuilder.status(); }
-    inline const std::string& errorString() const { return m_elementBuilder.errorString(); }
-
-protected:
-//    template<typename SpMatrix, typename Rhs, typename Res>
-//    inline void multiSolve(const SpMatrix& _A, const Rhs& _b, Res& _x, unsigned& _nbRanges);
-
-//    template<typename SpMatrix>
-//    inline void depthFirstOrdering(const SpMatrix& _mat, Eigen::VectorXi& _p, std::vector<int>& _ranges);
-
-    template<typename Solver>
-    bool checkSolveError(const Solver& solver) const;
+    inline const SolverError error() { return m_error; }
 
 protected:
     Mesh* m_mesh;
+    SolverError m_error;
     ElementBuilder m_elementBuilder;
     Eigen::VectorXi m_perm;
     RangeVector m_ranges;

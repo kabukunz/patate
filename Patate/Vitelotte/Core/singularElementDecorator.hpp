@@ -14,9 +14,9 @@ namespace Vitelotte
 template < typename _Element >
 unsigned
 SingularElementDecorator<_Element>::nCoefficients(
-        const Mesh& mesh, Face element) const
+        const Mesh& mesh, Face element, SolverError* error) const
 {
-    return Base::nCoefficients(mesh, element) *
+    return Base::nCoefficients(mesh, element, error) *
             (mesh.nSingulars(element)? 2: 1);
 }
 
@@ -24,17 +24,18 @@ template < typename _Element >
 template < typename InIt >
 void
 SingularElementDecorator<_Element>::addCoefficients(
-        InIt& it, const Mesh& mesh, Face element)
+        InIt& it, const Mesh& mesh, Face element, SolverError* error)
 {
     typedef typename Base::Mesh Mesh;
 
     InIt begin = it;
-    Base::addCoefficients(it, mesh, element);
+    Base::addCoefficients(it, mesh, element, error);
+    if(error->status() != SolverError::STATUS_OK) return;
 
     unsigned nSingular = mesh.nSingulars(element);
 
-    if(nSingular > 1)
-        Base::error(Base::STATUS_WARNING, "Element with more than one singular vertex");
+    if(nSingular > 1 && error)
+        error->warning("Element with more than one singular vertex");
 
     if(nSingular) {
         InIt end = it;

@@ -12,6 +12,7 @@
 #include <Eigen/Sparse>
 
 
+#include "solverError.h"
 #include "elementBuilderBase.h"
 
 
@@ -35,24 +36,15 @@ public:
 
     typedef typename Base::Face Face;
 
-    using Base::STATUS_OK;
-    using Base::STATUS_ERROR;
-    using Base::STATUS_WARNING;
-
 public:
     inline LinearElementBuilder();
 
-    using Base::status;
-    using Base::errorString;
-    using Base::resetStatus;
-
-    unsigned nCoefficients(const Mesh& mesh, Face element) const;
+    unsigned nCoefficients(const Mesh& mesh, Face element,
+                           SolverError* error=0) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
-
-protected:
-    using Base::error;
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                         SolverError* error=0);
 };
 
 

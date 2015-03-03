@@ -24,7 +24,8 @@ MorleyElementBuilder<_Mesh, _Scalar>::MorleyElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 MorleyElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/,
+                  SolverError* /*error*/) const
 {
     return 36;
 }
@@ -34,9 +35,14 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 MorleyElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element)
+    addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                    SolverError* error)
 {
-    assert(mesh.valence(element) == 3);
+    if(mesh.valence(element) != 3)
+    {
+        if(error) error->error("Non-triangular face");
+        return;
+    }
 
     Vector p[3];
     Vector v[3];
@@ -60,7 +66,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(STATUS_ERROR, "Invalid node");
+            if(error) error->error("Invalid node");
             return;
         }
     }
@@ -68,9 +74,9 @@ MorleyElementBuilder<_Mesh, _Scalar>::
     typedef MorleyElement<Scalar> Elem;
     Elem elem(p);
 
-    if(elem.doubleArea() <= 0)
+    if(elem.doubleArea() <= 0 && error)
     {
-        error(STATUS_WARNING, "Degenerated or reversed triangle");
+        error->warning("Degenerated or reversed triangle");
     }
 
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;

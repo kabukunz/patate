@@ -13,6 +13,8 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
+#include "solverError.h"
+
 
 namespace Vitelotte
 {
@@ -37,10 +39,12 @@ public:
     inline explicit SingularElementDecorator(const Base& element=Base())
         : Base(element) {}
 
-    unsigned nCoefficients(const Mesh& mesh, Face element) const;
+    unsigned nCoefficients(const Mesh& mesh, Face element,
+                           SolverError* error=0) const;
 
     template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element);
+    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                         SolverError* error=0);
 };
 
 

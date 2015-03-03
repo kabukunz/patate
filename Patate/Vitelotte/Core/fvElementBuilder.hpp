@@ -25,7 +25,8 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element) const
+    nCoefficients(const Mesh& mesh, Face element,
+                  SolverError* /*error*/) const
 {
     return mesh.nVertexGradientConstraints(element)? 117: 81;
 }
@@ -35,52 +36,15 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element)
+    addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                    SolverError* error)
 {
     if(mesh.valence(element) != 3)
     {
-        error(STATUS_ERROR, "Non-triangular face");
+        if(error) error->error("Non-triangular face");
         return;
     }
 
-    processFV1Element(it, mesh, element);
-}
-
-
-template < class _Mesh, typename _Scalar >
-void
-FVElementBuilder<_Mesh, _Scalar>::
-        setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs) {
-
-    rhs.setZero();
-
-    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
-        hit != mesh.halfedgesEnd(); ++hit) {
-
-        if(mesh.nVertexGradientConstraints(*hit) == 0)
-            continue;
-
-        typename Mesh::Vertex from = mesh.fromVertex(*hit);
-        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
-        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
-        if(n.isValid()) {
-            bool v0c = mesh.isGradientConstraint(from);
-            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
-            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
-            if(!v0c) v = -v;
-            typename Mesh::NodeValue cons = grad * v;
-            rhs.row(imap(n.idx())) = cons.template cast<Scalar>();
-        }
-    }
-}
-
-
-template < class _Mesh, typename _Scalar >
-template < typename InIt >
-void
-FVElementBuilder<_Mesh, _Scalar>::
-    processFV1Element(InIt& it, const Mesh& mesh, Face element)
-{
     typedef Eigen::Matrix<Scalar, 9, 9> Matrix9;
     Matrix9 sm;
 
@@ -116,7 +80,7 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         if(nodes[i] < 0)
         {
-            error(STATUS_ERROR, "Invalid node");
+            if(error) error->error("Invalid node");
             return;
         }
     }
@@ -126,7 +90,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     if(elem.doubleArea() <= 0)
     {
-        error(STATUS_WARNING, "Degenerated or reversed triangle");
+        if(error) error->warning("Degenerated or reversed triangle");
     }
 
     typedef Eigen::Array<Scalar, 3, 1> Array3;
@@ -224,7 +188,7 @@ FVElementBuilder<_Mesh, _Scalar>::
         int ce2 = mesh.vertexGradientDummyNode(h2).idx();
         if(ce1 < 0 || ce2 < 0)
         {
-            error(STATUS_ERROR, "Invalid node");
+            if(error) error->error("Invalid node");
             return;
         }
         for(size_t i = 0; i < 9; ++i)
@@ -234,6 +198,35 @@ FVElementBuilder<_Mesh, _Scalar>::
             *(it++) = Triplet(ce1, nodes[i], fde1(i) * f);
             *(it++) = Triplet(nodes[i], ce2, fde2(i) * f);
             *(it++) = Triplet(ce2, nodes[i], fde2(i) * f);
+        }
+    }
+}
+
+
+template < class _Mesh, typename _Scalar >
+void
+FVElementBuilder<_Mesh, _Scalar>::
+        setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs,
+               SolverError* /*error*/) {
+
+    rhs.setZero();
+
+    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
+        hit != mesh.halfedgesEnd(); ++hit) {
+
+        if(mesh.nVertexGradientConstraints(*hit) == 0)
+            continue;
+
+        typename Mesh::Vertex from = mesh.fromVertex(*hit);
+        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
+        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
+        if(n.isValid()) {
+            bool v0c = mesh.isGradientConstraint(from);
+            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+            if(!v0c) v = -v;
+            typename Mesh::NodeValue cons = grad * v;
+            rhs.row(imap(n.idx())) = cons.template cast<Scalar>();
         }
     }
 }

@@ -19,7 +19,8 @@ LinearElementBuilder<_Mesh, _Scalar>::LinearElementBuilder()
 template < class _Mesh, typename _Scalar >
 unsigned
 LinearElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& /*mesh*/, Face /*element*/) const
+    nCoefficients(const Mesh& /*mesh*/, Face /*element*/,
+                  SolverError* /*error*/) const
 {
     return 9;
 }
@@ -29,9 +30,14 @@ template < class _Mesh, typename _Scalar >
 template < typename InIt >
 void
 LinearElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element)
+    addCoefficients(InIt& it, const Mesh& mesh, Face element,
+                    SolverError* error)
 {
-    assert(mesh.valence(element) == 3);
+    if(mesh.valence(element) != 3)
+    {
+        if(error) error->error("Non-triangular face");
+        return;
+    }
 
     Vector v[3];
     int nodes[3];
@@ -46,7 +52,7 @@ LinearElementBuilder<_Mesh, _Scalar>::
         nodes[i] = mesh.toVertexValueNode(*hit).idx();
         if(nodes[i] < 0)
         {
-            error(STATUS_ERROR, "Invalid node");
+            if(error) error->error("Invalid node");
             return;
         }
     }
@@ -54,9 +60,9 @@ LinearElementBuilder<_Mesh, _Scalar>::
     Scalar _2area = det2(v[0], v[1]);
     Scalar inv4A = 1. / (2. * _2area);
 
-    if(_2area <= 0)
+    if(_2area <= 0 && error)
     {
-        error(STATUS_WARNING, "Degenerated or reversed triangle");
+        if(error) error->error("Degenerated or reversed triangle");
     }
 
     for(int i = 0; i < 3; ++i)

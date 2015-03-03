@@ -153,9 +153,9 @@ public:
         solver.solve();
         unsigned solveTime = SDL_GetTicks();
 
-        if(solver.status() != FVElement::STATUS_OK)
+        if(solver.error().status() != Vitelotte::SolverError::STATUS_OK)
         {
-            std::cerr << "Solver error: " << solver.errorString() << "\n";
+            std::cerr << "Solver error: " << solver.error().message() << "\n";
         }
         if(!solver.isSolved())
         {

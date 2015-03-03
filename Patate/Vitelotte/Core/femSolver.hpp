@@ -10,6 +10,46 @@
 namespace Vitelotte
 {
 
+namespace internal
+{
+
+template <typename Solver>
+struct CheckEigenSolverError
+{
+    static bool check(const Solver& solver, SolverError& error)
+    {
+        switch(solver.info()) {
+        case Eigen::Success:        return false;
+        case Eigen::NumericalIssue: error.error("Numerical issue"); return true;
+        case Eigen::NoConvergence:  error.error("No convergence");  return true;
+        case Eigen::InvalidInput:   error.error("Invalid matrix");  return true;
+        }
+        error.error("Unknown Eigen error");  return true;
+        return true;
+    }
+};
+
+//template <typename Matrix>
+//bool CheckEigenSolverError<Eigen::SparseLU<Matrix> >::check(
+//        const Eigen::SparseLU<Matrix>& solver, SolverError& error)
+//{
+//    if(solver.info() != Eigen::Success) {
+//        error.error(solver.lastErrorMessage());
+//        return true;
+//    }
+//    return false;
+//}
+
+
+template <typename Solver>
+bool checkEigenSolverError(const Solver& solver, SolverError& error)
+{
+    return CheckEigenSolverError<Solver>::check(solver, error);
+}
+
+
+}
+
 
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& elementBuilder)
@@ -25,12 +65,12 @@ void
 FemSolver<_Mesh, _ElementBuilder>::build()
 {
     unsigned nCoefficients = 0;
-    m_elementBuilder.resetStatus();
+    m_error.resetStatus();
     m_solved = false;
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        nCoefficients += m_elementBuilder.nCoefficients(*m_mesh, *elem);
+        nCoefficients += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
     }
 
     TripletVector coefficients(nCoefficients);
@@ -38,9 +78,9 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        m_elementBuilder.addCoefficients(it, *m_mesh, *elem);
+        m_elementBuilder.addCoefficients(it, *m_mesh, *elem, &m_error);
 
-        if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+        if(m_error.status() == SolverError::STATUS_ERROR)
         {
             return;
         }
@@ -57,7 +97,7 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::sort()
 {
-    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+    if(m_error.status() == SolverError::STATUS_ERROR)
     {
         return;
     }
@@ -127,7 +167,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 {
     m_solved = false;
 
-    if(m_elementBuilder.status() == ElementBuilder::STATUS_ERROR)
+    if(m_error.status() == SolverError::STATUS_ERROR)
     {
         return;
     }
@@ -161,7 +201,12 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         iperm(m_perm(i)) = i;
 
     m_x.resize(nUnknowns, Mesh::Chan);
-    m_elementBuilder.setRhs(*m_mesh, iperm, m_x);
+    m_elementBuilder.setRhs(*m_mesh, iperm, m_x, &m_error);
+    if(m_error.status() == SolverError::STATUS_ERROR)
+    {
+        return;
+    }
+
 
     m_x -= mat.topRightCorner(nUnknowns, nConstraints) * constraints;
 
@@ -205,9 +250,9 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         if(matrixType == ElementBuilder::MATRIX_SPD)
         {
             Eigen::SimplicialLDLT<StiffnessMatrix> solver(L);
-            if(solver.info() != Eigen::Success) return;
+            if(internal::checkEigenSolverError(solver, m_error)) return;
             m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
-            if(solver.info() != Eigen::Success) return;
+            if(internal::checkEigenSolverError(solver, m_error)) return;
         }
         else
         {
@@ -215,9 +260,9 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     //        Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > solver(L);
             solver.analyzePattern(L);
             solver.factorize(L);
-            if(checkSolveError(solver)) return;
+            if(internal::checkEigenSolverError(solver, m_error)) return;
             m_x.middleRows(start,size) = solver.solve(m_x.middleRows(start, size));
-            if(checkSolveError(solver)) return;
+            if(internal::checkEigenSolverError(solver, m_error)) return;
         }
 
 //        Eigen::BiCGSTAB<StiffnessMatrix> solver;
@@ -234,26 +279,6 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     }
 
     m_solved = true;
-}
-
-
-template < class _Mesh, class _ElementBuilder >
-template<typename Solver>
-bool
-FemSolver<_Mesh, _ElementBuilder>::
-    checkSolveError(const Solver& solver) const
-{
-//    switch(solver.info()) {
-//    case Eigen::Success: std::cout << "Success\n"; return false;
-//    case Eigen::NumericalIssue: std::cout << "NumericalIssue\n"; return true;
-//    case Eigen::NoConvergence: std::cout << "NoConvergence\n"; return true;
-//    case Eigen::InvalidInput: std::cout << "InvalidInput\n"; return true;
-//    }
-    if(solver.info() != Eigen::Success) {
-        std::cout << solver.lastErrorMessage() << "\n";
-        return true;
-    }
-    return false;
 }
 
 

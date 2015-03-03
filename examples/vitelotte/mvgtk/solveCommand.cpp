@@ -8,13 +8,13 @@ bool solveGeneric(Mesh& mesh)
     solver.build();
     solver.sort();
 
-    if(solver.status() == Solver::ElementBuilder::STATUS_WARNING)
+    if(solver.error().status() == Vitelotte::SolverError::STATUS_WARNING)
     {
-        std::cerr << "Warning: " << solver.errorString() << "\n";
+        std::cerr << "Warning: " << solver.error().message() << "\n";
     }
-    else if(solver.status() == Solver::ElementBuilder::STATUS_ERROR)
+    else if(solver.error().status() == Vitelotte::SolverError::STATUS_ERROR)
     {
-        std::cerr << "Error: " << solver.errorString() << "\n";
+        std::cerr << "Error: " << solver.error().message() << "\n";
         return false;
     }
 
