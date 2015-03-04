@@ -150,6 +150,8 @@ public:
         unsigned buildTime = SDL_GetTicks();
         solver.sort();
         unsigned sortTime = SDL_GetTicks();
+        solver.factorize();
+        unsigned factorizeTime = SDL_GetTicks();
         solver.solve();
         unsigned solveTime = SDL_GetTicks();
 
@@ -162,11 +164,12 @@ public:
             std::cerr << "Solve failed./n";
         }
 
-        std::cout << "Finalize time: " << finalizeTime -    startTime << "ms" << std::endl;
-        std::cout << "   Build time: " <<    buildTime - finalizeTime << "ms" << std::endl;
-        std::cout << "    Sort time: " <<     sortTime -    buildTime << "ms" << std::endl;
-        std::cout << "   Solve time: " <<    solveTime -     sortTime << "ms" << std::endl;
-        std::cout << "   Total time: " <<    solveTime -    startTime << "ms" << std::endl;
+        std::cout << " Finalize time: " <<  finalizeTime -     startTime << "ms" << std::endl;
+        std::cout << "    Build time: " <<     buildTime -  finalizeTime << "ms" << std::endl;
+        std::cout << "     Sort time: " <<      sortTime -     buildTime << "ms" << std::endl;
+        std::cout << "Factorize time: " << factorizeTime -      sortTime << "ms" << std::endl;
+        std::cout << "    Solve time: " <<     solveTime - factorizeTime << "ms" << std::endl;
+        std::cout << "    Total time: " <<     solveTime -     startTime << "ms" << std::endl;
 
         centerView();
         m_renderer.initialize(&m_mesh);
