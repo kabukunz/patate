@@ -27,7 +27,6 @@ public:
 
     typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::MatrixXi IndexMap;
     typedef Eigen::Triplet<Scalar> Triplet;
 
     typedef typename Mesh::Face Face;
@@ -40,7 +39,7 @@ public:
 public:
     inline ElementBuilderBase() {}
 
-    inline void setRhs(const Mesh& /*mesh*/, IndexMap /*imap*/, Matrix& rhs,
+    inline void setRhs(const Mesh& /*mesh*/, Matrix& rhs,
                        SolverError* /*error*/=0) {
         rhs.setZero();
     }

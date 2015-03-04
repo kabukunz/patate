@@ -467,6 +467,9 @@ void Document::solve()
             std::cout << "Sort matrix...            " << std::flush;
             m_fvSolver.sort();
             std::cout << time.restart() << " ms" << std::endl;
+            std::cout << "Factorize matrix...       " << std::flush;
+            m_fvSolver.factorize();
+            std::cout << time.restart() << " ms" << std::endl;
         case DIRTY_NODE_VALUE:
             std::cout << "Solve...                  " << std::flush;
             m_fvSolver.solve();

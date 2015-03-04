@@ -53,7 +53,6 @@ public:
 
     typedef typename Base::Vector Vector;
     typedef typename Base::Matrix Matrix;
-    typedef typename Base::IndexMap IndexMap;
     typedef typename Base::Triplet Triplet;
 
     typedef typename Base::Face Face;
@@ -76,7 +75,7 @@ public:
     void addCoefficients(InIt& it, const Mesh& mesh, Face element,
                          SolverError* error=0);
 
-    void setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs,
+    void setRhs(const Mesh& mesh, Matrix& rhs,
                 SolverError* error=0);
 
     MatrixType matrixType(const Mesh& mesh) const {

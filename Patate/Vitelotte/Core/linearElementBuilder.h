@@ -31,7 +31,6 @@ public:
 
     typedef typename Base::Vector Vector;
     typedef typename Base::Matrix Matrix;
-    typedef typename Base::IndexMap IndexMap;
     typedef typename Base::Triplet Triplet;
 
     typedef typename Base::Face Face;

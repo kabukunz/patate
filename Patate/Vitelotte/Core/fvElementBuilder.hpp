@@ -206,7 +206,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 template < class _Mesh, typename _Scalar >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-        setRhs(const Mesh& mesh, IndexMap imap, Matrix& rhs,
+        setRhs(const Mesh& mesh, Matrix& rhs,
                SolverError* /*error*/) {
 
     rhs.setZero();
@@ -226,7 +226,7 @@ FVElementBuilder<_Mesh, _Scalar>::
             typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
             if(!v0c) v = -v;
             typename Mesh::NodeValue cons = grad * v;
-            rhs.row(imap(n.idx())) = cons.template cast<Scalar>();
+            rhs.row(n.idx()) = cons.template cast<Scalar>();
         }
     }
 }

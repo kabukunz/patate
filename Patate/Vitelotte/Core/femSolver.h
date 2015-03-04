@@ -29,6 +29,7 @@ public:
     typedef _ElementBuilder ElementBuilder;
 
     typedef typename ElementBuilder::Scalar Scalar;
+    typedef typename ElementBuilder::MatrixType MatrixType;
 
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
     typedef Eigen::Triplet<Scalar> Triplet;
@@ -43,32 +44,59 @@ public:
     typedef typename Mesh::Face Face;
     typedef typename Mesh::FaceIterator FaceIterator;
 
-    typedef std::vector<unsigned> RangeVector;
-
 public:
     inline FemSolver(Mesh* _inMesh,
                      const ElementBuilder& elementBuilder = ElementBuilder());
+    ~FemSolver();
 
     void build();
     void sort();
+    void factorize();
     void solve();
 
     inline bool isSolved() const { return m_solved; }
     inline const SolverError error() { return m_error; }
 
 protected:
+    typedef std::vector<unsigned> RangeVector;
+
+    typedef Eigen::SimplicialLDLT<StiffnessMatrix> SPDFactorization;
+    typedef Eigen::SparseLU<StiffnessMatrix> SymFactorization;
+
+    typedef std::vector<SPDFactorization*> SPDBlocks;
+    typedef std::vector<SymFactorization*> SymBlocks;
+
+protected:
+    void resizeBlocks();
+    void resizeSpdBlocks(unsigned size);
+    void resizeSymBlocks(unsigned size);
+
+protected:
     Mesh* m_mesh;
-    SolverError m_error;
     ElementBuilder m_elementBuilder;
+
+    SolverError m_error;
+    bool m_solved;
+
+    // Build: Ax = b
+    StiffnessMatrix m_stiffnessMatrix;
+    Matrix m_b;
+    MatrixType m_type;
+
+    // Sort: premutation + ranges
     Eigen::VectorXi m_perm;
     RangeVector m_ranges;
 
-    bool m_solved;
+    // Factorize: block-wise factorizations + constraint matrix
+    StiffnessMatrix m_consBlock;
+    SPDBlocks m_spdBlocks;
+    SymBlocks m_symBlocks;
 
-    StiffnessMatrix m_stiffnessMatrix;
+    // Solve
     Matrix m_x;
 
-    unsigned m_nbCells;
+
+//    unsigned m_nbCells;
 };
 
 
