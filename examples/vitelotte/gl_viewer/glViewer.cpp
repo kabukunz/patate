@@ -233,7 +233,7 @@ void GLViewer::startup(const std::string& filename)
 
     m_pQMeshRenderer = new Renderer;
     bool ok = m_pQMeshRenderer->initialize();
-    assert(ok);
+    if(!ok) abort();
     m_pQMeshRenderer->updateBuffers(*m_pQvg);
 
     PATATE_ASSERT_NO_GL_ERROR();

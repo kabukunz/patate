@@ -152,6 +152,8 @@ VGMesh<_Scalar, _Dim, _Chan>::
     case EDGE_VALUE:
     case EDGE_GRADIENT:
         return attr;
+    default:
+        break;
     }
     abort();
 }
@@ -192,6 +194,8 @@ VGMesh<_Scalar, _Dim, _Chan>::
     case EDGE_GRADIENT:
         assert(hasEdgeGradient());
         return edgeGradientNode(h);
+    default:
+        break;
     }
     abort();
 }

@@ -318,8 +318,7 @@ void Editor::mouseMoveEvent(QMouseEvent* event)
         {
             Vector scenePos = sceneFromView(event->localPos());
             GradientStop* gs = pickGradientStop(scenePos);
-            if(gs) selectGradientStop(gs);
-            else   showDummyStop(scenePos);
+            if(!gs) showDummyStop(scenePos);
         }
         break;
     case STATE_PAN_VIEW:
@@ -553,12 +552,6 @@ bool Editor::trySetPointConstraint(const Vector& pos)
         return true;
     }
     return false;
-}
-
-
-void Editor::selectGradientStop(GradientStop* gs)
-{
-
 }
 
 

@@ -374,12 +374,11 @@ void MainWindow::updateConstraintTypeActions()
 }
 
 
-void MainWindow::setConstraintType(QAction* action)
+void MainWindow::setConstraintType(QAction* /*action*/)
 {
     if(m_document->selection().isPointConstraint())
     {
         Mesh::PointConstraint pc = m_document->selection().pointConstraint();
-        Mesh& mesh = m_document->mesh();
         if(m_setDerivContinuous->isChecked())
         {
             m_document->undoStack()->push(new SetPointConstraintGradient(

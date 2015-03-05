@@ -55,10 +55,10 @@ FVElementBuilder<_Mesh, _Scalar>::
     do ++hit;
     while(!mesh.isGradientConstraint(mesh.toVertex(*hit)) && hit != hend);
     bool isPgc = mesh.isGradientConstraint(mesh.toVertex(*hit));
-    typename Mesh::Edge e2 = mesh.edge(*hit);
+//    typename Mesh::Edge e2 = mesh.edge(*hit);
     typename Mesh::Halfedge h2 = *hit;
     ++hit;
-    typename Mesh::Edge e1 = mesh.edge(*hit);
+//    typename Mesh::Edge e1 = mesh.edge(*hit);
     typename Mesh::Halfedge h1 = *hit;
     --hit;
 //    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";

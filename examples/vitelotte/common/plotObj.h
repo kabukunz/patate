@@ -61,7 +61,7 @@ void exportPlot(const Mesh& mesh, const std::string& filename,
         Eigen::Matrix<float, 2, 3> points;
 
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(*fit);
-        typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
+//        typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
 
         for(unsigned i = 0; i < 3; ++i)
         {

@@ -141,8 +141,6 @@ protected:
 
     bool trySetPointConstraint(const Vector& pos);
 
-    void selectGradientStop(GradientStop* gs);
-
     void doUpdateRenderers();
 
     Mesh::Vector computeStopPosition(Mesh::Curve curve, float pos, float offset,

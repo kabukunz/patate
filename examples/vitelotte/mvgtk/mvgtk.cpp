@@ -27,7 +27,7 @@ MvgtkCommand::~MvgtkCommand()
 }
 
 
-bool MvgtkCommand::parseArgs(int argc, char** argv, int& argi)
+bool MvgtkCommand::parseArgs(int /*argc*/, char** /*argv*/, int& /*argi*/)
 {
     return true;
 }
