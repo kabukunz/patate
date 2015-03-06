@@ -25,8 +25,8 @@ void solveGeneric(Mesh& mesh)
 {
     Solver solver(&mesh);
     solver.build();
-    solver.factorize();
     solver.sort();
+    solver.factorize();
 
     if(solver.error().status() == Vitelotte::SolverError::STATUS_WARNING)
     {

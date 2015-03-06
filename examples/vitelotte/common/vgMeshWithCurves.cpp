@@ -153,6 +153,14 @@ void VGMeshWithCurves::setNodesFromCurves()
         if(hasEdgeValue())          edgeValueNode(*hit)         = Node();
         if(hasEdgeGradient())       edgeGradientNode(*hit)      = Node();
     }
+    for(VertexIterator vit = verticesBegin();
+        vit != verticesEnd(); ++vit)
+    {
+        if(isGradientConstraint(*vit))
+        {
+            removeGradientConstraint(*vit);
+        }
+    }
 
     for(unsigned pci = 0; pci < nPointConstraints(); ++pci)
     {
@@ -181,10 +189,6 @@ void VGMeshWithCurves::setNodesFromCurves()
         if(isGradientConstraint(pc))
         {
             setGradientConstraint(vertex(pc), gradient(pc));
-        }
-        else
-        {
-            removeGradientConstraint(vertex(pc));
         }
     }
 

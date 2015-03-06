@@ -6,20 +6,33 @@
 import sys
 from sys import argv
 from math import cos, sin, pi
+from random import uniform
 
 ##################
 
 def lerp(alpha, p0, p1):
 	return [ (1-alpha)*c0 + alpha*c1 for c0, c1 in zip(p0, p1) ]
 
+def rand_vec(fact):
+	return ( uniform(-fact, fact), uniform(-fact, fact) )
+
+def vec_sum(a, b):
+	return ( x+y for x, y in zip(a, b) )
+
 ##################
 
-if len(argv) != 3:
-	print("Usage:", argv[0], "N_RINGS FILENAME")
+if len(argv) == 3:
+	filename = argv[2]
+	nrings = int(argv[1])
+	noise = 0.
+elif len(argv) == 4:
+	filename = argv[3]
+	nrings = int(argv[1])
+	noise = float(argv[2])
+else:
+	print("Usage:", argv[0], "N_RINGS [NOISE] FILENAME")
 	exit(1)
 
-filename = argv[2]
-nrings = int(argv[1])
 
 
 out = open(filename, 'w')
@@ -27,14 +40,14 @@ sys.stdout = out
 
 print("mvg 1.0")
 print("attributes none")
-print("v 0 0")
+print("v", *rand_vec(noise))
 
 for r in range(1, nrings+1):
 	for tri in range(6):
 		alpha = [ tri * pi/3, (tri+1) * pi/3 ]
 		p = [ [ cos(alpha[i]) * r, sin(alpha[i]) * r ] for i in range(2) ]
 		for v in range(r):
-			coords = lerp(v / r, p[0], p[1])
+			coords = vec_sum(lerp(v / r, p[0], p[1]), rand_vec(noise))
 			print("v", *coords)
 
 inner = 0

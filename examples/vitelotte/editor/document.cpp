@@ -945,7 +945,7 @@ void SetPointConstraintGradient::redo()
 void SetPointConstraintGradient::setGradient(const NodeGradient& gradient)
 {
     m_document->mesh().gradient(m_pc) = gradient;
-    m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
+    m_document->markDirty(Document::DIRTY_CONNECTIVITY | Document::DIRTY_CURVES_FLAG);
 }
 
 

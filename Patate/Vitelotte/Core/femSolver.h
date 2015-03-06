@@ -62,6 +62,7 @@ protected:
 
     typedef Eigen::SimplicialLDLT<StiffnessMatrix> SPDFactorization;
     typedef Eigen::SparseLU<StiffnessMatrix> SymFactorization;
+//    typedef Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > SymFactorization;
 
     typedef std::vector<SPDFactorization*> SPDBlocks;
     typedef std::vector<SymFactorization*> SymBlocks;

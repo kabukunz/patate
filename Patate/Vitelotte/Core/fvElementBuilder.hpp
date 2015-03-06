@@ -153,7 +153,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     if(isPgc)
     {
-//        std::cout << "Flat elem:\n";
+//        std::cout << "Flat elem: " << elem.point(0).transpose() << "\n";
 //        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
 //        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
 //        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
@@ -186,6 +186,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 
         int ce1 = mesh.vertexGradientDummyNode(h1).idx();
         int ce2 = mesh.vertexGradientDummyNode(h2).idx();
+//        std::cout << "  ce1: " << ce1 << ", ce2: " << ce2 << "\n";
         if(ce1 < 0 || ce2 < 0)
         {
             if(error) error->error("Invalid node");

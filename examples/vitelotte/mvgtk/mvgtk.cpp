@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 
 #include <Patate/common/surface_mesh/objReader.h>
 #include <Patate/vitelotte_io.h>
@@ -22,6 +23,9 @@ int parseAttribSet(const std::string& attr)
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
+
 MvgtkCommand::~MvgtkCommand()
 {
 }
@@ -30,17 +34,6 @@ MvgtkCommand::~MvgtkCommand()
 bool MvgtkCommand::parseArgs(int /*argc*/, char** /*argv*/, int& /*argi*/)
 {
     return true;
-}
-
-
-Mvgtk::Mvgtk()
-{
-    opts.verbose = false;
-
-    m_argMap.insert(std::make_pair("-h", GlobalHelp));
-    m_argMap.insert(std::make_pair("--help", GlobalHelp));
-    m_argMap.insert(std::make_pair("-v", GlobalVerbose));
-    m_argMap.insert(std::make_pair("--verbose", GlobalVerbose));
 }
 
 
@@ -62,6 +55,20 @@ bool OutputCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
+
+Mvgtk::Mvgtk()
+{
+    opts.verbose = false;
+
+    m_argMap.insert(std::make_pair("-h", GlobalHelp));
+    m_argMap.insert(std::make_pair("--help", GlobalHelp));
+    m_argMap.insert(std::make_pair("-v", GlobalVerbose));
+    m_argMap.insert(std::make_pair("--verbose", GlobalVerbose));
+}
+
+
 Mvgtk::~Mvgtk()
 {
     for(FactoryMap::iterator it = m_factories.begin();
@@ -73,14 +80,25 @@ Mvgtk::~Mvgtk()
 }
 
 
+void Mvgtk::printUsage(std::ostream& out, int exitCode) const {
+    out << "Usage: " << m_progName << " [OPTIONS] COMMAND [CMD-OPTION] [COMMAND [CMD-OPTION] [...]]\n";
+    out << "Mvg toolkit: a set of tools to manipulate mvg files.\n";
+    out << "\n";
+    out << "Commands:\n";
+
+    std::exit(exitCode);
+}
+
+
 bool Mvgtk::parseArgs(int argc, char** argv)
 {
+    m_progName = argv[0];
     int argi = 1;
     std::string arg;
     for(; argi < argc; ++argi)
     {
         arg = argv[argi];
-        if(arg.empty()) return false;
+        if(arg.empty()) printUsage(std::cerr);
         else if(arg[0] == '-')
         {
             ArgMap::iterator opt = m_argMap.find(arg);
@@ -89,7 +107,7 @@ bool Mvgtk::parseArgs(int argc, char** argv)
             switch((*opt).second)
             {
             case GlobalHelp:
-                return false;
+                printUsage(std::cout, 0);
                 break;
             case GlobalVerbose:
                 opts.verbose = true;
@@ -114,11 +132,11 @@ bool Mvgtk::parseArgs(int argc, char** argv)
     {
         arg = argv[argi++];
         FactoryMap::iterator it = m_factories.find(arg);
-        if(it == m_factories.end()) return false;
+        if(it == m_factories.end()) printUsage(std::cerr);
 
         MvgtkCommand* cmd = it->second->create();
         m_commands.push_back(cmd);
-        if(!cmd->parseArgs(argc, argv, argi)) return false;
+        if(!cmd->parseArgs(argc, argv, argi)) printUsage(std::cerr);
     }
 
     return true;

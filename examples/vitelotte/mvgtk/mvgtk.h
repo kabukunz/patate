@@ -5,6 +5,7 @@
 #include <list>
 #include <map>
 #include <string>
+#include <ostream>
 
 #include <Patate/vitelotte.h>
 
@@ -66,6 +67,8 @@ public:
         m_factories.insert(std::make_pair(name, new GenericFactory<T>()));
     }
 
+    void printUsage(std::ostream& out, int exitCode = 127) const;
+
     bool parseArgs(int argc, char** argv);
 
     bool executeCommands();
@@ -92,6 +95,7 @@ private:
     ArgMap m_argMap;
     FactoryMap m_factories;
     CommandList m_commands;
+    std::string m_progName;
     std::string m_inFilename;
 };
 

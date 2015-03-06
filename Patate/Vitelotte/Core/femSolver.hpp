@@ -213,8 +213,8 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
         int size  = m_ranges[k+1]-start;
 
         // Skip unused, isolated nodes
-//        if(size == 1 && mat.coeffRef(start, start) == 0)
-//            continue;
+        if(size == 1 && mat.coeffRef(start, start) == 0)
+            continue;
 
         StiffnessMatrix L(size,size);
         L.reserve(size*20);
@@ -232,7 +232,9 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
 
         L.finalize();
 
-//        std::cout << "range: " << start << " (" << m_perm[start] << "), " << size << "\n";
+//        std::cout << "range: " << start << " (" << m_perm[start] << "), "
+//                  << size << ", nz=" << L.nonZeros() << " ("
+//                  << 100. * L.nonZeros() / double(L.cols() * L.rows()) << "%)\n";
 
         switch(m_type)
         {
@@ -299,12 +301,18 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         switch(m_type)
         {
         case ElementBuilder::MATRIX_SPD:
-            m_x.middleRows(start,size) = m_spdBlocks[k]->solve(m_x.middleRows(start, size));
-            if(internal::checkEigenSolverError(*m_spdBlocks[k], m_error)) return;
+            if(m_spdBlocks[k])
+            {
+                m_x.middleRows(start,size) = m_spdBlocks[k]->solve(m_x.middleRows(start, size));
+                if(internal::checkEigenSolverError(*m_spdBlocks[k], m_error)) return;
+            }
             break;
         case ElementBuilder::MATRIX_SYMETRIC:
-            m_x.middleRows(start,size) = m_symBlocks[k]->solve(m_x.middleRows(start, size));
-            if(internal::checkEigenSolverError(*m_symBlocks[k], m_error)) return;
+            if(m_symBlocks[k])
+            {
+                m_x.middleRows(start,size) = m_symBlocks[k]->solve(m_x.middleRows(start, size));
+                if(internal::checkEigenSolverError(*m_symBlocks[k], m_error)) return;
+            }
             break;
         }
     }

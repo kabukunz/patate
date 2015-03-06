@@ -11,40 +11,11 @@
 #include "solveCommand.h"
 
 
-char* progName;
-void usage(int returnValue = 127)
-{
-    std::cout << "usage: " << progName << " [OPTIONS] COMMAND [CMD-OPTIONS]\n"
-"Mvg toolkit: a set of tools to manipulate mvg files.\n"
-"\n"
-"Commands:\n"
-"  check IN      Check IN mvg to ensure everything is right.\n"
-"  convert [-a ATTRS | --attrib ATTRS] IN OUT\n"
-"                Convert a mesh IN from a supported format to an mvg file OUT,\n"
-"                with attributes ATTRS. If ATTRS is not provided, keep the\n"
-"                default attributes if IN is a mvg file or default to fv.\n"
-"  finalize IN OUT\n"
-"                Finalize the mvg by setting nodes on all faces.\n"
-"\n"
-"Options:\n"
-"  -h, --help    Display this message.\n"
-"  -v            Verbose. Print extra informations.\n"
-"\n";
-    exit(returnValue);
-}
-
-
-
-
-
-
 // Main -----------------------------------------------------------------------
 
 
 int main(int argc, char** argv)
 {
-    progName = argv[0];
-
     Mvgtk mvgtk;
 
     mvgtk.registerCommand<OutputCommand>("out");
@@ -61,8 +32,7 @@ int main(int argc, char** argv)
     mvgtk.registerCommand<SimplifyCommand>("simplify");
     mvgtk.registerCommand<SolveCommand>("solve");
 
-    if(!mvgtk.parseArgs(argc, argv)) usage();
-
+    mvgtk.parseArgs(argc, argv);
     return mvgtk.executeCommands()? EXIT_SUCCESS: EXIT_FAILURE;
 
 //    ArgMap commands;
