@@ -184,6 +184,8 @@ public:
      */
     void setAttributes(unsigned attributes);
 
+    inline bool hasAttribute(HalfedgeAttribute attr) const
+        { assert(attr < HALFEDGE_ATTRIB_COUNT); return m_attributes & (1 << attr); }
     inline bool hasToVertexValue() const { return m_attributes & TO_VERTEX_VALUE_FLAG; }
     inline bool hasFromVertexValue() const { return m_attributes & FROM_VERTEX_VALUE_FLAG; }
     inline bool hasEdgeValue() const { return m_attributes & EDGE_VALUE_FLAG; }

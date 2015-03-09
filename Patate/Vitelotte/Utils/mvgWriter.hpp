@@ -4,6 +4,9 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+
+#include <vector>
+
 #include "mvgWriter.h"
 
 
@@ -13,10 +16,12 @@ template < typename _Mesh >
 void
 MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
 {
+    typedef typename Mesh::HalfedgeAttribute HalfedgeAttribute;
     typedef typename Mesh::VertexIterator VertexIterator;
     typedef typename Mesh::FaceIterator FaceIterator;
     typedef typename Mesh::HalfedgeAroundFaceCirculator
             HalfedgeAroundFaceCirculator;
+    typedef std::vector<bool> BoolMap;
 
     assert(m_version == VERSION_1_0);
 
@@ -46,37 +51,71 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
     _out << "nodes " << mesh.nNodes() << "\n";
     _out << "faces " << mesh.nFaces() << "\n";
 
+    unsigned count = 0;
+    IndexMap vxMap(mesh.nVertices(), -1);
     for(VertexIterator vit = mesh.verticesBegin();
         vit != mesh.verticesEnd(); ++vit)
     {
-        _out << "v " << mesh.position(*vit).transpose() << "\n";
+        vxMap[(*vit).idx()] = (count++);
+        _out << "v " << mesh.position(*vit).transpose().format(m_format) << "\n";
     }
 
+    // Find used nodes and only output them.
+    BoolMap nodeUsed(mesh.nNodes(), false);
+    for(FaceIterator fit = mesh.facesBegin();
+         fit != mesh.facesEnd(); ++fit)
+    {
+        HalfedgeAroundFaceCirculator
+                hit  = mesh.halfedges(*fit),
+                hend = hit;
+        do
+        {
+            for(unsigned aid = 0; aid < Mesh::HALFEDGE_ATTRIB_COUNT; ++aid) {
+                HalfedgeAttribute attr = HalfedgeAttribute(aid);
+                if(mesh.hasAttribute(attr) && mesh.halfedgeNode(*hit, attr).isValid())
+                {
+                    nodeUsed[mesh.halfedgeNode(*hit, attr).idx()] = true;
+                }
+            }
+        }
+        while(++hit != hend);
+    }
+
+    // Node printing conserve ordering
+    count = 0;
+    IndexMap nodeMap(mesh.nNodes(), -1);
     for(unsigned i = 0; i < mesh.nNodes(); ++i)
     {
+        if(!nodeUsed[i]) continue;
+        nodeMap[i] = (count++);
         if(mesh.isConstraint(Node(i)))
-            _out << "n " << mesh.nodeValue(Node(i)).transpose() << "\n";
+        {
+            _out << "n " << mesh.nodeValue(Node(i)).transpose().format(m_format) << "\n";
+        }
         else
+        {
             _out << "n void\n";
+        }
     }
 
     for(FaceIterator fit = mesh.facesBegin();
          fit != mesh.facesEnd(); ++fit)
     {
-        _out << (mesh.nSingulars(*fit)? "fs": "f");
+        _out << "f";
 
         HalfedgeAroundFaceCirculator
                 hit  = mesh.halfedges(*fit),
                 hend = hit;
         do
         {
-            _out << " " << mesh.toVertex(*hit).idx() + iOffset;
+            assert(vxMap[mesh.toVertex(*hit).idx()] != -1);
+            _out << " " << vxMap[mesh.toVertex(*hit).idx()] + iOffset;
 
             if(mesh.hasToVertexValue())
             {
                 Node vn = mesh.toVertexValueNode(*hit);
                 _out << "/";
-                printNode(_out, vn);
+                printNode(_out, vn, nodeMap);
 
                 // VertexFromValue only makes sense if vertexValue in enable.
                 if(mesh.hasFromVertexValue())
@@ -85,7 +124,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
                     if(vn != fn)
                     {
                         _out << "/";
-                        printNode(_out, fn);
+                        printNode(_out, fn, nodeMap);
                     }
                 }
             }
@@ -104,13 +143,13 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, mesh.edgeValueNode(*hit));
+                    printNode(_out, mesh.edgeValueNode(*hit), nodeMap);
                 }
                 if(mesh.hasEdgeGradient())
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, mesh.edgeGradientNode(*hit));
+                    printNode(_out, mesh.edgeGradientNode(*hit), nodeMap);
                 }
             }
             while(++hit != hend);
@@ -118,16 +157,31 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
 
         _out << "\n";
     }
+
+    for(VertexIterator vit = mesh.verticesBegin();
+        vit != mesh.verticesEnd(); ++vit)
+    {
+        if(mesh.isGradientConstraint(*vit))
+        {
+            _out << "vgc " << vxMap[(*vit).idx()] << " "
+                 << mesh.gradientConstraint(*vit).transpose().format(m_format) << "\n";
+        }
+    }
 }
 
 template < typename _Mesh >
 void
-MVGWriter<_Mesh>::printNode(std::ostream& _out, Node n) const
+MVGWriter<_Mesh>::printNode(std::ostream& _out, Node n, const IndexMap& nodeMap) const
 {
     if(n.isValid())
-        _out << n.idx();
+    {
+        assert(nodeMap[n.idx()] != -1);
+        _out << nodeMap[n.idx()];
+    }
     else
+    {
         _out << "x";
+    }
 }
 
 

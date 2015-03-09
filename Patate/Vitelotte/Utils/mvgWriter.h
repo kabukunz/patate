@@ -11,6 +11,9 @@
 #include <cassert>
 #include <ostream>
 #include <fstream>
+#include <vector>
+
+#include <Eigen/Dense>
 
 
 namespace Vitelotte
@@ -29,6 +32,7 @@ public:
 
     typedef _Mesh Mesh;
     typedef typename Mesh::Node Node;
+    typedef std::vector<int> IndexMap;
 
     enum Version
     {
@@ -43,7 +47,9 @@ public:
      * \brief Constructor
      */
     inline MVGWriter(Version version=LATEST_VERSION)
-        : m_version(version) {}
+        : m_version(version),
+          m_format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ")
+    {}
 
     /**
      * \brief Write `mesh` in the stream `out` as a `.mvg` file.
@@ -54,11 +60,12 @@ public:
 
 
 protected:
-    void printNode(std::ostream& _out, Node n) const;
+    void printNode(std::ostream& _out, Node n, const IndexMap& nodeMap) const;
 
 
 protected:
     Version m_version;
+    Eigen::IOFormat m_format;
 };
 
 
