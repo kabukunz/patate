@@ -138,6 +138,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     }
 
     // face
+    // TODO: "fs" is deprecated. Remove it.
     else if(spec == "f" || spec == "fs")
     {
         m_fVertices.clear();
@@ -200,6 +201,29 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
                 m_mesh->edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
         }
     }
+
+    else if(spec == "vgc")
+    {
+        typedef typename Mesh::Gradient Gradient;
+        unsigned vxIdx;
+        def >> vxIdx;
+        if(!def) error("Failed to read vertex gradient constraint's vertex index");
+        if(vxIdx >= m_mesh->nVertices()) error("Invalid vertex index");
+
+        Gradient grad;
+        for(unsigned col = 0; col < Gradient::ColsAtCompileTime; ++col)
+        {
+            for(unsigned row = 0; row < Gradient::RowsAtCompileTime; ++row)
+            {
+                def >> grad(row, col);
+            }
+        }
+        if(!def) error("Error while reading gradient");
+
+        m_mesh->setGradientConstraint(Vertex(vxIdx), grad);
+    }
+
+    // Unknown element type.
     else
     {
         warning("Unknown spec: " + spec);
