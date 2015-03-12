@@ -374,11 +374,19 @@ template < class _Mesh >
 inline typename VGMeshRenderer<_Mesh>::Vector4
 VGMeshRenderer<_Mesh>::color(const Mesh& mesh, Node node) const
 {
+    typedef Eigen::Vector3f Vector3;
     Vector4 c = Vector4::Unit(3);
     if(mesh.isValid(node) && mesh.isConstraint(node))
     {
         const NodeValue& value = mesh.nodeValue(node);
-        c.head(mesh.nCoeffs()) = value.template cast<float>();
+        switch(mesh.nCoeffs())
+        {
+        case 2: c(3)        = value(1);                     // fall-through
+        case 1: c.head<3>() = Vector3::Constant(value(0));  break;
+        case 3: c.head<3>() = value.template head<3>().template cast<float>(); break;
+        case 4: c           = value.template cast<float>(); break;
+        default: assert(false);
+        }
     }
     return m_convertSrgbToLinear? PatateCommon::srgbToLinear(c): c;
 }
