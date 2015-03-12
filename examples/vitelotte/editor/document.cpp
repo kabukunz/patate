@@ -659,8 +659,8 @@ void SetNodeValue::undo()
 {
     m_document->mesh().nodeValue(m_node) = m_prevValue;
 
-    bool prevConstrained = (m_prevValue != Mesh::UnconstrainedNode);
-    bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
+    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedNodeValue());
+    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedNodeValue());
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
 }
@@ -670,8 +670,8 @@ void SetNodeValue::redo()
 {
     m_document->mesh().nodeValue(m_node) = m_newValue;
 
-    bool prevConstrained = (m_prevValue != Mesh::UnconstrainedNode);
-    bool newConstrained  = ( m_newValue != Mesh::UnconstrainedNode);
+    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedNodeValue());
+    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedNodeValue());
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
 }

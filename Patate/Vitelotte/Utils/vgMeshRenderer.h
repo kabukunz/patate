@@ -66,9 +66,9 @@ public:
                          const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1));
 
 private:
+    typedef Eigen::Vector4f Vector4;
     typedef std::vector<unsigned> IndicesVector;
-    typedef std::vector<Vector> VectorsVector;
-    typedef std::vector<NodeValue> NodesVector;
+    typedef std::vector<Vector4> Vector4Vector;
 
     struct SolidUniforms
     {
@@ -92,7 +92,7 @@ private:
                          const char *fragCode);
     bool initWireframeShader();
 
-    NodeValue nodeValue(const Mesh& mesh, Node node) const;
+    Vector4 color(const Mesh& mesh, Node node) const;
 
     template < typename T >
     void createAndUploadBuffer(GLuint& glId, GLenum type,
@@ -119,9 +119,9 @@ private:
 
     GLuint m_vao;
 
-    VectorsVector m_vertices;
+    Vector4Vector m_vertices;
     IndicesVector m_indices;
-    NodesVector m_nodes;
+    Vector4Vector m_nodes;
 
     bool m_quadratic;
     unsigned m_nTriangles;

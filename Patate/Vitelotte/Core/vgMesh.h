@@ -22,6 +22,13 @@
 namespace Vitelotte
 {
 
+
+enum
+{
+    Dynamic = Eigen::Dynamic
+};
+
+
 /**
  * \brief A mesh with data suitable for representing complex color gradients,
  * among other.
@@ -42,33 +49,36 @@ namespace Vitelotte
  * expansive in terms of memory and not very usefull. We may add it later
  * and make it optional.
  */
-template < typename _Scalar, int _Dim=2, int _Chan=4 >
+template < typename _Scalar, int _Dims=2, int _Coeffs=4 >
 class VGMesh: public PatateCommon::SurfaceMesh
 {
 public:
     typedef _Scalar Scalar;
 
     enum {
-        Dim = _Dim,
-        Chan = _Chan
+        DimsAtCompileTime = _Dims,
+        CoeffsAtCompileTime = _Coeffs
     };
 
-    typedef VGMesh<Scalar, Dim, Chan> Self;
+    typedef VGMesh<Scalar, DimsAtCompileTime, CoeffsAtCompileTime> Self;
 
-    typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
-    typedef Eigen::Matrix<Scalar, Chan, 1> NodeValue;
-    typedef Eigen::Matrix<Scalar, Chan, Dim> Gradient;
+    typedef Eigen::Matrix<Scalar, DimsAtCompileTime, 1> Vector;
+    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, 1> NodeValue;
+    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, DimsAtCompileTime> Gradient;
 
-    typedef std::vector<NodeValue> NodeVector;
+protected:
+    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeVector;
+
+public:
+    typedef typename NodeVector::ColXpr NodeValueXpr;
+    typedef typename NodeVector::ConstColXpr ConstNodeValueXpr;
+    typedef typename NodeValue::ConstantReturnType UnconstrainedNodeType;
 
     struct Node : public BaseHandle
     {
         explicit Node(int _idx = -1) : BaseHandle(_idx) {}
         std::ostream& operator<<(std::ostream& os) const { return os << 'n' << idx(); }
     };
-
-    /// \brief A special NodeValue used for unconstrained nodes.
-    static const NodeValue UnconstrainedNode;
 
     enum HalfedgeAttribute
     {
@@ -116,6 +126,7 @@ public:
 
     /// \brief Create a VGMesh with `attirbutes` flags activated.
     explicit VGMesh(unsigned attributes = 0);
+    explicit VGMesh(unsigned nCoeffs, unsigned attributes);
     virtual ~VGMesh() {}
 
     VGMesh(const Self& other)
@@ -128,6 +139,13 @@ public:
 
     /// \name Mesh and general
     /// \{
+
+    inline unsigned nDims() const { return DimsAtCompileTime; }
+    inline unsigned nCoeffs() const { return m_nodes.rows(); }
+    void setNCoeffs(unsigned nCoeffs)
+        { assert(int(CoeffsAtCompileTime) == int(Dynamic) ||
+                 int(nCoeffs) == int(CoeffsAtCompileTime));
+          m_nodes.resize(nCoeffs, nodesCapacity()); }
 
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
@@ -260,21 +278,27 @@ public:
     /// \{
 
     /// \brief Return the number of nodes.
-    inline typename NodeVector::size_type nNodes() const
-    { return m_nodes.size(); }
+    inline unsigned nNodes() const { return m_nNodes; }
+    inline unsigned nodesCapacity() const { return m_nodes.cols(); }
 
     /**
      * \brief Add and return a node with value `nodeValue` or an unknown node
      * if no parameter is provided.
      */
-    inline Node addNode(const NodeValue& nodeValue=UnconstrainedNode);
+    inline Node addNode() { return addNode(unconstrainedNodeValue()); }
+    template <typename Derived>
+    inline Node addNode(const Eigen::DenseBase<Derived>& nodeValue);
 
     /// \brief Read only access to the value of `node`.
-    inline const NodeValue& nodeValue(Node node) const
-    { return m_nodes.at(node.idx()); }
+    inline ConstNodeValueXpr nodeValue(Node node) const
+    { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
 
     /// \brief Read-write access to the value of `node`.
-    inline NodeValue& nodeValue(Node node) { return m_nodes.at(node.idx()); }
+    inline NodeValueXpr nodeValue(Node node)
+    { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
+
+    inline UnconstrainedNodeType unconstrainedNodeValue() const
+    { return NodeValue::Constant(nCoeffs(), std::numeric_limits<Scalar>::quiet_NaN()); }
 
     /// \brief Return true iff `node` is a constraint.
     inline bool isConstraint(Node node) const
@@ -459,6 +483,7 @@ protected:
 
 
 protected:
+    unsigned m_nNodes;
     NodeVector m_nodes;
 
     unsigned m_attributes;

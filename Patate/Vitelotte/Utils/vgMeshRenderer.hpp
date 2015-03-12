@@ -91,9 +91,9 @@ void VGMeshRenderer<_Mesh>::updateBuffers(const Mesh& mesh)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
-    m_vertices.clear();
-    m_indices.clear();
-    m_nodes.clear();
+    // TODO: Remove nCoeffs limitation by providing a mechanism to convert
+    // values to colors.
+    assert(mesh.nCoeffs() <= 4);
 
     if(!mesh.hasToVertexValue())
         return;
@@ -107,16 +107,20 @@ void VGMeshRenderer<_Mesh>::updateBuffers(const Mesh& mesh)
     m_nTriangles = mesh.nFaces() - m_nSingulars;
 
     // Reserve buffers
-    m_vertices.reserve(mesh.nVertices());
+    m_vertices.resize(mesh.nVertices());
     m_indices.resize(m_nTriangles * 3 + m_nSingulars * 3);
     m_nodes.resize(m_nTriangles * nodePerTriangle +
                    m_nSingulars * (nodePerTriangle + 1));
 
     // Push vertices positions
+    unsigned index = 0;
     for(typename Mesh::VertexIterator vit = mesh.verticesBegin();
         vit != mesh.verticesEnd(); ++vit)
     {
-        m_vertices.push_back(mesh.position(*vit));
+        m_vertices[index] = Vector4::Unit(3);
+        m_vertices[index].head(mesh.nDims()) =
+                mesh.position(*vit).template cast<float>();
+        ++index;
     }
 
     // Push faces indices and nodes
@@ -145,11 +149,11 @@ void VGMeshRenderer<_Mesh>::updateBuffers(const Mesh& mesh)
         {
             m_indices[index + ei] = mesh.toVertex(h).idx();
             h = mesh.nextHalfedge(h);
-            m_nodes[nodeIndex + ei] = nodeValue(mesh, mesh.fromVertexValueNode(h));
+            m_nodes[nodeIndex + ei] = color(mesh, mesh.fromVertexValueNode(h));
         }
         // Singular node is the last one
         if(isSingular)
-            m_nodes[nodeIndex + nodePerTriangle] = nodeValue(mesh, mesh.toVertexValueNode(h));
+            m_nodes[nodeIndex + nodePerTriangle] = color(mesh, mesh.toVertexValueNode(h));
 
         if(m_quadratic)
         {
@@ -157,7 +161,7 @@ void VGMeshRenderer<_Mesh>::updateBuffers(const Mesh& mesh)
             h = mesh.prevHalfedge(h);
             for(int ei = 0; ei < 3; ++ei)
             {
-                m_nodes[nodeIndex + 3 + ei] = nodeValue(mesh, mesh.edgeValueNode(h));
+                m_nodes[nodeIndex + 3 + ei] = color(mesh, mesh.edgeValueNode(h));
                 h = mesh.nextHalfedge(h);
             }
         }
@@ -227,8 +231,8 @@ void VGMeshRenderer<_Mesh>::drawGeometry(unsigned geomFlags)
         glEnableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
         glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
         glVertexAttribPointer(VG_MESH_POSITION_ATTR_LOC,
-                              Vector::SizeAtCompileTime, GL_FLOAT,
-                              false, sizeof(Vector), 0);
+                              4, GL_FLOAT,
+                              false, sizeof(Vector4), 0);
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer);
     }
@@ -367,17 +371,16 @@ bool VGMeshRenderer<_Mesh>::initWireframeShader()
 
 
 template < class _Mesh >
-inline typename VGMeshRenderer<_Mesh>::NodeValue
-VGMeshRenderer<_Mesh>::nodeValue(const Mesh& mesh, Node node) const
+inline typename VGMeshRenderer<_Mesh>::Vector4
+VGMeshRenderer<_Mesh>::color(const Mesh& mesh, Node node) const
 {
+    Vector4 c = Vector4::Unit(3);
     if(mesh.isValid(node) && mesh.isConstraint(node))
     {
-        if(m_convertSrgbToLinear)
-            return PatateCommon::srgbToLinear(mesh.nodeValue(node));
-        else
-            return mesh.nodeValue(node);
+        const NodeValue& value = mesh.nodeValue(node);
+        c.head(mesh.nCoeffs()) = value.template cast<float>();
     }
-    return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
+    return m_convertSrgbToLinear? PatateCommon::srgbToLinear(c): c;
 }
 
 

@@ -12,18 +12,22 @@ namespace Vitelotte
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-const typename VGMesh<_Scalar, _Dim, _Chan>::NodeValue
-    VGMesh<_Scalar, _Dim, _Chan>::UnconstrainedNode =
-        VGMesh<_Scalar, _Dim, _Chan>::NodeValue::Constant(
-            std::numeric_limits<Scalar>::quiet_NaN());
+VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
+    : m_nNodes(0),
+      m_attributes(0)
+{
+    m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
+    setAttributes(attributes);
+}
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
-    : m_attributes(0)
+VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
+    : m_nNodes(0),
+      m_attributes(0)
 {
+    setNCoeffs(nCoeffs);
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
-
     setAttributes(attributes);
 }
 
@@ -37,7 +41,9 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
         // FIXME: SurfaceMesh's operator= wont work with properties of different types.
         PatateCommon::SurfaceMesh::operator=(rhs);
 
-        m_nodes = rhs.m_nodes;
+        m_nNodes = rhs.m_nNodes;
+        m_nodes = rhs.m_nodes.template cast<Scalar>();
+        assert(nNodes() <= nodesCapacity());
 
         m_attributes = rhs.m_attributes;
 
@@ -62,7 +68,12 @@ VGMesh<_Scalar, _Dim, _Chan>::reserve(
         unsigned nvertices, unsigned nedges, unsigned nfaces, unsigned nnodes)
 {
     PatateCommon::SurfaceMesh::reserve(nvertices, nedges, nfaces);
-    m_nodes.reserve(nnodes);
+    if(nnodes > nodesCapacity())
+    {
+        NodeVector nodes(nCoeffs(), nnodes);
+        nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
+        m_nodes.swap(nodes);
+    }
 }
 
 
@@ -71,7 +82,7 @@ void
 VGMesh<_Scalar, _Dim, _Chan>::clear()
 {
     PatateCommon::SurfaceMesh::clear();
-    m_nodes.clear();
+    m_nNodes = 0;
 }
 
 
@@ -89,7 +100,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
 {
-    return 0 <= n.idx() && n.idx() < m_nodes.size();
+    return 0 <= n.idx() && n.idx() < nNodes();
 }
 
 
@@ -292,11 +303,21 @@ unsigned VGMesh<_Scalar, _Dim, _Chan>::nVertexGradientConstraints(Face f) const
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+template <typename Derived>
 typename VGMesh<_Scalar, _Dim, _Chan>::Node
-VGMesh<_Scalar, _Dim, _Chan>::addNode(const NodeValue& nodeValue)
+VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& nodeValue)
 {
-    m_nodes.push_back(nodeValue);
-    return Node(m_nodes.size() - 1);
+    if(nodesCapacity() == nNodes())
+    {
+        unsigned size = std::max(16u, nNodes() * 2);
+        NodeVector nodes(nCoeffs(), size);
+        nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
+        m_nodes.swap(nodes);
+    }
+    m_nodes.col(nNodes()) = nodeValue;
+    ++m_nNodes;
+    assert(nNodes() <= nodesCapacity());
+    return Node(nNodes() - 1);
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
@@ -348,6 +369,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
     assert(hasToVertexValue() && hasFromVertexValue());
     assert(isConstraint(fromNode) && isConstraint(toNode));
 
+    // Must be copies, not refs because m_nodes can be reallocated.
     NodeValue fromValue = nodeValue(fromNode);
     NodeValue   toValue = nodeValue(  toNode);
 
@@ -677,10 +699,10 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
 
     // Update node vector and fill remapping vector
     std::vector<int> map(nNodes(), -1);
-    NodeVector reord(size);
+    NodeVector reord(nCoeffs(), nodesCapacity());
     for(int i = 0; i < size; ++i)
     {
-        reord[i] = nodeValue(Node(buf[i]));
+        reord.col(i) = nodeValue(Node(buf[i]));
         map[buf[i]] = i;
     }
     m_nodes.swap(reord);

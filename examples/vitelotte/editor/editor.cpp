@@ -23,7 +23,7 @@ Editor::Editor(QWidget* parent)
       m_inputState(STATE_IDLE),
       m_dragPos(),
       m_dragGradientStop(),
-      m_paintColor(0., 0., 0., 1.),
+      m_paintColor(),
       m_rendererDirty(true)
 {
     setMouseTracking(true);
@@ -97,12 +97,22 @@ void Editor::setDocument(Document* document)
         if(m_initialized)
             updateBuffers();
 
-        connect(m_document, SIGNAL(meshChanged()), this, SLOT(centerView()));
+        connect(m_document, SIGNAL(meshChanged()), this, SLOT(updateMesh()));
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateBuffers()));
         connect(m_document, SIGNAL(meshUpdated()), this, SLOT(updateRenderers()));
         connect(m_document, SIGNAL(selectionChanged()),
                 this, SLOT(updateRenderers()));
     }
+}
+
+
+void Editor::updateMesh()
+{
+    if(m_paintColor.rows() != m_document->mesh().nCoeffs())
+    {
+        m_paintColor = NodeValue::Unit(m_document->mesh().nCoeffs(), 3);
+    }
+    centerView();
 }
 
 
@@ -155,8 +165,10 @@ void Editor::setEditMode(int mode)
 
 
 void Editor::setPaintColor(const QColor& color) {
-    m_paintColor = NodeValue(color.redF(), color.greenF(),
-                             color.blueF(), color.alphaF());
+    m_paintColor[0] = color.redF();
+    if(m_paintColor.rows() > 1) m_paintColor[1] = color.greenF();
+    if(m_paintColor.rows() > 2) m_paintColor[2] = color.blueF();
+    if(m_paintColor.rows() > 3) m_paintColor[3] = color.alphaF();
 }
 
 
@@ -792,8 +804,8 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
         Eigen::Vector3f p;
         p << gsit->position, 0;
         Mesh::NodeValue outerColor = (gsit->color.head<3>().sum() < 1.5)?
-                    Mesh::NodeValue(1, 1, 1, 1):
-                    Mesh::NodeValue(0, 0, 0, 1);
+                    Mesh::NodeValue::Constant(m_document->mesh().nCoeffs(), 1).eval():
+                    Mesh::NodeValue::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);
         m_pointRenderer.addPoint(p, innerRadius, gsit->color);
     }
@@ -803,8 +815,8 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
         Eigen::Vector3f p;
         p << m_dummyStop.position, 0;
         Mesh::NodeValue outerColor = (m_dummyStop.color.head<3>().sum() < 1.5)?
-                    Mesh::NodeValue(1, 1, 1, 1):
-                    Mesh::NodeValue(0, 0, 0, 1);
+                    Mesh::NodeValue::Constant(m_document->mesh().nCoeffs(), 1).eval():
+                    Mesh::NodeValue::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);
         m_pointRenderer.addPoint(p, innerRadius, m_dummyStop.color);
     }

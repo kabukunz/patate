@@ -5,6 +5,7 @@
 #include <Patate/vitelotte.h>
 #include <Patate/vitelotte_gl.h>
 
+#include "vgMeshWithCurves.h"
 #include "glPointRenderer.h"
 #include "glLineRenderer.h"
 
@@ -12,7 +13,7 @@
 class VGNodeRenderer
 {
 public:
-    typedef Vitelotte::VGMesh<float> Mesh;
+    typedef VGMeshWithCurves Mesh;
 
     struct PlacedNode
     {

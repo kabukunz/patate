@@ -7,18 +7,20 @@
 #include <Patate/vitelotte.h>
 
 
-class VGMeshWithCurves : public Vitelotte::VGMesh<float>
+class VGMeshWithCurves : public Vitelotte::VGMesh<float, 2, Vitelotte::Dynamic>
 {
 public:
-    typedef Vitelotte::VGMesh<float> Base;
+    typedef Vitelotte::VGMesh<float, 2, Vitelotte::Dynamic> Base;
 
     typedef Base::Scalar Scalar;
     typedef Base::Vector Vector;
     typedef Base::NodeValue NodeValue;
-    typedef Eigen::Matrix<Scalar, Base::Chan, Base::Dim> NodeGradient;
+    typedef Base::Gradient Gradient;
 
     // TODO: rename it PicewiseLinearFunction ?
     typedef std::map<float, NodeValue> ValueGradient;
+
+    typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
 
     struct Curve : public BaseHandle
     {
@@ -47,14 +49,11 @@ public:
         ValueGradient gradient[4];
     };
 
-    /// \brief A special NodeValue used for unconstrained gradient.
-    static const NodeGradient UnconstrainedGradient;
-
     struct PointConstraintInfo
     {
         Vertex vertex;
         NodeValue value;
-        NodeGradient gradient;
+        Gradient gradient;
     };
 
     enum
@@ -78,6 +77,7 @@ public:
 
 public:
     VGMeshWithCurves();
+    VGMeshWithCurves(unsigned nCoeffs);
 
     inline Curve  curve(Halfedge h) const { return m_halfedgeCurveConn[h].curve; }
     inline Curve& curve(Halfedge h)       { return m_halfedgeCurveConn[h].curve; }
@@ -144,9 +144,9 @@ public:
     inline       NodeValue& value(PointConstraint pc)
         { return m_pointConstraints[pc.idx()].value; }
 
-    inline const NodeGradient& gradient(PointConstraint pc) const
+    inline const Gradient& gradient(PointConstraint pc) const
         { return m_pointConstraints[pc.idx()].gradient; }
-    inline       NodeGradient& gradient(PointConstraint pc)
+    inline       Gradient& gradient(PointConstraint pc)
         { return m_pointConstraints[pc.idx()].gradient; }
 
     inline unsigned nPointConstraints() const { return m_pointConstraints.size(); }
@@ -155,6 +155,9 @@ public:
 
     void clear();
     void setNodesFromCurves();
+
+    inline UnconstrainedGradientType unconstrainedGradientValue() const
+    { return Gradient::Constant(nCoeffs(), nDims(), std::numeric_limits<Scalar>::quiet_NaN()); }
 
     NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
 

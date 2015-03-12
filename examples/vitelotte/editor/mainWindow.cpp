@@ -378,16 +378,17 @@ void MainWindow::setConstraintType(QAction* /*action*/)
 {
     if(m_document->selection().isPointConstraint())
     {
+        Mesh& mesh = m_document->mesh();
         Mesh::PointConstraint pc = m_document->selection().pointConstraint();
         if(m_setDerivContinuous->isChecked())
         {
             m_document->undoStack()->push(new SetPointConstraintGradient(
-                                m_document, pc, Mesh::UnconstrainedGradient));
+                                m_document, pc, mesh.unconstrainedGradientValue()));
         }
         else
         {
             m_document->undoStack()->push(new SetPointConstraintGradient(
-                                m_document, pc, Mesh::NodeGradient::Zero()));
+                                m_document, pc, Mesh::Gradient::Zero(mesh.nCoeffs(), mesh.nDims())));
         }
         m_document->solve();
     }
@@ -427,7 +428,7 @@ void MainWindow::setConstraintType(QAction* /*action*/)
         }
 
         Mesh::ValueGradient flatGradient;
-        flatGradient[0] = Mesh::NodeValue::Zero();
+        flatGradient[0] = Mesh::NodeValue::Zero(mesh.nCoeffs());
         if(doSetDerivLeft)
         {
     //        std::cout << "Set deriv left\n";

@@ -1,12 +1,14 @@
 #include "vgMeshWithCurves.h"
 
 
-const VGMeshWithCurves::NodeGradient VGMeshWithCurves::UnconstrainedGradient =
-        VGMeshWithCurves::NodeGradient::Constant(
-            std::numeric_limits<VGMeshWithCurves::Scalar>::quiet_NaN());
-
-
 VGMeshWithCurves::VGMeshWithCurves()
+{
+    m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
+}
+
+
+VGMeshWithCurves::VGMeshWithCurves(unsigned nCoeffs)
+    : Base(nCoeffs, 0)
 {
     m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
 }
@@ -127,8 +129,8 @@ VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint()
 {
     PointConstraint pc(nPointConstraints());
     PointConstraintInfo pci;
-    pci.value = UnconstrainedNode;
-    pci.gradient = UnconstrainedGradient;
+    pci.value = unconstrainedNodeValue();
+    pci.gradient = unconstrainedGradientValue();
     m_pointConstraints.push_back(pci);
     return pc;
 }
@@ -144,7 +146,7 @@ void VGMeshWithCurves::clear()
 
 void VGMeshWithCurves::setNodesFromCurves()
 {
-    m_nodes.clear();
+    m_nNodes = 0;
     for(HalfedgeIterator hit = halfedgesBegin();
         hit != halfedgesEnd(); ++hit)
     {

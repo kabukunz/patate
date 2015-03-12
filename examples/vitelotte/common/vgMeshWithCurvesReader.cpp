@@ -55,7 +55,7 @@ void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
         m_in.seekg(std::ios_base::beg);
 
         Mesh::NodeValue& nv = m_mesh->value(pc);
-        for(int i = 0; i < Mesh::Chan; ++i)
+        for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
             m_in >> nv(i);
 
         m_in >> std::ws;
@@ -70,9 +70,9 @@ void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
         m_in.str(m_part);
         m_in.seekg(std::ios_base::beg);
 
-        Mesh::NodeGradient& ng = m_mesh->gradient(pc);
-        for(int j = 0; j < Mesh::Dim; ++j)
-            for(int i = 0; i < Mesh::Chan; ++i)
+        Mesh::Gradient& ng = m_mesh->gradient(pc);
+        for(unsigned j = 0; j < m_mesh->nDims(); ++j)
+            for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
                 m_in >> ng(i, j);
 
         m_in >> std::ws;
@@ -183,7 +183,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
         return false;
     }
 
-    int nparam = Mesh::Chan;
+    int nparam = m_mesh->nCoeffs();
 
     std::getline(def, m_part, ';');
     std::string::iterator c = m_part.begin();
@@ -215,10 +215,10 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
     m_in >> std::ws;
 
     g.clear();
+    Mesh::NodeValue v(m_mesh->nCoeffs());
     while(m_in.good())
     {
         float pos;
-        Mesh::NodeValue v;
         m_in >> pos;
         for(int i = 0; i < nparam; ++i)
             m_in >> v(i);

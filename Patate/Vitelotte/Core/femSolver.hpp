@@ -103,7 +103,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
 //    std::cout << ((m_type == ElementBuilder::MATRIX_SPD)?
 //                      "SPD\n": "Symetric\n");
 
-    m_b.resize(m_mesh->nNodes(), Mesh::Chan);
+    m_b.resize(m_mesh->nNodes(), m_mesh->nCoeffs());
     m_elementBuilder.setRhs(*m_mesh, m_b, &m_error);
     if(m_error.status() == SolverError::STATUS_ERROR)
     {
@@ -270,7 +270,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     // compute RHS
     unsigned nUnknowns = m_ranges.back();
     unsigned nConstraints = m_stiffnessMatrix.cols() - nUnknowns;
-    Matrix constraints(nConstraints, (unsigned)Mesh::Chan);
+    Matrix constraints(nConstraints, m_mesh->nCoeffs());
 
     // As sort() keep constraints order, they will have the right indices.
     unsigned count = 0;
@@ -284,7 +284,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     }
     assert(count == nConstraints);
 
-    m_x.resize(nUnknowns, m_b.cols());
+    m_x.resize(nUnknowns, m_mesh->nCoeffs());
     for(unsigned i = 0; i < m_x.rows(); ++i)
     {
         m_x.row(i) = m_b.row(m_perm(i));

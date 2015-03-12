@@ -99,7 +99,7 @@ void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
         }
         else if(event->button() == Qt::LeftButton || event->button() == Qt::RightButton)
         {
-            Mesh::NodeValue v = Mesh::UnconstrainedNode;
+            Mesh::NodeValue v = mesh().unconstrainedNodeValue();
             if(event->button() == Qt::LeftButton)
             {
                 if(hn != Mesh::EDGE_GRADIENT)
@@ -114,7 +114,7 @@ void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
                     v = colorToValue(color);
                 }
                 else
-                    v = Mesh::NodeValue::Zero();
+                    v = Mesh::NodeValue::Zero(mesh().nCoeffs());
             }
 
             m_document->setNodeValue(h, hn, v);
@@ -372,8 +372,9 @@ QColor ValueEditor::valueToColor(const Mesh::NodeValue& v) const
 
 ValueEditor::Mesh::NodeValue ValueEditor::colorToValue(const QColor& c) const
 {
-    return Mesh::NodeValue(
-                c.redF(), c.greenF(), c.blueF(), c.alphaF());
+    Mesh::NodeValue value(mesh().nCoeffs());
+    value << c.redF(), c.greenF(), c.blueF(), c.alphaF();
+    return value;
 }
 
 
@@ -403,7 +404,7 @@ ValueEditor::Mesh::NodeValue ValueEditor::nodeValue(Mesh::Node n) const
 {
     if(n.isValid() && mesh().isConstraint(n))
         return mesh().nodeValue(n);
-    return Mesh::NodeValue(0, 0, 0, 1);
+    return Mesh::NodeValue::Unit(mesh().nCoeffs(), 3);
 }
 
 
@@ -742,7 +743,7 @@ void ValueEditor::drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
     }
 
     m_pen.setColor(Qt::black);
-    drawNode(p, pos, Mesh::NodeValue(1, 1, 1, 1), n, isSel,
+    drawNode(p, pos, Mesh::NodeValue::Constant(mesh().nCoeffs(), 1), n, isSel,
              Eigen::Vector2f(0, (side & RightNode)? -1: 1));
 }
 

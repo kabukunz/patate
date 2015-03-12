@@ -59,6 +59,7 @@ public:
 public slots:
     void centerView();
     void setDocument(Document* document);
+    void updateMesh();
     void updateBuffers();
     void updateRenderers();
     void setShowConstraints(bool enable);

@@ -25,7 +25,7 @@ public:
     typedef _Scalar Scalar;
     typedef _Mesh Mesh;
 
-    typedef Eigen::Matrix<Scalar, Mesh::Dim, 1> Vector;
+    typedef Eigen::Matrix<Scalar, Mesh::DimsAtCompileTime, 1> Vector;
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
     typedef Eigen::Triplet<Scalar> Triplet;
 

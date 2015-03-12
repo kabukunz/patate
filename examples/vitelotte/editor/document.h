@@ -163,6 +163,9 @@ private:
 };
 
 
+// Low-level commands /////////////////////////////////////////////////////////
+
+
 class SetNodeValue : public QUndoCommand
 {
 public:
@@ -208,6 +211,9 @@ private:
     Node m_newNode;
     Node m_prevNode;
 };
+
+
+// High-level commands /////////////////////////////////////////////////////////
 
 
 class MoveGradientStop : public QUndoCommand
@@ -349,7 +355,7 @@ class SetPointConstraintGradient : public QUndoCommand
 {
 public:
     typedef Document::Mesh::PointConstraint PointConstraint;
-    typedef Document::Mesh::NodeGradient NodeGradient;
+    typedef Document::Mesh::Gradient NodeGradient;
 
 public:
     SetPointConstraintGradient(Document* doc, PointConstraint pc,

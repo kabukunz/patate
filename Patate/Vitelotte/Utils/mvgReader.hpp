@@ -44,7 +44,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
 
     std::string cmd;
     unsigned dim = 2;
-    unsigned params = 4;
+    unsigned nCoeffs = 4;
     unsigned attributes = 0;
     unsigned nVert = 1024;
     unsigned nNode = 1024;
@@ -56,8 +56,8 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
 
         if(cmd == "dim")
             m_lineStream >> dim;
-        else if(cmd == "parameters")
-            m_lineStream >> params;
+        else if(cmd == "parameters" || cmd == "coefficients")
+            m_lineStream >> nCoeffs;
         else if(cmd == "linear")
             attributes = Mesh::LINEAR_FLAGS;
         else if(cmd == "quadratic")
@@ -98,6 +98,12 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     m_mesh->clear();
     // TODO: set / check dims and parameters
     m_mesh->setAttributes(attributes);
+    if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != m_mesh->nCoeffs())
+    {
+        error("Invalid number of coefficients.");
+        return;
+    }
+    m_mesh->setNCoeffs(nCoeffs);
     m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
 }
 
@@ -115,7 +121,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     if(spec == "v")
     {
         Vector p;
-        for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
+        for(unsigned i = 0; i < m_mesh->nDims(); ++i)
             def >> p[i];
         if(!def) error("Failed to read vertex (not enough components ?)");
         m_mesh->addVertex(p);
@@ -124,13 +130,13 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // nodes
     else if(spec == "n")
     {
-        NodeValue n;
+        NodeValue n(m_mesh->nCoeffs());
         def >> std::ws;
         if(def.peek() == 'v')
-            n = Mesh::UnconstrainedNode;
+            n = m_mesh->unconstrainedNodeValue();
         else
         {
-            for(unsigned i = 0; i < NodeValue::SizeAtCompileTime; ++i)
+            for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
                 def >> n[i];
             if(!def) error("Failed to read node (not enough components ?)");
         }
@@ -210,10 +216,10 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         if(!def) error("Failed to read vertex gradient constraint's vertex index");
         if(vxIdx >= m_mesh->nVertices()) error("Invalid vertex index");
 
-        Gradient grad;
-        for(unsigned col = 0; col < Gradient::ColsAtCompileTime; ++col)
+        Gradient grad(m_mesh->nCoeffs(), m_mesh->nDims());
+        for(unsigned col = 0; col < m_mesh->nDims(); ++col)
         {
-            for(unsigned row = 0; row < Gradient::RowsAtCompileTime; ++row)
+            for(unsigned row = 0; row < m_mesh->nCoeffs(); ++row)
             {
                 def >> grad(row, col);
             }
