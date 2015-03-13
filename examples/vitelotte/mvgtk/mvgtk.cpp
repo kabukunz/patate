@@ -4,6 +4,7 @@
 #include <Patate/common/surface_mesh/objReader.h>
 #include <Patate/vitelotte_io.h>
 
+#include "../common/textFormatter.h"
 #include "../common/vgMeshWithCurvesReader.h"
 
 #include "mvgtk.h"
@@ -55,6 +56,18 @@ bool OutputCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 }
 
 
+const char* OutputCommand::cmdOptions()
+{
+    return "MVG_FILE";
+}
+
+
+const char* OutputCommand::cmdDesc()
+{
+    return "Output the mesh in MVG_FILE.";
+}
+
+
 // ////////////////////////////////////////////////////////////////////////////
 
 
@@ -71,20 +84,66 @@ Mvgtk::Mvgtk()
 
 Mvgtk::~Mvgtk()
 {
-    for(FactoryMap::iterator it = m_factories.begin();
+    for(FactoryList::iterator it = m_factories.begin();
         it != m_factories.end(); ++it)
-        delete it->second;
+    {
+        delete *it;
+    }
     for(CommandList::iterator it = m_commands.begin();
         it != m_commands.end(); ++it)
+    {
         delete *it;
+    }
 }
 
 
-void Mvgtk::printUsage(std::ostream& out, int exitCode) const {
-    out << "Usage: " << m_progName << " [OPTIONS] COMMAND [CMD-OPTION] [COMMAND [CMD-OPTION] [...]]\n";
-    out << "Mvg toolkit: a set of tools to manipulate mvg files.\n";
+void Mvgtk::addCommandAlias(const std::string& command, const std::string& alias)
+{
+    FactoryMap::iterator it = m_factoryMap.find(command);
+    assert(it != m_factoryMap.end());
+    bool isNew = m_factoryMap.insert(std::make_pair(alias, it->second)).second;
+    assert(isNew);
+}
+
+
+void Mvgtk::printUsage(std::ostream& out, int exitCode) const
+{
+    // TODO: add a simple, more or less portable way to get terminal width.
+    unsigned width = 70;
+
+    std::ostringstream tmpOut;
+    tmpOut << "Usage: " << m_progName << " [OPTIONS] INPUT_FILE COMMAND [CMD-OPTION] [COMMAND [CMD-OPTION] [...]]\n";
+    format(out, tmpOut.str().c_str(), width, 8, 0);
+    format(out,
+           "Mvg toolkit: a set of tools to manipulate mvg files.\n"
+           "\n"
+           "INPUT_FILE can be an .mvg file or a .obj. The mesh is then "
+           "processed successively by commands in order. Each command take as "
+           "input the mesh produced by the previous one. A mesh can be writen "
+           "with the output command.",
+           width, 0);
     out << "\n";
     out << "Commands:\n";
+
+    for(FactoryList::const_iterator fit = m_factories.begin();
+        fit != m_factories.end(); ++fit)
+    {
+        tmpOut.str(std::string());
+        tmpOut.clear();
+        // Crappy complexity, but who cares ?
+        std::vector<std::string> cmds;
+        for(FactoryMap::const_iterator lfit = m_factoryMap.begin();
+            lfit != m_factoryMap.end(); ++lfit)
+        {
+            if(lfit->second == *fit) cmds.push_back(lfit->first);
+        }
+        for(unsigned i = 0; i < cmds.size() - 1; ++i)
+            format(out, cmds[i].c_str(), width, 10, 2);
+        tmpOut << cmds.back() << " " << (*fit)->cmdOptions();
+        format(out, tmpOut.str().c_str(), width, 10, 2);
+        format(out, (*fit)->cmdDesc(), width, 6);
+        out << "\n";
+    }
 
     std::exit(exitCode);
 }
@@ -131,8 +190,8 @@ bool Mvgtk::parseArgs(int argc, char** argv)
     while(argi < argc)
     {
         arg = argv[argi++];
-        FactoryMap::iterator it = m_factories.find(arg);
-        if(it == m_factories.end()) printUsage(std::cerr);
+        FactoryMap::iterator it = m_factoryMap.find(arg);
+        if(it == m_factoryMap.end()) printUsage(std::cerr);
 
         MvgtkCommand* cmd = it->second->create();
         m_commands.push_back(cmd);

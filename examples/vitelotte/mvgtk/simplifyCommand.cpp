@@ -10,3 +10,14 @@ bool SimplifyCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 }
 
 
+const char* SimplifyCommand::cmdOptions()
+{
+    return "";
+}
+
+
+const char* SimplifyCommand::cmdDesc()
+{
+    return "Simplify the mesh by removing unused nodes and useless "
+           "unconstrained nodes.";
+}

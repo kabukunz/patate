@@ -91,3 +91,18 @@ bool SolveCommand::execute(Mesh& mesh, const GlobalOptions* opts)
     std::cerr << "Mesh type not supported.\n";
     return false;
 }
+
+
+const char* SolveCommand::cmdOptions()
+{
+    return "";
+}
+
+
+const char* SolveCommand::cmdDesc()
+{
+    return "Solve the diffusion problem, thus assigning a value to each node. "
+           "The type of diffusion (harmonic or biharmonic) depend on the mesh "
+           "attributes. The input mesh should not have invalid nodes. You can "
+           "use the finalize command to produce an acceptable input mesh.";
+}

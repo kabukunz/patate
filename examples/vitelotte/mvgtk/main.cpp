@@ -18,19 +18,19 @@ int main(int argc, char** argv)
 {
     Mvgtk mvgtk;
 
-    mvgtk.registerCommand<OutputCommand>("out");
-    mvgtk.registerCommand<OutputCommand>("output");
-
     mvgtk.registerCommand<CheckCommand>("check");
-    mvgtk.registerCommand<ConvertCommand>("conv");
     mvgtk.registerCommand<ConvertCommand>("convert");
-    mvgtk.registerCommand<FinalizeCommand>("finalize");
-    mvgtk.registerCommand<CurvesToNodesCommand>("c2n");
     mvgtk.registerCommand<CurvesToNodesCommand>("curves-to-nodes");
+    mvgtk.registerCommand<FinalizeCommand>("finalize");
+    mvgtk.registerCommand<OutputCommand>("output");
     mvgtk.registerCommand<PlotCommand>("plot");
-    mvgtk.registerCommand<SimplifyCommand>("simp");
     mvgtk.registerCommand<SimplifyCommand>("simplify");
     mvgtk.registerCommand<SolveCommand>("solve");
+
+    mvgtk.addCommandAlias("output", "out");
+    mvgtk.addCommandAlias("convert", "conv");
+    mvgtk.addCommandAlias("curves-to-nodes", "c2n");
+    mvgtk.addCommandAlias("simplify", "simp");
 
     mvgtk.parseArgs(argc, argv);
     return mvgtk.executeCommands()? EXIT_SUCCESS: EXIT_FAILURE;

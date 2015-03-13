@@ -33,6 +33,9 @@ public:
 
     virtual bool parseArgs(int argc, char** argv, int& argi);
     virtual bool execute(Mesh& mesh, const GlobalOptions* opts = 0) = 0;
+
+    inline static const char* cmdOptions() { return "Todo."; }
+    inline static const char* cmdDesc() { return "Todo."; }
 };
 
 
@@ -41,6 +44,9 @@ class OutputCommand : public MvgtkCommand
 public:
     virtual bool parseArgs(int argc, char** argv, int& argi);
     virtual bool execute(Mesh& mesh, const GlobalOptions* opts = 0);
+
+    static const char* cmdOptions();
+    static const char* cmdDesc();
 
 private:
     std::string m_outFilename;
@@ -62,10 +68,14 @@ public:
     ~Mvgtk();
 
     template<typename T>
-    void registerCommand(const std::string &name)
+    void registerCommand(const std::string& name)
     {
-        m_factories.insert(std::make_pair(name, new GenericFactory<T>()));
+        CommandFactory* fact = new GenericFactory<T>();
+        m_factories.push_back(fact);
+        bool isNew = m_factoryMap.insert(std::make_pair(name, fact)).second;
+        assert(isNew);
     }
+    void addCommandAlias(const std::string& command, const std::string& alias);
 
     void printUsage(std::ostream& out, int exitCode = 127) const;
 
@@ -80,20 +90,26 @@ private:
     {
         virtual ~CommandFactory();
         virtual MvgtkCommand* create() = 0;
+        virtual const char* cmdOptions() = 0;
+        virtual const char* cmdDesc() = 0;
     };
 
     template <typename T>
     struct GenericFactory : public CommandFactory
     {
         virtual MvgtkCommand* create() { return new T; }
+        virtual const char* cmdOptions() { return T::cmdOptions(); }
+        virtual const char* cmdDesc() { return T::cmdDesc(); }
     };
 
+    typedef std::vector<CommandFactory*> FactoryList;
     typedef std::map<std::string, CommandFactory*> FactoryMap;
-    typedef std::list<MvgtkCommand*> CommandList;
+    typedef std::vector<MvgtkCommand*> CommandList;
 
 private:
     ArgMap m_argMap;
-    FactoryMap m_factories;
+    FactoryList m_factories;
+    FactoryMap m_factoryMap;
     CommandList m_commands;
     std::string m_progName;
     std::string m_inFilename;

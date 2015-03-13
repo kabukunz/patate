@@ -18,6 +18,7 @@ include_directories(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(vitelotte_mvgtk_SRCS
+	../common/textFormatter.cpp
     ../common/vgMeshWithCurves.cpp
     ../common/vgMeshWithCurvesReader.cpp
     mvgtk.cpp

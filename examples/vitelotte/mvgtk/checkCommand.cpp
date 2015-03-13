@@ -126,3 +126,16 @@ bool CheckCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 
     return nError == 0;
 }
+
+
+const char* CheckCommand::cmdOptions()
+{
+    return "";
+}
+
+
+const char* CheckCommand::cmdDesc()
+{
+    return "Does some sanity check on the input mesh. Print diagnostic "
+           "messages in case of problem and exit with a non-zero error code.";
+}

@@ -24,3 +24,16 @@ bool ConvertCommand::execute(Mesh& mesh, const GlobalOptions* opts)
     mesh.setAttributes(m_attributes);
     return true;
 }
+
+
+const char* ConvertCommand::cmdOptions()
+{
+    return "ATTRIBUTES_DESC";
+}
+
+
+const char* ConvertCommand::cmdDesc()
+{
+    return "Set mesh attribute to ATTRIBUTE_DESC. accepted values are linear, "
+           "quadratic, morley and fv.";
+}

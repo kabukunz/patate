@@ -9,3 +9,13 @@ bool FinalizeCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 }
 
 
+const char* FinalizeCommand::cmdOptions()
+{
+    return "";
+}
+
+
+const char* FinalizeCommand::cmdDesc()
+{
+    return "Finalize the mesh by adding nodes where needed.";
+}
