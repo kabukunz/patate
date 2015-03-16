@@ -14,7 +14,7 @@ namespace Vitelotte {
 
 template < typename _Mesh >
 void
-MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
+MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
 {
     typedef typename Mesh::HalfedgeAttribute HalfedgeAttribute;
     typedef typename Mesh::VertexIterator VertexIterator;
@@ -52,11 +52,11 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
     _out << "faces " << mesh.nFaces() << "\n";
 
     unsigned count = 0;
-    IndexMap vxMap(mesh.nVertices(), -1);
+    m_vxMap.resize(mesh.nVertices(), -1);
     for(VertexIterator vit = mesh.verticesBegin();
         vit != mesh.verticesEnd(); ++vit)
     {
-        vxMap[(*vit).idx()] = (count++);
+        m_vxMap[(*vit).idx()] = (count++);
         _out << "v " << mesh.position(*vit).transpose().format(m_format) << "\n";
     }
 
@@ -83,11 +83,11 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
 
     // Node printing conserve ordering
     count = 0;
-    IndexMap nodeMap(mesh.nNodes(), -1);
+    m_nodeMap.resize(mesh.nNodes(), -1);
     for(unsigned i = 0; i < mesh.nNodes(); ++i)
     {
         if(!nodeUsed[i]) continue;
-        nodeMap[i] = (count++);
+        m_nodeMap[i] = (count++);
         if(mesh.isConstraint(Node(i)))
         {
             _out << "n " << mesh.nodeValue(Node(i)).transpose().format(m_format) << "\n";
@@ -108,14 +108,14 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
                 hend = hit;
         do
         {
-            assert(vxMap[mesh.toVertex(*hit).idx()] != -1);
-            _out << " " << vxMap[mesh.toVertex(*hit).idx()] + iOffset;
+            assert(vertexIndex(mesh.toVertex(*hit)) != -1);
+            _out << " " << vertexIndex(mesh.toVertex(*hit)) + iOffset;
 
             if(mesh.hasToVertexValue())
             {
                 Node vn = mesh.toVertexValueNode(*hit);
                 _out << "/";
-                printNode(_out, vn, nodeMap);
+                printNode(_out, vn);
 
                 // VertexFromValue only makes sense if vertexValue in enable.
                 if(mesh.hasFromVertexValue())
@@ -124,7 +124,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
                     if(vn != fn)
                     {
                         _out << "/";
-                        printNode(_out, fn, nodeMap);
+                        printNode(_out, fn);
                     }
                 }
             }
@@ -143,13 +143,13 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, mesh.edgeValueNode(*hit), nodeMap);
+                    printNode(_out, mesh.edgeValueNode(*hit));
                 }
                 if(mesh.hasEdgeGradient())
                 {
                     _out << sep;
                     sep = '/';
-                    printNode(_out, mesh.edgeGradientNode(*hit), nodeMap);
+                    printNode(_out, mesh.edgeGradientNode(*hit));
                 }
             }
             while(++hit != hend);
@@ -158,25 +158,45 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) const
         _out << "\n";
     }
 
-    for(VertexIterator vit = mesh.verticesBegin();
-        vit != mesh.verticesEnd(); ++vit)
+    if(mesh.hasVertexGradientConstraint())
     {
-        if(mesh.isGradientConstraint(*vit))
+        for(VertexIterator vit = mesh.verticesBegin();
+            vit != mesh.verticesEnd(); ++vit)
         {
-            _out << "vgc " << vxMap[(*vit).idx()] << " "
-                 << mesh.gradientConstraint(*vit).transpose().format(m_format) << "\n";
+            if(mesh.isGradientConstraint(*vit))
+            {
+                _out << "vgc " << vertexIndex(*vit) << " "
+                     << mesh.gradientConstraint(*vit).transpose().format(m_format) << "\n";
+            }
         }
     }
 }
 
+
+template < typename _Mesh >
+int
+MVGWriter<_Mesh>::vertexIndex(Vertex vx) const
+{
+    return m_vxMap[vx.idx()];
+}
+
+
+template < typename _Mesh >
+int
+MVGWriter<_Mesh>::nodeIndex(Node node) const
+{
+    return m_nodeMap[node.idx()];
+}
+
+
 template < typename _Mesh >
 void
-MVGWriter<_Mesh>::printNode(std::ostream& _out, Node n, const IndexMap& nodeMap) const
+MVGWriter<_Mesh>::printNode(std::ostream& _out, Node n) const
 {
     if(n.isValid())
     {
-        assert(nodeMap[n.idx()] != -1);
-        _out << nodeMap[n.idx()];
+        assert(nodeIndex(n) != -1);
+        _out << nodeIndex(n);
     }
     else
     {

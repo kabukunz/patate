@@ -78,6 +78,9 @@ public:
 public:
     VGMeshWithCurves();
     VGMeshWithCurves(unsigned nCoeffs);
+    VGMeshWithCurves(const VGMeshWithCurves& other);
+
+    VGMeshWithCurves& operator=(const VGMeshWithCurves& other);
 
     inline Curve  curve(Halfedge h) const { return m_halfedgeCurveConn[h].curve; }
     inline Curve& curve(Halfedge h)       { return m_halfedgeCurveConn[h].curve; }
@@ -124,10 +127,10 @@ public:
           ValueGradient& valueGradientRaw(Curve c, unsigned which);
 
 
-    inline PointConstraint  pointConstraint(Vertex v) const
-      { return m_pointConstraintConn[v]; }
-    inline PointConstraint& pointConstraint(Vertex v)
-      { return m_pointConstraintConn[v]; }
+//    inline PointConstraint  pointConstraint(Vertex v) const
+//      { return m_pointConstraintConn[v]; }
+//    inline PointConstraint& pointConstraint(Vertex v)
+//      { return m_pointConstraintConn[v]; }
 
     using Base::vertex;
     inline Vertex  vertex(PointConstraint pc) const { return m_pointConstraints[pc.idx()].vertex; }
@@ -167,7 +170,7 @@ private:
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
 private:
-    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
+//    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
     Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
     std::vector<PointConstraintInfo> m_pointConstraints;

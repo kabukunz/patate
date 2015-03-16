@@ -21,8 +21,10 @@ set(vitelotte_mvgtk_SRCS
 	../common/textFormatter.cpp
     ../common/vgMeshWithCurves.cpp
     ../common/vgMeshWithCurvesReader.cpp
+    ../common/vgMeshWithCurvesWriter.cpp
     mvgtk.cpp
     checkCommand.cpp
+    compactCommand.cpp
     convertCommand.cpp
     curvesToNodesCommand.cpp
     finalizeCommand.cpp

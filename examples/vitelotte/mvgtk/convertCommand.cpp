@@ -12,6 +12,11 @@ bool ConvertCommand::parseArgs(int argc, char** argv, int& argi)
     if(argi < argc)
     {
         m_attributes = parseAttribSet(argv[argi++]);
+        if(m_attributes == -1)
+        {
+            std::cerr << "Invalid attributes specification.\n";
+            return false;
+        }
         return true;
     }
     return false;

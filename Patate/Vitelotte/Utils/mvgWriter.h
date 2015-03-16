@@ -31,6 +31,7 @@ class MVGWriter
 public:
 
     typedef _Mesh Mesh;
+    typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Node Node;
     typedef std::vector<int> IndexMap;
 
@@ -56,16 +57,19 @@ public:
      * \param mesh The QMesh to save.
      * \param out The output stream.
      */
-    void write(std::ostream& _out, const Mesh& mesh) const;
-
+    void write(std::ostream& _out, const Mesh& mesh);
 
 protected:
-    void printNode(std::ostream& _out, Node n, const IndexMap& nodeMap) const;
+    int vertexIndex(Vertex vx) const;
+    int nodeIndex(Node node) const;
 
+    void printNode(std::ostream& _out, Node n) const;
 
 protected:
     Version m_version;
     Eigen::IOFormat m_format;
+    IndexMap m_vxMap;
+    IndexMap m_nodeMap;
 };
 
 

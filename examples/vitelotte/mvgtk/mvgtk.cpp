@@ -6,12 +6,15 @@
 
 #include "../common/textFormatter.h"
 #include "../common/vgMeshWithCurvesReader.h"
+#include "../common/vgMeshWithCurvesWriter.h"
 
 #include "mvgtk.h"
 
 
 int parseAttribSet(const std::string& attr)
 {
+    if(attr == "none")
+        return 0;
     if(attr == "linear")
         return Mesh::LINEAR_FLAGS;
     if(attr == "quadratic")
@@ -51,7 +54,13 @@ bool OutputCommand::parseArgs(int argc, char** argv, int& argi)
 bool OutputCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 {
     if(opts->verbose) std::cout << "Output \"" << m_outFilename << "\"...\n";
-    Vitelotte::writeMvgToFile(m_outFilename, mesh);
+    std::ofstream out(m_outFilename.c_str());
+    if(!out.good())
+    {
+        std::cerr << "Unable to open \"" << m_outFilename << "\".";
+        return false;
+    }
+    VGMeshWithCurveWriter().write(out, mesh);
     return true;
 }
 

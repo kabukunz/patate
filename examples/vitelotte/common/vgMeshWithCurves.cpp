@@ -14,6 +14,28 @@ VGMeshWithCurves::VGMeshWithCurves(unsigned nCoeffs)
 }
 
 
+VGMeshWithCurves::VGMeshWithCurves(const VGMeshWithCurves& other)
+    /*: Base(other)*/
+{
+    *this = other;
+}
+
+
+VGMeshWithCurves& VGMeshWithCurves::operator=(const VGMeshWithCurves& other)
+{
+    if(&other == this) return *this;
+
+    Base::operator=(other);
+
+    m_halfedgeCurveConn = halfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
+
+    m_pointConstraints = other.m_pointConstraints;
+    m_curves = other.m_curves;
+
+    return *this;
+}
+
+
 VGMeshWithCurves::Curve VGMeshWithCurves::addCurve(unsigned flags)
 {
     Curve c(nCurves());
