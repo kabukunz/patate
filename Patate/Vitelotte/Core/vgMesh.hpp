@@ -33,6 +33,15 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+VGMesh<_Scalar, _Dim, _Chan>::VGMesh(const Self& other)
+    : PatateCommon::SurfaceMesh(other)
+{
+    operator=(other);
+    copyVGMeshMembers(other);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>&
 VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
 {
@@ -40,23 +49,21 @@ VGMesh<_Scalar, _Dim, _Chan>::operator=(const Self& rhs)
     {
         // FIXME: SurfaceMesh's operator= wont work with properties of different types.
         PatateCommon::SurfaceMesh::operator=(rhs);
+        copyVGMeshMembers(rhs);
+    }
+    return *this;
+}
 
-        m_nNodes = rhs.m_nNodes;
-        m_nodes = rhs.m_nodes.template cast<Scalar>();
-        assert(nNodes() <= nodesCapacity());
 
-        m_attributes = rhs.m_attributes;
-
-        m_positions = vertexProperty<Vector>("v:position");
-        m_vertexGradientConstraint = rhs.m_vertexGradientConstraint;
-
-        m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
-        m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
-        m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
-        m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
-
-        m_vertexGradientDummyNodes = rhs.m_vertexGradientDummyNodes;
-//        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+template < typename _Scalar, int _Dim, int _Chan >
+VGMesh<_Scalar, _Dim, _Chan>&
+VGMesh<_Scalar, _Dim, _Chan>::assign(const Self& rhs)
+{
+    if(&rhs != this)
+    {
+        // FIXME: SurfaceMesh's operator= wont work with properties of different types.
+        PatateCommon::SurfaceMesh::assign(rhs);
+        copyVGMeshMembers(rhs);
     }
     return *this;
 }
@@ -771,6 +778,29 @@ VGMesh<_Scalar, _Dim, _Chan>::nSingularFaces() const
             ++n;
     }
     return n;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
+{
+    m_nNodes = rhs.m_nNodes;
+    m_nodes = rhs.m_nodes.template cast<Scalar>();
+    assert(nNodes() <= nodesCapacity());
+
+    m_attributes = rhs.m_attributes;
+
+    m_positions = vertexProperty<Vector>("v:position");
+    m_vertexGradientConstraint = rhs.m_vertexGradientConstraint;
+
+    m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
+    m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
+    m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
+    m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
+
+    m_vertexGradientDummyNodes = rhs.m_vertexGradientDummyNodes;
+//        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
 }
 
 

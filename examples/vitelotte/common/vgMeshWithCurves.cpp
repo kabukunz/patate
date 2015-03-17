@@ -15,9 +15,9 @@ VGMeshWithCurves::VGMeshWithCurves(unsigned nCoeffs)
 
 
 VGMeshWithCurves::VGMeshWithCurves(const VGMeshWithCurves& other)
-    /*: Base(other)*/
+    : Base(other)
 {
-    *this = other;
+    copyVGMeshWithCurvesMembers(other);
 }
 
 
@@ -26,11 +26,18 @@ VGMeshWithCurves& VGMeshWithCurves::operator=(const VGMeshWithCurves& other)
     if(&other == this) return *this;
 
     Base::operator=(other);
+    copyVGMeshWithCurvesMembers(other);
 
-    m_halfedgeCurveConn = halfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
+    return *this;
+}
 
-    m_pointConstraints = other.m_pointConstraints;
-    m_curves = other.m_curves;
+
+VGMeshWithCurves& VGMeshWithCurves::assign(const VGMeshWithCurves& other)
+{
+    if(&other == this) return *this;
+
+    Base::assign(other);
+    copyVGMeshWithCurvesMembers(other);
 
     return *this;
 }
@@ -312,6 +319,15 @@ VGMeshWithCurves::NodeValue VGMeshWithCurves::evalValueGradient(
 
     float alpha = (pos - prev->first) / (next->first - prev->first);
     return (1 - alpha) * prev->second + alpha * next->second;
+}
+
+
+void VGMeshWithCurves::copyVGMeshWithCurvesMembers(const VGMeshWithCurves& other)
+{
+    m_halfedgeCurveConn = halfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
+
+    m_pointConstraints = other.m_pointConstraints;
+    m_curves = other.m_curves;
 }
 
 

@@ -129,10 +129,10 @@ public:
     explicit VGMesh(unsigned nCoeffs, unsigned attributes);
     virtual ~VGMesh() {}
 
-    VGMesh(const Self& other)
-    { operator=(other); }
+    VGMesh(const Self& other);
 
     VGMesh& operator=(const Self& rhs);
+    VGMesh& assign(const Self& rhs);
 
     /// \}
 
@@ -476,11 +476,11 @@ protected:
     /// \name Helper methods
     /// \{
 
+    void copyVGMeshMembers(const Self& rhs);
     void findConstrainedEdgesSimplify(Vertex vx,
                                       std::vector<Halfedge>& consEdges);
 
     /// \}
-
 
 protected:
     unsigned m_nNodes;

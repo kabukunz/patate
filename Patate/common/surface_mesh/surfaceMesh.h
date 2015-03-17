@@ -887,8 +887,7 @@ public: //-------------------------------------------- constructor / destructor
     /// default constructor
     inline SurfaceMesh();
 
-    // destructor (is virtual, since we inherit from GeometryRepresentation)
-    virtual inline ~SurfaceMesh();
+    inline ~SurfaceMesh();
 
     /// copy constructor: copies \c rhs to \c *this. performs a deep copy of all properties.
     SurfaceMesh(const SurfaceMesh& rhs) { operator=(rhs); }

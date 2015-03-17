@@ -81,6 +81,7 @@ public:
     VGMeshWithCurves(const VGMeshWithCurves& other);
 
     VGMeshWithCurves& operator=(const VGMeshWithCurves& other);
+    VGMeshWithCurves& assign(const VGMeshWithCurves& other);
 
     inline Curve  curve(Halfedge h) const { return m_halfedgeCurveConn[h].curve; }
     inline Curve& curve(Halfedge h)       { return m_halfedgeCurveConn[h].curve; }
@@ -165,11 +166,13 @@ public:
     NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
 
 
-private:
+protected:
+    void copyVGMeshWithCurvesMembers(const VGMeshWithCurves& other);
+
     typedef Node NodePair[2];
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
-private:
+protected:
 //    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
     Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
