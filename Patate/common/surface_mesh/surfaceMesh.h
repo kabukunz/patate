@@ -1624,7 +1624,7 @@ public: //--------------------------------------------- higher-level operations
     //@}
 
 
-private: //---------------------------------------------- allocate new elements
+protected: //-------------------------------------------- allocate new elements
 
     /// allocate a new vertex, resize vertex properties accordingly.
     Vertex newVertex()
@@ -1661,7 +1661,7 @@ private: //---------------------------------------------- allocate new elements
 
 
 
-private: //--------------------------------------------------- helper functions
+protected: //------------------------------------------------- helper functions
 
     /** make sure that the outgoing halfedge of vertex v is a boundary halfedge
      if v is a boundary vertex. */
@@ -1678,7 +1678,7 @@ private: //--------------------------------------------------- helper functions
 
 
 
-private: //------------------------------------------------------- private data
+protected: //----------------------------------------------------- private data
 
 //    friend inline bool read_poly(SurfaceMesh& mesh, const std::string& filename);
 

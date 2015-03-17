@@ -14,6 +14,7 @@ namespace Vitelotte
 template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
     : m_nNodes(0),
+      m_deletedNodes(0),
       m_attributes(0)
 {
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
@@ -24,6 +25,7 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
 template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
     : m_nNodes(0),
+      m_deletedNodes(0),
       m_attributes(0)
 {
     setNCoeffs(nCoeffs);
@@ -80,6 +82,7 @@ VGMesh<_Scalar, _Dim, _Chan>::reserve(
         NodeVector nodes(nCoeffs(), nnodes);
         nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
         m_nodes.swap(nodes);
+        m_ndeleted.resize(nnodes, false);
     }
 }
 
@@ -90,6 +93,7 @@ VGMesh<_Scalar, _Dim, _Chan>::clear()
 {
     PatateCommon::SurfaceMesh::clear();
     m_nNodes = 0;
+    m_deletedNodes = 0;
 }
 
 
@@ -107,7 +111,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
 {
-    return 0 <= n.idx() && n.idx() < nNodes();
+    return 0 <= n.idx() && n.idx() < nodesSize();
 }
 
 
@@ -310,29 +314,61 @@ unsigned VGMesh<_Scalar, _Dim, _Chan>::nVertexGradientConstraints(Face f) const
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
+{
+    m_ndeleted.assign(nodesSize(), true);
+    HalfedgeIterator hBegin = halfedgesBegin(),
+                     hEnd   = halfedgesEnd();
+    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
+    {
+        if(!isBoundary(*hit))
+        {
+            if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
+                m_ndeleted[toVertexValueNode(*hit).idx()]   = false;
+            if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
+                m_ndeleted[fromVertexValueNode(*hit).idx()] = false;
+            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
+                m_ndeleted[edgeValueNode(*hit).idx()]       = false;
+            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
+                m_ndeleted[edgeGradientNode(*hit).idx()]    = false;
+        }
+    }
+    m_deletedNodes = 0;
+    for(BoolVector::const_iterator it = m_ndeleted.begin();
+        it != m_ndeleted.end(); ++it)
+    {
+        if(*it) ++m_deletedNodes;
+    }
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 template <typename Derived>
 typename VGMesh<_Scalar, _Dim, _Chan>::Node
 VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& value)
 {
-    if(nodesCapacity() == nNodes())
+    if(nodesCapacity() == nodesSize())
     {
-        unsigned size = std::max(16u, nNodes() * 2);
+        unsigned size = std::max(16u, nodesSize() * 2);
         NodeVector nodes(nCoeffs(), size);
         nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
         m_nodes.swap(nodes);
+        m_ndeleted.resize(size, false);
     }
-    m_nodes.col(nNodes()) = value;
+    m_nodes.col(nodesSize()) = value;
     ++m_nNodes;
-    assert(nNodes() <= nodesCapacity());
-    return Node(nNodes() - 1);
+    assert(nodesSize() <= nodesCapacity());
+    return Node(nodesSize() - 1);
 }
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
 {
-    for(int i = 0; i < nNodes(); ++i)
-        if(!isConstraint(Node(i)))
+    for(NodeIterator nit = nodesBegin();
+            nit != nodesEnd(); ++nit)
+        if(!isConstraint(*nit))
             return true;
     return false;
 }
@@ -786,8 +822,10 @@ void
 VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
 {
     m_nNodes = rhs.m_nNodes;
+    m_deletedNodes = rhs.m_deletedNodes;
     m_nodes = rhs.m_nodes.template cast<Scalar>();
-    assert(nNodes() <= nodesCapacity());
+    m_ndeleted = rhs.m_ndeleted;
+    assert(nodesSize() <= nodesCapacity());
 
     m_attributes = rhs.m_attributes;
 

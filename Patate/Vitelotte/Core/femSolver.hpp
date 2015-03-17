@@ -95,7 +95,8 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     }
     assert(it == coefficients.end());
 
-    m_stiffnessMatrix.resize(m_mesh->nNodes(), m_mesh->nNodes());
+    // We use nodesSize instead of nNode because we index nodes with Node::idx()
+    m_stiffnessMatrix.resize(m_mesh->nodesSize(), m_mesh->nodesSize());
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
 
@@ -103,7 +104,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
 //    std::cout << ((m_type == ElementBuilder::MATRIX_SPD)?
 //                      "SPD\n": "Symetric\n");
 
-    m_b.resize(m_mesh->nNodes(), m_mesh->nCoeffs());
+    m_b.resize(m_mesh->nodesSize(), m_mesh->nCoeffs());
     m_elementBuilder.setRhs(*m_mesh, m_b, &m_error);
     if(m_error.status() == SolverError::STATUS_ERROR)
     {
@@ -274,12 +275,13 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
     // As sort() keep constraints order, they will have the right indices.
     unsigned count = 0;
-    for(unsigned i = 0; i < m_mesh->nNodes(); ++i)
+    for(typename Mesh::NodeIterator nit = m_mesh->nodesBegin();
+        nit != m_mesh->nodesEnd(); ++nit)
     {
-        if(m_mesh->isConstraint(Node(i)))
+        if(m_mesh->isConstraint(*nit))
         {
             constraints.row(count++) =
-                    m_mesh->value(Node(i)).template cast<Scalar>();
+                    m_mesh->value(*nit).template cast<Scalar>();
         }
     }
     assert(count == nConstraints);

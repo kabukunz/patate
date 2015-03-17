@@ -120,6 +120,66 @@ public:
 
 
 public:
+    /// this class iterates linearly over all nodes
+    /// \sa nodesBegin(), nodesEnd()
+    class NodeIterator
+    {
+    public:
+
+        /// Default constructor
+        NodeIterator(Node n=Node(), const Self* m=NULL) : hnd_(n), mesh_(m)
+        {
+            if(mesh_ && mesh_->garbage())
+            {
+                while(mesh_->isValid(hnd_) && mesh_->isDeleted(hnd_))
+                {
+                    hnd_ = Node(hnd_.idx() + 1);
+                }
+            }
+        }
+
+        /// get the node the iterator refers to
+        Node operator*()  const { return  hnd_; }
+
+        /// are two iterators equal?
+        bool operator==(const NodeIterator& rhs) const
+        {
+            return (hnd_==rhs.hnd_);
+        }
+
+        /// are two iterators different?
+        bool operator!=(const NodeIterator& rhs) const
+        {
+            return !operator==(rhs);
+        }
+
+        /// pre-increment iterator
+        NodeIterator& operator++()
+        {
+            hnd_ = Node(hnd_.idx() + 1);
+            assert(mesh_);
+            while(mesh_->garbage() && mesh_->isValid(hnd_) && mesh_->isDeleted(hnd_))
+            {
+                hnd_ = Node(hnd_.idx() + 1);
+            }
+            return *this;
+        }
+
+        /// pre-decrement iterator
+        NodeIterator& operator--()
+        {
+            --hnd_.idx_;
+            assert(mesh_);
+            while (mesh_->garbage() && mesh_->isValid(hnd_) && mesh_->isDeleted(hnd_)) --hnd_.idx_;
+            return *this;
+        }
+
+    private:
+        Node  hnd_;
+        const Self* mesh_;
+    };
+
+public:
 
     /// \name Constructor, derstructor, assignement
     /// \{
@@ -277,9 +337,20 @@ public:
     /// \name Low-level nodes manipulation
     /// \{
 
+    inline unsigned nodesSize() const { return m_nNodes; }
     /// \brief Return the number of nodes.
-    inline unsigned nNodes() const { return m_nNodes; }
+    inline unsigned nNodes() const { return m_nNodes - m_deletedNodes; }
     inline unsigned nodesCapacity() const { return m_nodes.cols(); }
+
+    using PatateCommon::SurfaceMesh::isDeleted;
+    inline bool isDeleted(Node n) const { return m_ndeleted[n.idx()]; }
+
+    /// \brief Mark unused node as deleted, but does not free memory.
+    /// \sa garbageCollection()
+    void deleteUnusedNodes();
+
+    NodeIterator nodesBegin() const { return NodeIterator(Node(0),           this); }
+    NodeIterator nodesEnd()   const { return NodeIterator(Node(nodesSize()), this); }
 
     /**
      * \brief Add and return a node with value `value` or an unknown node
@@ -291,11 +362,11 @@ public:
 
     /// \brief Read only access to the value of `node`.
     inline ConstValueXpr value(Node node) const
-    { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
+    { assert(node.idx() < nodesSize()); return m_nodes.col(node.idx()); }
 
     /// \brief Read-write access to the value of `node`.
     inline ValueXpr value(Node node)
-    { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
+    { assert(node.idx() < nodesSize()); return m_nodes.col(node.idx()); }
 
     inline UnconstrainedNodeType unconstrainedValue() const
     { return Value::Constant(nCoeffs(), std::numeric_limits<Scalar>::quiet_NaN()); }
@@ -447,6 +518,8 @@ protected:
     typedef std::map<Vertex, Gradient> VertexGradientMap;
     typedef std::map<Halfedge, Node> HalfedgeNodeMap;
 
+    typedef std::vector<bool> BoolVector;
+
 protected:
     /// \name Removed topological operations
     /// \{
@@ -483,8 +556,11 @@ protected:
     /// \}
 
 protected:
+//    PatateCommon::PropertyContainer m_nprops;
     unsigned m_nNodes;
+    unsigned m_deletedNodes;
     NodeVector m_nodes;
+    BoolVector m_ndeleted;
 
     unsigned m_attributes;
 
