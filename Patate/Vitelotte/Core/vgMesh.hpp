@@ -13,23 +13,23 @@ namespace Vitelotte
 
 template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
-    : m_nNodes(0),
-      m_deletedNodes(0),
-      m_attributes(0)
+    : m_attributes(0),
+      m_deletedNodes(0)
 {
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
+    m_deletedNodes = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
-    : m_nNodes(0),
-      m_deletedNodes(0),
-      m_attributes(0)
+    : m_attributes(0),
+      m_deletedNodes(0)
 {
     setNCoeffs(nCoeffs);
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
+    m_deletedNodes = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
 
@@ -61,13 +61,27 @@ template < typename _Scalar, int _Dim, int _Chan >
 VGMesh<_Scalar, _Dim, _Chan>&
 VGMesh<_Scalar, _Dim, _Chan>::assign(const Self& rhs)
 {
+    // FIXME: Implement this properly, ie. copy VGMesh properties without other
+    //   custom properties. Disable it in the meantime.
+    assert(false);
     if(&rhs != this)
     {
         // FIXME: SurfaceMesh's operator= wont work with properties of different types.
         PatateCommon::SurfaceMesh::assign(rhs);
+        // Note: this function is unsuitable for assing()
         copyVGMeshMembers(rhs);
     }
     return *this;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::setNCoeffs(unsigned nCoeffs)
+{
+    assert(int(CoeffsAtCompileTime) == int(Dynamic) ||
+           int(nCoeffs) == int(CoeffsAtCompileTime));
+    resizeNodesMatrix(nCoeffs, nodesCapacity());
 }
 
 
@@ -79,10 +93,8 @@ VGMesh<_Scalar, _Dim, _Chan>::reserve(
     PatateCommon::SurfaceMesh::reserve(nvertices, nedges, nfaces);
     if(nnodes > nodesCapacity())
     {
-        NodeVector nodes(nCoeffs(), nnodes);
-        nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
-        m_nodes.swap(nodes);
-        m_ndeleted.resize(nnodes, false);
+        if(nnodes > nodesCapacity()) resizeNodesMatrix(nCoeffs(), nnodes);
+        m_nprops.reserve(nnodes);
     }
 }
 
@@ -92,7 +104,8 @@ void
 VGMesh<_Scalar, _Dim, _Chan>::clear()
 {
     PatateCommon::SurfaceMesh::clear();
-    m_nNodes = 0;
+    m_nprops.resize(0);
+    m_nprops.freeMemory();
     m_deletedNodes = 0;
 }
 
@@ -317,7 +330,6 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
 {
-    m_ndeleted.assign(nodesSize(), true);
     HalfedgeIterator hBegin = halfedgesBegin(),
                      hEnd   = halfedgesEnd();
     for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
@@ -325,21 +337,21 @@ VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
         if(!isBoundary(*hit))
         {
             if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
-                m_ndeleted[toVertexValueNode(*hit).idx()]   = false;
+                m_ndeleted[toVertexValueNode(*hit)]   = false;
             if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
-                m_ndeleted[fromVertexValueNode(*hit).idx()] = false;
+                m_ndeleted[fromVertexValueNode(*hit)] = false;
             if(hasEdgeValue() && edgeValueNode(*hit).isValid())
-                m_ndeleted[edgeValueNode(*hit).idx()]       = false;
+                m_ndeleted[edgeValueNode(*hit)]       = false;
             if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
-                m_ndeleted[edgeGradientNode(*hit).idx()]    = false;
+                m_ndeleted[edgeGradientNode(*hit)]    = false;
         }
     }
     m_deletedNodes = 0;
-    for(BoolVector::const_iterator it = m_ndeleted.begin();
-        it != m_ndeleted.end(); ++it)
+    for(unsigned ni = 0; ni < nodesSize(); ++ni)
     {
-        if(*it) ++m_deletedNodes;
+        if(m_ndeleted[Node(ni)]) ++m_deletedNodes;
     }
+    if(m_deletedNodes) m_garbage = true;
 }
 
 
@@ -351,13 +363,10 @@ VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& value)
     if(nodesCapacity() == nodesSize())
     {
         unsigned size = std::max(16u, nodesSize() * 2);
-        NodeVector nodes(nCoeffs(), size);
-        nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
-        m_nodes.swap(nodes);
-        m_ndeleted.resize(size, false);
+        resizeNodesMatrix(nCoeffs(), size);
     }
     m_nodes.col(nodesSize()) = value;
-    ++m_nNodes;
+    m_nprops.pushBack();
     assert(nodesSize() <= nodesCapacity());
     return Node(nodesSize() - 1);
 }
@@ -742,7 +751,7 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
 
     // Update node vector and fill remapping vector
     std::vector<int> map(nNodes(), -1);
-    NodeVector reord(nCoeffs(), nodesCapacity());
+    NodeMatrix reord(nCoeffs(), nodesCapacity());
     for(int i = 0; i < size; ++i)
     {
         reord.col(i) = value(Node(buf[i]));
@@ -821,13 +830,9 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
 {
-    m_nNodes = rhs.m_nNodes;
-    m_deletedNodes = rhs.m_deletedNodes;
-    m_nodes = rhs.m_nodes.template cast<Scalar>();
-    m_ndeleted = rhs.m_ndeleted;
-    assert(nodesSize() <= nodesCapacity());
-
     m_attributes = rhs.m_attributes;
+
+    m_nprops = rhs.m_nprops;
 
     m_positions = vertexProperty<Vector>("v:position");
     m_vertexGradientConstraint = rhs.m_vertexGradientConstraint;
@@ -838,7 +843,12 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
     m_vertexGradientDummyNodes = rhs.m_vertexGradientDummyNodes;
-//        m_edgeConstraintFlag = getEdgeProperty<bool>("e:constraintFlag");
+
+    m_deletedNodes = rhs.m_deletedNodes;
+    m_nodes = rhs.m_nodes/*.template cast<Scalar>()*/;
+    m_ndeleted = nodeProperty<bool>("n:deleted");
+
+    assert(nodesSize() <= nodesCapacity());
 }
 
 
@@ -868,6 +878,18 @@ VGMesh<_Scalar, _Dim, _Chan>::
         ++hit;
     }
     while(hit != hEnd);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::resizeNodesMatrix(unsigned rows, unsigned cols)
+{
+    NodeMatrix nodes(rows, cols);
+    unsigned minRows = std::min(rows, unsigned(m_nodes.rows()));
+    unsigned minCols = std::min(cols, unsigned(m_nodes.cols()));
+    nodes.block(0, 0, minRows, minCols) = m_nodes;
+    m_nodes.swap(nodes);
 }
 
 

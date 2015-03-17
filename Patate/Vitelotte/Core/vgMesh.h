@@ -67,11 +67,11 @@ public:
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, DimsAtCompileTime> Gradient;
 
 protected:
-    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeVector;
+    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeMatrix;
 
 public:
-    typedef typename NodeVector::ColXpr ValueXpr;
-    typedef typename NodeVector::ConstColXpr ConstValueXpr;
+    typedef typename NodeMatrix::ColXpr ValueXpr;
+    typedef typename NodeMatrix::ConstColXpr ConstValueXpr;
     typedef typename Value::ConstantReturnType UnconstrainedNodeType;
 
     struct Node : public BaseHandle
@@ -179,6 +179,30 @@ public:
         const Self* mesh_;
     };
 
+    /// Node property of type T
+    /// \sa VertexProperty, HalfedgeProperty, EdgeProperty, FaceProperty
+    template <class T> class NodeProperty : public PatateCommon::Property<T>
+    {
+    public:
+
+        /// default constructor
+        explicit NodeProperty() {}
+        explicit NodeProperty(PatateCommon::Property<T> p)
+            : PatateCommon::Property<T>(p) {}
+
+        /// access the data stored for vertex \c v
+        typename PatateCommon::Property<T>::Reference operator[](Node n)
+        {
+            return PatateCommon::Property<T>::operator[](n.idx());
+        }
+
+        /// access the data stored for vertex \c v
+        typename PatateCommon::Property<T>::ConstReference operator[](Node n) const
+        {
+            return PatateCommon::Property<T>::operator[](n.idx());
+        }
+    };
+
 public:
 
     /// \name Constructor, derstructor, assignement
@@ -202,10 +226,18 @@ public:
 
     inline unsigned nDims() const { return DimsAtCompileTime; }
     inline unsigned nCoeffs() const { return m_nodes.rows(); }
-    void setNCoeffs(unsigned nCoeffs)
-        { assert(int(CoeffsAtCompileTime) == int(Dynamic) ||
-                 int(nCoeffs) == int(CoeffsAtCompileTime));
-          m_nodes.resize(nCoeffs, nodesCapacity()); }
+
+    /**
+     * \brief Set the number of coefficients to nCoeffs.
+     *
+     * If this mesh has a fixed number of coefficients, nCoeffs must match it.
+     *
+     * If this function is used to increase the number of coefficients of a
+     * non-empty mesh, be aware that the new coefficients will be
+     * uninitialized. In other words, value() will return partially initialized
+     * vectors.
+     */
+    void setNCoeffs(unsigned nCoeffs);
 
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
@@ -241,6 +273,35 @@ public:
         return fromVertex(h).idx() > toVertex(h).idx();
     }
 
+    template <class T> NodeProperty<T> addNodeProperty(const std::string& name, const T t=T())
+    {
+        return NodeProperty<T>(m_nprops.add<T>(name, t));
+    }
+
+    template <class T> NodeProperty<T> getNodeProperty(const std::string& name) const
+    {
+        return NodeProperty<T>(m_nprops.get<T>(name));
+    }
+
+    template <class T> NodeProperty<T> nodeProperty(const std::string& name, const T t=T())
+    {
+        return NodeProperty<T>(m_nprops.getOrAdd<T>(name, t));
+    }
+
+    template <class T> void removeNodeProperty(NodeProperty<T>& p)
+    {
+        m_nprops.remove(p);
+    }
+
+    const std::type_info& getNodePropertyType(const std::string& name)
+    {
+        return m_nprops.getType(name);
+    }
+
+    std::vector<std::string> nodeProperties() const
+    {
+        return m_nprops.properties();
+    }
 
     /// \}
 
@@ -337,13 +398,16 @@ public:
     /// \name Low-level nodes manipulation
     /// \{
 
-    inline unsigned nodesSize() const { return m_nNodes; }
+    inline unsigned nodesSize() const { return m_nprops.size(); }
     /// \brief Return the number of nodes.
-    inline unsigned nNodes() const { return m_nNodes - m_deletedNodes; }
+    inline unsigned nNodes() const { return nodesSize() - m_deletedNodes; }
+
+protected:
     inline unsigned nodesCapacity() const { return m_nodes.cols(); }
 
+public:
     using PatateCommon::SurfaceMesh::isDeleted;
-    inline bool isDeleted(Node n) const { return m_ndeleted[n.idx()]; }
+    inline bool isDeleted(Node n) const { return m_ndeleted[n]; }
 
     /// \brief Mark unused node as deleted, but does not free memory.
     /// \sa garbageCollection()
@@ -518,8 +582,6 @@ protected:
     typedef std::map<Vertex, Gradient> VertexGradientMap;
     typedef std::map<Halfedge, Node> HalfedgeNodeMap;
 
-    typedef std::vector<bool> BoolVector;
-
 protected:
     /// \name Removed topological operations
     /// \{
@@ -552,17 +614,14 @@ protected:
     void copyVGMeshMembers(const Self& rhs);
     void findConstrainedEdgesSimplify(Vertex vx,
                                       std::vector<Halfedge>& consEdges);
+    void resizeNodesMatrix(unsigned rows, unsigned cols);
 
     /// \}
 
 protected:
-//    PatateCommon::PropertyContainer m_nprops;
-    unsigned m_nNodes;
-    unsigned m_deletedNodes;
-    NodeVector m_nodes;
-    BoolVector m_ndeleted;
-
     unsigned m_attributes;
+
+    PatateCommon::PropertyContainer m_nprops;
 
     VertexProperty<Vector> m_positions;
     VertexGradientMap m_vertexGradientConstraint;
@@ -573,7 +632,10 @@ protected:
     HalfedgeProperty<Node> m_edgeGradientNodes;
 
     HalfedgeNodeMap m_vertexGradientDummyNodes;
-    //    EdgeProperty<bool> m_edgeConstraintFlag;
+
+    unsigned m_deletedNodes;
+    NodeMatrix m_nodes;
+    NodeProperty<bool> m_ndeleted;
 };
 
 } // namespace Vitelotte

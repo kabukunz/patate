@@ -175,7 +175,7 @@ void VGMeshWithCurves::clear()
 
 void VGMeshWithCurves::setNodesFromCurves()
 {
-    m_nNodes = 0;
+    m_nprops.clear();
     for(HalfedgeIterator hit = halfedgesBegin();
         hit != halfedgesEnd(); ++hit)
     {
