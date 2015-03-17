@@ -90,7 +90,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
         m_nodeMap[i] = (count++);
         if(mesh.isConstraint(Node(i)))
         {
-            _out << "n " << mesh.nodeValue(Node(i)).transpose().format(m_format) << "\n";
+            _out << "n " << mesh.value(Node(i)).transpose().format(m_format) << "\n";
         }
         else
         {

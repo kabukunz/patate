@@ -279,7 +279,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         if(m_mesh->isConstraint(Node(i)))
         {
             constraints.row(count++) =
-                    m_mesh->nodeValue(Node(i)).template cast<Scalar>();
+                    m_mesh->value(Node(i)).template cast<Scalar>();
         }
     }
     assert(count == nConstraints);
@@ -320,7 +320,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     for(unsigned i = 0; i < nUnknowns; ++i)
     {
         assert(!m_mesh->isConstraint(Node(m_perm[i])));
-        m_mesh->nodeValue(Node(m_perm[i])) = m_x.row(i).
+        m_mesh->value(Node(m_perm[i])) = m_x.row(i).
                     template cast<typename Mesh::Scalar>();
     }
 

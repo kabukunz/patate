@@ -158,7 +158,7 @@ VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint()
 {
     PointConstraint pc(nPointConstraints());
     PointConstraintInfo pci;
-    pci.value = unconstrainedNodeValue();
+    pci.value = unconstrainedValue();
     pci.gradient = unconstrainedGradientValue();
     m_pointConstraints.push_back(pci);
     return pc;
@@ -270,9 +270,9 @@ void VGMeshWithCurves::setNodesFromCurves()
                 if(rhnb) edgeGradientNode(rh) = gNode[RIGHT];
 
                 if(halfedgeOrientation(lh) && lhnb)
-                    nodeValue(gNode[LEFT]) *= -1;
+                    value(gNode[LEFT]) *= -1;
                 if(gNode[LEFT] != gNode[RIGHT] && halfedgeOrientation(lh) && rhnb)
-                    nodeValue(gNode[RIGHT]) *= -1;
+                    value(gNode[RIGHT]) *= -1;
 
             }
 
@@ -294,14 +294,14 @@ void VGMeshWithCurves::setNodesFromCurves()
 //            {
 //                h = halfedge(*eit, i);
 //                if(!isBoundary(h))
-//                    edgeGradientNode(h) = addNode(NodeValue::Constant(0));
+//                    edgeGradientNode(h) = addNode(Value::Constant(0));
 //            }
 //        }
 //    }
 }
 
 
-VGMeshWithCurves::NodeValue VGMeshWithCurves::evalValueGradient(
+VGMeshWithCurves::Value VGMeshWithCurves::evalValueGradient(
         Curve c, unsigned which, float pos) const
 {
     const ValueGradient& g = valueGradient(c, which);

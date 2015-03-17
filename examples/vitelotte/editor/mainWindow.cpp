@@ -428,7 +428,7 @@ void MainWindow::setConstraintType(QAction* /*action*/)
         }
 
         Mesh::ValueGradient flatGradient;
-        flatGradient[0] = Mesh::NodeValue::Zero(mesh.nCoeffs());
+        flatGradient[0] = Mesh::Value::Zero(mesh.nCoeffs());
         if(doSetDerivLeft)
         {
     //        std::cout << "Set deriv left\n";

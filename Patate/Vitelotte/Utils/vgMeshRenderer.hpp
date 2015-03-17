@@ -378,7 +378,7 @@ VGMeshRenderer<_Mesh>::color(const Mesh& mesh, Node node) const
     Vector4 c = Vector4::Unit(3);
     if(mesh.isValid(node) && mesh.isConstraint(node))
     {
-        const NodeValue& value = mesh.nodeValue(node);
+        const Value& value = mesh.value(node);
         switch(mesh.nCoeffs())
         {
         case 2: c(3)        = value(1);                     // fall-through

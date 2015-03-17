@@ -63,16 +63,16 @@ public:
     typedef VGMesh<Scalar, DimsAtCompileTime, CoeffsAtCompileTime> Self;
 
     typedef Eigen::Matrix<Scalar, DimsAtCompileTime, 1> Vector;
-    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, 1> NodeValue;
+    typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, 1> Value;
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, DimsAtCompileTime> Gradient;
 
 protected:
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeVector;
 
 public:
-    typedef typename NodeVector::ColXpr NodeValueXpr;
-    typedef typename NodeVector::ConstColXpr ConstNodeValueXpr;
-    typedef typename NodeValue::ConstantReturnType UnconstrainedNodeType;
+    typedef typename NodeVector::ColXpr ValueXpr;
+    typedef typename NodeVector::ConstColXpr ConstValueXpr;
+    typedef typename Value::ConstantReturnType UnconstrainedNodeType;
 
     struct Node : public BaseHandle
     {
@@ -282,27 +282,27 @@ public:
     inline unsigned nodesCapacity() const { return m_nodes.cols(); }
 
     /**
-     * \brief Add and return a node with value `nodeValue` or an unknown node
+     * \brief Add and return a node with value `value` or an unknown node
      * if no parameter is provided.
      */
-    inline Node addNode() { return addNode(unconstrainedNodeValue()); }
+    inline Node addNode() { return addNode(unconstrainedValue()); }
     template <typename Derived>
-    inline Node addNode(const Eigen::DenseBase<Derived>& nodeValue);
+    inline Node addNode(const Eigen::DenseBase<Derived>& value);
 
     /// \brief Read only access to the value of `node`.
-    inline ConstNodeValueXpr nodeValue(Node node) const
+    inline ConstValueXpr value(Node node) const
     { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
 
     /// \brief Read-write access to the value of `node`.
-    inline NodeValueXpr nodeValue(Node node)
+    inline ValueXpr value(Node node)
     { assert(node.idx() < nNodes()); return m_nodes.col(node.idx()); }
 
-    inline UnconstrainedNodeType unconstrainedNodeValue() const
-    { return NodeValue::Constant(nCoeffs(), std::numeric_limits<Scalar>::quiet_NaN()); }
+    inline UnconstrainedNodeType unconstrainedValue() const
+    { return Value::Constant(nCoeffs(), std::numeric_limits<Scalar>::quiet_NaN()); }
 
     /// \brief Return true iff `node` is a constraint.
     inline bool isConstraint(Node node) const
-    { return isValid(node) && !std::isnan(nodeValue(node)[0]); }
+    { return isValid(node) && !std::isnan(value(node)[0]); }
 
     /**
      * \brief Return true if the mesh has unknown nodes.

@@ -40,7 +40,7 @@ public:
     typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
     typedef Mesh::Vector Vector;
-    typedef Mesh::NodeValue NodeValue;
+    typedef Mesh::Value Value;
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;
 
@@ -174,7 +174,7 @@ protected:
 
     Renderer m_renderer;
 
-    Mesh::NodeValue m_paintColor;
+    Mesh::Value m_paintColor;
     GradientStopList m_gradientStops;
     GradientStop m_dummyStop;
 

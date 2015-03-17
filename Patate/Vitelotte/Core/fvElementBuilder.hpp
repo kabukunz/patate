@@ -157,8 +157,8 @@ FVElementBuilder<_Mesh, _Scalar>::
 //        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
 //        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
 //        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
-//        std::cout << "  n8: " << mesh.nodeValue(typename Mesh::Node(nodes[8])).transpose() << "\n";
-//        std::cout << "  n7: " << mesh.nodeValue(typename Mesh::Node(nodes[7])).transpose() << "\n";
+//        std::cout << "  n8: " << mesh.value(typename Mesh::Node(nodes[8])).transpose() << "\n";
+//        std::cout << "  n7: " << mesh.value(typename Mesh::Node(nodes[7])).transpose() << "\n";
 //        std::cout << "  Stiffness matrix:\n" << sm << "\n";
 
         typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
@@ -226,7 +226,7 @@ FVElementBuilder<_Mesh, _Scalar>::
             const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
             typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
             if(!v0c) v = -v;
-            typename Mesh::NodeValue cons = grad * v;
+            typename Mesh::Value cons = grad * v;
             rhs.row(n.idx()) = cons.template cast<Scalar>();
         }
     }

@@ -386,7 +386,7 @@ void Document::splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
         return;
 
     // TODO: make this an UndoCommand
-    Mesh::Node nn = m_mesh.addNode(m_mesh.nodeValue(n));
+    Mesh::Node nn = m_mesh.addNode(m_mesh.value(n));
 
     undoStack()->push(new SetNode(this, oh, onid, nn));
 }
@@ -406,7 +406,7 @@ void Document::mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 
 
 void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
-                            const Mesh::NodeValue& value, bool allowMerge)
+                            const Mesh::Value& value, bool allowMerge)
 {
     Mesh::Node n = m_mesh.halfedgeNode(h, nid);
 
@@ -558,7 +558,7 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 //        fit != m_solvedMesh.facesEnd(); ++fit)
 //    {
 //        Mesh::Vector pts[3];
-//        Eigen::Matrix<float, 4, 6> nodeValues;
+//        Eigen::Matrix<float, 4, 6> values;
 
 //        Mesh::Halfedge h[3];
 //        h[0] = m_solvedMesh.halfedge(*fit);
@@ -576,7 +576,7 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 //            {
 //                out << "v " << m_solvedMesh.position(to).transpose() << " ";
 //                if(m_solvedMesh.isValid(n))
-//                    out << m_solvedMesh.nodeValue(n)(layer);
+//                    out << m_solvedMesh.value(n)(layer);
 //                else
 //                    out << "0";
 //                out << "\n";
@@ -590,7 +590,7 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
 //                                + m_solvedMesh.position(from)) / 2;
 //                out << "v " << p.transpose() << " ";
 //                if(m_solvedMesh.isValid(n))
-//                    out << m_solvedMesh.nodeValue(n)(layer);
+//                    out << m_solvedMesh.value(n)(layer);
 //                else
 //                    out << "0";
 //                out << "\n";
@@ -646,10 +646,10 @@ bool Document::connectivityChanged() const
 
 // ////////////////////////////////////////////////////////////////////////////
 
-SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
+SetNodeValue::SetNodeValue(Document *doc, Node node, const Value& value,
                            bool allowMerge)
     : m_document(doc), m_node(node), m_newValue(value),
-      m_prevValue(m_document->mesh().nodeValue(m_node)),
+      m_prevValue(m_document->mesh().value(m_node)),
       m_allowMerge(allowMerge)
 {
 }
@@ -657,10 +657,10 @@ SetNodeValue::SetNodeValue(Document *doc, Node node, const NodeValue& value,
 
 void SetNodeValue::undo()
 {
-    m_document->mesh().nodeValue(m_node) = m_prevValue;
+    m_document->mesh().value(m_node) = m_prevValue;
 
-    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedNodeValue());
-    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedNodeValue());
+    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedValue());
+    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedValue());
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
 }
@@ -668,10 +668,10 @@ void SetNodeValue::undo()
 
 void SetNodeValue::redo()
 {
-    m_document->mesh().nodeValue(m_node) = m_newValue;
+    m_document->mesh().value(m_node) = m_newValue;
 
-    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedNodeValue());
-    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedNodeValue());
+    bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedValue());
+    bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedValue());
     m_document->markDirty((prevConstrained != newConstrained)?
         Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
 }
@@ -765,7 +765,7 @@ void MoveGradientStop::move(Scalar from, Scalar to)
 {
     Mesh& mesh = m_document->mesh();
     Mesh::ValueGradient& grad = mesh.valueGradient(m_curve, m_which);
-    Mesh::NodeValue color = grad.at(from);
+    Mesh::Value color = grad.at(from);
     grad.erase(from);
     grad.insert(std::make_pair(to, color));
 
@@ -777,7 +777,7 @@ void MoveGradientStop::move(Scalar from, Scalar to)
 
 SetGradientStopValue::SetGradientStopValue(
         Document* doc, Curve curve, unsigned which,
-        Scalar pos, const NodeValue& value)
+        Scalar pos, const Value& value)
     : m_document(doc), m_curve(curve), m_which(which), m_pos(pos),
       m_prevValue(doc->mesh().valueGradient(curve, which).at(pos)),
       m_newValue(value)
@@ -795,7 +795,7 @@ void SetGradientStopValue::redo()
     setColor(m_newValue);
 }
 
-void SetGradientStopValue::setColor(const NodeValue& color)
+void SetGradientStopValue::setColor(const Value& color)
 {
     m_document->mesh().valueGradient(m_curve, m_which).at(m_pos) = color;
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);
@@ -806,7 +806,7 @@ void SetGradientStopValue::setColor(const NodeValue& color)
 
 AddRemoveGradientStop::AddRemoveGradientStop(
         Document* doc, Curve curve, unsigned which,
-        Scalar pos, const NodeValue& value)
+        Scalar pos, const Value& value)
     : m_document(doc), m_curve(curve), m_which(which),
       m_pos(pos), m_value(value), m_add(true)
 {
@@ -896,7 +896,7 @@ void SetGradient::setGradient(const ValueGradient& grad)
 // ////////////////////////////////////////////////////////////////////////////
 
 SetPointConstraintValue::SetPointConstraintValue(Document* doc, PointConstraint pc,
-                                       const NodeValue& value)
+                                       const Value& value)
     : m_document(doc), m_pc(pc),
       m_prevValue(doc->mesh().value(m_pc)),
       m_newValue(value)
@@ -914,7 +914,7 @@ void SetPointConstraintValue::redo()
     setValue(m_newValue);
 }
 
-void SetPointConstraintValue::setValue(const NodeValue& value)
+void SetPointConstraintValue::setValue(const Value& value)
 {
     m_document->mesh().value(m_pc) = value;
     m_document->markDirty(Document::DIRTY_NODE_VALUE | Document::DIRTY_CURVES_FLAG);

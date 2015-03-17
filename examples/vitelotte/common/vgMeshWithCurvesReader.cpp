@@ -54,7 +54,7 @@ void VGMeshWithCurveReader::parsePointConstraint(std::istream& def)
         m_in.str(m_part);
         m_in.seekg(std::ios_base::beg);
 
-        Mesh::NodeValue& nv = m_mesh->value(pc);
+        Mesh::Value& nv = m_mesh->value(pc);
         for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
             m_in >> nv(i);
 
@@ -215,7 +215,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
     m_in >> std::ws;
 
     g.clear();
-    Mesh::NodeValue v(m_mesh->nCoeffs());
+    Mesh::Value v(m_mesh->nCoeffs());
     while(m_in.good())
     {
         float pos;

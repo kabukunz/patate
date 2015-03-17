@@ -129,7 +129,7 @@ public:
 
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::NodeValue NodeValue;
+    typedef typename Mesh::Value Value;
 
 public:
     VGMeshGL2Renderer() :
@@ -152,7 +152,7 @@ public:
     void updateMesh();
 
 private:
-    typedef std::vector<NodeValue> NodesVector;
+    typedef std::vector<Value> NodesVector;
 
     struct Vertex {
         Vector pos;
@@ -166,7 +166,7 @@ private:
 private:
     void renderTriangles(VGMeshGL2RendererShader& shaders, bool _singular = false);
 
-    NodeValue nodeValue(Node node) const;
+    Value value(Node node) const;
 
     template < typename T >
     void createAndUploadBuffer(GLuint& glId, GLenum type,

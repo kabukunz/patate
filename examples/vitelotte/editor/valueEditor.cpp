@@ -56,7 +56,7 @@ void ValueEditor::mousePressEvent(QMouseEvent* event)
             h = mesh().oppositeHalfedge(h);
         Mesh::Node n = mesh().halfedgeNode(h, Mesh::EDGE_GRADIENT);
         m_document->setNodeValue(h, Mesh::EDGE_GRADIENT,
-                                 mesh().nodeValue(n), false);
+                                 mesh().value(n), false);
     }
 }
 
@@ -99,14 +99,14 @@ void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
         }
         else if(event->button() == Qt::LeftButton || event->button() == Qt::RightButton)
         {
-            Mesh::NodeValue v = mesh().unconstrainedNodeValue();
+            Mesh::Value v = mesh().unconstrainedValue();
             if(event->button() == Qt::LeftButton)
             {
                 if(hn != Mesh::EDGE_GRADIENT)
                 {
                     QColor color = Qt::white;
                     if(n.isValid())
-                        color = valueToColor(m.nodeValue(n));
+                        color = valueToColor(m.value(n));
                     color = QColorDialog::getColor(color, this,
                             "Pick a color", QColorDialog::ShowAlphaChannel);
                     if(!color.isValid())
@@ -114,7 +114,7 @@ void ValueEditor::mouseReleaseEvent(QMouseEvent* event)
                     v = colorToValue(color);
                 }
                 else
-                    v = Mesh::NodeValue::Zero(mesh().nCoeffs());
+                    v = Mesh::Value::Zero(mesh().nCoeffs());
             }
 
             m_document->setNodeValue(h, hn, v);
@@ -146,7 +146,7 @@ void ValueEditor::mouseMoveEvent(QMouseEvent* event)
         }
 
         Mesh::Node n = mesh().halfedgeNode(h, Mesh::EDGE_GRADIENT);
-        Mesh::NodeValue value = mesh().nodeValue(n);
+        Mesh::Value value = mesh().value(n);
         Eigen::Vector2f v = cursor -
                 gradientNodePos(nodeSide(h, Mesh::EDGE_GRADIENT));
 
@@ -360,7 +360,7 @@ Eigen::Vector2f ValueEditor::pointToVector(const QPointF& p) const
 }
 
 
-QColor ValueEditor::valueToColor(const Mesh::NodeValue& v) const
+QColor ValueEditor::valueToColor(const Mesh::Value& v) const
 {
     return QColor(
                 std::min(std::max(int(v(0) * 255), 0), 255),
@@ -370,9 +370,9 @@ QColor ValueEditor::valueToColor(const Mesh::NodeValue& v) const
 }
 
 
-ValueEditor::Mesh::NodeValue ValueEditor::colorToValue(const QColor& c) const
+ValueEditor::Mesh::Value ValueEditor::colorToValue(const QColor& c) const
 {
-    Mesh::NodeValue value(mesh().nCoeffs());
+    Mesh::Value value(mesh().nCoeffs());
     value << c.redF(), c.greenF(), c.blueF(), c.alphaF();
     return value;
 }
@@ -400,11 +400,11 @@ ValueEditor::NodeSide ValueEditor::nodeSide(
 }
 
 
-ValueEditor::Mesh::NodeValue ValueEditor::nodeValue(Mesh::Node n) const
+ValueEditor::Mesh::Value ValueEditor::value(Mesh::Node n) const
 {
     if(n.isValid() && mesh().isConstraint(n))
-        return mesh().nodeValue(n);
-    return Mesh::NodeValue::Unit(mesh().nCoeffs(), 3);
+        return mesh().value(n);
+    return Mesh::Value::Unit(mesh().nCoeffs(), 3);
 }
 
 
@@ -432,7 +432,7 @@ Eigen::Vector2f ValueEditor::gradientNodePos(NodeSide side) const
 Eigen::Vector2f ValueEditor::gradientHandleOffset(
         Mesh::Node n, int index) const
 {
-    Eigen::Vector2f v(1, nodeValue(n)(index));
+    Eigen::Vector2f v(1, value(n)(index));
     v.normalize();
 
     if(mesh().halfedgeOrientation(m_leftHalfedge))
@@ -592,13 +592,13 @@ void ValueEditor::drawEdge(QPainter& p)
 
     if(eSplit)
     {
-        drawNode(p, center - n * m_nodeOffset, nodeValue(le), le,
+        drawNode(p, center - n * m_nodeOffset, value(le), le,
                  Selection(lh, Mesh::EDGE_VALUE) == m_selection, -n);
-        drawNode(p, center + n * m_nodeOffset, nodeValue(re), re,
+        drawNode(p, center + n * m_nodeOffset, value(re), re,
                  Selection(rh, Mesh::EDGE_VALUE) == m_selection, n);
     }
     else
-        drawNode(p, center, nodeValue(le), le,
+        drawNode(p, center, value(le), le,
                  Selection(lh, Mesh::EDGE_VALUE) == m_selection, -n);
 
     Mesh::Node lg = mesh().halfedgeNode(lh, Mesh::EDGE_GRADIENT);
@@ -647,12 +647,12 @@ void ValueEditor::drawVertexValueNode(QPainter& p, const DisplayEdge& de)
                vectorToPoint(epos));
     p.drawLine(vectorToPoint(epos), vectorToPoint(epos + de.dir * nodeDist));
 
-    drawNode(p, pos, nodeValue(n), n, isSel, td);
+    drawNode(p, pos, value(n), n, isSel, td);
 }
 
 
 void ValueEditor::drawNode(QPainter& p, const Eigen::Vector2f& pos,
-                           Mesh::NodeValue color, Mesh::Node n, bool isSel,
+                           Mesh::Value color, Mesh::Node n, bool isSel,
                            const Eigen::Vector2f& textDir)
 {
     m_pen.setStyle(Qt::SolidLine);
@@ -715,7 +715,7 @@ void ValueEditor::drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
     Mesh::Node n = mesh().halfedgeNode(h, Mesh::EDGE_GRADIENT);
     if(n.isValid() && mesh().isConstraint(n))
     {
-        //Eigen::Vector4f value = nodeValue(n);
+        //Eigen::Vector4f value = value(n);
         for(int i = 0; i < 4; ++i)
         {
             QColor color = QColor::fromRgbF(i == 0, i == 1, i == 2);
@@ -743,7 +743,7 @@ void ValueEditor::drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
     }
 
     m_pen.setColor(Qt::black);
-    drawNode(p, pos, Mesh::NodeValue::Constant(mesh().nCoeffs(), 1), n, isSel,
+    drawNode(p, pos, Mesh::Value::Constant(mesh().nCoeffs(), 1), n, isSel,
              Eigen::Vector2f(0, (side & RightNode)? -1: 1));
 }
 

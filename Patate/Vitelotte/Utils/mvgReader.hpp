@@ -130,10 +130,10 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // nodes
     else if(spec == "n")
     {
-        NodeValue n(m_mesh->nCoeffs());
+        Value n(m_mesh->nCoeffs());
         def >> std::ws;
         if(def.peek() == 'v')
-            n = m_mesh->unconstrainedNodeValue();
+            n = m_mesh->unconstrainedValue();
         else
         {
             for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)

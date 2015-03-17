@@ -288,16 +288,16 @@ inline void VGMeshGL2Renderer<_Mesh>::updateMesh()
                     (nodeCoord.cast<float>() + Eigen::Vector2f(.5, .5)) /
                             float(m_nodeTextureSize);
             m_vertices[index + ei] = vert;
-            m_nodes[nodeIndex + 3 + ((ei+1)%3)] = nodeValue(m_pMesh->edgeValueNode(h));
+            m_nodes[nodeIndex + 3 + ((ei+1)%3)] = value(m_pMesh->edgeValueNode(h));
 
             h = m_pMesh->nextHalfedge(h);
 
-            m_nodes[nodeIndex + ei] = nodeValue(m_pMesh->fromVertexValueNode(h));
+            m_nodes[nodeIndex + ei] = value(m_pMesh->fromVertexValueNode(h));
         }
         // Singular node is the last one
         if(isSingular)
         {
-            m_nodes[nodeIndex + 6] = nodeValue(m_pMesh->toVertexValueNode(h));
+            m_nodes[nodeIndex + 6] = value(m_pMesh->toVertexValueNode(h));
         }
 
         index += 3;
@@ -405,14 +405,14 @@ inline void VGMeshGL2Renderer<_Mesh>::renderTriangles(
 
 
 template < class _Mesh >
-inline typename VGMeshGL2Renderer<_Mesh>::NodeValue
-VGMeshGL2Renderer<_Mesh>::nodeValue(Node node) const
+inline typename VGMeshGL2Renderer<_Mesh>::Value
+VGMeshGL2Renderer<_Mesh>::value(Node node) const
 {
     if(m_pMesh->isValid(node) && m_pMesh->isConstraint(node))
     {
-        return m_pMesh->nodeValue(node);
+        return m_pMesh->value(node);
     }
-    return NodeValue(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
+    return Value(0, 0, 0, 1);  // FIXME: Make this class work for Chan != 4
 }
 
 

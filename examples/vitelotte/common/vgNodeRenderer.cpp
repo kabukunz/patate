@@ -326,7 +326,7 @@ void VGNodeRenderer::addNode(const Mesh& mesh, Mesh::Node n, const Mesh::Vector&
         m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
                                  m_nodeRadius + .5, color);
 
-        Mesh::NodeValue v = mesh.nodeValue(n);
+        Mesh::Value v = mesh.value(n);
         v(3) = 1;
         m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
                                  m_nodeRadius - 1, convColor(v));

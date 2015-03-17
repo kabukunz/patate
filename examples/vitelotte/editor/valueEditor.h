@@ -82,12 +82,12 @@ private:
 private:
     QPointF vectorToPoint(const Eigen::Vector2f& v) const;
     Eigen::Vector2f pointToVector(const QPointF& p) const;
-    QColor valueToColor(const Mesh::NodeValue& v) const;
-    Mesh::NodeValue colorToValue(const QColor& c) const;
+    QColor valueToColor(const Mesh::Value& v) const;
+    Mesh::Value colorToValue(const QColor& c) const;
 
     NodeType nodeType(Mesh::Node n) const;
     NodeSide nodeSide(Mesh::Halfedge h, Mesh::HalfedgeAttribute hn) const;
-    Mesh::NodeValue nodeValue(Mesh::Node n) const;
+    Mesh::Value value(Mesh::Node n) const;
     Eigen::Vector2f nodePos(const Eigen::Vector2f &dir, float offset) const;
     Eigen::Vector2f gradientNodePos(NodeSide n) const;
     Eigen::Vector2f gradientHandleOffset(Mesh::Node n, int index) const;
@@ -102,7 +102,7 @@ private:
     void drawEdge(QPainter& p);
     void drawVertexValueNode(QPainter& p, const DisplayEdge& de);
     void drawNode(QPainter& p, const Eigen::Vector2f& pos,
-                  Mesh::NodeValue color, Mesh::Node n, bool isSel,
+                  Mesh::Value color, Mesh::Node n, bool isSel,
                   const Eigen::Vector2f& textDir);
     void drawGradientNode(QPainter& p, const Eigen::Vector2f& pos,
                           Mesh::Halfedge h, bool isSel, NodeSide side);

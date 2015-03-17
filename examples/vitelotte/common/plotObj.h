@@ -10,7 +10,7 @@
 template <typename Elem>
 void _printPlotElementVertices(std::ostream& out, const Elem& elem,
                               const Eigen::Matrix<float, 2, 3>& points,
-                              const Eigen::VectorXf& nodeValues,
+                              const Eigen::VectorXf& values,
                               unsigned nSubdiv) {
     for(unsigned i = 0; i < nSubdiv+1; ++i)
     {
@@ -21,7 +21,7 @@ void _printPlotElementVertices(std::ostream& out, const Elem& elem,
             bc(2) = float(j) / float(nSubdiv);
             bc(1) = 1.f - bc(0) - bc(2);
 
-            float value = nodeValues.dot(elem.eval(bc));
+            float value = values.dot(elem.eval(bc));
             out << "v " << (points * bc).transpose() << " " << value << "\n";
         }
     }
@@ -53,7 +53,7 @@ void exportPlot(const Mesh& mesh, const std::string& filename,
         edgeGradientOffset = nNodesPerElem;
         nNodesPerElem += 3;
     }
-    Eigen::VectorXf nodeValues(nNodesPerElem);
+    Eigen::VectorXf values(nNodesPerElem);
 
     for(typename Mesh::FaceIterator fit = mesh.facesBegin();
         fit != mesh.facesEnd(); ++fit)
@@ -67,27 +67,27 @@ void exportPlot(const Mesh& mesh, const std::string& filename,
         {
             if(edgeValueOffset >= 0)
             {
-                nodeValues(i + edgeValueOffset) =
-                        mesh.nodeValue(mesh.edgeValueNode(*hit))(layer);
+                values(i + edgeValueOffset) =
+                        mesh.value(mesh.edgeValueNode(*hit))(layer);
             }
             if(edgeGradientOffset >= 0)
             {
-                nodeValues(i + edgeGradientOffset) =
-                        mesh.nodeValue(mesh.edgeGradientNode(*hit))(layer);
+                values(i + edgeGradientOffset) =
+                        mesh.value(mesh.edgeGradientNode(*hit))(layer);
                 if(!mesh.halfedgeOrientation(*hit))
-                    nodeValues(i + edgeGradientOffset) *= -1;
+                    values(i + edgeGradientOffset) *= -1;
             }
             ++hit;
             points.col(i) = mesh.position(mesh.toVertex(*hit));
             if(toVertexValueOffset >= 0)
             {
-                nodeValues(i + toVertexValueOffset) =
-                        mesh.nodeValue(mesh.toVertexValueNode(*hit))(layer);
+                values(i + toVertexValueOffset) =
+                        mesh.value(mesh.toVertexValueNode(*hit))(layer);
             }
         }
 
         _printPlotElementVertices(out, Elem(points.col(0), points.col(1), points.col(2)),
-                                  points, nodeValues, nSubdiv);
+                                  points, values, nSubdiv);
     }
 
     unsigned count = 0;

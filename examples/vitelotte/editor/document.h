@@ -123,7 +123,7 @@ public:
     void splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
     void mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
     void setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
-                      const Mesh::NodeValue& value, bool allowMerge=false);
+                      const Mesh::Value& value, bool allowMerge=false);
 
 
     QUndoStack* undoStack();
@@ -170,10 +170,10 @@ class SetNodeValue : public QUndoCommand
 {
 public:
     typedef Document::Mesh::Node Node;
-    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::Value Value;
 
 public:
-    SetNodeValue(Document* doc, Node node, const NodeValue& value,
+    SetNodeValue(Document* doc, Node node, const Value& value,
                  bool allowMerge=false);
 
     virtual void undo();
@@ -185,8 +185,8 @@ public:
 private:
     Document* m_document;
     Node m_node;
-    NodeValue m_newValue;
-    NodeValue m_prevValue;
+    Value m_newValue;
+    Value m_prevValue;
     bool m_allowMerge;
 };
 
@@ -248,25 +248,25 @@ class SetGradientStopValue : public QUndoCommand
 {
 public:
     typedef Document::Mesh::Curve Curve;
-    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::Value Value;
 
 public:
     SetGradientStopValue(Document* doc, Curve curve, unsigned which,
-                         Scalar pos, const NodeValue& value);
+                         Scalar pos, const Value& value);
 
     virtual void undo();
     virtual void redo();
 
 private:
-    void setColor(const NodeValue& color);
+    void setColor(const Value& color);
 
 private:
     Document* m_document;
     Curve m_curve;
     unsigned m_which;
     Scalar m_pos;
-    NodeValue m_prevValue;
-    NodeValue m_newValue;
+    Value m_prevValue;
+    Value m_newValue;
 };
 
 
@@ -274,13 +274,13 @@ class AddRemoveGradientStop : public QUndoCommand
 {
 public:
     typedef Document::Mesh::Curve Curve;
-    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::Value Value;
     typedef Document::Mesh::ValueGradient ValueGradient;
 
 public:
     // Add
     AddRemoveGradientStop(Document* doc, Curve curve, unsigned which,
-                          Scalar pos, const NodeValue& value);
+                          Scalar pos, const Value& value);
     // Remove
     AddRemoveGradientStop(Document* doc, Curve curve, unsigned which,
                           Scalar pos);
@@ -297,7 +297,7 @@ private:
     Curve m_curve;
     unsigned m_which;
     Scalar m_pos;
-    NodeValue m_value;
+    Value m_value;
     bool m_add;
 };
 
@@ -306,7 +306,7 @@ class SetGradient : public QUndoCommand
 {
 public:
     typedef Document::Mesh::Curve Curve;
-    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::Value Value;
     typedef Document::Mesh::ValueGradient ValueGradient;
 
 public:
@@ -331,23 +331,23 @@ class SetPointConstraintValue : public QUndoCommand
 {
 public:
     typedef Document::Mesh::PointConstraint PointConstraint;
-    typedef Document::Mesh::NodeValue NodeValue;
+    typedef Document::Mesh::Value Value;
 
 public:
     SetPointConstraintValue(Document* doc, PointConstraint pc,
-                            const NodeValue& value);
+                            const Value& value);
 
     virtual void undo();
     virtual void redo();
 
 private:
-    void setValue(const NodeValue& value);
+    void setValue(const Value& value);
 
 private:
     Document* m_document;
     PointConstraint m_pc;
-    NodeValue m_prevValue;
-    NodeValue m_newValue;
+    Value m_prevValue;
+    Value m_newValue;
 };
 
 

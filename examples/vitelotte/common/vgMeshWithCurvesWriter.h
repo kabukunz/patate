@@ -16,7 +16,7 @@ public:
 
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::Vertex Vertex;
-    typedef typename Mesh::NodeValue NodeValue;
+    typedef typename Mesh::Value Value;
     typedef typename Mesh::ValueGradient ValueGradient;
 
 public:

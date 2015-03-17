@@ -110,7 +110,7 @@ void Editor::updateMesh()
 {
     if(m_paintColor.rows() != m_document->mesh().nCoeffs())
     {
-        m_paintColor = NodeValue::Unit(m_document->mesh().nCoeffs(), 3);
+        m_paintColor = Value::Unit(m_document->mesh().nCoeffs(), 3);
     }
     centerView();
 }
@@ -704,7 +704,7 @@ void Editor::addGradientStops(Mesh::Curve curve, unsigned which, float offset)
     for(; sit != send; ++sit)
     {
         float pos = sit->first;
-        const Mesh::NodeValue& color = sit->second;
+        const Mesh::Value& color = sit->second;
 
         Vector p = computeStopPosition(curve, pos, offset, &h);
 
@@ -803,9 +803,9 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
     {
         Eigen::Vector3f p;
         p << gsit->position, 0;
-        Mesh::NodeValue outerColor = (gsit->color.head<3>().sum() < 1.5)?
-                    Mesh::NodeValue::Constant(m_document->mesh().nCoeffs(), 1).eval():
-                    Mesh::NodeValue::Unit(m_document->mesh().nCoeffs(), 3).eval();
+        Mesh::Value outerColor = (gsit->color.head<3>().sum() < 1.5)?
+                    Mesh::Value::Constant(m_document->mesh().nCoeffs(), 1).eval():
+                    Mesh::Value::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);
         m_pointRenderer.addPoint(p, innerRadius, gsit->color);
     }
@@ -814,9 +814,9 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
     {
         Eigen::Vector3f p;
         p << m_dummyStop.position, 0;
-        Mesh::NodeValue outerColor = (m_dummyStop.color.head<3>().sum() < 1.5)?
-                    Mesh::NodeValue::Constant(m_document->mesh().nCoeffs(), 1).eval():
-                    Mesh::NodeValue::Unit(m_document->mesh().nCoeffs(), 3).eval();
+        Mesh::Value outerColor = (m_dummyStop.color.head<3>().sum() < 1.5)?
+                    Mesh::Value::Constant(m_document->mesh().nCoeffs(), 1).eval():
+                    Mesh::Value::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);
         m_pointRenderer.addPoint(p, innerRadius, m_dummyStop.color);
     }

@@ -14,11 +14,11 @@ public:
 
     typedef Base::Scalar Scalar;
     typedef Base::Vector Vector;
-    typedef Base::NodeValue NodeValue;
+    typedef Base::Value Value;
     typedef Base::Gradient Gradient;
 
     // TODO: rename it PicewiseLinearFunction ?
-    typedef std::map<float, NodeValue> ValueGradient;
+    typedef std::map<float, Value> ValueGradient;
 
     typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
 
@@ -52,7 +52,7 @@ public:
     struct PointConstraintInfo
     {
         Vertex vertex;
-        NodeValue value;
+        Value value;
         Gradient gradient;
     };
 
@@ -143,9 +143,10 @@ public:
     inline bool isGradientConstraint(PointConstraint pc) const
         { return !isnan(m_pointConstraints[pc.idx()].gradient(0, 0)); }
 
-    inline const NodeValue& value(PointConstraint pc) const
+    using Base::value;
+    inline const Value& value(PointConstraint pc) const
         { return m_pointConstraints[pc.idx()].value; }
-    inline       NodeValue& value(PointConstraint pc)
+    inline       Value& value(PointConstraint pc)
         { return m_pointConstraints[pc.idx()].value; }
 
     inline const Gradient& gradient(PointConstraint pc) const
@@ -163,7 +164,7 @@ public:
     inline UnconstrainedGradientType unconstrainedGradientValue() const
     { return Gradient::Constant(nCoeffs(), nDims(), std::numeric_limits<Scalar>::quiet_NaN()); }
 
-    NodeValue evalValueGradient(Curve c, unsigned which, float pos) const;
+    Value evalValueGradient(Curve c, unsigned which, float pos) const;
 
 
 protected:

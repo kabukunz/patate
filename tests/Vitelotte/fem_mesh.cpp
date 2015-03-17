@@ -12,7 +12,7 @@ typedef Eigen::Matrix<Scalar, 2, 2> Matrix;
 typedef Vitelotte::VGMesh<Scalar> Mesh;
 
 typedef Mesh::Vector Vector;
-typedef Mesh::NodeValue NodeValue;
+typedef Mesh::Value Value;
 typedef Mesh::Node Node;
 
 typedef Mesh::Vertex Vertex;
@@ -61,9 +61,9 @@ int main(int argc, char** argv)
         }
     }
 
-    Node n0 = mesh.addNode(NodeValue(0., 1., 0., 1.));
-    Node n0_5 = mesh.addNode(NodeValue(.5, .5, 0., 1.));
-    Node n1 = mesh.addNode(NodeValue(1., 0., 0., 1.));
+    Node n0 = mesh.addNode(Value(0., 1., 0., 1.));
+    Node n0_5 = mesh.addNode(Value(.5, .5, 0., 1.));
+    Node n1 = mesh.addNode(Value(1., 0., 0., 1.));
 
     Halfedge from = mesh.findHalfedge(Vertex(5),  Vertex(6));
 //    Halfedge to = mesh.findHalfedge(Vertex(5),  Vertex(9));
@@ -113,10 +113,10 @@ int main(int argc, char** argv)
 //    NodeID nc = mesh.addNode();
 //    NodeID nd = mesh.addNode();
 
-//    NodeID n1l = mesh.addNode(NodeValue(1, 0, 0, 1));
-//    NodeID n2l = mesh.addNode(NodeValue(0, 1, 0, 1));
-//    NodeID n1r = mesh.addNode(NodeValue(0, 0, 1, 1));
-//    NodeID n2r = mesh.addNode(NodeValue(1, 1, 0, 1));
+//    NodeID n1l = mesh.addNode(Value(1, 0, 0, 1));
+//    NodeID n2l = mesh.addNode(Value(0, 1, 0, 1));
+//    NodeID n1r = mesh.addNode(Value(0, 0, 1, 1));
+//    NodeID n2r = mesh.addNode(Value(1, 1, 0, 1));
 
 //    Halfedge h1 = mesh.findHalfedge(Vertex(5), Vertex(6));
 //    mesh.setValueConstraint(h1, n1l, na, nb);
@@ -128,18 +128,18 @@ int main(int argc, char** argv)
 
 //    Halfedge h = mesh.findHalfedge(Vertex(5), Vertex(6));
 //    mesh.setContinuousConstraint(h,
-//        mesh.addNode(NodeValue(1, 0, 0, 1)),
-//        mesh.addNode(NodeValue(0, 1, 0, 1)),
-//        mesh.addNode(NodeValue(0, 0, 1, 1)));
+//        mesh.addNode(Value(1, 0, 0, 1)),
+//        mesh.addNode(Value(0, 1, 0, 1)),
+//        mesh.addNode(Value(0, 0, 1, 1)));
 
 //    Halfedge h2 = mesh.findHalfedge(Vertex(5), Vertex(9));
 //    mesh.setContinuousConstraint(h2,
 //        mesh.fromNode(h),
-//        mesh.addNode(NodeValue(1, .5, 0, 1)),
-//        mesh.addNode(NodeValue(1, 1, 0, 1)));
+//        mesh.addNode(Value(1, .5, 0, 1)),
+//        mesh.addNode(Value(1, 1, 0, 1)));
 //    mesh.setConstraint(mesh.oppositeHalfedge(h2),
-//        mesh.addNode(NodeValue(1, 0, 1, 1)),
-//        mesh.addNode(NodeValue(1, 0, .5, 1)),
+//        mesh.addNode(Value(1, 0, 1, 1)),
+//        mesh.addNode(Value(1, 0, .5, 1)),
 //        mesh.fromNode(h));
 
 //    mesh.propagateConstraints();
@@ -181,18 +181,18 @@ int main(int argc, char** argv)
 //    Face f1 = mesh.addTriangle(v2, v3, v0);
 
 //    mesh.addNode();
-//    NodeID n00 = mesh.addNode(NodeValue(1., 0., 0., 1.));
-//    NodeID n01 = mesh.addNode(NodeValue(0., 1., 0., 1.));
-//    NodeID n02 = mesh.addNode(NodeValue(0., 0., 1., 1.));
+//    NodeID n00 = mesh.addNode(Value(1., 0., 0., 1.));
+//    NodeID n01 = mesh.addNode(Value(0., 1., 0., 1.));
+//    NodeID n02 = mesh.addNode(Value(0., 0., 1., 1.));
 //    NodeID n03 = mesh.addNode();
 //    NodeID n04 = mesh.addNode();
-//    mesh.addNode(NodeValue(1., 1., 1., 1.));
+//    mesh.addNode(Value(1., 1., 1., 1.));
 //    mesh.addNode();
 //    NodeID n05 = mesh.addNode();
-//    NodeID n06 = mesh.addNode(NodeValue(1., 1., 0., 1.));
-//    mesh.addNode(NodeValue(1., 1., 1., 1.));
-//    NodeID n07 = mesh.addNode(NodeValue(0., 1., 1., 1.));
-//    NodeID n08 = mesh.addNode(NodeValue(1., 0., 1., 1.));
+//    NodeID n06 = mesh.addNode(Value(1., 1., 0., 1.));
+//    mesh.addNode(Value(1., 1., 1., 1.));
+//    NodeID n07 = mesh.addNode(Value(0., 1., 1., 1.));
+//    NodeID n08 = mesh.addNode(Value(1., 0., 1., 1.));
 //    NodeID n09 = mesh.addNode();
 //    mesh.addNode();
 

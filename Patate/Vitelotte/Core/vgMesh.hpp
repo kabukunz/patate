@@ -312,7 +312,7 @@ unsigned VGMesh<_Scalar, _Dim, _Chan>::nVertexGradientConstraints(Face f) const
 template < typename _Scalar, int _Dim, int _Chan >
 template <typename Derived>
 typename VGMesh<_Scalar, _Dim, _Chan>::Node
-VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& nodeValue)
+VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& value)
 {
     if(nodesCapacity() == nNodes())
     {
@@ -321,7 +321,7 @@ VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& nodeValue
         nodes.block(0, 0, nCoeffs(), nodesCapacity()) = m_nodes;
         m_nodes.swap(nodes);
     }
-    m_nodes.col(nNodes()) = nodeValue;
+    m_nodes.col(nNodes()) = value;
     ++m_nNodes;
     assert(nNodes() <= nodesCapacity());
     return Node(nNodes() - 1);
@@ -377,8 +377,8 @@ VGMesh<_Scalar, _Dim, _Chan>::
     assert(isConstraint(fromNode) && isConstraint(toNode));
 
     // Must be copies, not refs because m_nodes can be reallocated.
-    NodeValue fromValue = nodeValue(fromNode);
-    NodeValue   toValue = nodeValue(  toNode);
+    Value fromValue = value(fromNode);
+    Value   toValue = value(  toNode);
 
     const Vector& v = position(fromVertex(from));
     Vector fromVec = position(toVertex(from)) - v;
@@ -471,7 +471,7 @@ VGMesh<_Scalar, _Dim, _Chan>::simplifyVertexArcConstraints(
 
     if((!n0c && !n1c) ||
        (n0c && !n1c) ||
-       (n0c && n1c && nodeValue(n0) == nodeValue(n1)))
+       (n0c && n1c && value(n0) == value(n1)))
     {
         Node& n1o = halfedgeNode(to, FROM_VERTEX_VALUE);
         if(n1o == n1)
@@ -533,7 +533,7 @@ VGMesh<_Scalar, _Dim, _Chan>::simplifyOppositeNodes(Node& n0, Node& n1,
     bool n1c = !b1 && n1.isValid() && isConstraint(n1);
 
     // if not a discontinuity, merge nodes.
-    if(n0c && n1c && nodeValue(n0) == nodeValue(n1))
+    if(n0c && n1c && value(n0) == value(n1))
     {
         if(!b0) n0 = Node(std::min(n1.idx(), n0.idx()));
         if(!b1) n1 = Node(std::min(n1.idx(), n0.idx()));
@@ -617,7 +617,7 @@ VGMesh<_Scalar, _Dim, _Chan>::finalizeVertexArc(Halfedge from, Halfedge to)
     }
     else if(n0c != n1c)
         n = n0c? n0: n1;  // One constraint, choose it
-    else if(n0 == n1 || nodeValue(n0) == nodeValue(n1))
+    else if(n0 == n1 || value(n0) == value(n1))
         n = n0;  // Same constraints, choose one arbitrarily
 
     // The remaining option is a singularity, that require special
@@ -709,7 +709,7 @@ VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
     NodeVector reord(nCoeffs(), nodesCapacity());
     for(int i = 0; i < size; ++i)
     {
-        reord.col(i) = nodeValue(Node(buf[i]));
+        reord.col(i) = value(Node(buf[i]));
         map[buf[i]] = i;
     }
     m_nodes.swap(reord);

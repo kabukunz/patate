@@ -28,7 +28,7 @@ public:
 
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::NodeValue NodeValue;
+    typedef typename Mesh::Value Value;
 
     enum
     {
