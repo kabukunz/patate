@@ -17,7 +17,7 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
       m_deletedNodes(0)
 {
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
-    m_deletedNodes = addNodeProperty<bool>("n:deleted", false);
+    m_ndeleted = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
 
@@ -29,7 +29,7 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
 {
     setNCoeffs(nCoeffs);
     m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
-    m_deletedNodes = addNodeProperty<bool>("n:deleted", false);
+    m_ndeleted = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
 
@@ -107,6 +107,105 @@ VGMesh<_Scalar, _Dim, _Chan>::clear()
     m_nprops.resize(0);
     m_nprops.freeMemory();
     m_deletedNodes = 0;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::garbageCollection(unsigned flags)
+{
+    PatateCommon::SurfaceMesh::garbageCollection(GC_DONT_RELEASE_INDEX_MAPS);
+
+    unsigned nN = nodesSize();
+
+    m_gcNodeMap.resize(nN);
+    for(unsigned i = 0; i < nN; ++i) m_gcNodeMap[i] = Node(i);
+
+
+    // remove deleted nodes
+    if(nN > 0)
+    {
+        int i0 = 0;
+        int i1 = nN - 1;
+
+        while (1)
+        {
+            // find first deleted and last un-deleted
+            while(!m_ndeleted[Node(i0)] && i0 < i1)  ++i0;
+            while( m_ndeleted[Node(i1)] && i0 < i1)  --i1;
+            if(i0 >= i1) break;
+
+            // swap
+            m_nprops.swap(i0, i1);
+            std::swap(m_gcNodeMap[i0], m_gcNodeMap[i1]);
+        };
+
+        // remember new size
+        nN = m_ndeleted[Node(i0)] ? i0 : i0+1;
+    }
+
+
+
+    // remap vertices
+    VertexGradientMap vxGradConstraints;
+    for(typename VertexGradientMap::const_iterator vxGrad = m_vertexGradientConstraints.begin();
+        vxGrad != m_vertexGradientConstraints.end(); ++vxGrad)
+    {
+        vxGradConstraints.insert(std::make_pair(gcMap(vxGrad->first), vxGrad->second));
+    }
+    m_vertexGradientConstraints.swap(vxGradConstraints);
+
+    // remap halfedges
+    HalfedgeNodeMap dummyNodes;
+    for(typename HalfedgeNodeMap::const_iterator hNode = m_vertexGradientDummyNodes.begin();
+        hNode != m_vertexGradientDummyNodes.end(); ++hNode)
+    {
+        dummyNodes.insert(std::make_pair(gcMap(hNode->first), hNode->second));
+    }
+    m_vertexGradientDummyNodes.swap(dummyNodes);
+
+    for(HalfedgeIterator hit = halfedgesBegin(); hit != halfedgesEnd(); ++hit)
+    {
+        for(unsigned ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai)
+        {
+            HalfedgeAttribute attr = HalfedgeAttribute(ai);
+            if(hasAttribute(attr))
+            {
+                Node& n = halfedgeNode(*hit, attr);
+                if(n.isValid()) n = gcMap(n);
+            }
+        }
+    }
+
+    // remap nodes
+    for(unsigned ni = 0; ni < nN; ++ni)
+    {
+        Node n(ni);
+        if(n != gcMap(n))
+        {
+            m_nodes.col(ni) = m_nodes.col(gcMap(n).idx());
+        }
+    }
+
+    if(!(flags & GC_DONT_RELEASE_INDEX_MAPS))
+    {
+        releaseGCIndexMaps();
+    }
+
+    m_nprops.resize(nN); m_nprops.freeMemory();
+
+    m_deletedNodes = 0;
+    m_garbage = false;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::releaseGCIndexMaps()
+{
+    PatateCommon::SurfaceMesh::releaseGCIndexMaps();
+    std::vector<Node> nMap;
+    m_gcNodeMap.swap(nMap);
 }
 
 
@@ -262,7 +361,7 @@ void VGMesh<_Scalar, _Dim, _Chan>::
 
     bool newConstraint = !isGradientConstraint(v);
 
-    m_vertexGradientConstraint[v] = grad;
+    m_vertexGradientConstraints[v] = grad;
 
     if(newConstraint)
     {
@@ -285,7 +384,7 @@ void VGMesh<_Scalar, _Dim, _Chan>::removeGradientConstraint(Vertex v)
 {
     assert(hasVertexGradientConstraint());
 
-    m_vertexGradientConstraint.erase(v);
+    m_vertexGradientConstraints.erase(v);
 
     HalfedgeAroundVertexCirculator hit = halfedges(v);
     HalfedgeAroundVertexCirculator hend = hit;
@@ -330,6 +429,11 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
 {
+    for(unsigned i = 0; i < nodesSize(); ++i)
+    {
+        m_ndeleted[Node(i)] = true;
+    }
+
     HalfedgeIterator hBegin = halfedgesBegin(),
                      hEnd   = halfedgesEnd();
     for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
@@ -345,6 +449,11 @@ VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
             if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
                 m_ndeleted[edgeGradientNode(*hit)]    = false;
         }
+    }
+    for(typename HalfedgeNodeMap::const_iterator hNode = m_vertexGradientDummyNodes.begin();
+        hNode != m_vertexGradientDummyNodes.end(); ++hNode)
+    {
+        m_ndeleted[hNode->second] = false;
     }
     m_deletedNodes = 0;
     for(unsigned ni = 0; ni < nodesSize(); ++ni)
@@ -708,83 +817,6 @@ VGMesh<_Scalar, _Dim, _Chan>::finalizeEdge(Edge e)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-void
-VGMesh<_Scalar, _Dim, _Chan>::compactNodes()
-{
-    std::vector<int> buf(nNodes(), 0);
-
-    // Find used node ids
-    HalfedgeIterator hBegin = halfedgesBegin(),
-                     hEnd   = halfedgesEnd();
-    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
-    {
-        if(!isBoundary(*hit))
-        {
-            if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
-                buf[toVertexValueNode(*hit).idx()]     = 1;
-            if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
-                buf[fromVertexValueNode(*hit).idx()] = 1;
-            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
-                buf[edgeValueNode(*hit).idx()]       = 1;
-//            if(hasVertexGradient())
-//                marked[vertexGradientNode(*hit)]  = 1;
-            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
-                buf[edgeGradientNode(*hit).idx()]    = 1;
-        }
-    }
-    for(typename HalfedgeNodeMap::const_iterator it = m_vertexGradientDummyNodes.begin();
-        it != m_vertexGradientDummyNodes.end(); ++it)
-    {
-        buf[it->second.idx()] = 1;
-    }
-
-    // Compute remapping
-    int size=0;
-    for(int i = 0; i < buf.size(); ++i)
-    {
-        if(buf[i])
-        {
-            buf[size] = i;
-            ++size;
-        }
-    }
-
-    // Update node vector and fill remapping vector
-    std::vector<int> map(nNodes(), -1);
-    NodeMatrix reord(nCoeffs(), nodesCapacity());
-    for(int i = 0; i < size; ++i)
-    {
-        reord.col(i) = value(Node(buf[i]));
-        map[buf[i]] = i;
-    }
-    m_nodes.swap(reord);
-
-    // Remap nodes in mesh
-    for(HalfedgeIterator hit = hBegin; hit != hEnd; ++hit)
-    {
-        if(!isBoundary(*hit))
-        {
-            if(hasToVertexValue() && toVertexValueNode(*hit).isValid())
-                toVertexValueNode(*hit)     = Node(map[toVertexValueNode(*hit).idx()]);
-            if(hasFromVertexValue() && fromVertexValueNode(*hit).isValid())
-                fromVertexValueNode(*hit) = Node(map[fromVertexValueNode(*hit).idx()]);
-            if(hasEdgeValue() && edgeValueNode(*hit).isValid())
-                (edgeValueNode(*hit))     = Node(map[edgeValueNode(*hit).idx()]);
-//            if(hasVertexGradient())
-//                vertexGradientNode(*hit)  = map[vertexGradientNode(*hit)];
-            if(hasEdgeGradient() && edgeGradientNode(*hit).isValid())
-                edgeGradientNode(*hit)    = Node(map[edgeGradientNode(*hit).idx()]);
-        }
-    }
-    for(typename HalfedgeNodeMap::iterator it = m_vertexGradientDummyNodes.begin();
-        it != m_vertexGradientDummyNodes.end(); ++it)
-    {
-        it->second = Node(map[it->second.idx()]);
-    }
-}
-
-
-template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isSingular(Halfedge h) const
 {
@@ -835,7 +867,7 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_nprops = rhs.m_nprops;
 
     m_positions = vertexProperty<Vector>("v:position");
-    m_vertexGradientConstraint = rhs.m_vertexGradientConstraint;
+    m_vertexGradientConstraints = rhs.m_vertexGradientConstraints;
 
     m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
     m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");

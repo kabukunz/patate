@@ -878,6 +878,12 @@ public: //---------------------------------------------------- circulator types
     };
 
 
+public:
+    enum
+    {
+        GC_DONT_RELEASE_INDEX_MAPS = 0x01
+    };
+
 
 public: //-------------------------------------------- constructor / destructor
 
@@ -988,7 +994,35 @@ public: //--------------------------------------------------- memory management
 
 
     /// remove deleted vertices/edges/faces
-    inline void garbageCollection();
+    inline void garbageCollection(unsigned flags = 0);
+
+    inline void releaseGCIndexMaps()
+    {
+        std::vector<Vertex>   vMap;
+        std::vector<Halfedge> hMap;
+        std::vector<Face>     fMap;
+        m_gcVertexMap  .swap(vMap);
+        m_gcHalfedgeMap.swap(hMap);
+        m_gcFaceMap    .swap(fMap);
+    }
+
+    inline Vertex gcMap(Vertex v)
+    {
+        assert(v.idx() < m_gcVertexMap.size());
+        return m_gcVertexMap[v.idx()];
+    }
+
+    inline Halfedge gcMap(Halfedge h)
+    {
+        assert(h.idx() < m_gcHalfedgeMap.size());
+        return m_gcHalfedgeMap[h.idx()];
+    }
+
+    inline Face gcMap(Face f)
+    {
+        assert(f.idx() < m_gcFaceMap.size());
+        return m_gcFaceMap[f.idx()];
+    }
 
 
     /// returns whether vertex \c v is deleted
@@ -1699,6 +1733,9 @@ protected: //----------------------------------------------------- private data
     unsigned int m_deletedEdges;
     unsigned int m_deleteFaces;
     bool m_garbage;
+    std::vector<Vertex>   m_gcVertexMap;
+    std::vector<Halfedge> m_gcHalfedgeMap;
+    std::vector<Face>     m_gcFaceMap;
 
     // helper data for add_face()
     typedef std::pair<Halfedge, Halfedge>  NextCacheEntry;
@@ -3112,7 +3149,7 @@ deleteFace(Face f)
 
 void
 SurfaceMesh::
-garbageCollection()
+garbageCollection(unsigned flags)
 {
     int  i, i0, i1,
     nV(verticesSize()),
@@ -3126,15 +3163,16 @@ garbageCollection()
 
 
     // setup handle mapping
-    VertexProperty<Vertex>      vmap = addVertexProperty<Vertex>("v:garbage-collection");
-    HalfedgeProperty<Halfedge>  hmap = addHalfedgeProperty<Halfedge>("h:garbage-collection");
-    FaceProperty<Face>          fmap = addFaceProperty<Face>("f:garbage-collection");
+    m_gcVertexMap  .resize(nV);
+    m_gcHalfedgeMap.resize(nH);
+    m_gcFaceMap    .resize(nF);
+
     for (i=0; i<nV; ++i)
-        vmap[Vertex(i)] = Vertex(i);
+        m_gcVertexMap[i]   = Vertex(i);
     for (i=0; i<nH; ++i)
-        hmap[Halfedge(i)] = Halfedge(i);
+        m_gcHalfedgeMap[i] = Halfedge(i);
     for (i=0; i<nF; ++i)
-        fmap[Face(i)] = Face(i);
+        m_gcFaceMap[i]     = Face(i);
 
 
 
@@ -3152,6 +3190,7 @@ garbageCollection()
 
             // swap
             m_vprops.swap(i0, i1);
+            std::swap(m_gcVertexMap[i0], m_gcVertexMap[i1]);
         };
 
         // remember new size
@@ -3175,6 +3214,8 @@ garbageCollection()
             m_eprops.swap(i0, i1);
             m_hprops.swap(2*i0,   2*i1);
             m_hprops.swap(2*i0+1, 2*i1+1);
+            std::swap(m_gcHalfedgeMap[2*i0 + 0], m_gcHalfedgeMap[2*i1 + 0]);
+            std::swap(m_gcHalfedgeMap[2*i0 + 1], m_gcHalfedgeMap[2*i1 + 1]);
         };
 
         // remember new size
@@ -3197,6 +3238,7 @@ garbageCollection()
 
             // swap
             m_fprops.swap(i0, i1);
+            std::swap(m_gcFaceMap[i0], m_gcFaceMap[i1]);
         };
 
         // remember new size
@@ -3209,7 +3251,7 @@ garbageCollection()
     {
         v = Vertex(i);
         if (!isIsolated(v))
-            setHalfedge(v, hmap[halfedge(v)]);
+            setHalfedge(v, gcMap(halfedge(v)));
     }
 
 
@@ -3217,10 +3259,10 @@ garbageCollection()
     for (i=0; i<nH; ++i)
     {
         h = Halfedge(i);
-        setVertex(h, vmap[toVertex(h)]);
-        setNextHalfedge(h, hmap[nextHalfedge(h)]);
+        setVertex(h, gcMap(toVertex(h)));
+        setNextHalfedge(h, gcMap(nextHalfedge(h)));
         if (!isBoundary(h))
-            setFace(h, fmap[face(h)]);
+            setFace(h, gcMap(face(h)));
     }
 
 
@@ -3228,15 +3270,15 @@ garbageCollection()
     for (i=0; i<nF; ++i)
     {
         f = Face(i);
-        setHalfedge(f, hmap[halfedge(f)]);
+        setHalfedge(f, gcMap(halfedge(f)));
     }
 
 
     // remove handle maps
-    removeVertexProperty(vmap);
-    removeHalfedgeProperty(hmap);
-    removeFaceProperty(fmap);
-
+    if(!(flags & GC_DONT_RELEASE_INDEX_MAPS))
+    {
+        releaseGCIndexMaps();
+    }
 
     // finally resize arrays
     m_vprops.resize(nV); m_vprops.freeMemory();

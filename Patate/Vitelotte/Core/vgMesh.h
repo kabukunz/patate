@@ -38,11 +38,11 @@ enum
  * etc.)
  *
  *
- * \note There is currently no way to suppress nodes, except by using
- * compactNodes() method. The rational behind this is that it would be unsafe
- * because some halfedge may reference it. As we don't have conectivity
+ * \note There is currently no way to delete nodes, except by using
+ * deleteUnusedNodes() method. The rational behind this is that it would be
+ * unsafe because some halfedge may reference it. As we don't have conectivity
  * information for the nodes and that it would be too expansive to go through
- * all halfedge each time we remove a node, it is better that way.
+ * all halfedges each time we remove a node, it is better that way.
  *
  *
  * \note We may add connectivity information for nodes, but it would be quite
@@ -242,6 +242,12 @@ public:
     inline void reserve(unsigned nvertices, unsigned nedges, unsigned nfaces,
                         unsigned nnodes);
     inline void clear();
+    void garbageCollection(unsigned flags = 0);
+    void releaseGCIndexMaps();
+
+    using PatateCommon::SurfaceMesh::gcMap;
+    inline Node gcMap(Node n) const
+    { assert(n.idx() < m_gcNodeMap.size()); return m_gcNodeMap[n.idx()]; }
 
     inline Vertex addVertex(const Vector& pos);
 
@@ -375,16 +381,16 @@ public:
     /// \{
 
     inline bool isGradientConstraint(Vertex v) const
-        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.count(v); }
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraints.count(v); }
     inline Gradient& gradientConstraint(Vertex v)
-        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.at(v); }
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraints.at(v); }
     inline const Gradient& gradientConstraint(Vertex v) const
-        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.at(v); }
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraints.at(v); }
     inline void setGradientConstraint(Vertex v, const Gradient& grad);
     inline void removeGradientConstraint(Vertex v);
 
     inline int nVertexGradientConstraints() const
-        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraint.size(); }
+        { assert(hasVertexGradientConstraint()); return m_vertexGradientConstraints.size(); }
     inline unsigned nVertexGradientConstraints(Halfedge h) const;
     inline unsigned nVertexGradientConstraints(Face f) const;
 
@@ -496,8 +502,9 @@ public:
      * final result after finalization and solving. It may be usefull to make
      * the solver slightly faster or to diminish file size.
      *
-     * One typically which to call VGMesh::compactNodes() after this function
-     * to effectively remove now unused nodes.
+     * One typically wish to call VGMesh::deleteUnusedNodes() and
+     * VGMesh::garbageCollection after this function to effectively remove
+     * unused nodes.
      *
      * \note Currently, this method only work locally. This mean for instance
      * that it won't merge all constraint nodes with the same value if they are
@@ -542,14 +549,6 @@ public:
 
     void finalizeVertexArc(Halfedge from, Halfedge to);
     void finalizeEdge(Edge e);
-
-    /**
-     * \brief Remove unused nodes and reassign node indices accordingly.
-     *
-     * \warning This method invalidate all Node handles. There is currently no
-     * way access old-to-new node mapping.
-     */
-    void compactNodes();
 
     /// \}
     ///
@@ -624,7 +623,7 @@ protected:
     PatateCommon::PropertyContainer m_nprops;
 
     VertexProperty<Vector> m_positions;
-    VertexGradientMap m_vertexGradientConstraint;
+    VertexGradientMap m_vertexGradientConstraints;
 
     HalfedgeProperty<Node> m_toVertexValueNodes;
     HalfedgeProperty<Node> m_fromVertexValueNodes;
@@ -636,6 +635,7 @@ protected:
     unsigned m_deletedNodes;
     NodeMatrix m_nodes;
     NodeProperty<bool> m_ndeleted;
+    std::vector<Node> m_gcNodeMap;
 };
 
 } // namespace Vitelotte

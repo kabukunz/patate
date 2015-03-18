@@ -445,7 +445,8 @@ void Document::solve()
     std::cout << "Finalize...               " << std::flush;
     m_finalizedMesh = m_mesh;
     m_finalizedMesh.finalize();
-    m_finalizedMesh.compactNodes();
+    m_finalizedMesh.deleteUnusedNodes();
+    m_finalizedMesh.garbageCollection();
     if(connectivityChanged())
         markDirty(DIRTY_CONNECTIVITY);
 
