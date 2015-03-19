@@ -1,6 +1,27 @@
 #include "vgMeshWithCurves.h"
 
 
+
+template <typename _Value>
+typename PicewiseLinearFunction<_Value>::Value
+    PicewiseLinearFunction<_Value>::operator()(float x) const
+{
+    assert(!empty());
+
+    if(x <= m_samples.begin()->first)
+        return m_samples.begin()->second;
+    if(x >= m_samples.rbegin()->first)
+        return m_samples.rbegin()->second;
+
+    ConstIterator next = m_samples.upper_bound(x);
+    ConstIterator prev = next;
+    --next;
+
+    float alpha = (x - prev->first) / (next->first - prev->first);
+    return (1 - alpha) * prev->second + alpha * next->second;
+}
+
+
 VGMeshWithCurves::VGMeshWithCurves()
 {
     m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
@@ -108,15 +129,15 @@ void VGMeshWithCurves::setFlagsRaw(Curve c, unsigned flags)
 }
 
 
-const VGMeshWithCurves::ValueGradient&
-VGMeshWithCurves::valueGradient(Curve c, unsigned which) const
+const VGMeshWithCurves::ValueFunction&
+VGMeshWithCurves::valueFunction(Curve c, unsigned which) const
 {
-    return const_cast<VGMeshWithCurves*>(this)->valueGradient(c, which);
+    return const_cast<VGMeshWithCurves*>(this)->valueFunction(c, which);
 }
 
 
-VGMeshWithCurves::ValueGradient&
-VGMeshWithCurves::valueGradient(Curve c, unsigned which)
+VGMeshWithCurves::ValueFunction&
+VGMeshWithCurves::valueFunction(Curve c, unsigned which)
 {
     assert(isValid(c));
     assert(which < 4);
@@ -137,15 +158,15 @@ VGMeshWithCurves::valueGradient(Curve c, unsigned which)
 }
 
 
-const VGMeshWithCurves::ValueGradient&
-VGMeshWithCurves::valueGradientRaw(Curve c, unsigned which) const
+const VGMeshWithCurves::ValueFunction&
+VGMeshWithCurves::valueFunctionRaw(Curve c, unsigned which) const
 {
-    return const_cast<VGMeshWithCurves*>(this)->valueGradientRaw(c, which);
+    return const_cast<VGMeshWithCurves*>(this)->valueFunctionRaw(c, which);
 }
 
 
-VGMeshWithCurves::ValueGradient&
-VGMeshWithCurves::valueGradientRaw(Curve c, unsigned which)
+VGMeshWithCurves::ValueFunction&
+VGMeshWithCurves::valueFunctionRaw(Curve c, unsigned which)
 {
     assert(isValid(c));
     assert(which < 4);
@@ -301,24 +322,10 @@ void VGMeshWithCurves::setNodesFromCurves()
 }
 
 
-VGMeshWithCurves::Value VGMeshWithCurves::evalValueGradient(
+VGMeshWithCurves::Value VGMeshWithCurves::evalValueFunction(
         Curve c, unsigned which, float pos) const
 {
-    const ValueGradient& g = valueGradient(c, which);
-
-    assert(!g.empty());
-
-    if(pos <= g.begin()->first)
-        return g.begin()->second;
-    if(pos >= g.rbegin()->first)
-        return g.rbegin()->second;
-
-    ValueGradient::const_iterator next = g.upper_bound(pos);
-    ValueGradient::const_iterator prev = next;
-    --next;
-
-    float alpha = (pos - prev->first) / (next->first - prev->first);
-    return (1 - alpha) * prev->second + alpha * next->second;
+    return valueFunction(c, which)(pos);
 }
 
 
@@ -336,13 +343,13 @@ void VGMeshWithCurves::addGradientNodes(
 {
     bool tear = (gType == VALUE)? valueTear(c): gradientTear(c);
 
-    nodes[LEFT] = valueGradient(c, gType | LEFT).empty()?
+    nodes[LEFT] = valueFunction(c, gType | LEFT).empty()?
                 addNode():
-                addNode(evalValueGradient(c, gType | LEFT, pos));
+                addNode(evalValueFunction(c, gType | LEFT, pos));
     nodes[RIGHT] =
             (!tear)?
                 nodes[LEFT]:
-                valueGradient(c, gType | RIGHT).empty()?
+                valueFunction(c, gType | RIGHT).empty()?
                             addNode():
-                            addNode(evalValueGradient(c, gType | RIGHT, pos));
+                            addNode(evalValueFunction(c, gType | RIGHT, pos));
 }

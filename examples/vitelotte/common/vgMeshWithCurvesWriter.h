@@ -17,7 +17,7 @@ public:
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Value Value;
-    typedef typename Mesh::ValueGradient ValueGradient;
+    typedef typename Mesh::ValueFunction ValueFunction;
 
 public:
     VGMeshWithCurveWriter(Version version=LATEST_VERSION);
@@ -25,7 +25,7 @@ public:
     void write(std::ostream& _out, const Mesh& mesh);
 
 protected:
-    void writeValueGradient(std::ostream& out, const ValueGradient& vg) const;
+    void writeValueFunction(std::ostream& out, const ValueFunction& vg) const;
 };
 
 

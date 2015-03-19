@@ -275,7 +275,7 @@ class AddRemoveGradientStop : public QUndoCommand
 public:
     typedef Document::Mesh::Curve Curve;
     typedef Document::Mesh::Value Value;
-    typedef Document::Mesh::ValueGradient ValueGradient;
+    typedef Document::Mesh::ValueFunction ValueFunction;
 
 public:
     // Add
@@ -307,23 +307,23 @@ class SetGradient : public QUndoCommand
 public:
     typedef Document::Mesh::Curve Curve;
     typedef Document::Mesh::Value Value;
-    typedef Document::Mesh::ValueGradient ValueGradient;
+    typedef Document::Mesh::ValueFunction ValueFunction;
 
 public:
-    SetGradient(Document* doc, Curve curve, unsigned which, const ValueGradient& grad);
+    SetGradient(Document* doc, Curve curve, unsigned which, const ValueFunction& grad);
 
     virtual void undo();
     virtual void redo();
 
 private:
-    void setGradient(const ValueGradient& grad);
+    void setGradient(const ValueFunction& grad);
 
 private:
     Document* m_document;
     Curve m_curve;
     unsigned m_which;
-    ValueGradient m_prevGrad;
-    ValueGradient m_newGrad;
+    ValueFunction m_prevGrad;
+    ValueFunction m_newGrad;
 };
 
 

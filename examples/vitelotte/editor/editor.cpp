@@ -466,9 +466,9 @@ void Editor::dragStop(const Vector& scenePos)
     float newPos = closestPos(m_dragGradientStop.curve, scenePos);
 
     Mesh& mesh = m_document->mesh();
-    const Mesh::ValueGradient& vg = mesh.valueGradient(
+    const Mesh::ValueFunction& vg = mesh.valueFunction(
                 m_dragGradientStop.curve, m_dragGradientStop.which);
-    if(vg.count(newPos))
+    if(vg.has(newPos))
         return;
     m_document->undoStack()->push(new MoveGradientStop(
         m_document, m_dragGradientStop.curve, m_dragGradientStop.which,
@@ -697,10 +697,10 @@ void Editor::addGradientStops(Mesh::Curve curve, unsigned which, float offset)
 
     Mesh::Halfedge h = mesh.firstHalfedge(curve);
 
-    Mesh::ValueGradient::const_iterator sit =
-            mesh.valueGradient(curve, which).begin();
-    Mesh::ValueGradient::const_iterator send =
-            mesh.valueGradient(curve, which).end();
+    Mesh::ValueFunction::ConstIterator sit =
+            mesh.valueFunction(curve, which).begin();
+    Mesh::ValueFunction::ConstIterator send =
+            mesh.valueFunction(curve, which).end();
     for(; sit != send; ++sit)
     {
         float pos = sit->first;

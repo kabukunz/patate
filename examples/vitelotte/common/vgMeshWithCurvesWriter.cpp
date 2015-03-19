@@ -35,34 +35,34 @@ void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
         Curve curve(ci);
 
         _out << "dc"
-             << " " << (mesh.valueGradient(curve, Mesh::VALUE_LEFT).empty()? "x": "o");
+             << " " << (mesh.valueFunction(curve, Mesh::VALUE_LEFT).empty()? "x": "o");
         if(mesh.valueTear(curve))
         {
-            _out << "/" << (mesh.valueGradient(curve, Mesh::VALUE_RIGHT).empty()? "x": "o");
+            _out << "/" << (mesh.valueFunction(curve, Mesh::VALUE_RIGHT).empty()? "x": "o");
         }
-        _out << " " << (mesh.valueGradient(curve, Mesh::GRADIENT_LEFT).empty()? "x": "o");
+        _out << " " << (mesh.valueFunction(curve, Mesh::GRADIENT_LEFT).empty()? "x": "o");
         if(mesh.gradientTear(curve))
         {
-            _out << "/" << (mesh.valueGradient(curve, Mesh::GRADIENT_RIGHT).empty()? "x": "o");
+            _out << "/" << (mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT).empty()? "x": "o");
         }
         _out << ";";
 
-        if(!mesh.valueGradient(curve, Mesh::VALUE_LEFT).empty())
+        if(!mesh.valueFunction(curve, Mesh::VALUE_LEFT).empty())
         {
-            writeValueGradient(_out, mesh.valueGradient(curve, Mesh::VALUE_LEFT));
+            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::VALUE_LEFT));
         }
-        if(mesh.valueTear(curve) && !mesh.valueGradient(curve, Mesh::VALUE_RIGHT).empty())
+        if(mesh.valueTear(curve) && !mesh.valueFunction(curve, Mesh::VALUE_RIGHT).empty())
         {
-            writeValueGradient(_out, mesh.valueGradient(curve, Mesh::VALUE_RIGHT));
+            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::VALUE_RIGHT));
         }
 
-        if(!mesh.valueGradient(curve, Mesh::GRADIENT_LEFT).empty())
+        if(!mesh.valueFunction(curve, Mesh::GRADIENT_LEFT).empty())
         {
-            writeValueGradient(_out, mesh.valueGradient(curve, Mesh::GRADIENT_LEFT));
+            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_LEFT));
         }
-        if(mesh.gradientTear(curve) && !mesh.valueGradient(curve, Mesh::GRADIENT_RIGHT).empty())
+        if(mesh.gradientTear(curve) && !mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT).empty())
         {
-            writeValueGradient(_out, mesh.valueGradient(curve, Mesh::GRADIENT_RIGHT));
+            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT));
         }
 
         Halfedge h = mesh.firstHalfedge(curve);
@@ -77,11 +77,11 @@ void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
 }
 
 
-void VGMeshWithCurveWriter::writeValueGradient(std::ostream& out, const ValueGradient& vg) const
+void VGMeshWithCurveWriter::writeValueFunction(std::ostream& out, const ValueFunction& vg) const
 {
     Eigen::IOFormat fmt = m_format;
     fmt.coeffSeparator = ",";
-    for(ValueGradient::const_iterator stop = vg.begin();
+    for(ValueFunction::ConstIterator stop = vg.begin();
         stop != vg.end(); ++stop)
     {
         out << " " << stop->first << ":" << stop->second.transpose().format(fmt);

@@ -116,26 +116,26 @@ void VGMeshWithCurveReader::parseDc(std::istream& def)
             ((valueType    & TEAR)? Mesh::VALUE_TEAR:    0) |
             ((gradientType & TEAR)? Mesh::GRADIENT_TEAR: 0));
 
-    Mesh::ValueGradient g;
+    Mesh::ValueFunction g;
     if(valueType & CONS_LEFT) {
         if(!parseGradient(def, g))
             return;
-        m_mesh->valueGradient(c, Mesh::VALUE_LEFT) = g;
+        m_mesh->valueFunction(c, Mesh::VALUE_LEFT) = g;
     }
     if(valueType & CONS_RIGHT) {
         if(!parseGradient(def, g))
             return;
-        m_mesh->valueGradient(c, Mesh::VALUE_RIGHT) = g;
+        m_mesh->valueFunction(c, Mesh::VALUE_RIGHT) = g;
     }
     if(gradientType & CONS_LEFT) {
         if(!parseGradient(def, g))
             return;
-        m_mesh->valueGradient(c, Mesh::GRADIENT_LEFT) = g;
+        m_mesh->valueFunction(c, Mesh::GRADIENT_LEFT) = g;
     }
     if(gradientType & CONS_RIGHT) {
         if(!parseGradient(def, g))
             return;
-        m_mesh->valueGradient(c, Mesh::GRADIENT_RIGHT) = g;
+        m_mesh->valueFunction(c, Mesh::GRADIENT_RIGHT) = g;
     }
 
     if(!parseCurveVertices(def, c))
@@ -175,7 +175,7 @@ fail:
     return -1;
 }
 
-bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::ValueGradient &g)
+bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::ValueFunction &g)
 {
     if(def.fail())
     {
@@ -222,7 +222,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
         m_in >> pos;
         for(int i = 0; i < nparam; ++i)
             m_in >> v(i);
-        g.insert(std::make_pair(pos, v));
+        g.add(pos, v);
     }
 
     if(m_in.fail())

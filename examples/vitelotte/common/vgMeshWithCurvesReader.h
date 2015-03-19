@@ -37,7 +37,7 @@ protected:
     void parsePointConstraint(std::istream& def);
     void parseDc(std::istream& def);
     int parseCurveType(std::istream& in);
-    bool parseGradient(std::istream& def, Mesh::ValueGradient& g);
+    bool parseGradient(std::istream& def, Mesh::ValueFunction& g);
     bool parseCurveVertices(std::istream& def, Mesh::Curve curve);
 
 protected:

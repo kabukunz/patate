@@ -7,6 +7,45 @@
 #include <Patate/vitelotte.h>
 
 
+template <typename _Value>
+class PicewiseLinearFunction
+{
+public:
+    typedef _Value Value;
+
+private:
+    typedef std::map<float, Value> Samples;
+
+public:
+    typedef typename Samples::iterator Iterator;
+    typedef typename Samples::const_iterator ConstIterator;
+
+public:
+    PicewiseLinearFunction() {}
+
+    bool     empty() const { return m_samples.empty(); }
+    unsigned size()  const { return m_samples.size(); }
+
+    bool         has   (float x) const { return m_samples.count(x); }
+          Value& sample(float x)       { return m_samples.at(x); }
+    const Value& sample(float x) const { return m_samples.at(x); }
+
+    void add(float x, const Value& v) { m_samples.insert(std::make_pair(x, v)); }
+    void remove(float x) { m_samples.erase(x); }
+    void clear() { m_samples.clear(); }
+
+    Iterator      begin()       { return m_samples.begin(); }
+    ConstIterator begin() const { return m_samples.begin(); }
+    Iterator      end()         { return m_samples.end(); }
+    ConstIterator end()   const { return m_samples.end(); }
+
+    Value operator()(float x) const;
+
+private:
+    Samples m_samples;
+};
+
+
 class VGMeshWithCurves : public Vitelotte::VGMesh<float, 2, Vitelotte::Dynamic>
 {
 public:
@@ -18,7 +57,7 @@ public:
     typedef Base::Gradient Gradient;
 
     // TODO: rename it PicewiseLinearFunction ?
-    typedef std::map<float, Value> ValueGradient;
+    typedef PicewiseLinearFunction<Value> ValueFunction;
 
     typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
 
@@ -46,7 +85,7 @@ public:
         Halfedge firstHalfedge;
         Halfedge lastHalfedge;
         unsigned flags;
-        ValueGradient gradient[4];
+        ValueFunction gradient[4];
     };
 
     struct PointConstraintInfo
@@ -122,10 +161,10 @@ public:
     void setFlags(Curve c, unsigned flags);
     void setFlagsRaw(Curve c, unsigned flags);
 
-    const ValueGradient& valueGradient(Curve c, unsigned which) const;
-          ValueGradient& valueGradient(Curve c, unsigned which);
-    const ValueGradient& valueGradientRaw(Curve c, unsigned which) const;
-          ValueGradient& valueGradientRaw(Curve c, unsigned which);
+    const ValueFunction& valueFunction(Curve c, unsigned which) const;
+          ValueFunction& valueFunction(Curve c, unsigned which);
+    const ValueFunction& valueFunctionRaw(Curve c, unsigned which) const;
+          ValueFunction& valueFunctionRaw(Curve c, unsigned which);
 
 
 //    inline PointConstraint  pointConstraint(Vertex v) const
@@ -164,7 +203,7 @@ public:
     inline UnconstrainedGradientType unconstrainedGradientValue() const
     { return Gradient::Constant(nCoeffs(), nDims(), std::numeric_limits<Scalar>::quiet_NaN()); }
 
-    Value evalValueGradient(Curve c, unsigned which, float pos) const;
+    Value evalValueFunction(Curve c, unsigned which, float pos) const;
 
 
 protected:
