@@ -247,7 +247,10 @@ public:
 
     using PatateCommon::SurfaceMesh::gcMap;
     inline Node gcMap(Node n) const
-    { assert(n.idx() < m_gcNodeMap.size()); return m_gcNodeMap[n.idx()]; }
+    {
+        assert(n.isValid() && n.idx() < int(m_gcNodeMap.size()));
+        return m_gcNodeMap[n.idx()];
+    }
 
     inline Vertex addVertex(const Vector& pos);
 

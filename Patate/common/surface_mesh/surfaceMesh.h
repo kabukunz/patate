@@ -1008,19 +1008,19 @@ public: //--------------------------------------------------- memory management
 
     inline Vertex gcMap(Vertex v)
     {
-        assert(v.idx() < m_gcVertexMap.size());
+        assert(v.isValid() && v.idx() < int(m_gcVertexMap.size()));
         return m_gcVertexMap[v.idx()];
     }
 
     inline Halfedge gcMap(Halfedge h)
     {
-        assert(h.idx() < m_gcHalfedgeMap.size());
+        assert(h.isValid() && h.idx() < int(m_gcHalfedgeMap.size()));
         return m_gcHalfedgeMap[h.idx()];
     }
 
     inline Face gcMap(Face f)
     {
-        assert(f.idx() < m_gcFaceMap.size());
+        assert(f.isValid() && f.idx() < int(m_gcFaceMap.size()));
         return m_gcFaceMap[f.idx()];
     }
 
