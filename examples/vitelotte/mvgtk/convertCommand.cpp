@@ -26,7 +26,9 @@ bool ConvertCommand::parseArgs(int argc, char** argv, int& argi)
 bool ConvertCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 {
     if(opts && opts->verbose) std::cout << "Set attributes to " << m_attributes << "...\n";
+
     mesh.setAttributes(m_attributes);
+
     return true;
 }
 
@@ -39,6 +41,6 @@ const char* ConvertCommand::cmdOptions()
 
 const char* ConvertCommand::cmdDesc()
 {
-    return "Set mesh attribute to ATTRIBUTE_DESC. accepted values are linear, "
-           "quadratic, morley and fv.";
+    return "Set mesh attribute to ATTRIBUTE_DESC. Accepted values are none, "
+           "linear, quadratic, morley and fv.";
 }

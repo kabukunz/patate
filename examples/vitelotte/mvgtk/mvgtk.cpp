@@ -41,6 +41,9 @@ bool MvgtkCommand::parseArgs(int /*argc*/, char** /*argv*/, int& /*argi*/)
 }
 
 
+// ////////////////////////////////////////////////////////////////////////////
+
+
 bool OutputCommand::parseArgs(int argc, char** argv, int& argi)
 {
     if(argi < argc) {

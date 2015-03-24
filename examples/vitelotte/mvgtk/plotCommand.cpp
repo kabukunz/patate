@@ -64,7 +64,7 @@ const char* PlotCommand::cmdDesc()
 {
     return "Output a plot of a 2D input mesh as a .obj file. 2D coordinates "
            "are mapped to x and y axis, and the COEFFth coefficient is mapped "
-           "to z. SUBDIV indicates how refine will be the output. A value of "
+           "to z. SUBDIV indicates how refined will be the output. A value of "
            "1 produces one triangle per element, higher values produce "
            "tesselated elements.";
 }
