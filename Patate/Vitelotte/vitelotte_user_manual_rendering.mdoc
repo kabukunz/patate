@@ -1,0 +1,41 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+namespace Vitelotte {
+
+/*!
+  \page vitelotte_user_manual_rendering_page Rendering
+
+  \section vitelotte_user_manual_rendering_intro_sec Introduction
+
+  - OpenGL initialization is not part of the Patate. It is your job to create a valid OpenGL context and make it active before calling VGMeshRenderer methods.
+  - Vitelotte does not include any OpenGL header, so you must do it \b before including vitelotte_gl.h. In our examples (see for instance \ref vitelotte_example_gl_viewer_page), we use GLEW.
+  - VGMeshRenderer uses OpenGL 3 features, so you will need a graphic card / drivers that support it.
+  - VGMeshRenderer will render quadratic patches if the rendered mesh has the EDGE_VALUE attribute, and linear patches otherwise. It also render singular patches correctly if there is no more than a single singularity per patch.
+
+
+  \section vitelotte_user_manual_rendering_basic_sec Basic usage
+
+  - First, you need to call VGMeshRenderer::initialize() \e once. It just compiles the shaders and does not change OpenGL states otherwise.
+  - Call VGMeshRenderer::updateBuffers() with a VGMesh to generate and upload to the GPU what is required for rendering it. You need to call this function every time the mesh changes or to render an other mesh.
+  - Call VGMeshRenderer::render() with a transformation matrix to do the actual rendering.
+  - VGMeshRenderer::renderWireframe() use an other shader to render antialiased wireframe.
+  - VGMeshRenderer methods change a few OpenGL states: bound buffer and texture, VAO-related stuff and active shader. It does not change anything else, so it is your job to set other states correctly. Notably:
+    + You must enable alpha blending if you want transparency effects.
+    + With the same transform matrix, VGMeshRenderer::render() and VGMeshRenderer::renderWireframe() will render the mesh at the exact same depth. If you want to draw wireframe on top of the rendered mesh, either apply an offset or set the depth test to \c GL_LEQUAL.
+  - TODO: color conversion
+
+
+  \section vitelotte_user_manual_rendering_advanced_sec Advanced usage
+
+  - If you want more control over rendering, you can use the method VGMeshRenderer::drawGeometry(). It only execute the draw call to send the geometry but does not set the shader. It can draw only non-singular triangle with the flag VGMeshRenderer::NORMAL_TRIANGLES, only the singular with VGMeshRenderer::SINGULAR_TRIANGLES or both with an or-ed combination of them (aliased an VGMeshRenderer::ALL_TRIANGLES).
+  - This way, you can use the shader you want an do as many pass as required.
+  - TODO: Describe the vertex format and how the colors are encoded.
+
+ */
+
+}

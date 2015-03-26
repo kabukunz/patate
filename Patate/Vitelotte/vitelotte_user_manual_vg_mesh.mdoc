@@ -1,0 +1,47 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+namespace Vitelotte {
+
+/*!
+  \page vitelotte_user_manual_vg_mesh_page The VGMesh class
+
+  \section vitelotte_user_manual_vg_mesh_introduction_sec Introduction
+
+  - VGMesh is the hearth of Vitelotte: it is the input and the output of all Vitelotte's operations.
+  - It is more or less like a mesh with linear color interpolation on each face, except that the interpolation is not necessarily linear and that we are not restricted to interpolate colors.
+  - Flexibility: template params that can also be dynamic, just like Eigen matrices.
+  - Inherit from Surface_mesh (make a page to document differences / update SurfaceMesh doc)
+
+
+  \section vitelotte_user_manual_vg_mesh_attributes_and_nodes_sec Attributes and Nodes
+
+  - Values are not stored directly in faces, but rather in nodes that are referenced by the face. This allow one node to be used by several faces, which is a very important semantic information used by the solver.
+  - Nodes can have a special value "unknown". If a mesh posses such node, the real can be computed using a solver. This is how we define the input of the FEM solver.
+  - VGMesh does not care about what interpolation is used, it just store values/gradients at specific points on each faces.
+  - Each face reference a set of nodes associated with some semantic. For instance, to use quadratic interpolation with singularities, the mesh should store two nodes per vertex per face (one for each edge) plus one node per edge. These "attachment points" are called attributes. Which attribute is active on a given mesh can be controlled by calling VGMesh::setAttirbutes().
+  - Attributes may (and by default does) reference invalid nodes. Using Vitelotte is mainly about setting up the nodes correctly (don't worry, we have tools to help).
+  - Available attributes are:
+    + VGMesh::TO_VERTEX_VALUE : represent the value at the \e target vertex of an halfedge.
+    + VGMesh::FROM_VERTEX_VALUE : represent the value at the \e source vertex of an halfedge.
+    + VGMesh::EDGE_VALUE : represent the value on an halfedge (typically, on the midpoint).
+    + VGMesh::EDGE_GRADIENT : represent the orthogonal \e derivative on an halfedge. Depending on the interpolation function, it can be the derivative on the midpoint (morley) or the average derivative over the edge (FV). The direction of the derivative depends on the halfedge orientation: if VGMesh::halfedgeOrientation() is true, it is the derivative inward, else the derivative outward.
+
+
+  \section vitelotte_user_manual_vg_mesh_nodes_manipulation_sec Nodes Manipulation
+
+  - Adding nodes is done with VGMesh::addNode(). Without parameter it add an unknown node, otherwise it add a node with the specified value.
+  - There is no direct way to remove node, as a node can be used somewhere and it is costly to detect where. The solution is to use VGMesh::deleteUnusedNodes() which mark all unused nodes for deletion. Note that the actual deletion is done by VGMesh::garbageCollection(), but deleted node are skipped by the NodeIterator.
+  - Nodes can be set manually by face using VGMesh::halfedgeNode(), VGMesh::halfedgeOppositeNode() or any method like VGMesh::toVertexValueNode().
+  - As we generally want to set the same node all around a vertex (or on an arc around a vertex), we provide the method VGMesh::setVertexNode() to facilitate this case.
+  - There is also VGMesh::setSingularity() which is very similar to VGMesh::setVertexNode() except that it set a singularity given two nodes with different values. It add as many node as necessary to create a radial gradient.
+  - When creating a mesh to feed the solver, most of the vertex and edges are connected to their respective unknown node, which means that there is no specific constraint here and no discontinuity. The method VGMesh::finalize() allow to do this automatically. For vertices and edges where with a few nodes set, it rely on some heuristics (describe the heuristics).
+  - Finally, there is a VGMesh::simplify() try to remove all nodes that could be recreated by VGMesh::finalize(). It can be useful to reduce the size of files storing VGMeshes before solve.
+
+
+ */
+
+ }

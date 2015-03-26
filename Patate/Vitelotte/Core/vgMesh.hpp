@@ -114,6 +114,8 @@ template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::garbageCollection(unsigned flags)
 {
+    // FIXME: this operation changes vertex order, so it can break edge
+    // orientation. A solution is to invert gradient nodes of affected edges
     PatateCommon::SurfaceMesh::garbageCollection(GC_DONT_RELEASE_INDEX_MAPS);
 
     unsigned nN = nodesSize();

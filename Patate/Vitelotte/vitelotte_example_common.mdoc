@@ -1,15 +1,15 @@
 /*
  This Source Code Form is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
- file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 
 /*!
-  \page vitelotte_example_common_page Vitelotte example utils
+  \page vitelotte_example_common_page Vitelotte common utilities
 
   The <tt>common</tt> directory under the <tt>example/vitelotte</tt> directory contains pieces of code used by several examples. The most notable one is VGMeshWithCurves which shows how to extend the VGMesh class in order to add high level informations about diffusion curves.
-  
+
   This directory contains:
   - VGMeshWithCurves, an extension of VGMesh that contains higher level informations. VGMeshWithCurvesReader and VGMeshWithCurvesWritet allow to read and write <tt>.mvg</tt> files extended to support curve constraints and point constraints. These classes are used by all other examples.
   - VGNodeRenderer is a class that allow to render a wireframe version of the mesh where constrained edges are bold and doubled if they represent a value discontinuity, and also display nodes per edges. It can be used to have a better understanding of the connectivity of a mesh, making it a useful debugging tool. This class rely on GLLineRenderer and GLPointRenderer and is used by examples doing rendering.

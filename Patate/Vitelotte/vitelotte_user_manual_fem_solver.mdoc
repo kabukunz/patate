@@ -1,0 +1,46 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+namespace Vitelotte {
+
+/*!
+  \page vitelotte_user_manual_fem_solver_page The FEM Solver
+
+  \section vitelotte_user_manual_fem_solver_intro_sec Introduction
+
+  - The FemSolver class replace and set values of unknown nodes based on known nodes.
+  - Two kind of diffusion: Harmonic and Biharmonic, advantages and drawbacks.
+  - Two kind of output elements: linear and quadratic, trade-off
+
+
+  \section vitelotte_user_manual_fem_solver_usage_sec Using the solver
+
+  - FemSolver is parametrized by a Concepts::ElementBuilderConcept class that defines the kind of diffusion used and the requirement of the input mesh. Possible choices are:
+    + LinearElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE attribute.
+    + QuadraticElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE and EDGE_VALUE attribute.
+    + MorleyElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE and EDGE_GRADIENT attributes.
+    + FVElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE, EDGE_VALUE AND EDGE_GRADIENT attributes.
+  - Beside this, there is the element builder decorator SingularElementDecorator that allow to handle
+    singularities. Note that it does not support elements with more than one discontinuity, so the input mesh must be sufficiently refined. Work with FROM_VERTEX_VALUE attribute.
+  - For rendering, gradient attributes are ignored, but they are necessary for the biharmonic solver and can be used to add gradient constraints.
+  - The mesh on which a FemSolver operate is given at construction and can not be changed later. A sequence of methods need to be called in order to solve the diffusion. However, if the mesh is modified and solved several time as in the \ref vitelotte_example_editor_page, some step can sometime be skipped to save time. There are the methods in order:
+    + FemSolver::build() : Build the stiffness matrix. It's a big sparse matrix that represent the diffusion problem. In must be called if the geometry change (ie, a vertex moved) or if the connectivity changed (a new node has been added, node or faces connectivity has changed, etc.)
+    + FemSolver::sort() : creates a permutation matrix that allow to separate the stiffness matrix in blocks. This need to be called after FemSolver::build() if a node changes from known to unknown or the reverse. If the types of nodes does not change and there is no change in node connectivity, it is not required to call this. However, this operation is cheap and it may not be worth the trouble to keep track of cases where calling it is not necessary and simply do it systematically after FemSolver::build().
+    + FemSolver::factorize() : factorize the diffusion problem. Need to be called after FemSolver::sort() or FemSolver::build() (if sort is skipped).
+    + FemSolver::solve() : solve the diffusion problem and replace unknown nodes of the mesh by node with the resulting value. Obviously need to be called every time the input mesh changes. If only constraint values are modified, this is the only method that needs to be called.
+  - The most time consuming operations are FemSolver::build() and FemSolver::sort(), so these are the ones you should try avoid calling if not necessary.
+  - Vertex gradient constraints are special and only supported by FVElementBuilder. It \b requires the lastest dev branch of Eigen at time of writing (2012-03-26).
+
+
+  \section vitelotte_user_manual_fem_solver_extending_sec FemSolver internal and extending FemSolver
+
+  - TODO
+
+
+ */
+
+ }

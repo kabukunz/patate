@@ -1,0 +1,84 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+/*!
+  \page vitelotte_user_manual_mvg_file_format_page The MVG File Format
+
+  \section vitelotte_user_manual_mvg_file_format_intro_sec Introduction
+
+  - The MVG file format is based on the OBJ file format, a popular format for 3D meshes.
+  - It can store surface meshes in arbitrary dimensions.
+  - It store nodes values and their connections.
+    + Nodes can have an arbitrary number of coefficient.
+    + Nodes can be unknown, thus allowing to store input mesh.
+    + Faces can reference the invalid node, allowing to store unfinalized meshes.
+  - The format is easily extensible.
+
+
+  \section vitelotte_user_manual_mvg_file_format_description_sec Description
+
+  - A mvg file starts with a header followed by a body.
+  - The body contains the block of vertex declarations, followed by the block of nodes declarations and then
+  the block of faces declaration, in this order.
+  - Elements are referenced by index in the order of their apparition in the file. <b>Note that unlike obj files, the first element as the index 0.</b>
+  - Blank lines are supported. Comment lines start with #, but can not be placed on the first line. It is not possible to place a comment on the same line than a declaration.
+  - Unknown declarations should be ignored by the parser. This allow to store user-defined informations in mvg files while keeping them readable by unaware applications.
+
+  \subsection vitelotte_user_manual_mvg_file_format_description_header_subsec Header
+
+  - The file must start with the line
+  \code
+  mvg 1.0
+  \endcode
+  - There is then several declaration, some of them are optional:
+    + <tt>dim N</tt> : declare that the mesh is N-dimensional, ie. vertices have N coefficients. Required.
+    + <tt>coefficients N</tt> : declare that nodes have \c N coefficients. Required.
+    + <tt>attributes ATTR</tt> : declare the attributes of the mesh. Allowed \c ATTR values are none, linear, quadratic, morley and fv, each of them correspond to a flag declaration in VGMesh. Other combination are actually represented by the numerical value of the flag combination, but there is no guaranty these will remain compatible in future version of the library. Required.
+    + <tt>vertices N</tt>, <tt>nodes N</tt>, <tt>faces N</tt> : declare the number of vertices, nodes and faces. Optional and need not to reflect the file content accurately. Intended to help preallocating memory.
+
+  \subsection vitelotte_user_manual_mvg_file_format_description_body_subsec Body
+
+  - There is one declaration by line. Each declaration starts with a node identifying what kind of element is declared.
+  - Declaration must be grouped by type an in a specific order. Failing to do so \e may work with some loader but fail with others.
+
+  - Vertices declarations are like this:
+  \code
+  v COORDINATES
+  \endcode
+  where \c COORDINATES are the coordinates of the vertex, separated by spaces or tabs.
+
+  - Nodes declarations are similar to vectex:
+  \code
+  n COEFFICIENTS
+  \endcode
+  where \c COEFFICIENTS are the coefficients, separated by spaces or tabs. However, unknown nodes are declared like this:
+  \code
+  n void
+  \endcode
+
+  - Faces declarations are more involved as they contain connectivity to both vertices and nodes. They look like this:
+  \code
+  f V0/NV0 V1/NV1_1/NV1_2 V2/NV2 - NE0_1/NE0_2 NE1_1/NE1_2 NE2_1/NE2_2
+  \endcode
+  \c V0, \c V1 and \c V2 are the vertiex indices. \c NV* are the node indices associated with a vertex and \c NE* are the node associated with edges (where the edge 0 is opposite to the vertex 0). TODO: more details
+
+
+  \section vitelotte_user_manual_mvg_file_format_reading_writing_sec Reading and Writing MVG
+
+  - VGMesh objects can be read with MVGReader::read().
+  - VGMesh objects can be wrote with MVGWriter::write(). MVGWritter can be configured to write a specific version of mvg files and default to the latest one. (Note that currently, only version 1.0 exists anyway.)
+  - Both of these classes can be extended. See \ref vitelotte_example_vg_mesh_with_curves_reader_page and \ref vitelotte_example_vg_mesh_with_curves_writer_page.
+
+
+  \section vitelotte_user_manual_mvg_file_format_extending_sec Extending MVG
+
+  - The mvg file format can be extended easily by adding new declaration. This is used by \ref vitelotte_example_vg_mesh_with_curves_reader_page and \ref vitelotte_example_vg_mesh_with_curves_writer_page to support \ref vitelotte_example_vg_mesh_with_curves_page.
+  - TODO describe the extension ?
+
+
+
+ */

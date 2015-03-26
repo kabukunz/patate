@@ -2,7 +2,7 @@
   <!-- Navigation index tabs for HTML output -->
   <navindex>
     <tab type="mainpage" visible="yes" title="Home"/>
-	
+
 	<tab type="usergroup" visible="yes" url="@ref patate_getting_started_page" title="Getting Started">
 		<tab type="user" visible="yes" url="@ref getting_started_requirements_sec" title="Requirements"/>
 		<tab type="user" visible="yes" url="@ref getting_started_download_sec" title="Download"/>
@@ -10,7 +10,7 @@
 		<tab type="user" visible="yes" url="@ref getting_started_panorama_sec" title="Panorama"/>
 		<tab type="user" visible="yes" url="@ref getting_started_first_step_sec" title="First steps"/>
 	</tab>
-	
+
 	<tab type="usergroup" url="@ref patate_overview_page" title="Patates">
 		<tab type="usergroup" url="grenaille_user_manual_page.html" title="Grenaille">
 			<tab type="usergroup" url="grenaille_user_manual_page.html" title="User Manual">
@@ -21,7 +21,7 @@
 				<tab type="user" visible="yes" url="@ref grenaille_user_manual_cuvature" title="Computing Curvatures"/>
 				<tab type="user" visible="yes" url="@ref grenaille_user_manual_going_further" title="Going Further"/>
 			</tab>
-			
+
 			<tab type="usergroup" url="@ref grenaille_example_page" title="Examples">
 				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_basic_page" title="Basic example"/>
 				<tab type="user" visible="yes" url="@ref grenaille_example_cxx_fit_plane_page" title="Plane fitting"/>
@@ -35,9 +35,13 @@
 
 		<tab type="usergroup" url="vitelotte_user_manual_page.html" title="Vitelotte">
 			<tab type="usergroup" url="vitelotte_user_manual_page.html" title="User Manual">
-				<tab type="user" visible="yes" url="@ref vitelotte_user_manual_intro" title="Introduction"/>
+				<tab type="user" visible="yes" url="vitelotte_user_manual_tutorial_page.html" title="Tutorial"/>
+				<tab type="user" visible="yes" url="vitelotte_user_manual_vg_mesh_page.html" title="The VGMesh class"/>
+				<tab type="user" visible="yes" url="vitelotte_user_manual_fem_solver_page.html" title="The FEM solver"/>
+				<tab type="user" visible="yes" url="vitelotte_user_manual_rendering_page.html" title="Rendering"/>
+				<tab type="user" visible="yes" url="vitelotte_user_manual_mvg_file_format_page.html" title="The MVG file format"/>
 			</tab>
-			
+
 			<tab type="usergroup" url="@ref vitelotte_example_page" title="Examples">
 				<tab type="usergroup" url="@ref vitelotte_example_common_page" title="Common utilities">
 					<tab type="user" visible="yes" url="@ref vitelotte_example_vg_mesh_with_curves_page" title="VGMeshWithCurves"/>
@@ -56,7 +60,7 @@
     <tab type="modules" visible="no" title="" intro=""/>
 	<!-- <tab type="classes" visible="no" title=""> -->
 	  <tab type="classlist" visible="yes" title="References" intro=""/>
-	  <tab type="classindex" visible="no" title=""/> 
+	  <tab type="classindex" visible="no" title=""/>
 	  <tab type="hierarchy" visible="no" title="" intro=""/>
 	  <tab type="classmembers" visible="no" title="" intro=""/>
 	<!-- </tab> -->

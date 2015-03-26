@@ -49,9 +49,16 @@ public:
                      const ElementBuilder& elementBuilder = ElementBuilder());
     ~FemSolver();
 
+    /// \brief Build the internal stiffness matrix
     void build();
+
+    /// \brief Compute a permutation matrix that separate unknowns and constraints.
     void sort();
+
+    /// \brief Factorize the unknown block of the stiffness matrix.
     void factorize();
+
+    /// \brief Solve the diffusion using the factorize unknown block.
     void solve();
 
     inline bool isSolved() const { return m_solved; }
