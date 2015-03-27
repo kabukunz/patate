@@ -16,19 +16,19 @@ VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned attributes)
     : m_attributes(0),
       m_deletedNodes(0)
 {
-    m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
     m_ndeleted = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMesh<_Scalar, _Dim, _Chan>::VGMesh(unsigned nCoeffs, unsigned attributes)
+VGMesh<_Scalar, _Dim, _Chan>::VGMesh(
+        unsigned nDims, unsigned nCoeffs, unsigned attributes)
     : m_attributes(0),
       m_deletedNodes(0)
 {
+    setNDims(nDims);
     setNCoeffs(nCoeffs);
-    m_positions = addVertexProperty<Vector>("v:position", Vector::Zero());
     m_ndeleted = addNodeProperty<bool>("n:deleted", false);
     setAttributes(attributes);
 }
@@ -77,6 +77,16 @@ VGMesh<_Scalar, _Dim, _Chan>::assign(const Self& rhs)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
+VGMesh<_Scalar, _Dim, _Chan>::setNDims(unsigned nDims)
+{
+    assert(int(DimsAtCompileTime) == int(Dynamic) ||
+           int(nDims) == int(DimsAtCompileTime));
+    resizePositionsMatrix(nDims, positionsCapacity());
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
 VGMesh<_Scalar, _Dim, _Chan>::setNCoeffs(unsigned nCoeffs)
 {
     assert(int(CoeffsAtCompileTime) == int(Dynamic) ||
@@ -107,6 +117,8 @@ VGMesh<_Scalar, _Dim, _Chan>::clear()
     m_nprops.resize(0);
     m_nprops.freeMemory();
     m_deletedNodes = 0;
+    resizePositionsMatrix(nDims(), 0);
+    resizeNodesMatrix(nCoeffs(), 0);
 }
 
 
@@ -149,6 +161,14 @@ VGMesh<_Scalar, _Dim, _Chan>::garbageCollection(unsigned flags)
 
 
     // remap vertices
+    for(unsigned vi = 0; vi < nVertices(); ++vi) {
+        Vertex v(vi);
+        if(v != gcMap(v))
+        {
+            m_positions.col(vi) = m_positions.col(gcMap(v).idx());
+        }
+    }
+
     VertexGradientMap vxGradConstraints;
     for(typename VertexGradientMap::const_iterator vxGrad = m_vertexGradientConstraints.begin();
         vxGrad != m_vertexGradientConstraints.end(); ++vxGrad)
@@ -212,11 +232,18 @@ VGMesh<_Scalar, _Dim, _Chan>::releaseGCIndexMaps()
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+template < typename Derived >
 PatateCommon::SurfaceMesh::Vertex
-VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Vector& pos)
+VGMesh<_Scalar, _Dim, _Chan>::addVertex(const Eigen::DenseBase<Derived>& pos)
 {
+    if(positionsCapacity() == verticesSize())
+    {
+        unsigned size = std::max(16u, verticesSize() * 2);
+        resizePositionsMatrix(nDims(), size);
+    }
+    m_positions.col(verticesSize()) = pos;
     Vertex v = PatateCommon::SurfaceMesh::addVertex();
-    position(v) = pos;
+    assert(nodesSize() <= positionsCapacity());
     return v;
 }
 
@@ -868,7 +895,7 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
 
     m_nprops = rhs.m_nprops;
 
-    m_positions = vertexProperty<Vector>("v:position");
+    m_positions = rhs.m_positions;
     m_vertexGradientConstraints = rhs.m_vertexGradientConstraints;
 
     m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
@@ -882,6 +909,7 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_nodes = rhs.m_nodes/*.template cast<Scalar>()*/;
     m_ndeleted = nodeProperty<bool>("n:deleted");
 
+    assert(verticesSize() <= positionsCapacity());
     assert(nodesSize() <= nodesCapacity());
 }
 
@@ -912,6 +940,18 @@ VGMesh<_Scalar, _Dim, _Chan>::
         ++hit;
     }
     while(hit != hEnd);
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+void
+VGMesh<_Scalar, _Dim, _Chan>::resizePositionsMatrix(unsigned rows, unsigned cols)
+{
+    VectorMatrix positions(rows, cols);
+    unsigned minRows = std::min(rows, unsigned(m_positions.rows()));
+    unsigned minCols = std::min(cols, unsigned(m_positions.cols()));
+    positions.block(0, 0, minRows, minCols) = m_positions;
+    m_positions.swap(positions);
 }
 
 

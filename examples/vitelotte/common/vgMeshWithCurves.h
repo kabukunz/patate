@@ -116,7 +116,7 @@ public:
 
 public:
     VGMeshWithCurves();
-    VGMeshWithCurves(unsigned nCoeffs);
+    VGMeshWithCurves(unsigned nDims, unsigned nCoeffs);
     VGMeshWithCurves(const VGMeshWithCurves& other);
 
     VGMeshWithCurves& operator=(const VGMeshWithCurves& other);

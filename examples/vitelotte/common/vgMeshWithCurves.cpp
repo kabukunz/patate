@@ -28,8 +28,8 @@ VGMeshWithCurves::VGMeshWithCurves()
 }
 
 
-VGMeshWithCurves::VGMeshWithCurves(unsigned nCoeffs)
-    : Base(nCoeffs, 0)
+VGMeshWithCurves::VGMeshWithCurves(unsigned nDims, unsigned nCoeffs)
+    : Base(nDims, nCoeffs, 0)
 {
     m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
 }

@@ -43,7 +43,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     if(m_tmp != "1.0") error("Unsuported version");
 
     std::string cmd;
-    unsigned dim = 2;
+    unsigned nDims = 2;
     unsigned nCoeffs = 4;
     unsigned attributes = 0;
     unsigned nVert = 1024;
@@ -55,7 +55,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
         m_lineStream >> cmd;
 
         if(cmd == "dim")
-            m_lineStream >> dim;
+            m_lineStream >> nDims;
         else if(cmd == "parameters" || cmd == "coefficients")
             m_lineStream >> nCoeffs;
         else if(cmd == "linear")
@@ -95,14 +95,21 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     }
     m_lineStream.seekg(0);
 
-    m_mesh->clear();
-    // TODO: set / check dims and parameters
-    m_mesh->setAttributes(attributes);
+    if(int(Mesh::DimsAtCompileTime) != int(Dynamic) && nDims != m_mesh->nDims())
+    {
+        error("Invalid number of dimensions.");
+        return;
+    }
     if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != m_mesh->nCoeffs())
     {
         error("Invalid number of coefficients.");
         return;
     }
+
+    m_mesh->clear();
+    // TODO: set / check dims and parameters
+    m_mesh->setAttributes(attributes);
+    m_mesh->setNDims(nDims);
     m_mesh->setNCoeffs(nCoeffs);
     m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
 }
@@ -120,7 +127,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // vertex
     if(spec == "v")
     {
-        Vector p;
+        Vector p(m_mesh->nDims());
         for(unsigned i = 0; i < m_mesh->nDims(); ++i)
             def >> p[i];
         if(!def) error("Failed to read vertex (not enough components ?)");

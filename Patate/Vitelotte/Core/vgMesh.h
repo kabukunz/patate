@@ -97,9 +97,12 @@ public:
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, DimsAtCompileTime> Gradient;
 
 protected:
+    typedef Eigen::Matrix<Scalar, DimsAtCompileTime, Eigen::Dynamic> VectorMatrix;
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeMatrix;
 
 public:
+    typedef typename VectorMatrix::ColXpr VectorXpr;
+    typedef typename VectorMatrix::ConstColXpr ConstVectorXpr;
     typedef typename NodeMatrix::ColXpr ValueXpr;
     typedef typename NodeMatrix::ConstColXpr ConstValueXpr;
     typedef typename Value::ConstantReturnType UnconstrainedNodeType;
@@ -240,7 +243,7 @@ public:
 
     /// \brief Create a VGMesh with `attirbutes` flags activated.
     explicit VGMesh(unsigned attributes = 0);
-    explicit VGMesh(unsigned nCoeffs, unsigned attributes);
+    explicit VGMesh(unsigned nDims, unsigned nCoeffs, unsigned attributes);
     virtual ~VGMesh() {}
 
     VGMesh(const Self& other);
@@ -254,8 +257,15 @@ public:
     /// \name Mesh and general
     /// \{
 
-    inline unsigned nDims() const { return DimsAtCompileTime; }
+    inline unsigned nDims() const { return m_positions.rows(); }
     inline unsigned nCoeffs() const { return m_nodes.rows(); }
+
+    void setNDims(unsigned nDims);
+
+protected:
+    inline unsigned positionsCapacity() const { return m_positions.cols(); }
+
+public:
 
     /**
      * \brief Set the number of coefficients to nCoeffs.
@@ -282,10 +292,14 @@ public:
         return m_gcNodeMap[n.idx()];
     }
 
-    inline Vertex addVertex(const Vector& pos);
+    template <typename Derived>
+    inline Vertex addVertex(const Eigen::DenseBase<Derived>& pos);
 
-    inline const Vector& position(Vertex v) const { return m_positions[v]; }
-    inline Vector& position(Vertex v) { return m_positions[v]; }
+    inline ConstVectorXpr position(Vertex v) const
+    { assert(v.idx() < verticesSize()); return m_positions.col(v.idx()); }
+
+    inline VectorXpr position(Vertex v)
+    { assert(v.idx() < verticesSize()); return m_positions.col(v.idx()); }
 
 //    inline VertexProperty<Vector>& positionProperty() { return m_positions; }
 //    inline const VertexProperty<Vector>& positionProperty() const
@@ -646,6 +660,7 @@ protected:
     void copyVGMeshMembers(const Self& rhs);
     void findConstrainedEdgesSimplify(Vertex vx,
                                       std::vector<Halfedge>& consEdges);
+    void resizePositionsMatrix(unsigned rows, unsigned cols);
     void resizeNodesMatrix(unsigned rows, unsigned cols);
 
     /// \}
@@ -655,7 +670,7 @@ protected:
 
     PatateCommon::PropertyContainer m_nprops;
 
-    VertexProperty<Vector> m_positions;
+    VectorMatrix m_positions;
     VertexGradientMap m_vertexGradientConstraints;
 
     HalfedgeProperty<Node> m_toVertexValueNodes;
