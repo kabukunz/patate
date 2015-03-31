@@ -5,10 +5,17 @@ namespace PatateCommon
 {
 
 
-bool defaultErrorCallback(const std::string& msg, void* /*ptr*/)
+bool defaultErrorCallback(const std::string& msg, unsigned line, void* /*ptr*/)
 {
-    std::cout << "Parse error: " << msg << "\n";
+    std::cerr << "Parse error: " << line << ": " << msg << "\n";
     return true;
+}
+
+
+bool defaultWarningCallback(const std::string& msg, unsigned line, void* /*ptr*/)
+{
+    std::cerr << "Warning: " << line << ": " << msg << "\n";
+    return false;
 }
 
 
@@ -92,7 +99,7 @@ OBJBaseReader::error(const std::string& msg)
 {
     if(m_errorCallback)
     {
-        m_error = m_errorCallback(msg, m_errorCallbackPtr);
+        m_error = m_errorCallback(msg, m_lineNb, m_errorCallbackPtr);
     }
 }
 
@@ -102,7 +109,7 @@ OBJBaseReader::warning(const std::string& msg)
 {
     if(m_warningCallback)
     {
-        m_error = m_warningCallback(msg, m_errorCallbackPtr);
+        m_error = m_warningCallback(msg, m_lineNb, m_errorCallbackPtr);
     }
 }
 
@@ -137,7 +144,7 @@ OBJReader<_Mesh>::parseDefinition(const std::string& spec,
         Vector p;
         for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
             def >> p[i];
-        if(!def) error("Failed to read vertex (not enough components ?)");
+        if(!def) error("Failed to read vertex (wrong number of components ?)");
         m_mesh->addVertex(p);
     }
     // normal

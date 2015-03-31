@@ -133,10 +133,10 @@ protected:
 
 
 template < typename Mesh >
-void readMvg(std::istream& in, Mesh& mesh);
+bool readMvg(std::istream& in, Mesh& mesh);
 
 template < typename Mesh >
-void readMvgFromFile(const std::string& filename, Mesh& mesh);
+bool readMvgFromFile(const std::string& filename, Mesh& mesh);
 
 
 } // namespace Vitelotte

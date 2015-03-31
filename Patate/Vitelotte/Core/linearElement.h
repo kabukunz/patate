@@ -31,6 +31,8 @@ public:
     typedef Eigen::Matrix<Scalar, 3, 1> BarycentricCoord;
 
 protected:
+    typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
+
     typedef Eigen::Matrix<Scalar, 2, 2> Matrix2;
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
@@ -38,33 +40,45 @@ protected:
     typedef Eigen::Matrix<Scalar, 2, 3> Matrix2x3;
 
 public:
-    MULTIARCH inline LinearElement(const Vector* pts)
+    template < typename It >
+    MULTIARCH inline LinearElement(It pointIt)
     {
-        for(unsigned i = 0; i < 3; ++i)
-            m_points.col(i) = pts[i];
-        computeFromPoints();
+        It it0 = pointIt;
+        It it1 = it0; ++it1;
+        It it2 = it1; ++it2;
+        computeFromPoints(*it0, *it1, *it2);
     }
 
+    template < typename Derived0, typename Derived1, typename Derived2 >
     MULTIARCH inline LinearElement(
-            const Vector& p0, const Vector& p1, const Vector& p2)
+            const Eigen::MatrixBase<Derived0>& p0,
+            const Eigen::MatrixBase<Derived1>& p1,
+            const Eigen::MatrixBase<Derived2>& p2)
     {
-        m_points.col(0) = p0;
-        m_points.col(1) = p1;
-        m_points.col(2) = p2;
-
-        computeFromPoints();
+        computeFromPoints(p0, p1, p2);
     }
 
-    MULTIARCH inline Vector point(unsigned pi, unsigned offset=0) const
+    MULTIARCH inline Vector projPoint(unsigned pi, unsigned offset=0) const
     {
         assert(pi < 3 && offset < 3);
-        return m_points.col((pi + offset) % 3);
+        switch((pi + offset) % 3)
+        {
+        case 0: return Vector::Zero();
+        case 1: return Vector(edgeLength(2), 0);
+        case 2: return m_p2;
+        }
+        return Vector();
+    }
+
+    MULTIARCH inline Scalar edgeLength(unsigned ei, unsigned offset=0) const
+    {
+        assert(ei < 3 && offset < 3);
+        return m_eLen((ei + offset) % 3);
     }
 
     MULTIARCH inline Scalar doubleArea() const { return m_2delta; }
 
-    MULTIARCH inline BarycentricCoord barycentricCoordinates(
-            const Vector& p) const
+    MULTIARCH inline BarycentricCoord bcProj(const Vector& p) const
     {
         return m_lbf * (BarycentricCoord() << p, 1).finished();
     }
@@ -95,23 +109,35 @@ public:
     }
 
 protected:
-    MULTIARCH inline void computeFromPoints()
+    template < typename Derived0, typename Derived1, typename Derived2 >
+    MULTIARCH inline void computeFromPoints(
+            const Eigen::MatrixBase<Derived0>& p0,
+            const Eigen::MatrixBase<Derived1>& p1,
+            const Eigen::MatrixBase<Derived2>& p2)
     {
-        m_2delta = (point(1).x() - point(0).x()) * (point(2).y() - point(1).y())
-                 - (point(1).y() - point(0).y()) * (point(2).x() - point(1).x());
+        m_eLen(0) = (p2-p1).norm();
+        m_eLen(1) = (p0-p2).norm();
+        m_eLen(2) = (p1-p0).norm();
+
+        m_p2(0) = (p2-p0).dot(p1-p0) / edgeLength(2);
+        m_p2(1) = std::sqrt(edgeLength(1)*edgeLength(1) - m_p2(0)*m_p2(0));
+
+        m_2delta = edgeLength(2) * m_p2(1);
 
         for(int li = 0; li < 3; ++li)
         {
-            m_lbf(li, 0) = point(li, 1).y() - point(li, 2).y();
-            m_lbf(li, 1) = point(li, 2).x() - point(li, 1).x();
-            m_lbf(li, 2) = point(li, 1).x() * point(li, 2).y()
-                         - point(li, 2).x() * point(li, 1).y();
+            m_lbf(li, 0) = projPoint(li, 1).y() - projPoint(li, 2).y();
+            m_lbf(li, 1) = projPoint(li, 2).x() - projPoint(li, 1).x();
+            m_lbf(li, 2) = projPoint(li, 1).x() * projPoint(li, 2).y()
+                         - projPoint(li, 2).x() * projPoint(li, 1).y();
         }
         m_lbf /= m_2delta;
     }
 
 protected:
-    Matrix2x3 m_points;
+//    Matrix2x3 m_points;
+    Vector m_p2;
+    Vector3 m_eLen;
 
     Scalar m_2delta;
     Matrix3 m_lbf;

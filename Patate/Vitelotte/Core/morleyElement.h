@@ -40,23 +40,28 @@ protected:
     typedef Eigen::Matrix<Scalar, 3, 3> Matrix3;
 
 public:
-    MULTIARCH inline MorleyElement(const Vector* pts)
-        : Base(pts)
+    template < typename It >
+    MULTIARCH inline MorleyElement(It pointIt)
+        : Base(pointIt)
     {
         computeFromPoints();
     }
 
+    template < typename Derived0, typename Derived1, typename Derived2 >
     MULTIARCH inline MorleyElement(
-            const Vector& p0, const Vector& p1, const Vector& p2)
+            const Eigen::MatrixBase<Derived0>& p0,
+            const Eigen::MatrixBase<Derived1>& p1,
+            const Eigen::MatrixBase<Derived2>& p2)
         : Base(p0, p1, p2)
     {
         computeFromPoints();
     }
 
-    using Base::point;
+    using Base::projPoint;
+    using Base::edgeLength;
     using Base::doubleArea;
 
-    using Base::barycentricCoordinates;
+    using Base::bcProj;
 
     MULTIARCH inline Values eval(const BarycentricCoord& bc) const
     {
@@ -144,25 +149,18 @@ protected:
     {
         Matrix2x3 vs;
         for(int i = 0; i < 3; ++i)
-            vs.col(i) = point(i, 2) - point(i, 1);
-
-        for(int i = 0; i < 3; ++i)
-            m_eLen(i) = vs.col(i).norm();
+            vs.col(i) = projPoint(i, 2) - projPoint(i, 1);
 
         for(int ni = 0; ni < 3; ++ni)
             for(int li = 0; li < 3; ++li)
                 m_dldn(li, ni) =
-                        vs.col(li).dot(vs.col(ni)) / (m_2delta * m_eLen(ni));
+                        vs.col(li).dot(vs.col(ni)) / (m_2delta * edgeLength(ni));
     }
 
 
 protected:
-    using Base::m_points;
-
     using Base::m_2delta;
-    using Base::m_lbf;
 
-    Vector3 m_eLen;
     Matrix3 m_dldn;
 };
 

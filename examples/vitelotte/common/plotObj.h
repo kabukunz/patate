@@ -78,7 +78,7 @@ void exportPlot(const Mesh& mesh, const std::string& filename,
                     values(i + edgeGradientOffset) *= -1;
             }
             ++hit;
-            points.col(i) = mesh.position(mesh.toVertex(*hit));
+            points.col(i) = mesh.position(mesh.toVertex(*hit)).template head<2>();
             if(toVertexValueOffset >= 0)
             {
                 values(i + toVertexValueOffset) =

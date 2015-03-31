@@ -34,25 +34,24 @@ public:
     typedef Eigen::Matrix<Scalar, 3, 1> BarycentricCoord;
 
 public:
-    MULTIARCH inline QuadraticElement(const Vector* pts)
-        : Base(pts)
+    template < typename It >
+    MULTIARCH inline QuadraticElement(It pointIt)
+        : Base(pointIt)
     {}
 
+    template < typename Derived0, typename Derived1, typename Derived2 >
     MULTIARCH inline QuadraticElement(
-            const Vector& p0, const Vector& p1, const Vector& p2)
+            const Eigen::MatrixBase<Derived0>& p0,
+            const Eigen::MatrixBase<Derived1>& p1,
+            const Eigen::MatrixBase<Derived2>& p2)
         : Base(p0, p1, p2)
     {}
 
-    MULTIARCH inline Vector point(unsigned pi, unsigned offset=0) const
-    {
-        assert(pi < 3 && offset < 3);
-        return m_points.col((pi + offset) % 3);
-    }
-
-    using Base::point;
+    using Base::projPoint;
+    using Base::edgeLength;
     using Base::doubleArea;
 
-    using Base::barycentricCoordinates;
+    using Base::bcProj;
 
     MULTIARCH inline Values eval(const BarycentricCoord& bc) const
     {
@@ -92,10 +91,7 @@ public:
 
 
 protected:
-    using Base::m_points;
-
     using Base::m_2delta;
-    using Base::m_lbf;
 };
 
 

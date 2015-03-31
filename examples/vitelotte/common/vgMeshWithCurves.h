@@ -46,10 +46,10 @@ private:
 };
 
 
-class VGMeshWithCurves : public Vitelotte::VGMesh<float, 2, Vitelotte::Dynamic>
+class VGMeshWithCurves : public Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic>
 {
 public:
-    typedef Vitelotte::VGMesh<float, 2, Vitelotte::Dynamic> Base;
+    typedef Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic> Base;
 
     typedef Base::Scalar Scalar;
     typedef Base::Vector Vector;

@@ -383,7 +383,7 @@ VGMeshRenderer<_Mesh>::color(const Mesh& mesh, Node node) const
         {
         case 2: c(3)        = value(1);                     // fall-through
         case 1: c.head<3>() = Vector3::Constant(value(0));  break;
-        case 3: c.head<3>() = value.template head<3>().template cast<float>(); break;
+        case 3: c.head<3>() = value.template cast<float>(); break;
         case 4: c           = value.template cast<float>(); break;
         default: assert(false);
         }

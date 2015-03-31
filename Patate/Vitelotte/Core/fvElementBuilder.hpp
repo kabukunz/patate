@@ -64,6 +64,7 @@ FVElementBuilder<_Mesh, _Scalar>::
 //    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
     bool orient[3];
+    // TODO: remove dynamic allocation with dynamic dims.
     Vector p[3];
     --hit;
     for(int i = 0; i < 3; ++i)

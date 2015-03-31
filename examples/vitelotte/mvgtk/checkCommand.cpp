@@ -17,11 +17,11 @@ bool CheckCommand::execute(Mesh& mesh, const GlobalOptions* opts)
         else
         {
             Mesh::Halfedge h = mesh.halfedge(*fit);
-            Mesh::Vector p0 = mesh.position(mesh.toVertex(h));
+            const Mesh::Vector& p0 = mesh.position(mesh.toVertex(h));
             h = mesh.nextHalfedge(h);
-            Mesh::Vector p1 = mesh.position(mesh.toVertex(h));
+            const Mesh::Vector& p1 = mesh.position(mesh.toVertex(h));
             h = mesh.nextHalfedge(h);
-            Mesh::Vector p2 = mesh.position(mesh.toVertex(h));
+            const Mesh::Vector& p2 = mesh.position(mesh.toVertex(h));
             Eigen::Matrix2f m; m << (p1-p0), (p2-p1);
             float det = m.determinant();
             if(det <= 0)

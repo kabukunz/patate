@@ -83,6 +83,7 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
         return;
     }
 
+    // TODO: remove dynamic allocation with dynamic dims.
     Vector v[3];
     int nodes[6];
 

@@ -63,7 +63,7 @@ public:
 
     typedef float Scalar;
 
-    typedef Vitelotte::VGMesh<Scalar, 2, Vitelotte::Dynamic> Mesh;
+    typedef Vitelotte::VGMesh<Scalar, Vitelotte::Dynamic, Vitelotte::Dynamic> Mesh;
     typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
     typedef Eigen::AlignedBox<Scalar, 2> Box;

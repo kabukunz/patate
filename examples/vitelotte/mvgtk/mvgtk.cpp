@@ -218,23 +218,29 @@ bool Mvgtk::executeCommands()
 {
     Mesh mesh;
 
+    bool readFailed = false;
     if(m_inFilename.rfind(".obj") == m_inFilename.length() - 4)
     {
         if(opts.verbose) std::cout << "Load obj \"" << m_inFilename << "\"...\n";
         std::ifstream in(m_inFilename.c_str());
         PatateCommon::OBJReader<Mesh> reader;
-        reader.read(in, mesh);
+        readFailed = reader.read(in, mesh);
     }
     else if(m_inFilename.rfind(".mvg") == m_inFilename.length() - 4)
     {
         if(opts.verbose) std::cout << "Load mvg \"" << m_inFilename << "\"...\n";
         VGMeshWithCurveReader reader;
         std::ifstream in(m_inFilename.c_str());
-        reader.read(in, mesh);
+        readFailed = reader.read(in, mesh);
     }
     else
     {
         std::cerr << "Unrecoginzed file type, aborting.\n";
+        return false;
+    }
+
+    if(readFailed)
+    {
         return false;
     }
 

@@ -16,19 +16,20 @@ namespace PatateCommon
 {
 
 
-inline bool defaultErrorCallback(const std::string& msg, void* ptr);
+inline bool defaultErrorCallback(const std::string& msg, unsigned line, void* ptr);
+inline bool defaultWarningCallback(const std::string& msg, unsigned line, void* ptr);
 
 
 class OBJBaseReader
 {
 public:
-    typedef bool (*ErrorCallback)(const std::string& msg, void* ptr);
+    typedef bool (*ErrorCallback)(const std::string& msg, unsigned line, void* ptr);
 
 public:
     inline OBJBaseReader()
         : m_error(false),
           m_errorCallback(defaultErrorCallback),
-          m_warningCallback(0),
+          m_warningCallback(defaultWarningCallback),
           m_errorCallbackPtr(0) {}
     virtual ~OBJBaseReader() {}
 

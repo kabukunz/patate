@@ -179,7 +179,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
 {
     if(def.fail())
     {
-        error("Incomplete diffusion curve definition. Expected gradient definition.");
+        error("Incomplete diffusion curve definition. Expected plf definition.");
         return false;
     }
 
@@ -200,7 +200,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
                                      c != cend && *c == ',';
             if(!ok)
             {
-                error("Invalid gradent specification.");
+                error("Invalid plf specification.");
                 return false;
             }
 
@@ -227,7 +227,7 @@ bool VGMeshWithCurveReader::parseGradient(std::istream& def, VGMeshWithCurves::V
 
     if(m_in.fail())
     {
-        error("Error while reading gradent specification.");
+        error("Error while reading plf specification.");
         return false;
     }
 

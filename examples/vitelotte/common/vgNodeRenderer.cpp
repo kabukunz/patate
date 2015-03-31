@@ -139,6 +139,9 @@ float angle(const Eigen::Vector2f& v0, const Eigen::Vector2f v1)
 
 void VGNodeRenderer::update(const Mesh& mesh, float zoom)
 {
+    // TODO: support mesh with more than 2 dimesions.
+    assert(mesh.nDims() == 2);
+
     clear();
 
     for(Mesh::EdgeIterator eit = mesh.edgesBegin();
@@ -200,7 +203,7 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
     Mesh::Vector mid = (p0 + p1) / 2;
 
     Mesh::Vector v = (p1 - p0).normalized();
-    Mesh::Vector n(-v.y(), v.x());
+    Mesh::Vector n(2); n << -v.y(), v.x();
 
     bool boundary = mesh.isBoundary(e);
     bool fromSplit = !boundary && mesh.fromVertexValueNode(h) != mesh.toVertexValueNode(oh);
@@ -275,7 +278,7 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Verte
             Mesh::Vertex vx1 = mesh.toVertex(*hit);
 
             Mesh::Vector v = (mesh.position(vx1) - mesh.position(vx0)).normalized();
-            Mesh::Vector n(-v.y(), v.x());
+            Mesh::Vector n(2); n << -v.y(), v.x();
 
             addNode2(mesh, mesh.fromVertexValueNode(*hit),
                      mesh.toVertexValueNode(mesh.oppositeHalfedge(*hit)),

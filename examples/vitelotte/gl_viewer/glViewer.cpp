@@ -193,14 +193,9 @@ void GLViewer::startup(const std::string& filename)
 
     m_pQvg = new Mesh;
 
-    try
+    if(Vitelotte::readMvgFromFile(filename, *m_pQvg))
     {
-        Vitelotte::readMvgFromFile(filename, *m_pQvg);
-    }
-    catch(std::runtime_error& e)
-    {
-        fprintf(stderr, "error reading .qvg : %s\n", e.what());
-        abort();
+        exit(1);
     }
 
     //assert(m_pQvg->isValid());
@@ -216,7 +211,7 @@ void GLViewer::startup(const std::string& filename)
     for(Mesh::VertexIterator vit = m_pQvg->verticesBegin();
         vit != m_pQvg->verticesEnd(); ++vit)
     {
-        m_boundingBox.extend(m_pQvg->position(*vit));
+        m_boundingBox.extend(m_pQvg->position(*vit).template head<2>());
     }
 
     m_viewCenter = m_boundingBox.center();

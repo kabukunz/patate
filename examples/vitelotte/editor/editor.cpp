@@ -684,7 +684,7 @@ Mesh::Vector Editor::computeStopPosition(
     float pos1 = mesh.toCurvePos(h);
 
     Vector v = p1 - p0;
-    Vector n = Vector(-v.y(), v.x()).normalized();
+    Vector n(2); n << -v.y(), v.x(); n.normalize();
     float alpha = (pos - pos0) / (pos1 - pos0);
 
     return p0 + v * alpha + n * offset / zoom();

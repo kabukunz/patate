@@ -130,7 +130,9 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         Vector p(m_mesh->nDims());
         for(unsigned i = 0; i < m_mesh->nDims(); ++i)
             def >> p[i];
-        if(!def) error("Failed to read vertex (not enough components ?)");
+        if(!def) error("Failed to read vertex (not enought components ?)");
+        def >> std::ws;
+        if(!def.eof()) warning("Too much components.");
         m_mesh->addVertex(p);
     }
 
@@ -145,7 +147,9 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         {
             for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
                 def >> n[i];
-            if(!def) error("Failed to read node (not enough components ?)");
+            if(!def) error("Failed to read node (wrong number of components ?)");
+            def >> std::ws;
+            if(!def.eof()) warning("Too much components.");
         }
         m_mesh->addNode(n);
     }
@@ -247,17 +251,17 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
 
 
 template < typename Mesh >
-void readMvg(std::istream& in, Mesh& mesh)
+bool readMvg(std::istream& in, Mesh& mesh)
 {
     MVGReader<Mesh> reader;
-    reader.read(in, mesh);
+    return reader.read(in, mesh);
 }
 
 template < typename Mesh >
-void readMvgFromFile(const std::string& filename, Mesh& mesh)
+bool readMvgFromFile(const std::string& filename, Mesh& mesh)
 {
     std::ifstream in(filename.c_str());
-    readMvg(in, mesh);
+    return readMvg(in, mesh);
 }
 
 

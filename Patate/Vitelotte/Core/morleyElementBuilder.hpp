@@ -44,6 +44,7 @@ MorleyElementBuilder<_Mesh, _Scalar>::
         return;
     }
 
+    // TODO: remove dynamic allocation with dynamic dims.
     Vector p[3];
     Vector v[3];
     bool orient[3];
