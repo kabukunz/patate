@@ -2,10 +2,15 @@
 #include <iostream>
 #include <fstream>
 
-#include "glViewer.h"
+#include <GL/glew.h>
+
 #include "Patate/vitelotte_gl.h"
 #include "Patate/Vitelotte/Utils/mvgReader.h"
 #include "Patate/Vitelotte/Utils/mvgWriter.h"
+
+#include "../common/trackball.h"
+
+#include "glViewer.h"
 
 
 Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float _top, float _near, float _far)
@@ -166,8 +171,6 @@ void GLViewer::initVars()
 #endif
 
     m_needRefresh = false;
-    m_viewCenter = Eigen::Vector2f::Zero();
-    m_zoom = 1.f;
     m_pointRadius = 2.f;
     m_lineWidth = 1.f;
 
@@ -214,8 +217,13 @@ void GLViewer::startup(const std::string& filename)
         m_boundingBox.extend(m_pQvg->position(*vit).template head<2>());
     }
 
-    m_viewCenter = m_boundingBox.center();
-    m_zoom = 550.f / m_boundingBox.sizes().maxCoeff();
+    m_trackball.setSceneRadius(m_boundingBox.sizes().maxCoeff());
+    m_trackball.setSceneDistance(m_trackball.sceneRadius() * 3.);
+    m_trackball.setNearFarOffsets(-m_trackball.sceneRadius() * 100.f,
+                                   m_trackball.sceneRadius() * 100.f);
+    m_trackball.setScreenViewport(Eigen::AlignedBox2f(
+            Eigen::Vector2f(0, 0),
+            Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight)));
 
     glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
     glEnable(GL_DEPTH_TEST);
@@ -240,21 +248,16 @@ void GLViewer::render()
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    float xOffset = m_info.windowWidth / (2.f * m_zoom);
-    float yOffset = m_info.windowHeight / (2.f * m_zoom);
+    m_viewMatrix = m_trackball.computeProjectionMatrix()
+                 * m_trackball.computeViewMatrix();
 
-    m_viewMatrix = orthogonalMatrix(
-        m_viewCenter.x() - xOffset,
-        m_viewCenter.x() + xOffset,
-        m_viewCenter.y() - yOffset,
-        m_viewCenter.y() + yOffset,
-        -1, 1);
+    float zoomFactor = 1;
 
     m_pQMeshRenderer->render(m_viewMatrix);
 
     if(m_showShaderWireframe)
     {
-        m_pQMeshRenderer->renderWireframe(m_viewMatrix, m_zoom, m_lineWidth);
+        m_pQMeshRenderer->renderWireframe(m_viewMatrix, zoomFactor, m_lineWidth);
     }
 
     PATATE_ASSERT_NO_GL_ERROR();
@@ -269,6 +272,9 @@ void GLViewer::onResize(int _w, int _h)
     m_info.windowWidth = _w;
     m_info.windowHeight = _h;
 
+    m_trackball.setScreenViewport(Eigen::AlignedBox2f(
+            Eigen::Vector2f(0, 0),
+            Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight)));
     if(glViewport != NULL)
     {
         glViewport(0, 0, _w, _h);
@@ -336,24 +342,58 @@ void GLViewer::onMouseButton(int _button, int _action, int /*_mods*/)
         {
             double x, y;
             glfwGetCursorPos(m_pWindow, &x, &y);
-            m_lastMousePos = screen2scene((float)x, (float)y);
+            m_trackball.startTranslation(Eigen::Vector2f(x, y));
+        } else if(_action == GLFW_RELEASE)
+        {
+            m_trackball.endTranslation();
+        }
+    }
+    if(_button == GLFW_MOUSE_BUTTON_RIGHT)
+    {
+        if(_action == GLFW_PRESS)
+        {
+            double x, y;
+            glfwGetCursorPos(m_pWindow, &x, &y);
+            m_trackball.startRotation(Eigen::Vector2f(x, y));
+        } else if(_action == GLFW_RELEASE)
+        {
+            m_trackball.endRotation();
         }
     }
 }
 
-void GLViewer::onMouseMove(double _x, double _y)
+void GLViewer::onMouseMove(double x, double y)
 {
-    if(glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
+    if(glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS &&
+            m_trackball.isTranslating())
     {
-        Eigen::Vector2f pos = screen2scene((float)_x, (float)_y);
-        m_viewCenter += m_lastMousePos - pos;
+        m_trackball.dragTranslate(Eigen::Vector2f(x, y));
+        m_needRefresh = true;
+    }
+    if(glfwGetMouseButton(m_pWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS &&
+            m_trackball.isRotating())
+    {
+        m_trackball.dragRotate(Eigen::Vector2f(x, y));
         m_needRefresh = true;
     }
 }
 
 void GLViewer::onMouseWheel(double /*_xOffset*/, double _yOffset)
 {
-    m_zoom *= (_yOffset > 0.) ? 1.1f : 1.f/1.1f; 
+    if(glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)  == GLFW_PRESS ||
+       glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+    {
+        m_trackball.dollyZoom((_yOffset > 0.) ? 1.1f : 1.f/1.1f);
+    }
+    else if(glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)  == GLFW_PRESS ||
+            glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+    {
+        m_trackball.grow((_yOffset > 0.) ? 1.1f : 1.f/1.1f);
+    }
+    else
+    {
+        m_trackball.zoom((_yOffset > 0.) ? 1.1f : 1.f/1.1f);
+    }
     m_needRefresh = true;
 }
 
@@ -369,17 +409,18 @@ void GLViewer::onDebugMessage(GLenum /*_source*/, GLenum /*_type*/,
     fprintf(stderr, "Debug Message : %s \n", _message);
 }
 
-Eigen::Vector2f GLViewer::screen2scene(const float& _x, const float& _y)
-{
-    return (Eigen::Vector2f(_x, m_info.windowHeight - _y - 1) - Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight) / 2.f) / m_zoom + m_viewCenter;
-}
+//Eigen::Vector2f GLViewer::screen2scene(const float& _x, const float& _y)
+//{
+//    return (Eigen::Vector2f(_x, m_info.windowHeight - _y - 1)
+//          - Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight) / 2.f) / m_zoom + m_viewCenter;
+//}
 
-Eigen::Vector2f GLViewer::scene2screen(const float& _x, const float& _y)
-{
-    Eigen::Vector2f v = (Eigen::Vector2f(_x, _y) - m_viewCenter) * m_zoom + Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight) / 2.f;
+//Eigen::Vector2f GLViewer::scene2screen(const float& _x, const float& _y)
+//{
+//    Eigen::Vector2f v = (Eigen::Vector2f(_x, _y) - m_viewCenter) * m_zoom + Eigen::Vector2f(m_info.windowWidth, m_info.windowHeight) / 2.f;
 
-    return Eigen::Vector2f(v.x() + .5f, m_info.windowHeight - int(v.y() + .5f) - 1);
-}
+//    return Eigen::Vector2f(v.x() + .5f, m_info.windowHeight - int(v.y() + .5f) - 1);
+//}
 
 
 void usage(char* progName)

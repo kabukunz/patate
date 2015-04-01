@@ -23,6 +23,7 @@ include_directories(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(vitelotte_SRCS
+    ../common/trackball.cpp
     glViewer.cpp
 )
 add_executable(gl_viewer ${vitelotte_SRCS})

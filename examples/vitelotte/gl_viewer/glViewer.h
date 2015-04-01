@@ -34,6 +34,8 @@
 
 #include <Patate/vitelotte_gl.h>
 
+#include "../common/trackball.h"
+
 
 class GLViewer
 {
@@ -132,8 +134,8 @@ private:
 
     void render();
 
-    Eigen::Vector2f screen2scene(const float& _x, const float& _y);
-    Eigen::Vector2f scene2screen(const float& _x, const float& _y);
+//    Eigen::Vector2f screen2scene(const float& _x, const float& _y);
+//    Eigen::Vector2f scene2screen(const float& _x, const float& _y);
 
 private:
     static void onRefreshCallback(GLFWwindow* /*_pWindow*/)
@@ -186,11 +188,9 @@ private:
     GLFWwindow*         m_pWindow;
 
     bool m_needRefresh;
+    Trackball m_trackball;
     Eigen::Matrix4f m_viewMatrix;
-    Eigen::Vector2f m_viewCenter;
-    Eigen::Vector2f m_lastMousePos;
 
-    float m_zoom;
     float m_pointRadius;
     float m_lineWidth;
 
