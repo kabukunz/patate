@@ -348,7 +348,7 @@ void GLViewer::onMouseButton(int _button, int _action, int /*_mods*/)
             m_trackball.endTranslation();
         }
     }
-    if(_button == GLFW_MOUSE_BUTTON_RIGHT)
+    if(_button == GLFW_MOUSE_BUTTON_RIGHT && m_pQvg->nDims() != 2)
     {
         if(_action == GLFW_PRESS)
         {
@@ -380,13 +380,15 @@ void GLViewer::onMouseMove(double x, double y)
 
 void GLViewer::onMouseWheel(double /*_xOffset*/, double _yOffset)
 {
-    if(glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)  == GLFW_PRESS ||
-       glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS)
+    if((glfwGetKey(m_pWindow, GLFW_KEY_LEFT_CONTROL)  == GLFW_PRESS ||
+        glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS) &&
+            m_pQvg->nDims() != 2)
     {
         m_trackball.dollyZoom((_yOffset > 0.) ? 1.1f : 1.f/1.1f);
     }
-    else if(glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)  == GLFW_PRESS ||
-            glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS)
+    else if((glfwGetKey(m_pWindow, GLFW_KEY_LEFT_ALT)  == GLFW_PRESS ||
+             glfwGetKey(m_pWindow, GLFW_KEY_RIGHT_ALT) == GLFW_PRESS) &&
+                 m_pQvg->nDims() != 2)
     {
         m_trackball.grow((_yOffset > 0.) ? 1.1f : 1.f/1.1f);
     }
