@@ -31,12 +31,14 @@ struct DefaultValueProj {
 };
 
 template < class _Mesh,
-           typename PosProj   = DefaultPosProj  <typename _Mesh::Vector>,
-           typename ValueProj = DefaultValueProj<typename _Mesh::Value> >
+           typename _PosProj   = DefaultPosProj  <typename _Mesh::Vector>,
+           typename _ValueProj = DefaultValueProj<typename _Mesh::Value> >
 class VGMeshRenderer
 {
 public:
-    typedef _Mesh Mesh;
+    typedef _Mesh      Mesh;
+    typedef _PosProj   PosProj;
+    typedef _ValueProj ValueProj;
 
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vector Vector;
@@ -66,11 +68,17 @@ public:
     };
 
 public:
-    VGMeshRenderer();
+    VGMeshRenderer(const PosProj&   posProj   = PosProj(),
+                   const ValueProj& valueProj = ValueProj());
     ~VGMeshRenderer();
 
     bool convertSrgbToLinear() const;
     void setConvertSrgbToLinear(bool enable);
+
+    const PosProj&   positionProjection() const;
+          PosProj&   positionProjection();
+    const ValueProj& valueProjection()    const;
+          ValueProj& valueProjection();
 
     bool initialize();
     void releaseGLRessources();

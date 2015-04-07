@@ -36,14 +36,15 @@ Eigen::Vector4f DefaultValueProj<Value>::operator()(const Value& value) const {
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-VGMeshRenderer<_Mesh, PosProj, ValueProj>::VGMeshRenderer() :
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
+        const PosProj& posProj, const ValueProj& valueProj) :
     m_initialized(false),
     m_useVao(true),
     m_convertSrgbToLinear(false),
 
-    m_positionProjection(),
-    m_valueProjection(),
+    m_positionProjection(posProj),
+    m_valueProjection(valueProj),
     m_invalidNodeColor(Vector4::Unit(3)),
 
     m_verticesBuffer(0),
@@ -55,30 +56,62 @@ VGMeshRenderer<_Mesh, PosProj, ValueProj>::VGMeshRenderer() :
 {}
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-VGMeshRenderer<_Mesh, PosProj, ValueProj>::~VGMeshRenderer()
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::~VGMeshRenderer()
 {
     if(m_initialized)
         releaseGLRessources();
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::convertSrgbToLinear() const
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+const typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::PosProj&
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::positionProjection() const
+{
+    return m_positionProjection;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::PosProj&
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::positionProjection()
+{
+    return m_positionProjection;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+const typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::ValueProj&
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::valueProjection() const
+{
+    return m_valueProjection;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::ValueProj&
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::valueProjection()
+{
+    return m_valueProjection;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::convertSrgbToLinear() const
 {
     return m_convertSrgbToLinear;
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::setConvertSrgbToLinear(bool enable)
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setConvertSrgbToLinear(bool enable)
 {
     m_convertSrgbToLinear = enable;
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initialize()
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initialize()
 {
     bool ok = true;
     ok &= initSolidShader(m_solidLinearShader, m_solidLinearUniforms,
@@ -91,8 +124,8 @@ bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initialize()
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::releaseGLRessources()
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::releaseGLRessources()
 {
     m_initialized = false;
 
@@ -115,8 +148,8 @@ void VGMeshRenderer<_Mesh, PosProj, ValueProj>::releaseGLRessources()
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::updateBuffers(const Mesh& mesh)
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -221,8 +254,8 @@ void VGMeshRenderer<_Mesh, PosProj, ValueProj>::updateBuffers(const Mesh& mesh)
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::drawGeometry(unsigned geomFlags)
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlags)
 {
     assert((geomFlags & ~ALL_TRIANGLES) == 0);
     PATATE_ASSERT_NO_GL_ERROR();
@@ -276,8 +309,8 @@ void VGMeshRenderer<_Mesh, PosProj, ValueProj>::drawGeometry(unsigned geomFlags)
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::render(const Eigen::Matrix4f& viewMatrix)
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& viewMatrix)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -314,8 +347,8 @@ void VGMeshRenderer<_Mesh, PosProj, ValueProj>::render(const Eigen::Matrix4f& vi
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::renderWireframe(
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
         const Eigen::Matrix4f& viewMatrix, float zoom, float lineWidth,
         const Eigen::Vector4f& color)
 {
@@ -335,8 +368,8 @@ void VGMeshRenderer<_Mesh, PosProj, ValueProj>::renderWireframe(
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initSolidShader(
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initSolidShader(
         PatateCommon::Shader& shader, SolidUniforms& unif, const char* fragCode)
 {
     shader.create();
@@ -365,8 +398,8 @@ bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initSolidShader(
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initWireframeShader()
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initWireframeShader()
 {
     PatateCommon::Shader& shader = m_wireframeShader;
     WireframeUniforms& unif = m_wireframeUniforms;
@@ -397,17 +430,17 @@ bool VGMeshRenderer<_Mesh, PosProj, ValueProj>::initWireframeShader()
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-inline typename VGMeshRenderer<_Mesh, PosProj, ValueProj>::Vector4
-VGMeshRenderer<_Mesh, PosProj, ValueProj>::position(const Mesh& mesh, Vertex vx) const
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+inline typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::Vector4
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::position(const Mesh& mesh, Vertex vx) const
 {
     return m_positionProjection(mesh.position(vx));
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
-inline typename VGMeshRenderer<_Mesh, PosProj, ValueProj>::Vector4
-VGMeshRenderer<_Mesh, PosProj, ValueProj>::color(const Mesh& mesh, Node node) const
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+inline typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::Vector4
+VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::color(const Mesh& mesh, Node node) const
 {
     Vector4 c = (mesh.isValid(node) && mesh.isConstraint(node))?
                 m_valueProjection(mesh.value(node)):
@@ -416,9 +449,9 @@ VGMeshRenderer<_Mesh, PosProj, ValueProj>::color(const Mesh& mesh, Node node) co
 }
 
 
-template < class _Mesh, typename PosProj, typename ValueProj >
+template < class _Mesh, typename _PosProj, typename _ValueProj >
 template < typename T >
-void VGMeshRenderer<_Mesh, PosProj, ValueProj>::createAndUploadBuffer(
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::createAndUploadBuffer(
         GLuint& glId, GLenum type, const std::vector<T>& data, GLenum usage)
 {
     if(!glId)
