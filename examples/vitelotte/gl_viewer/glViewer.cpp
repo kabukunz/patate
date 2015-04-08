@@ -193,7 +193,7 @@ void GLViewer::startup(const std::string& filename)
 
     m_pQvg = new Mesh;
 
-    if(Vitelotte::readMvgFromFile(filename, *m_pQvg))
+    if(!Vitelotte::readMvgFromFile(filename, *m_pQvg, Vitelotte::MVGReader<Mesh>::NO_WARN_UNKNOWN))
     {
         exit(1);
     }

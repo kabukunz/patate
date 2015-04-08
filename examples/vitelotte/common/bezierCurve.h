@@ -56,7 +56,7 @@ public:
         s.firstPoint = nPoints() - 1;
         m_segments.push_back(s);
 
-        for(unsigned i = 0; i < nPoints(si); ++i)
+        for(unsigned i = 0; i < nPoints(si) - 1; ++i)
         {
             m_points.push_back(points[i]);
         }

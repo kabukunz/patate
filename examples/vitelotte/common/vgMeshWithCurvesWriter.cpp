@@ -92,7 +92,7 @@ void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
 
         if(!mesh.valueFunction(curve, Mesh::GRADIENT_LEFT).empty())
         {
-            _out << (mesh.valueTear(curve)? "dcgLeft ": "dcg ") << ci;
+            _out << (mesh.gradientTear(curve)? "dcgLeft ": "dcg ") << ci;
             writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_LEFT));
             _out << "\n";
         }

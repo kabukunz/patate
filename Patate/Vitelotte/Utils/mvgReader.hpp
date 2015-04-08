@@ -16,7 +16,8 @@ namespace Vitelotte
 
 
 template < typename _Mesh >
-MVGReader<_Mesh>::MVGReader()
+MVGReader<_Mesh>::MVGReader(unsigned flags)
+    : m_flags(flags)
 {
     m_faceIndices.reserve(3);
 }
@@ -214,7 +215,10 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // Unknown element type.
     else
     {
-        warning("Unknown spec: " + spec);
+        if(!(m_flags & NO_WARN_UNKNOWN))
+        {
+            warning("Unknown spec: " + spec);
+        }
         return false;
     }
     return true;
@@ -263,18 +267,18 @@ MVGReader<_Mesh>::parseGradient(std::istream& in) {
 
 
 template < typename Mesh >
-bool readMvg(std::istream& in, Mesh& mesh)
+bool readMvg(std::istream& in, Mesh& mesh, unsigned flags)
 {
-    MVGReader<Mesh> reader;
+    MVGReader<Mesh> reader(flags);
     return reader.read(in, mesh);
 }
 
 
 template < typename Mesh >
-bool readMvgFromFile(const std::string& filename, Mesh& mesh)
+bool readMvgFromFile(const std::string& filename, Mesh& mesh, unsigned flags)
 {
     std::ifstream in(filename.c_str());
-    return readMvg(in, mesh);
+    return readMvg(in, mesh, flags);
 }
 
 

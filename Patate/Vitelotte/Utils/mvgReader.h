@@ -47,12 +47,16 @@ public:
     typedef typename Mesh::Value     Value;
     typedef typename Mesh::Gradient  Gradient;
 
+    enum {
+        NO_WARN_UNKNOWN = 0x01
+    };
+
 public:
 
     /**
      * \brief Default constructor
      */
-    inline MVGReader();
+    inline MVGReader(unsigned flags = 0);
 
 protected:
     using Base::readLine;
@@ -74,6 +78,7 @@ protected:
     using Base::m_lineStream;
     using Base::m_vector;
 
+    unsigned               m_flags;
     std::vector<Vertex>    m_fVertices;
     std::string            m_tmp;
     Value                  m_value;
@@ -83,10 +88,10 @@ protected:
 
 
 template < typename Mesh >
-bool readMvg(std::istream& in, Mesh& mesh);
+bool readMvg(std::istream& in, Mesh& mesh, unsigned flags=0);
 
 template < typename Mesh >
-bool readMvgFromFile(const std::string& filename, Mesh& mesh);
+bool readMvgFromFile(const std::string& filename, Mesh& mesh, unsigned flags=0);
 
 
 } // namespace Vitelotte
