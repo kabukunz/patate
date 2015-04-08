@@ -106,9 +106,10 @@ class MVGReader: public PatateCommon::OBJBaseReader
 public:
     typedef _Mesh Mesh;
 
-    typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::Vertex Vertex;
-    typedef typename Mesh::Value Value;
+    typedef typename Mesh::Vector   Vector;
+    typedef typename Mesh::Vertex   Vertex;
+    typedef typename Mesh::Value    Value;
+    typedef typename Mesh::Gradient Gradient;
 
 public:
 
@@ -124,10 +125,17 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
+    void parseVector  (std::istream& in);
+    void parseValue   (std::istream& in);
+    void parseGradient(std::istream& in);
+
 protected:
     Mesh* m_mesh;
     std::vector<Vertex>  m_fVertices;
     std::string m_tmp;
+    Vector   m_vector;
+    Value    m_value;
+    Gradient m_gradient;
     std::vector<unsigned> m_faceIndices;
 };
 

@@ -24,6 +24,7 @@ typename PicewiseLinearFunction<_Value>::Value
 
 VGMeshWithCurves::VGMeshWithCurves()
 {
+    m_pointConstraintConn = addVertexProperty<PointConstraint>("v:pointConstraintConnectivity");
     m_halfedgeCurveConn = addHalfedgeProperty<HalfedgeCurveConnectivity>("h:curveConnectivity");
 }
 
@@ -175,13 +176,24 @@ VGMeshWithCurves::valueFunctionRaw(Curve c, unsigned which)
 }
 
 
-VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint()
+void VGMeshWithCurves::setVertex(PointConstraint pc, Vertex vx) {
+    assert(!m_pointConstraintConn[vx].isValid());
+    if(vertex(pc).isValid()) {
+        m_pointConstraintConn[vertex(pc)] = PointConstraint();
+    }
+    m_pointConstraints[pc.idx()].vertex = vx;
+    m_pointConstraintConn[vx] = pc;
+}
+
+
+VGMeshWithCurves::PointConstraint VGMeshWithCurves::addPointConstraint(Vertex vx)
 {
     PointConstraint pc(nPointConstraints());
     PointConstraintInfo pci;
     pci.value = unconstrainedValue();
     pci.gradient = unconstrainedGradientValue();
     m_pointConstraints.push_back(pci);
+    setVertex(pc, vx);
     return pc;
 }
 

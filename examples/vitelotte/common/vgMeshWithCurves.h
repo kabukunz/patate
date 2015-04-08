@@ -6,6 +6,8 @@
 
 #include <Patate/vitelotte.h>
 
+#include "bezierCurve.h"
+
 
 template <typename _Value>
 class PicewiseLinearFunction
@@ -56,8 +58,9 @@ public:
     typedef Base::Value Value;
     typedef Base::Gradient Gradient;
 
-    // TODO: rename it PicewiseLinearFunction ?
     typedef PicewiseLinearFunction<Value> ValueFunction;
+
+    typedef ::BezierCurve<Vector> BezierCurve;
 
     typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
 
@@ -75,24 +78,25 @@ public:
 
     struct HalfedgeCurveConnectivity
     {
-        Curve curve;
-        Halfedge next;
-        float pos;
+        Curve     curve;
+        Halfedge  next;
+        float     pos;
     };
 
     struct CurveInfo
     {
-        Halfedge firstHalfedge;
-        Halfedge lastHalfedge;
-        unsigned flags;
-        ValueFunction gradient[4];
+        Halfedge       firstHalfedge;
+        Halfedge       lastHalfedge;
+        unsigned       flags;
+        ValueFunction  gradient[4];
+        BezierCurve    bezierCurve;
     };
 
     struct PointConstraintInfo
     {
-        Vertex vertex;
-        Value value;
-        Gradient gradient;
+        Vertex    vertex;
+        Value     value;
+        Gradient  gradient;
     };
 
     enum
@@ -166,6 +170,8 @@ public:
     const ValueFunction& valueFunctionRaw(Curve c, unsigned which) const;
           ValueFunction& valueFunctionRaw(Curve c, unsigned which);
 
+    const BezierCurve& bezierCurve(Curve c) const { return m_curves.at(c.idx()).bezierCurve; }
+          BezierCurve& bezierCurve(Curve c)       { return m_curves.at(c.idx()).bezierCurve; }
 
 //    inline PointConstraint  pointConstraint(Vertex v) const
 //      { return m_pointConstraintConn[v]; }
@@ -173,8 +179,10 @@ public:
 //      { return m_pointConstraintConn[v]; }
 
     using Base::vertex;
-    inline Vertex  vertex(PointConstraint pc) const { return m_pointConstraints[pc.idx()].vertex; }
-    inline Vertex& vertex(PointConstraint pc)       { return m_pointConstraints[pc.idx()].vertex; }
+    inline Vertex vertex(PointConstraint pc) const { return m_pointConstraints[pc.idx()].vertex; }
+    inline void setVertex(PointConstraint pc, Vertex vx);
+
+    inline PointConstraint pointConstraint(Vertex vx) { return m_pointConstraintConn[vx]; }
 
     inline bool isValueConstraint(PointConstraint pc) const
         { return !isnan(m_pointConstraints[pc.idx()].value(0)); }
@@ -194,7 +202,7 @@ public:
         { return m_pointConstraints[pc.idx()].gradient; }
 
     inline unsigned nPointConstraints() const { return m_pointConstraints.size(); }
-    PointConstraint addPointConstraint();
+    PointConstraint addPointConstraint(Vertex vx);
 
 
     void clear();
@@ -213,7 +221,7 @@ protected:
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
 protected:
-//    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
+    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
     Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
     std::vector<PointConstraintInfo> m_pointConstraints;

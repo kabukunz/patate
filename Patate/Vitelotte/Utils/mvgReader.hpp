@@ -112,6 +112,10 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     m_mesh->setNDims(nDims);
     m_mesh->setNCoeffs(nCoeffs);
     m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
+
+    m_vector.resize(nDims);
+    m_value.resize(nCoeffs);
+    m_gradient.resize(nCoeffs, nDims);
 }
 
 
@@ -247,6 +251,39 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         return false;
     }
     return true;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseVector(std::istream& in) {
+    for(unsigned i = 0; i < m_vector.size(); ++i) {
+        in >> m_vector(i);
+    }
+    if(!in) error("Invalid point/vector specification");
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseValue(std::istream& in) {
+    for(unsigned i = 0; i < m_value.size(); ++i) {
+        in >> m_value(i);
+    }
+    if(!in) error("Invalid value specification");
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseGradient(std::istream& in) {
+    for(unsigned i = 0; i < m_gradient.size(); ++i) {
+        in >> m_gradient(i);
+    }
+    if(!in) error("Invalid gradient specification");
+    in >> std::ws;
 }
 
 

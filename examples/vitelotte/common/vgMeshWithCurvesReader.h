@@ -15,8 +15,13 @@ public:
     typedef VGMeshWithCurves Mesh;
 
     typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Value Value;
+    typedef typename Mesh::ValueFunction ValueFunction;
+
+    typedef typename Mesh::Vertex Vertex;
+    typedef typename Mesh::Halfedge Halfedge;
+    typedef typename Mesh::PointConstraint PointConstraint;
+    typedef typename Mesh::Curve Curve;
 
 public:
     VGMeshWithCurveReader();
@@ -34,11 +39,11 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def);
 
-    void parsePointConstraint(std::istream& def);
-    void parseDc(std::istream& def);
-    int parseCurveType(std::istream& in);
-    bool parseGradient(std::istream& def, Mesh::ValueFunction& g);
-    bool parseCurveVertices(std::istream& def, Mesh::Curve curve);
+//    void parsePointConstraint(std::istream& def);
+//    void parseDc(std::istream& def);
+//    int parseCurveType(std::istream& in);
+//    bool parseGradient(std::istream& def, Mesh::ValueFunction& g);
+//    bool parseCurveVertices(std::istream& def, Mesh::Curve curve);
 
 protected:
     std::string m_part;
