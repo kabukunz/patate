@@ -16,13 +16,17 @@ namespace PatateCommon
 {
 
 
-inline bool defaultErrorCallback(const std::string& msg, unsigned line, void* ptr);
+inline bool defaultErrorCallback  (const std::string& msg, unsigned line, void* ptr);
 inline bool defaultWarningCallback(const std::string& msg, unsigned line, void* ptr);
 
 
+template < typename _Mesh >
 class OBJBaseReader
 {
 public:
+    typedef _Mesh Mesh;
+    typedef typename Mesh::Vector Vector;
+
     typedef bool (*ErrorCallback)(const std::string& msg, unsigned line, void* ptr);
 
 public:
@@ -33,55 +37,63 @@ public:
           m_errorCallbackPtr(0) {}
     virtual ~OBJBaseReader() {}
 
-    inline void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
+    bool read(std::istream& in, Mesh& mesh);
+
+    void setErrorCallback(ErrorCallback error, ErrorCallback warning, void* ptr);
 
 protected:
-    inline bool doRead(std::istream& in);
 
-    inline virtual void parseHeader(std::istream& /*in*/) {}
+    virtual void parseHeader(std::istream& /*in*/, Mesh& mesh) {}
     virtual bool parseDefinition(const std::string& spec,
-                                        std::istream& def) = 0;
+                                 std::istream& def, Mesh& mesh) = 0;
 
     inline bool readLine(std::istream& in);
-    inline void parseIndiceList(const std::string& _list,
-                         std::vector<unsigned>& _indices);
+    inline void parseVector(std::istream& in);
+    inline void parseIndicesList(const std::string& _list,
+                                 std::vector<unsigned>& _indices);
 
-    inline void error(const std::string& msg);
+    inline void error  (const std::string& msg);
     inline void warning(const std::string& msg);
 
 protected:
-    unsigned m_lineNb;
-    bool m_error;
+    unsigned  m_lineNb;
+    bool      m_error;
 
-    std::string m_line;
-    std::istringstream m_lineStream;
-    std::istringstream m_indicesStream;
+    std::string         m_line;
+    std::istringstream  m_lineStream;
+    std::istringstream  m_indicesStream;
+    Vector              m_vector;
 
-    ErrorCallback m_errorCallback;
-    ErrorCallback m_warningCallback;
-    void* m_errorCallbackPtr;
+    ErrorCallback  m_errorCallback;
+    ErrorCallback  m_warningCallback;
+    void*          m_errorCallbackPtr;
 };
 
 
 template < typename _Mesh >
-class OBJReader: public OBJBaseReader
+class OBJReader: public OBJBaseReader<_Mesh>
 {
 public:
     typedef _Mesh Mesh;
+    typedef OBJBaseReader<Mesh> Base;
+
     typedef typename Mesh::Vector Vector;
     typedef typename Mesh::Vertex Vertex;
 
 public:
     inline OBJReader();
 
-    bool read(std::istream& in, Mesh& mesh);
-
 protected:
+    using Base::parseVector;
+    using Base::error;
+    using Base::warning;
+
+    virtual void parseHeader(std::istream& in, Mesh& mesh);
     virtual bool parseDefinition(const std::string& spec,
-                                 std::istream& def);
+                                 std::istream& def, Mesh& mesh);
 
 protected:
-    Mesh* m_mesh;
+    using Base::m_vector;
 
     std::vector<Vertex>  m_fVertices;
 

@@ -19,12 +19,13 @@ bool defaultWarningCallback(const std::string& msg, unsigned line, void* /*ptr*/
 }
 
 
+template < typename _Mesh >
 bool
-OBJBaseReader::doRead(std::istream& in)
+OBJBaseReader<_Mesh>::read(std::istream& in, Mesh& mesh)
 {
     m_lineNb = 0;
     m_error = false;
-    m_line.reserve(200);
+    m_line.reserve(256);
     std::string spec;
 
     in.imbue(std::locale::classic());
@@ -36,7 +37,7 @@ OBJBaseReader::doRead(std::istream& in)
 
     readLine(in);
     if(in.good() && !m_error)
-        parseHeader(in);
+        parseHeader(in, mesh);
 
     while(in.good() && !m_error)
     {
@@ -44,18 +45,30 @@ OBJBaseReader::doRead(std::istream& in)
         if(!m_line.empty() && m_line[0] != '#' && !std::isspace(m_line[0]))
         {
             m_lineStream >> spec;
-            parseDefinition(spec, m_lineStream);
+            parseDefinition(spec, m_lineStream, mesh);
         }
 
         readLine(in);
     }
 
-    return m_error;
+    return !m_error;
 }
 
 
+template < typename _Mesh >
+void
+OBJBaseReader<_Mesh>::setErrorCallback(ErrorCallback error,
+                                       ErrorCallback warning, void* ptr)
+{
+    m_errorCallback    = error;
+    m_warningCallback  = warning;
+    m_errorCallbackPtr = ptr;
+}
+
+
+template < typename _Mesh >
 bool
-OBJBaseReader::readLine(std::istream& in)
+OBJBaseReader<_Mesh>::readLine(std::istream& in)
 {
     bool ok = std::getline(in, m_line).good();
     ++m_lineNb;
@@ -65,9 +78,21 @@ OBJBaseReader::readLine(std::istream& in)
 }
 
 
+template < typename _Mesh >
 void
-OBJBaseReader::parseIndiceList(const std::string& _list,
-                               std::vector<unsigned>& _indices)
+OBJBaseReader<_Mesh>::parseVector(std::istream& in) {
+    for(unsigned i = 0; i < m_vector.size(); ++i) {
+        in >> m_vector(i);
+    }
+    if(!in) error("Invalid point/vector specification");
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+OBJBaseReader<_Mesh>::parseIndicesList(const std::string& _list,
+                                       std::vector<unsigned>& _indices)
 {
     _indices.clear();
     m_indicesStream.str(_list);
@@ -94,8 +119,9 @@ OBJBaseReader::parseIndiceList(const std::string& _list,
 }
 
 
+template < typename _Mesh >
 void
-OBJBaseReader::error(const std::string& msg)
+OBJBaseReader<_Mesh>::error(const std::string& msg)
 {
     if(m_errorCallback)
     {
@@ -104,8 +130,9 @@ OBJBaseReader::error(const std::string& msg)
 }
 
 
+template < typename _Mesh >
 void
-OBJBaseReader::warning(const std::string& msg)
+OBJBaseReader<_Mesh>::warning(const std::string& msg)
 {
     if(m_warningCallback)
     {
@@ -116,36 +143,29 @@ OBJBaseReader::warning(const std::string& msg)
 
 template < typename _Mesh >
 OBJReader<_Mesh>::OBJReader()
-    : m_mesh(0)
 {
 }
 
 
 template < typename _Mesh >
-bool
-OBJReader<_Mesh>::read(std::istream& in, Mesh& mesh)
-{
-    m_mesh = &mesh;
-    bool r = doRead(in);
-    m_mesh = 0;
-
-    return r;
+void
+OBJReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh) {
+    mesh.setNDims(3);
+    m_vector.resize(3);
 }
 
 
 template < typename _Mesh >
 bool
 OBJReader<_Mesh>::parseDefinition(const std::string& spec,
-                                   std::istream& def)
+                                  std::istream& def, Mesh& mesh)
 {
     // vertex
     if (spec == "v")
     {
-        Vector p;
-        for(unsigned i = 0; i < Vector::SizeAtCompileTime; ++i)
-            def >> p[i];
-        if(!def) error("Failed to read vertex (wrong number of components ?)");
-        m_mesh->addVertex(p);
+        parseVector(def);
+        if(!def.eof()) warning("Too much components");
+        mesh.addVertex(m_vector);
     }
     // normal
 //        else if (strncmp(s, "vn ", 3) == 0)
@@ -179,10 +199,15 @@ OBJReader<_Mesh>::parseDefinition(const std::string& spec,
             // TODO: Use parseIndiceList to read indices
             unsigned idx;
             def >> idx;
+            if(!def || idx >= mesh.nVertices())
+            {
+                error("Invalid vertex index");
+                return true;
+            }
             m_fVertices.push_back(SurfaceMesh::Vertex(idx - 1));
         }
 
-        m_mesh->addFace(m_fVertices);
+        mesh.addFace(m_fVertices);
     }
     else
     {

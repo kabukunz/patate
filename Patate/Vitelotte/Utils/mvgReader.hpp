@@ -19,20 +19,8 @@ MVGReader<_Mesh>::MVGReader()
 
 
 template < typename _Mesh >
-bool
-MVGReader<_Mesh>::read(std::istream& in, Mesh& mesh)
-{
-    m_mesh = &mesh;
-    bool r = doRead(in);
-    m_mesh = 0;
-
-    return r;
-}
-
-
-template < typename _Mesh >
 void
-MVGReader<_Mesh>::parseHeader(std::istream& in)
+MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
 {
     m_lineStream >> m_tmp;
     if(!in) error("Failed to read header");
@@ -95,23 +83,23 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     }
     m_lineStream.seekg(0);
 
-    if(int(Mesh::DimsAtCompileTime) != int(Dynamic) && nDims != m_mesh->nDims())
+    if(int(Mesh::DimsAtCompileTime) != int(Dynamic) && nDims != mesh.nDims())
     {
         error("Invalid number of dimensions.");
         return;
     }
-    if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != m_mesh->nCoeffs())
+    if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != mesh.nCoeffs())
     {
         error("Invalid number of coefficients.");
         return;
     }
 
-    m_mesh->clear();
+    mesh.clear();
     // TODO: set / check dims and parameters
-    m_mesh->setAttributes(attributes);
-    m_mesh->setNDims(nDims);
-    m_mesh->setNCoeffs(nCoeffs);
-    m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
+    mesh.setAttributes(attributes);
+    mesh.setNDims(nDims);
+    mesh.setNCoeffs(nCoeffs);
+    mesh.reserve(nVert, nVert+nFace, nFace, nNode);
 
     m_vector.resize(nDims);
     m_value.resize(nCoeffs);
@@ -122,7 +110,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
 template < typename _Mesh >
 bool
 MVGReader<_Mesh>::parseDefinition(const std::string& spec,
-                                   std::istream& def)
+                                   std::istream& def, Mesh& mesh)
 {
     typedef typename Mesh::Node Node;
 
@@ -131,31 +119,31 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // vertex
     if(spec == "v")
     {
-        Vector p(m_mesh->nDims());
-        for(unsigned i = 0; i < m_mesh->nDims(); ++i)
+        Vector p(mesh.nDims());
+        for(unsigned i = 0; i < mesh.nDims(); ++i)
             def >> p[i];
         if(!def) error("Failed to read vertex (not enought components ?)");
         def >> std::ws;
         if(!def.eof()) warning("Too much components.");
-        m_mesh->addVertex(p);
+        mesh.addVertex(p);
     }
 
     // nodes
     else if(spec == "n")
     {
-        Value n(m_mesh->nCoeffs());
+        Value n(mesh.nCoeffs());
         def >> std::ws;
         if(def.peek() == 'v')
-            n = m_mesh->unconstrainedValue();
+            n = mesh.unconstrainedValue();
         else
         {
-            for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
+            for(unsigned i = 0; i < mesh.nCoeffs(); ++i)
                 def >> n[i];
             if(!def) error("Failed to read node (wrong number of components ?)");
             def >> std::ws;
             if(!def.eof()) warning("Too much components.");
         }
-        m_mesh->addNode(n);
+        mesh.addNode(n);
     }
 
     // face
@@ -170,7 +158,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         for(int i = 0; i < 3; ++i)
         {
             def >> m_tmp;
-            parseIndiceList(m_tmp, m_faceIndices);
+            parseIndicesList(m_tmp, m_faceIndices);
             if(m_faceIndices.size() < 1 || m_faceIndices.size() > 3)
                 error("Invalid number of indices");
 
@@ -185,7 +173,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         }
 
         // mid nodes
-        unsigned nEAttrs = m_mesh->hasEdgeValue() + m_mesh->hasEdgeGradient();
+        unsigned nEAttrs = mesh.hasEdgeValue() + mesh.hasEdgeGradient();
         if(nEAttrs)
         {
             def >> m_tmp;
@@ -195,31 +183,31 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
             for(int i = 0; i < 3; ++i)
             {
                 def >> m_tmp;
-                parseIndiceList(m_tmp, m_faceIndices);
+                parseIndicesList(m_tmp, m_faceIndices);
                 if(m_faceIndices.size() != nEAttrs)
                     error("Invalid number of indices");
 
-                if(m_mesh->hasEdgeValue())
+                if(mesh.hasEdgeValue())
                     nodes[6+i] = m_faceIndices.front();
-                if(m_mesh->hasEdgeGradient())
+                if(mesh.hasEdgeGradient())
                     nodes[9+i] = m_faceIndices.back();
             }
         }
 
-        typename Mesh::Face f = m_mesh->addFace(m_fVertices);
+        typename Mesh::Face f = mesh.addFace(m_fVertices);
 
-        typename Mesh::HalfedgeAroundFaceCirculator hit = m_mesh->halfedges(f);
+        typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(f);
         for(int i = 0; i < 3; ++i)
         {
-            if(m_mesh->hasToVertexValue())
-                m_mesh->toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
+            if(mesh.hasToVertexValue())
+                mesh.toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
             ++hit;
-            if(m_mesh->hasFromVertexValue())
-                m_mesh->fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
-            if(m_mesh->hasEdgeValue())
-                m_mesh->edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
-            if(m_mesh->hasEdgeGradient())
-                m_mesh->edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
+            if(mesh.hasFromVertexValue())
+                mesh.fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
+            if(mesh.hasEdgeValue())
+                mesh.edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
+            if(mesh.hasEdgeGradient())
+                mesh.edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
         }
     }
 
@@ -229,19 +217,19 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         unsigned vxIdx;
         def >> vxIdx;
         if(!def) error("Failed to read vertex gradient constraint's vertex index");
-        if(vxIdx >= m_mesh->nVertices()) error("Invalid vertex index");
+        if(vxIdx >= mesh.nVertices()) error("Invalid vertex index");
 
-        Gradient grad(m_mesh->nCoeffs(), m_mesh->nDims());
-        for(unsigned col = 0; col < m_mesh->nDims(); ++col)
+        Gradient grad(mesh.nCoeffs(), mesh.nDims());
+        for(unsigned col = 0; col < mesh.nDims(); ++col)
         {
-            for(unsigned row = 0; row < m_mesh->nCoeffs(); ++row)
+            for(unsigned row = 0; row < mesh.nCoeffs(); ++row)
             {
                 def >> grad(row, col);
             }
         }
         if(!def) error("Error while reading gradient");
 
-        m_mesh->setGradientConstraint(Vertex(vxIdx), grad);
+        mesh.setGradientConstraint(Vertex(vxIdx), grad);
     }
 
     // Unknown element type.
@@ -251,17 +239,6 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         return false;
     }
     return true;
-}
-
-
-template < typename _Mesh >
-void
-MVGReader<_Mesh>::parseVector(std::istream& in) {
-    for(unsigned i = 0; i < m_vector.size(); ++i) {
-        in >> m_vector(i);
-    }
-    if(!in) error("Invalid point/vector specification");
-    in >> std::ws;
 }
 
 

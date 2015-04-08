@@ -37,7 +37,7 @@ protected:
 
 protected:
     virtual bool parseDefinition(const std::string& spec,
-                                 std::istream& def);
+                                 std::istream& def, Mesh& mesh);
 
 //    void parsePointConstraint(std::istream& def);
 //    void parseDc(std::istream& def);
