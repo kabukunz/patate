@@ -11,6 +11,10 @@ namespace Vitelotte
 {
 
 
+#define PTT_ERROR_IF(_cond, _msg, _ret) do { if(_cond) { error(_msg); return _ret; } } while(false)
+#define PTT_RETURN_IF_ERROR(_ret) do { if(m_error) { return _ret; } } while(false)
+
+
 template < typename _Mesh >
 MVGReader<_Mesh>::MVGReader()
 {
@@ -95,7 +99,6 @@ MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
     }
 
     mesh.clear();
-    // TODO: set / check dims and parameters
     mesh.setAttributes(attributes);
     mesh.setNDims(nDims);
     mesh.setNCoeffs(nCoeffs);
@@ -119,36 +122,21 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // vertex
     if(spec == "v")
     {
-        Vector p(mesh.nDims());
-        for(unsigned i = 0; i < mesh.nDims(); ++i)
-            def >> p[i];
-        if(!def) error("Failed to read vertex (not enought components ?)");
-        def >> std::ws;
+        parseVector(def); PTT_RETURN_IF_ERROR(true);
         if(!def.eof()) warning("Too much components.");
-        mesh.addVertex(p);
+        mesh.addVertex(m_vector);
     }
 
     // nodes
     else if(spec == "n")
     {
-        Value n(mesh.nCoeffs());
-        def >> std::ws;
-        if(def.peek() == 'v')
-            n = mesh.unconstrainedValue();
-        else
-        {
-            for(unsigned i = 0; i < mesh.nCoeffs(); ++i)
-                def >> n[i];
-            if(!def) error("Failed to read node (wrong number of components ?)");
-            def >> std::ws;
-            if(!def.eof()) warning("Too much components.");
-        }
-        mesh.addNode(n);
+        parseValueWithVoid(def, mesh); PTT_RETURN_IF_ERROR(true);
+        if(!def.eof()) warning("Too much components.");
+        mesh.addNode(m_value);
     }
 
     // face
-    // TODO: "fs" is deprecated. Remove it.
-    else if(spec == "f" || spec == "fs")
+    else if(spec == "f")
     {
         m_fVertices.clear();
 
@@ -213,23 +201,14 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
 
     else if(spec == "vgc")
     {
-        typedef typename Mesh::Gradient Gradient;
         unsigned vxIdx;
         def >> vxIdx;
-        if(!def) error("Failed to read vertex gradient constraint's vertex index");
-        if(vxIdx >= mesh.nVertices()) error("Invalid vertex index");
+        PTT_ERROR_IF(!def || vxIdx >= mesh.nVertices(), "Invalid vertex index", true);
 
-        Gradient grad(mesh.nCoeffs(), mesh.nDims());
-        for(unsigned col = 0; col < mesh.nDims(); ++col)
-        {
-            for(unsigned row = 0; row < mesh.nCoeffs(); ++row)
-            {
-                def >> grad(row, col);
-            }
-        }
-        if(!def) error("Error while reading gradient");
+        parseGradient(def); PTT_RETURN_IF_ERROR(true);
+        if(!def.eof()) warning("Too much components.");
 
-        mesh.setGradientConstraint(Vertex(vxIdx), grad);
+        mesh.setGradientConstraint(Vertex(vxIdx), m_gradient);
     }
 
     // Unknown element type.
@@ -248,7 +227,26 @@ MVGReader<_Mesh>::parseValue(std::istream& in) {
     for(unsigned i = 0; i < m_value.size(); ++i) {
         in >> m_value(i);
     }
-    if(!in) error("Invalid value specification");
+    PTT_ERROR_IF(!in, "Invalid value specification",);
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseValueWithVoid(std::istream& in, Mesh& mesh) {
+    in >> std::ws;
+    PTT_ERROR_IF(!in.good(), "Invalid value specification",);
+    if(std::isalpha(in.peek()))
+    {
+        in >> m_tmp;
+        PTT_ERROR_IF(m_tmp != "void", "Invalid value specification",);
+        m_value = mesh.unconstrainedValue();
+    }
+    else
+    {
+        parseValue(in); PTT_RETURN_IF_ERROR();
+    }
     in >> std::ws;
 }
 
@@ -259,7 +257,7 @@ MVGReader<_Mesh>::parseGradient(std::istream& in) {
     for(unsigned i = 0; i < m_gradient.size(); ++i) {
         in >> m_gradient(i);
     }
-    if(!in) error("Invalid gradient specification");
+    PTT_ERROR_IF(!in, "Invalid gradient specification",);
     in >> std::ws;
 }
 
@@ -271,6 +269,7 @@ bool readMvg(std::istream& in, Mesh& mesh)
     return reader.read(in, mesh);
 }
 
+
 template < typename Mesh >
 bool readMvgFromFile(const std::string& filename, Mesh& mesh)
 {
@@ -278,5 +277,8 @@ bool readMvgFromFile(const std::string& filename, Mesh& mesh)
     return readMvg(in, mesh);
 }
 
+
+#undef PTT_ERROR_IF
+#undef PTT_RETURN_IF_ERROR
 
 }  // namespace Vitelotte

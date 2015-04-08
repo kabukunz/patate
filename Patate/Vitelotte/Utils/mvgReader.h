@@ -65,10 +65,12 @@ protected:
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def, Mesh& mesh);
 
-    void parseValue   (std::istream& in);
-    void parseGradient(std::istream& in);
+    void parseValue        (std::istream& in);
+    void parseValueWithVoid(std::istream& in, Mesh& mesh);
+    void parseGradient     (std::istream& in);
 
 protected:
+    using Base::m_error;
     using Base::m_lineStream;
     using Base::m_vector;
 

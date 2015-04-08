@@ -163,3 +163,4 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
 }
 
 #undef PTT_ERROR_IF
+#undef PTT_RETURN_IF_ERROR
