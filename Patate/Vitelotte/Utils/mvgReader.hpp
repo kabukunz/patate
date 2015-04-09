@@ -11,28 +11,21 @@ namespace Vitelotte
 {
 
 
+#define PTT_ERROR_IF(_cond, _msg, _ret) do { if(_cond) { error(_msg); return _ret; } } while(false)
+#define PTT_RETURN_IF_ERROR(_ret) do { if(m_error) { return _ret; } } while(false)
+
+
 template < typename _Mesh >
-MVGReader<_Mesh>::MVGReader()
+MVGReader<_Mesh>::MVGReader(unsigned flags)
+    : m_flags(flags)
 {
     m_faceIndices.reserve(3);
 }
 
 
 template < typename _Mesh >
-bool
-MVGReader<_Mesh>::read(std::istream& in, Mesh& mesh)
-{
-    m_mesh = &mesh;
-    bool r = doRead(in);
-    m_mesh = 0;
-
-    return r;
-}
-
-
-template < typename _Mesh >
 void
-MVGReader<_Mesh>::parseHeader(std::istream& in)
+MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
 {
     m_lineStream >> m_tmp;
     if(!in) error("Failed to read header");
@@ -95,30 +88,33 @@ MVGReader<_Mesh>::parseHeader(std::istream& in)
     }
     m_lineStream.seekg(0);
 
-    if(int(Mesh::DimsAtCompileTime) != int(Dynamic) && nDims != m_mesh->nDims())
+    if(int(Mesh::DimsAtCompileTime) != int(Dynamic) && nDims != mesh.nDims())
     {
         error("Invalid number of dimensions.");
         return;
     }
-    if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != m_mesh->nCoeffs())
+    if(int(Mesh::CoeffsAtCompileTime) != int(Dynamic) && nCoeffs != mesh.nCoeffs())
     {
         error("Invalid number of coefficients.");
         return;
     }
 
-    m_mesh->clear();
-    // TODO: set / check dims and parameters
-    m_mesh->setAttributes(attributes);
-    m_mesh->setNDims(nDims);
-    m_mesh->setNCoeffs(nCoeffs);
-    m_mesh->reserve(nVert, nVert+nFace, nFace, nNode);
+    mesh.clear();
+    mesh.setAttributes(attributes);
+    mesh.setNDims(nDims);
+    mesh.setNCoeffs(nCoeffs);
+    mesh.reserve(nVert, nVert+nFace, nFace, nNode);
+
+    m_vector.resize(nDims);
+    m_value.resize(nCoeffs);
+    m_gradient.resize(nCoeffs, nDims);
 }
 
 
 template < typename _Mesh >
 bool
 MVGReader<_Mesh>::parseDefinition(const std::string& spec,
-                                   std::istream& def)
+                                   std::istream& def, Mesh& mesh)
 {
     typedef typename Mesh::Node Node;
 
@@ -127,36 +123,21 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     // vertex
     if(spec == "v")
     {
-        Vector p(m_mesh->nDims());
-        for(unsigned i = 0; i < m_mesh->nDims(); ++i)
-            def >> p[i];
-        if(!def) error("Failed to read vertex (not enought components ?)");
-        def >> std::ws;
+        parseVector(def); PTT_RETURN_IF_ERROR(true);
         if(!def.eof()) warning("Too much components.");
-        m_mesh->addVertex(p);
+        mesh.addVertex(m_vector);
     }
 
     // nodes
     else if(spec == "n")
     {
-        Value n(m_mesh->nCoeffs());
-        def >> std::ws;
-        if(def.peek() == 'v')
-            n = m_mesh->unconstrainedValue();
-        else
-        {
-            for(unsigned i = 0; i < m_mesh->nCoeffs(); ++i)
-                def >> n[i];
-            if(!def) error("Failed to read node (wrong number of components ?)");
-            def >> std::ws;
-            if(!def.eof()) warning("Too much components.");
-        }
-        m_mesh->addNode(n);
+        parseValueWithVoid(def, mesh); PTT_RETURN_IF_ERROR(true);
+        if(!def.eof()) warning("Too much components.");
+        mesh.addNode(m_value);
     }
 
     // face
-    // TODO: "fs" is deprecated. Remove it.
-    else if(spec == "f" || spec == "fs")
+    else if(spec == "f")
     {
         m_fVertices.clear();
 
@@ -166,7 +147,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         for(int i = 0; i < 3; ++i)
         {
             def >> m_tmp;
-            parseIndiceList(m_tmp, m_faceIndices);
+            parseIndicesList(m_tmp, m_faceIndices);
             if(m_faceIndices.size() < 1 || m_faceIndices.size() > 3)
                 error("Invalid number of indices");
 
@@ -181,7 +162,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         }
 
         // mid nodes
-        unsigned nEAttrs = m_mesh->hasEdgeValue() + m_mesh->hasEdgeGradient();
+        unsigned nEAttrs = mesh.hasEdgeValue() + mesh.hasEdgeGradient();
         if(nEAttrs)
         {
             def >> m_tmp;
@@ -191,78 +172,117 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
             for(int i = 0; i < 3; ++i)
             {
                 def >> m_tmp;
-                parseIndiceList(m_tmp, m_faceIndices);
+                parseIndicesList(m_tmp, m_faceIndices);
                 if(m_faceIndices.size() != nEAttrs)
                     error("Invalid number of indices");
 
-                if(m_mesh->hasEdgeValue())
+                if(mesh.hasEdgeValue())
                     nodes[6+i] = m_faceIndices.front();
-                if(m_mesh->hasEdgeGradient())
+                if(mesh.hasEdgeGradient())
                     nodes[9+i] = m_faceIndices.back();
             }
         }
 
-        typename Mesh::Face f = m_mesh->addFace(m_fVertices);
+        typename Mesh::Face f = mesh.addFace(m_fVertices);
 
-        typename Mesh::HalfedgeAroundFaceCirculator hit = m_mesh->halfedges(f);
+        typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(f);
         for(int i = 0; i < 3; ++i)
         {
-            if(m_mesh->hasToVertexValue())
-                m_mesh->toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
+            if(mesh.hasToVertexValue())
+                mesh.toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
             ++hit;
-            if(m_mesh->hasFromVertexValue())
-                m_mesh->fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
-            if(m_mesh->hasEdgeValue())
-                m_mesh->edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
-            if(m_mesh->hasEdgeGradient())
-                m_mesh->edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
+            if(mesh.hasFromVertexValue())
+                mesh.fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
+            if(mesh.hasEdgeValue())
+                mesh.edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
+            if(mesh.hasEdgeGradient())
+                mesh.edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
         }
     }
 
     else if(spec == "vgc")
     {
-        typedef typename Mesh::Gradient Gradient;
         unsigned vxIdx;
         def >> vxIdx;
-        if(!def) error("Failed to read vertex gradient constraint's vertex index");
-        if(vxIdx >= m_mesh->nVertices()) error("Invalid vertex index");
+        PTT_ERROR_IF(!def || vxIdx >= mesh.nVertices(), "Invalid vertex index", true);
 
-        Gradient grad(m_mesh->nCoeffs(), m_mesh->nDims());
-        for(unsigned col = 0; col < m_mesh->nDims(); ++col)
-        {
-            for(unsigned row = 0; row < m_mesh->nCoeffs(); ++row)
-            {
-                def >> grad(row, col);
-            }
-        }
-        if(!def) error("Error while reading gradient");
+        parseGradient(def); PTT_RETURN_IF_ERROR(true);
+        if(!def.eof()) warning("Too much components.");
 
-        m_mesh->setGradientConstraint(Vertex(vxIdx), grad);
+        mesh.setGradientConstraint(Vertex(vxIdx), m_gradient);
     }
 
     // Unknown element type.
     else
     {
-        warning("Unknown spec: " + spec);
+        if(!(m_flags & NO_WARN_UNKNOWN))
+        {
+            warning("Unknown spec: " + spec);
+        }
         return false;
     }
     return true;
 }
 
 
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseValue(std::istream& in) {
+    for(unsigned i = 0; i < m_value.size(); ++i) {
+        in >> m_value(i);
+    }
+    PTT_ERROR_IF(!in, "Invalid value specification",);
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseValueWithVoid(std::istream& in, Mesh& mesh) {
+    in >> std::ws;
+    PTT_ERROR_IF(!in.good(), "Invalid value specification",);
+    if(std::isalpha(in.peek()))
+    {
+        in >> m_tmp;
+        PTT_ERROR_IF(m_tmp != "void", "Invalid value specification",);
+        m_value = mesh.unconstrainedValue();
+    }
+    else
+    {
+        parseValue(in); PTT_RETURN_IF_ERROR();
+    }
+    in >> std::ws;
+}
+
+
+template < typename _Mesh >
+void
+MVGReader<_Mesh>::parseGradient(std::istream& in) {
+    for(unsigned i = 0; i < m_gradient.size(); ++i) {
+        in >> m_gradient(i);
+    }
+    PTT_ERROR_IF(!in, "Invalid gradient specification",);
+    in >> std::ws;
+}
+
+
 template < typename Mesh >
-bool readMvg(std::istream& in, Mesh& mesh)
+bool readMvg(std::istream& in, Mesh& mesh, unsigned flags)
 {
-    MVGReader<Mesh> reader;
+    MVGReader<Mesh> reader(flags);
     return reader.read(in, mesh);
 }
 
+
 template < typename Mesh >
-bool readMvgFromFile(const std::string& filename, Mesh& mesh)
+bool readMvgFromFile(const std::string& filename, Mesh& mesh, unsigned flags)
 {
     std::ifstream in(filename.c_str());
-    return readMvg(in, mesh);
+    return readMvg(in, mesh, flags);
 }
 
+
+#undef PTT_ERROR_IF
+#undef PTT_RETURN_IF_ERROR
 
 }  // namespace Vitelotte

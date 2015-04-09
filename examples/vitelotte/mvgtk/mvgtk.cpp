@@ -218,20 +218,20 @@ bool Mvgtk::executeCommands()
 {
     Mesh mesh;
 
-    bool readFailed = false;
+    bool ok = true;
     if(m_inFilename.rfind(".obj") == m_inFilename.length() - 4)
     {
         if(opts.verbose) std::cout << "Load obj \"" << m_inFilename << "\"...\n";
         std::ifstream in(m_inFilename.c_str());
         PatateCommon::OBJReader<Mesh> reader;
-        readFailed = reader.read(in, mesh);
+        ok = reader.read(in, mesh);
     }
     else if(m_inFilename.rfind(".mvg") == m_inFilename.length() - 4)
     {
         if(opts.verbose) std::cout << "Load mvg \"" << m_inFilename << "\"...\n";
         VGMeshWithCurveReader reader;
         std::ifstream in(m_inFilename.c_str());
-        readFailed = reader.read(in, mesh);
+        ok = reader.read(in, mesh);
     }
     else
     {
@@ -239,7 +239,7 @@ bool Mvgtk::executeCommands()
         return false;
     }
 
-    if(readFailed)
+    if(!ok)
     {
         return false;
     }

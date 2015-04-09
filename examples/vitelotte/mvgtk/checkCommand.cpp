@@ -5,6 +5,25 @@ bool CheckCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 {
     if(opts && opts->verbose) std::cout << "Check mesh...\n";
     bool nError = 0;
+
+    for(Mesh::NodeIterator nit = mesh.nodesBegin();
+        nit != mesh.nodesEnd(); ++nit)
+    {
+        if(mesh.isConstraint(*nit))
+        {
+            const Mesh::Value& v = mesh.value(*nit);
+            for(unsigned i = 0; i < mesh.nCoeffs(); ++i) {
+                if(std::isnan(v(i)) || std::isinf(v(i)))
+                {
+                    std::cout << "node " << (*nit).idx() << " as an invalid coefficient (NaN or inf).\n";
+                    if(opts && opts->verbose) std::cout << "  n" << (*nit).idx() << ": " << v.transpose() << "\n";
+                    ++nError;
+                    break;
+                }
+            }
+        }
+    }
+
     for(Mesh::FaceIterator fit = mesh.facesBegin();
         fit != mesh.facesEnd(); ++fit)
     {

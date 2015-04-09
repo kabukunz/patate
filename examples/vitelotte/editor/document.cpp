@@ -496,7 +496,12 @@ void Document::loadMesh(const std::string& filename)
 {
     VGMeshWithCurveReader reader;
     std::ifstream in(filename.c_str());
-    reader.read(in, m_mesh);
+    bool ok = reader.read(in, m_mesh);
+    if(!ok)
+    {
+        std::cerr << "Failed to load \"" << filename << "\"\n";
+        m_mesh = Mesh();
+    }
     m_mesh.setAttributes(Mesh::FV_FLAGS);
 
     updateBoundingBox();
