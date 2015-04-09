@@ -67,6 +67,13 @@ OBJBaseReader<_Mesh>::setErrorCallback(ErrorCallback error,
 
 
 template < typename _Mesh >
+void
+OBJBaseReader<_Mesh>::parseHeader(std::istream& /*in*/, Mesh& /*mesh*/)
+{
+}
+
+
+template < typename _Mesh >
 bool
 OBJBaseReader<_Mesh>::readLine(std::istream& in)
 {
@@ -149,7 +156,7 @@ OBJReader<_Mesh>::OBJReader()
 
 template < typename _Mesh >
 void
-OBJReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh) {
+OBJReader<_Mesh>::parseHeader(std::istream& /*in*/, Mesh& mesh) {
     mesh.setNDims(3);
     m_vector.resize(3);
 }

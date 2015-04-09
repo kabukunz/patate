@@ -199,7 +199,6 @@ void Editor::initializeGL()
     glClearColor(.5, .5, .5, 1.);
 
     m_initialized = true;
-    m_renderer.initialize();
     if(m_document) {
         m_renderer.updateBuffers(mesh());
         centerView();

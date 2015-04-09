@@ -20,15 +20,72 @@
 namespace Vitelotte {
 
 
+class VGMeshRendererResources {
+public:
+    struct SolidUniforms
+    {
+        GLint viewMatrixLoc;
+        GLint nodesLoc;
+        GLint baseNodeIndexLoc;
+        GLint singularTrianglesLoc;
+    };
+
+    struct WireframeUniforms
+    {
+        GLint viewMatrixLoc;
+        GLint zoomLoc;
+        GLint lineWidthLoc;
+        GLint wireframeColorLoc;
+    };
+
+    enum
+    {
+        VG_MESH_POSITION_ATTR_LOC
+    };
+
+public:
+    inline VGMeshRendererResources();
+    inline ~VGMeshRendererResources();
+
+    inline bool initialize();
+    inline void releaseGLRessources();
+
+    // private
+    inline PatateCommon::Shader& solidLinearShader()    { return m_solidLinearShader; }
+    inline PatateCommon::Shader& solidQuadraticShader() { return m_solidQuadraticShader; }
+    inline PatateCommon::Shader& wireframeShader()      { return m_wireframeShader; }
+
+    inline const SolidUniforms&     solidLinearUniforms()    const { return m_solidLinearUniforms; }
+    inline const SolidUniforms&     solidQuadraticUniforms() const { return m_solidQuadraticUniforms; }
+    inline const WireframeUniforms& wireframeUniforms()      const { return m_wireframeUniforms; }
+
+protected:
+    inline bool initSolidShader(PatateCommon::Shader& shader, SolidUniforms& unif,
+                         const char *fragCode);
+    inline bool initWireframeShader();
+
+protected:
+    bool m_initialized;
+    PatateCommon::Shader m_solidLinearShader;
+    PatateCommon::Shader m_solidQuadraticShader;
+    PatateCommon::Shader m_wireframeShader;
+    SolidUniforms     m_solidLinearUniforms;
+    SolidUniforms     m_solidQuadraticUniforms;
+    WireframeUniforms m_wireframeUniforms;
+};
+
+
 template < typename Vector >
 struct DefaultPosProj {
     inline Eigen::Vector4f operator()(const Vector& position) const;
 };
 
+
 template < typename Value >
 struct DefaultValueProj {
     inline Eigen::Vector4f operator()(const Value& value) const;
 };
+
 
 template < class _Mesh,
            typename _PosProj   = DefaultPosProj  <typename _Mesh::Vector>,
@@ -47,6 +104,8 @@ public:
     typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Face Face;
 
+    typedef VGMeshRendererResources Resources;
+
     typedef Eigen::Vector4f Vector4;
 
     enum
@@ -55,11 +114,6 @@ public:
         SINGULAR_TRIANGLES = 0x02,
 
         ALL_TRIANGLES = NORMAL_TRIANGLES | SINGULAR_TRIANGLES
-    };
-
-    enum
-    {
-        VG_MESH_POSITION_ATTR_LOC
     };
 
     enum
@@ -80,7 +134,7 @@ public:
     const ValueProj& valueProjection()    const;
           ValueProj& valueProjection();
 
-    bool initialize();
+    void setResources(Resources* resources);
     void releaseGLRessources();
     void updateBuffers(const Mesh& mesh);
 
@@ -94,28 +148,7 @@ private:
     typedef std::vector<unsigned> IndicesVector;
     typedef std::vector<Vector4> Vector4Vector;
 
-    struct SolidUniforms
-    {
-        GLint viewMatrixLoc;
-        GLint nodesLoc;
-        GLint baseNodeIndexLoc;
-        GLint singularTrianglesLoc;
-    };
-
-    struct WireframeUniforms
-    {
-        GLint viewMatrixLoc;
-        GLint zoomLoc;
-        GLint lineWidthLoc;
-        GLint wireframeColorLoc;
-    };
-
 protected:
-//    void renderTriangles(VGMeshRendererShader& shaders, bool _singular = false);
-    bool initSolidShader(PatateCommon::Shader& shader, SolidUniforms& unif,
-                         const char *fragCode);
-    bool initWireframeShader();
-
     Vector4 position(const Mesh& mesh, Vertex vx) const;
     Vector4 color(const Mesh& mesh, Node node) const;
 
@@ -125,21 +158,15 @@ protected:
                                GLenum usage = GL_DYNAMIC_DRAW);
 
 private:
-    bool m_initialized;
     bool m_useVao;
     bool m_convertSrgbToLinear;
+    bool m_ownResources;
 
     PosProj   m_positionProjection;
     ValueProj m_valueProjection;
     Vector4   m_invalidNodeColor;
 
-    PatateCommon::Shader m_solidLinearShader;
-    PatateCommon::Shader m_solidQuadraticShader;
-    PatateCommon::Shader m_wireframeShader;
-
-    SolidUniforms     m_solidLinearUniforms;
-    SolidUniforms     m_solidQuadraticUniforms;
-    WireframeUniforms m_wireframeUniforms;
+    Resources* m_resources;
 
     GLuint m_verticesBuffer;
     GLuint m_indicesBuffer;

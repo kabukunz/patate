@@ -235,8 +235,6 @@ void GLViewer::startup(const std::string& filename)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     m_pQMeshRenderer = new Renderer;
-    bool ok = m_pQMeshRenderer->initialize();
-    if(!ok) abort();
     m_pQMeshRenderer->updateBuffers(*m_pQvg);
 
     PATATE_ASSERT_NO_GL_ERROR();

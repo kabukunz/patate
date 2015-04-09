@@ -11,6 +11,101 @@ namespace Vitelotte
 {
 
 
+VGMeshRendererResources::VGMeshRendererResources()
+    : m_initialized(false)
+{
+}
+
+
+VGMeshRendererResources::~VGMeshRendererResources()
+{
+    if(m_initialized) releaseGLRessources();
+}
+
+
+bool VGMeshRendererResources::initialize()
+{
+    bool ok = true;
+    ok &= initSolidShader(m_solidLinearShader, m_solidLinearUniforms,
+                          VGMeshRendererShaders::frag_linear_glsl);
+    ok &= initSolidShader(m_solidQuadraticShader, m_solidQuadraticUniforms,
+                          VGMeshRendererShaders::frag_quadratic_glsl);
+    ok &= initWireframeShader();
+    m_initialized = ok;
+    return ok;
+}
+
+
+void VGMeshRendererResources::releaseGLRessources()
+{
+    m_initialized = false;
+
+    m_solidLinearShader.destroy();
+    m_solidQuadraticShader.destroy();
+    m_wireframeShader.destroy();
+}
+
+
+bool VGMeshRendererResources::initSolidShader(
+        PatateCommon::Shader& shader, SolidUniforms& unif, const char* fragCode)
+{
+    shader.create();
+
+    bool ok = true;
+    ok &= shader.addShader(GL_VERTEX_SHADER,
+                           VGMeshRendererShaders::vert_common_glsl);
+    ok &= shader.addShader(GL_GEOMETRY_SHADER,
+                           VGMeshRendererShaders::geom_common_glsl);
+    ok &= shader.addShader(GL_FRAGMENT_SHADER,
+                           VGMeshRendererShaders::frag_common_glsl);
+    ok &= shader.addShader(GL_FRAGMENT_SHADER, fragCode);
+
+    shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
+    ok &= shader.finalize();
+
+    if(!ok)
+        return false;
+
+    unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
+    unif.nodesLoc             = shader.getUniformLocation("nodes");
+    unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
+    unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
+
+    return true;
+}
+
+
+bool VGMeshRendererResources::initWireframeShader()
+{
+    PatateCommon::Shader& shader = m_wireframeShader;
+    WireframeUniforms& unif = m_wireframeUniforms;
+    shader.create();
+
+    bool ok = true;
+    ok &= shader.addShader(GL_VERTEX_SHADER,
+                           VGMeshRendererShaders::vert_common_glsl);
+    ok &= shader.addShader(GL_GEOMETRY_SHADER,
+                           VGMeshRendererShaders::geom_common_glsl);
+    ok &= shader.addShader(GL_FRAGMENT_SHADER,
+                           VGMeshRendererShaders::frag_common_glsl);
+    ok &= shader.addShader(GL_FRAGMENT_SHADER,
+                           VGMeshRendererShaders::frag_wireframe_glsl);
+
+    shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
+    ok &= shader.finalize();
+
+    if(!ok)
+        return false;
+
+    unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
+    unif.zoomLoc              = shader.getUniformLocation("zoom");
+    unif.lineWidthLoc         = shader.getUniformLocation("lineWidth");
+    unif.wireframeColorLoc    = shader.getUniformLocation("wireframeColor");
+
+    return true;
+}
+
+
 template < typename Vector >
 Eigen::Vector4f DefaultPosProj<Vector>::operator()(const Vector& position) const {
     Eigen::Vector4f p = Eigen::Vector4f::Unit(3);
@@ -39,13 +134,15 @@ Eigen::Vector4f DefaultValueProj<Value>::operator()(const Value& value) const {
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
         const PosProj& posProj, const ValueProj& valueProj) :
-    m_initialized(false),
     m_useVao(true),
     m_convertSrgbToLinear(false),
+    m_ownResources(false),
 
     m_positionProjection(posProj),
     m_valueProjection(valueProj),
     m_invalidNodeColor(Vector4::Unit(3)),
+
+    m_resources(0),
 
     m_verticesBuffer(0),
     m_indicesBuffer(0),
@@ -59,8 +156,7 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::~VGMeshRenderer()
 {
-    if(m_initialized)
-        releaseGLRessources();
+    releaseGLRessources();
 }
 
 
@@ -111,40 +207,51 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setConvertSrgbToLinear(bool en
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initialize()
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setResources(
+        Resources* resources)
 {
-    bool ok = true;
-    ok &= initSolidShader(m_solidLinearShader, m_solidLinearUniforms,
-                          VGMeshRendererShaders::frag_linear_glsl);
-    ok &= initSolidShader(m_solidQuadraticShader, m_solidQuadraticUniforms,
-                          VGMeshRendererShaders::frag_quadratic_glsl);
-    ok &= initWireframeShader();
-    m_initialized = ok;
-    return ok;
+    assert(!m_resources);
+    m_resources = resources;
+    m_ownResources = false;
 }
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::releaseGLRessources()
 {
-    m_initialized = false;
+    if(m_ownResources)
+    {
+        delete m_resources;
+        m_resources = 0;
+    }
 
-    m_solidLinearShader.destroy();
-    m_solidQuadraticShader.destroy();
-    m_wireframeShader.destroy();
+    if(m_verticesBuffer)
+    {
+        glDeleteBuffers(1, &m_verticesBuffer);
+        m_verticesBuffer = 0;
+    }
+    if(m_indicesBuffer)
+    {
+        glDeleteBuffers(1, &m_indicesBuffer);
+        m_indicesBuffer = 0;
+    }
+    if(m_nodesBuffer)
+    {
+        glDeleteBuffers(1, &m_nodesBuffer);
+        m_nodesBuffer = 0;
+    }
 
-    glDeleteBuffers(1, &m_verticesBuffer);
-    m_verticesBuffer = 0;
-    glDeleteBuffers(1, &m_indicesBuffer);
-    m_indicesBuffer = 0;
-    glDeleteBuffers(1, &m_nodesBuffer);
-    m_nodesBuffer = 0;
+    if(m_nodesTexture)
+    {
+        glDeleteTextures(1, &m_nodesTexture);
+        m_nodesTexture = 0;
+    }
 
-    glDeleteTextures(1, &m_nodesTexture);
-    m_nodesTexture = 0;
-
-    glDeleteVertexArrays(1, &m_vao);
-    m_vao = 0;
+    if(m_vao)
+    {
+        glDeleteVertexArrays(1, &m_vao);
+        m_vao = 0;
+    }
 }
 
 
@@ -288,9 +395,9 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
 
     if(setupBuffers)
     {
-        glEnableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
+        glEnableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
         glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
-        glVertexAttribPointer(VG_MESH_POSITION_ATTR_LOC,
+        glVertexAttribPointer(Resources::VG_MESH_POSITION_ATTR_LOC,
                               4, GL_FLOAT,
                               false, sizeof(Vector4), 0);
 
@@ -303,7 +410,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
     if(m_useVao)
         glBindVertexArray(0);
     else
-        glDisableVertexAttribArray(VG_MESH_POSITION_ATTR_LOC);
+        glDisableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
 
     PATATE_ASSERT_NO_GL_ERROR();
 }
@@ -314,13 +421,21 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
-    PatateCommon::Shader& shader = m_quadratic?
-                m_solidQuadraticShader:
-                m_solidLinearShader;
+    if(!m_resources)
+    {
+        m_resources = new Resources();
+        bool ok = m_resources->initialize();
+        if(!ok) std::abort();
+        m_ownResources = true;
+    }
 
-    SolidUniforms& unif = m_quadratic?
-                m_solidQuadraticUniforms:
-                m_solidLinearUniforms;
+    PatateCommon::Shader& shader = m_quadratic?
+                m_resources->solidQuadraticShader():
+                m_resources->solidLinearShader();
+
+    const Resources::SolidUniforms& unif = m_quadratic?
+                m_resources->solidQuadraticUniforms():
+                m_resources->solidLinearUniforms();
 
     shader.use();
 
@@ -354,8 +469,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
-    m_wireframeShader.use();
-    WireframeUniforms& unif = m_wireframeUniforms;
+    m_resources->wireframeShader().use();
+    const Resources::WireframeUniforms& unif = m_resources->wireframeUniforms();
 
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
     glUniform1f(unif.zoomLoc, zoom);
@@ -365,68 +480,6 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
     drawGeometry(ALL_TRIANGLES);
 
     PATATE_ASSERT_NO_GL_ERROR();
-}
-
-
-template < class _Mesh, typename _PosProj, typename _ValueProj >
-bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initSolidShader(
-        PatateCommon::Shader& shader, SolidUniforms& unif, const char* fragCode)
-{
-    shader.create();
-
-    bool ok = true;
-    ok &= shader.addShader(GL_VERTEX_SHADER,
-                           VGMeshRendererShaders::vert_common_glsl);
-    ok &= shader.addShader(GL_GEOMETRY_SHADER,
-                           VGMeshRendererShaders::geom_common_glsl);
-    ok &= shader.addShader(GL_FRAGMENT_SHADER,
-                           VGMeshRendererShaders::frag_common_glsl);
-    ok &= shader.addShader(GL_FRAGMENT_SHADER, fragCode);
-
-    shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
-    ok &= shader.finalize();
-
-    if(!ok)
-        return false;
-
-    unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
-    unif.nodesLoc             = shader.getUniformLocation("nodes");
-    unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
-    unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
-
-    return true;
-}
-
-
-template < class _Mesh, typename _PosProj, typename _ValueProj >
-bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initWireframeShader()
-{
-    PatateCommon::Shader& shader = m_wireframeShader;
-    WireframeUniforms& unif = m_wireframeUniforms;
-    shader.create();
-
-    bool ok = true;
-    ok &= shader.addShader(GL_VERTEX_SHADER,
-                           VGMeshRendererShaders::vert_common_glsl);
-    ok &= shader.addShader(GL_GEOMETRY_SHADER,
-                           VGMeshRendererShaders::geom_common_glsl);
-    ok &= shader.addShader(GL_FRAGMENT_SHADER,
-                           VGMeshRendererShaders::frag_common_glsl);
-    ok &= shader.addShader(GL_FRAGMENT_SHADER,
-                           VGMeshRendererShaders::frag_wireframe_glsl);
-
-    shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
-    ok &= shader.finalize();
-
-    if(!ok)
-        return false;
-
-    unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
-    unif.zoomLoc              = shader.getUniformLocation("zoom");
-    unif.lineWidthLoc         = shader.getUniformLocation("lineWidth");
-    unif.wireframeColorLoc    = shader.getUniformLocation("wireframeColor");
-
-    return true;
 }
 
 

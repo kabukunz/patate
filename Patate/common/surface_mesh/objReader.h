@@ -43,7 +43,7 @@ public:
 
 protected:
 
-    virtual void parseHeader(std::istream& /*in*/, Mesh& mesh) {}
+    virtual void parseHeader(std::istream& in, Mesh& mesh);
     virtual bool parseDefinition(const std::string& spec,
                                  std::istream& def, Mesh& mesh) = 0;
 

@@ -41,7 +41,7 @@ public:
         return m_points.at(m_segments[si].firstPoint + pi);
     }
 
-    unsigned setFirstPoint(const Vector& point)
+    void setFirstPoint(const Vector& point)
     {
         assert(nPoints() == 0);
         m_points.push_back(point);
