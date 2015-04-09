@@ -122,7 +122,7 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
         parseVector(def); PTT_RETURN_IF_ERROR();
         bc.setFirstPoint(m_vector);
 
-        SegmentType type;
+        SegmentType type = BezierCurve::CUBIC;
         unsigned count = 0;
         Vector points[3];
         for(unsigned i = 0; i < 3; ++i) points[i].resize(mesh.nDims());
@@ -138,6 +138,7 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
                 case 'L': type = BezierCurve::LINEAR;    break;
                 case 'Q': type = BezierCurve::QUADRATIC; break;
                 case 'C': type = BezierCurve::CUBIC;     break;
+                default: error("Unsupported path command"); return true;
                 }
             }
             else

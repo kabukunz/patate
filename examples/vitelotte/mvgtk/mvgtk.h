@@ -23,6 +23,7 @@ int parseAttribSet(const std::string& attr);
 struct GlobalOptions
 {
     bool verbose;
+    int repeat;
 };
 
 
@@ -59,7 +60,8 @@ public:
     enum
     {
         GlobalHelp,
-        GlobalVerbose
+        GlobalVerbose,
+        GlobalRepeat
     };
 
 

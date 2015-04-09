@@ -86,11 +86,14 @@ const char* OutputCommand::cmdDesc()
 Mvgtk::Mvgtk()
 {
     opts.verbose = false;
+    opts.repeat = 1;
 
     m_argMap.insert(std::make_pair("-h", GlobalHelp));
     m_argMap.insert(std::make_pair("--help", GlobalHelp));
     m_argMap.insert(std::make_pair("-v", GlobalVerbose));
     m_argMap.insert(std::make_pair("--verbose", GlobalVerbose));
+    m_argMap.insert(std::make_pair("-r", GlobalRepeat));
+    m_argMap.insert(std::make_pair("--repeat", GlobalRepeat));
 }
 
 
@@ -183,6 +186,11 @@ bool Mvgtk::parseArgs(int argc, char** argv)
             case GlobalVerbose:
                 opts.verbose = true;
                 break;
+            case GlobalRepeat:
+                if(argi == argc) printUsage(std::cerr);
+                opts.repeat = std::atoi(argv[++argi]);
+                if(opts.repeat < 1) printUsage(std::cerr);
+                break;
             default:
                 assert(false);
             }
@@ -244,11 +252,21 @@ bool Mvgtk::executeCommands()
         return false;
     }
 
-    for(CommandList::iterator it = m_commands.begin();
-        it != m_commands.end(); ++it)
+    Mesh original;
+    if(opts.repeat != 1)
     {
-        if(!(*it)->execute(mesh, &opts))
-            return false;
+        original = mesh;
+    }
+
+    for(int i = 0; i < opts.repeat; ++i)
+    {
+        for(CommandList::iterator it = m_commands.begin();
+            it != m_commands.end(); ++it)
+        {
+            if(!(*it)->execute(mesh, &opts))
+                return false;
+        }
+        if(i+1 < opts.repeat) mesh = original;
     }
 
     return true;

@@ -28,11 +28,11 @@ void
 MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
 {
     m_lineStream >> m_tmp;
-    if(!in) error("Failed to read header");
+    if(!in) error("Error while reading header");
     if(m_tmp != "mvg") error("Missing mvg header");
 
     m_lineStream >> m_tmp;
-    if(!in) error("Failed to read header");
+    if(!in) error("Error while reading header");
     if(m_tmp != "1.0") error("Unsuported version");
 
     std::string cmd;
