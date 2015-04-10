@@ -29,7 +29,6 @@ public:
     typedef _ElementBuilder ElementBuilder;
 
     typedef typename ElementBuilder::Scalar Scalar;
-    typedef typename ElementBuilder::MatrixType MatrixType;
 
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
     typedef Eigen::Triplet<Scalar> Triplet;
@@ -67,17 +66,12 @@ public:
 protected:
     typedef std::vector<unsigned> RangeVector;
 
-    typedef Eigen::SimplicialLDLT<StiffnessMatrix> SPDFactorization;
-    typedef Eigen::SparseLU<StiffnessMatrix> SymFactorization;
-//    typedef Eigen::SparseQR<StiffnessMatrix, Eigen::COLAMDOrdering<int> > SymFactorization;
+    typedef Eigen::SimplicialLDLT<StiffnessMatrix> LDLT;
 
-    typedef std::vector<SPDFactorization*> SPDBlocks;
-    typedef std::vector<SymFactorization*> SymBlocks;
+    typedef std::vector<LDLT*> BlocksLDLT;
 
 protected:
-    void resizeBlocks();
-    void resizeSpdBlocks(unsigned size);
-    void resizeSymBlocks(unsigned size);
+    void resizeBlocksLDLT(unsigned size);
 
 protected:
     Mesh* m_mesh;
@@ -89,7 +83,6 @@ protected:
     // Build: Ax = b
     StiffnessMatrix m_stiffnessMatrix;
     Matrix m_b;
-    MatrixType m_type;
 
     // Sort: premutation + ranges
     Eigen::VectorXi m_perm;
@@ -97,8 +90,7 @@ protected:
 
     // Factorize: block-wise factorizations + constraint matrix
     StiffnessMatrix m_consBlock;
-    SPDBlocks m_spdBlocks;
-    SymBlocks m_symBlocks;
+    BlocksLDLT m_blocksLDLT;
 
     // Solve
     Matrix m_x;

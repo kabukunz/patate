@@ -57,10 +57,6 @@ public:
 
     typedef typename Base::Face Face;
 
-    typedef typename Base::MatrixType MatrixType;
-    using Base::MATRIX_SPD;
-    using Base::MATRIX_SYMETRIC;
-
 protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
     typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
@@ -82,10 +78,6 @@ public:
 
     void setRhs(const Mesh& mesh, Matrix& rhs,
                 SolverError* error=0);
-
-    MatrixType matrixType(const Mesh& mesh) const {
-        return mesh.nVertexGradientConstraints()? MATRIX_SYMETRIC: MATRIX_SPD;
-    }
 
 private:
     using Base::m_size;

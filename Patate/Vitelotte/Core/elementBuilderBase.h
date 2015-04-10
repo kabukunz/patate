@@ -31,11 +31,6 @@ public:
 
     typedef typename Mesh::Face Face;
 
-    enum MatrixType {
-        MATRIX_SPD,
-        MATRIX_SYMETRIC
-    };
-
 public:
     inline ElementBuilderBase() : m_size(0) {}
 
@@ -47,10 +42,6 @@ public:
     inline void setRhs(const Mesh& /*mesh*/, Matrix& rhs,
                        SolverError* /*error*/=0) {
         rhs.setZero();
-    }
-
-    MatrixType matrixType(const Mesh& /*mesh*/) const {
-        return MATRIX_SPD;
     }
 
 protected:

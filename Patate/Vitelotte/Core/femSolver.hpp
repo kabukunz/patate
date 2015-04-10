@@ -63,8 +63,7 @@ FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& 
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::~FemSolver()
 {
-    resizeSpdBlocks(0);
-    resizeSymBlocks(0);
+    resizeBlocksLDLT(0);
 }
 
 
@@ -103,10 +102,6 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
 //    std::cout << "S:\n" << Matrix(m_stiffnessMatrix) << "\n";
-
-    m_type = m_elementBuilder.matrixType(*m_mesh);
-//    std::cout << ((m_type == ElementBuilder::MATRIX_SPD)?
-//                      "SPD\n": "Symetric\n");
 
     m_b.resize(size, m_mesh->nCoeffs());
     m_elementBuilder.setRhs(*m_mesh, m_b, &m_error);
@@ -206,9 +201,8 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
 
     m_consBlock = mat.topRightCorner(nUnknowns, nConstraints);
 
-    resizeBlocks();
-
     unsigned nbRanges = m_ranges.size()-1;
+    resizeBlocksLDLT(nbRanges);
 //#ifdef _OPENMP
 //#pragma omp parallel for schedule(static,1)
 //#endif
@@ -241,22 +235,10 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
 //                  << size << ", nz=" << L.nonZeros() << " ("
 //                  << 100. * L.nonZeros() / double(L.cols() * L.rows()) << "%)\n";
 
-        switch(m_type)
-        {
-        case ElementBuilder::MATRIX_SPD:
-            assert(k < m_spdBlocks.size());
-            if(!m_spdBlocks[k]) m_spdBlocks[k] = new SPDFactorization;
-            m_spdBlocks[k]->compute(L);
-            if(internal::checkEigenSolverError(*m_spdBlocks[k], m_error)) return;
-            break;
-        case ElementBuilder::MATRIX_SYMETRIC:
-            assert(k < m_symBlocks.size());
-            if(!m_symBlocks[k]) m_symBlocks[k] = new SymFactorization;
-            m_symBlocks[k]->analyzePattern(L);
-            m_symBlocks[k]->factorize(L);
-            if(internal::checkEigenSolverError(*m_symBlocks[k], m_error)) return;
-            break;
-        }
+        assert(k < m_blocksLDLT.size());
+        if(!m_blocksLDLT[k]) m_blocksLDLT[k] = new LDLT;
+        m_blocksLDLT[k]->compute(L);
+        if(internal::checkEigenSolverError(*m_blocksLDLT[k], m_error)) return;
     }
 }
 
@@ -304,23 +286,12 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
         int start = m_ranges[k];
         int size  = m_ranges[k+1]-start;
 
-        switch(m_type)
+        if(m_blocksLDLT[k])
         {
-        case ElementBuilder::MATRIX_SPD:
-            if(m_spdBlocks[k])
-            {
-                m_x.middleRows(start,size) = m_spdBlocks[k]->solve(m_x.middleRows(start, size));
-                if(internal::checkEigenSolverError(*m_spdBlocks[k], m_error)) return;
-            }
-            break;
-        case ElementBuilder::MATRIX_SYMETRIC:
-            if(m_symBlocks[k])
-            {
-                m_x.middleRows(start,size) = m_symBlocks[k]->solve(m_x.middleRows(start, size));
-                if(internal::checkEigenSolverError(*m_symBlocks[k], m_error)) return;
-            }
-            break;
+            m_x.middleRows(start,size) = m_blocksLDLT[k]->solve(m_x.middleRows(start, size));
+            if(internal::checkEigenSolverError(*m_blocksLDLT[k], m_error)) return;
         }
+        break;
     }
 
     for(unsigned i = 0; i < nUnknowns; ++i)
@@ -339,41 +310,11 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
 template < class _Mesh, class _ElementBuilder >
 void
-FemSolver<_Mesh, _ElementBuilder>::resizeBlocks()
+FemSolver<_Mesh, _ElementBuilder>::resizeBlocksLDLT(unsigned size)
 {
-    unsigned nbRanges = m_ranges.size()-1;
-
-    switch(m_type)
-    {
-    case ElementBuilder::MATRIX_SPD:
-        resizeSpdBlocks(nbRanges);
-        resizeSymBlocks(0);
-        break;
-    case ElementBuilder::MATRIX_SYMETRIC:
-        resizeSpdBlocks(0);
-        resizeSymBlocks(nbRanges);
-        break;
-    }
-}
-
-
-template < class _Mesh, class _ElementBuilder >
-void
-FemSolver<_Mesh, _ElementBuilder>::resizeSpdBlocks(unsigned size)
-{
-    for(unsigned i = size; i < m_spdBlocks.size(); ++i)
-        delete m_spdBlocks[i];
-    m_spdBlocks.resize(size, 0);
-}
-
-
-template < class _Mesh, class _ElementBuilder >
-void
-FemSolver<_Mesh, _ElementBuilder>::resizeSymBlocks(unsigned size)
-{
-    for(unsigned i = size; i < m_symBlocks.size(); ++i)
-        delete m_symBlocks[i];
-    m_symBlocks.resize(size, 0);
+    for(unsigned i = size; i < m_blocksLDLT.size(); ++i)
+        delete m_blocksLDLT[i];
+    m_blocksLDLT.resize(size, 0);
 }
 
 
