@@ -75,6 +75,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     unsigned nCoefficients = 0;
     m_error.resetStatus();
     m_solved = false;
+    m_elementBuilder.begin(*m_mesh);
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
@@ -95,16 +96,19 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     }
     assert(it == coefficients.end());
 
+    unsigned size = m_elementBuilder.end(*m_mesh);
+
     // We use nodesSize instead of nNode because we index nodes with Node::idx()
-    m_stiffnessMatrix.resize(m_mesh->nodesSize(), m_mesh->nodesSize());
+    m_stiffnessMatrix.resize(size, size);
     m_stiffnessMatrix.setFromTriplets(
                 coefficients.begin(), coefficients.end());
+//    std::cout << "S:\n" << Matrix(m_stiffnessMatrix) << "\n";
 
     m_type = m_elementBuilder.matrixType(*m_mesh);
 //    std::cout << ((m_type == ElementBuilder::MATRIX_SPD)?
 //                      "SPD\n": "Symetric\n");
 
-    m_b.resize(m_mesh->nodesSize(), m_mesh->nCoeffs());
+    m_b.resize(size, m_mesh->nCoeffs());
     m_elementBuilder.setRhs(*m_mesh, m_b, &m_error);
     if(m_error.status() == SolverError::STATUS_ERROR)
     {
@@ -321,9 +325,12 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
     for(unsigned i = 0; i < nUnknowns; ++i)
     {
-        assert(!m_mesh->isConstraint(Node(m_perm[i])));
-        m_mesh->value(Node(m_perm[i])) = m_x.row(i).
-                    template cast<typename Mesh::Scalar>();
+        if(m_perm[i] < m_mesh->nodesSize())
+        {
+            assert(!m_mesh->isConstraint(Node(m_perm[i])));
+            m_mesh->value(Node(m_perm[i])) = m_x.row(i).
+                        template cast<typename Mesh::Scalar>();
+        }
     }
 
     m_solved = true;

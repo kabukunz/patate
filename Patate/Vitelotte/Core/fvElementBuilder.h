@@ -65,8 +65,13 @@ protected:
     typedef Eigen::Matrix<Scalar, 3, 1> Vector3;
     typedef Eigen::Matrix<Scalar, 6, 1> Vector6;
 
+    typedef typename Mesh::Halfedge Halfedge;
+    typedef std::map<unsigned, Halfedge> PGCMap;
+
 public:
     inline FVElementBuilder(Scalar sigma = Scalar(.5));
+
+    void begin(const Mesh& mesh);
 
     unsigned nCoefficients(const Mesh& mesh, Face element,
                            SolverError* error=0) const;
@@ -83,7 +88,9 @@ public:
     }
 
 private:
+    using Base::m_size;
     Scalar m_sigma;
+    PGCMap m_pgcMap;
 };
 
 

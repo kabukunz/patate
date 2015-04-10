@@ -441,10 +441,6 @@ public:
     inline unsigned nVertexGradientConstraints(Halfedge h) const;
     inline unsigned nVertexGradientConstraints(Face f) const;
 
-    inline Node vertexGradientDummyNode(Halfedge h) const
-        { assert(hasVertexGradientConstraint());
-          return m_vertexGradientDummyNodes.at(h); }
-
     /// \}
 
 
@@ -677,8 +673,6 @@ protected:
     HalfedgeProperty<Node> m_fromVertexValueNodes;
     HalfedgeProperty<Node> m_edgeValueNodes;
     HalfedgeProperty<Node> m_edgeGradientNodes;
-
-    HalfedgeNodeMap m_vertexGradientDummyNodes;
 
     unsigned m_deletedNodes;
     NodeMatrix m_nodes;

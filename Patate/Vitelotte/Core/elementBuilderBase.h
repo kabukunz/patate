@@ -37,7 +37,12 @@ public:
     };
 
 public:
-    inline ElementBuilderBase() {}
+    inline ElementBuilderBase() : m_size(0) {}
+
+    inline void begin(const Mesh& mesh) { m_size = mesh.nodesSize(); }
+    unsigned end(const Mesh& /*mesh*/) { return matrixSize(); }
+
+    unsigned matrixSize() const { return m_size; }
 
     inline void setRhs(const Mesh& /*mesh*/, Matrix& rhs,
                        SolverError* /*error*/=0) {
@@ -47,6 +52,9 @@ public:
     MatrixType matrixType(const Mesh& /*mesh*/) const {
         return MATRIX_SPD;
     }
+
+protected:
+    unsigned m_size;
 };
 
 

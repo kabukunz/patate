@@ -178,14 +178,6 @@ VGMesh<_Scalar, _Dim, _Chan>::garbageCollection(unsigned flags)
     m_vertexGradientConstraints.swap(vxGradConstraints);
 
     // remap halfedges
-    HalfedgeNodeMap dummyNodes;
-    for(typename HalfedgeNodeMap::const_iterator hNode = m_vertexGradientDummyNodes.begin();
-        hNode != m_vertexGradientDummyNodes.end(); ++hNode)
-    {
-        dummyNodes.insert(std::make_pair(gcMap(hNode->first), hNode->second));
-    }
-    m_vertexGradientDummyNodes.swap(dummyNodes);
-
     for(HalfedgeIterator hit = halfedgesBegin(); hit != halfedgesEnd(); ++hit)
     {
         for(unsigned ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai)
@@ -388,23 +380,7 @@ void VGMesh<_Scalar, _Dim, _Chan>::
 {
     assert(hasVertexGradientConstraint());
 
-    bool newConstraint = !isGradientConstraint(v);
-
     m_vertexGradientConstraints[v] = grad;
-
-    if(newConstraint)
-    {
-        HalfedgeAroundVertexCirculator hit = halfedges(v);
-        HalfedgeAroundVertexCirculator hend = hit;
-        do
-        {
-            if(!m_vertexGradientDummyNodes[*hit].isValid())
-                m_vertexGradientDummyNodes[*hit] = addNode();
-            if(!m_vertexGradientDummyNodes[oppositeHalfedge(*hit)].isValid())
-                m_vertexGradientDummyNodes[oppositeHalfedge(*hit)] = addNode();
-            ++hit;
-        } while(hit != hend);
-    }
 }
 
 
@@ -414,15 +390,6 @@ void VGMesh<_Scalar, _Dim, _Chan>::removeGradientConstraint(Vertex v)
     assert(hasVertexGradientConstraint());
 
     m_vertexGradientConstraints.erase(v);
-
-    HalfedgeAroundVertexCirculator hit = halfedges(v);
-    HalfedgeAroundVertexCirculator hend = hit;
-    do
-    {
-        m_vertexGradientDummyNodes.erase(*hit);
-        m_vertexGradientDummyNodes.erase(oppositeHalfedge(*hit));
-        ++hit;
-    } while(hit != hend);
 }
 
 
@@ -479,11 +446,6 @@ VGMesh<_Scalar, _Dim, _Chan>::deleteUnusedNodes()
                 m_ndeleted[edgeGradientNode(*hit)]    = false;
         }
     }
-    for(typename HalfedgeNodeMap::const_iterator hNode = m_vertexGradientDummyNodes.begin();
-        hNode != m_vertexGradientDummyNodes.end(); ++hNode)
-    {
-        m_ndeleted[hNode->second] = false;
-    }
     m_deletedNodes = 0;
     for(unsigned ni = 0; ni < nodesSize(); ++ni)
     {
@@ -508,6 +470,7 @@ VGMesh<_Scalar, _Dim, _Chan>::addNode(const Eigen::DenseBase<Derived>& value)
     assert(nodesSize() <= nodesCapacity());
     return Node(nodesSize() - 1);
 }
+
 
 template < typename _Scalar, int _Dim, int _Chan >
 bool
@@ -902,8 +865,6 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
     m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
     m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
-
-    m_vertexGradientDummyNodes = rhs.m_vertexGradientDummyNodes;
 
     m_deletedNodes = rhs.m_deletedNodes;
     m_nodes = rhs.m_nodes/*.template cast<Scalar>()*/;

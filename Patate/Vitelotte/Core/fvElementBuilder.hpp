@@ -22,6 +22,15 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 {
 }
 
+
+template < class _Mesh, typename _Scalar >
+void
+FVElementBuilder<_Mesh, _Scalar>::begin(const Mesh& mesh) {
+    Base::begin(mesh);
+    m_pgcMap.clear();
+}
+
+
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
@@ -185,8 +194,12 @@ FVElementBuilder<_Mesh, _Scalar>::
             0,
             -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
 
-        int ce1 = mesh.vertexGradientDummyNode(h1).idx();
-        int ce2 = mesh.vertexGradientDummyNode(h2).idx();
+//        int ce1 = mesh.vertexGradientDummyNode(h1).idx();
+//        int ce2 = mesh.vertexGradientDummyNode(h2).idx();
+        m_pgcMap.insert(std::make_pair(m_size, h1));
+        int ce1 = (m_size++);
+        m_pgcMap.insert(std::make_pair(m_size, h2));
+        int ce2 = (m_size++);
 //        std::cout << "  ce1: " << ce1 << ", ce2: " << ce2 << "\n";
         if(ce1 < 0 || ce2 < 0)
         {
@@ -213,24 +226,42 @@ FVElementBuilder<_Mesh, _Scalar>::
 
     rhs.setZero();
 
-    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
-        hit != mesh.halfedgesEnd(); ++hit) {
+    for(typename PGCMap::const_iterator it = m_pgcMap.begin();
+        it != m_pgcMap.end(); ++it)
+    {
+        unsigned index = it->first;
+        typename Mesh::Halfedge h = it->second;
 
-        if(mesh.nVertexGradientConstraints(*hit) == 0)
-            continue;
+        typename Mesh::Vertex from = mesh.fromVertex(h);
+        typename Mesh::Vertex to   = mesh.  toVertex(h);
 
-        typename Mesh::Vertex from = mesh.fromVertex(*hit);
-        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
-        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
-        if(n.isValid()) {
-            bool v0c = mesh.isGradientConstraint(from);
-            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
-            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
-            if(!v0c) v = -v;
-            typename Mesh::Value cons = grad * v;
-            rhs.row(n.idx()) = cons.template cast<Scalar>();
-        }
+        bool v0c = mesh.isGradientConstraint(from);
+        const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+        typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+        if(!v0c) v = -v;
+        typename Mesh::Value cons = grad * v;
+        rhs.row(index) = cons.template cast<Scalar>();
     }
+
+//    unsigned index = mesh.nodesCount();
+//    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
+//        hit != mesh.halfedgesEnd(); ++hit) {
+
+//        if(mesh.nVertexGradientConstraints(*hit) == 0)
+//            continue;
+
+//        typename Mesh::Vertex from = mesh.fromVertex(*hit);
+//        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
+//        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
+//        if(n.isValid()) {
+//            bool v0c = mesh.isGradientConstraint(from);
+//            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+//            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+//            if(!v0c) v = -v;
+//            typename Mesh::Value cons = grad * v;
+//            rhs.row(n.idx()) = cons.template cast<Scalar>();
+//        }
+//    }
 }
 
 
