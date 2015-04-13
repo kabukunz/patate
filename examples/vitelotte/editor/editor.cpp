@@ -24,6 +24,7 @@ Editor::Editor(QWidget* parent)
       m_dragPos(),
       m_dragGradientStop(),
       m_paintColor(),
+      m_dummyStop(),
       m_rendererDirty(true)
 {
     setMouseTracking(true);

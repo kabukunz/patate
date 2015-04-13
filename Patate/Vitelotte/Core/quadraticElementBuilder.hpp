@@ -71,11 +71,11 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
 
 
 template < class _Mesh, typename _Scalar >
-template < typename InIt >
+template < typename Inserter >
 void
 QuadraticElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                    SolverError* error)
+    addCoefficients(Inserter& inserter, const Mesh& mesh,
+                    Face element, SolverError* error)
 {
     if(mesh.valence(element) != 3)
     {
@@ -122,9 +122,9 @@ QuadraticElementBuilder<_Mesh, _Scalar>::
 
     for(int i = 0; i < 6; ++i)
     {
-        for(int j = 0; j < 6; ++j)
+        for(int j = i; j < 6; ++j)
         {
-            *(it++) = Triplet(nodes[i], nodes[j], matrix(i, j));
+            inserter.addCoeff(nodes[i], nodes[j], matrix(i, j));
         }
     }
 }

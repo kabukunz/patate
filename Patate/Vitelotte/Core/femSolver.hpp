@@ -29,17 +29,6 @@ struct CheckEigenSolverError
     }
 };
 
-//template <typename Matrix>
-//bool CheckEigenSolverError<Eigen::SparseLU<Matrix> >::check(
-//        const Eigen::SparseLU<Matrix>& solver, SolverError& error)
-//{
-//    if(solver.info() != Eigen::Success) {
-//        error.error(solver.lastErrorMessage());
-//        return true;
-//    }
-//    return false;
-//}
-
 
 template <typename Solver>
 bool checkEigenSolverError(const Solver& solver, SolverError& error)
@@ -47,6 +36,136 @@ bool checkEigenSolverError(const Solver& solver, SolverError& error)
     return CheckEigenSolverError<Solver>::check(solver, error);
 }
 
+
+template < typename Solver >
+class SolverInserter {
+public:
+    typedef typename Solver::Scalar         Scalar;
+
+protected:
+    typedef typename Solver::Mesh           Mesh;
+    typedef typename Mesh::Face             Face;
+
+    typedef typename Solver::Matrix         Matrix;
+
+    typedef typename Solver::Triplet        Triplet;
+    typedef typename Solver::TripletVector  TripletVector;
+
+    typedef typename Solver::BlockIndex     BlockIndex;
+    typedef typename Solver::NodeMap        NodeMap;
+
+public:
+    inline SolverInserter(TripletVector& blockCoeffs, TripletVector& consCoeffs,
+                          Matrix& rhs, const NodeMap& nodeMap,
+                          unsigned offset, unsigned extraOffset)
+        : m_blockCoeffs (blockCoeffs),
+          m_consCoeffs  (consCoeffs),
+          m_rhs         (rhs),
+          m_nodeMap     (nodeMap),
+          m_offset      (offset),
+          m_extraOffset (extraOffset) {
+    }
+
+#ifndef NDEBUG
+    void debug(unsigned nUnk, unsigned nCons, unsigned bi, unsigned size) {
+        m_nUnk  = nUnk;
+        m_nCons = nCons;
+        m_bi    = bi;
+        m_size  = size;
+    }
+#endif
+
+//#define DEBUG_INLINE __attribute__((always_inline))
+//#define DEBUG_INLINE __attribute__((noinline))
+#define DEBUG_INLINE
+
+    DEBUG_INLINE void addCoeff(unsigned ni0, unsigned ni1, Scalar value)
+    {
+        BlockIndex bi0 = m_nodeMap[ni0];
+        BlockIndex bi1 = m_nodeMap[ni1];
+
+        unsigned id = (bi0.block < 0) | ((bi1.block < 0) << 1);
+        switch(id) {
+        // Both are unknowns
+        case 0x00: {
+            assert(bi0.block == m_bi && bi1.block == m_bi);
+            assert(bi0.index < m_size);
+            assert(bi1.index < m_size);
+            m_blockCoeffs.push_back(Triplet(
+                        std::max(bi0.index, bi1.index),
+                        std::min(bi0.index, bi1.index),
+                        value));
+            break;
+        }
+
+        // 0 is a constraint, 1 is an unknown
+        case 0x01: std::swap(bi0, bi1);     // Fall-through
+         // 0 is an unknown, 1 is a constraint
+        case 0x02: {
+            assert(bi0.block == m_bi);
+            unsigned row = bi0.index + m_offset;
+            unsigned col = bi1.index;
+            assert(row < m_nUnk);
+            assert(col < m_nCons);
+            m_consCoeffs.push_back(Triplet(row, col, value));
+            break;
+        }
+
+        // Both are constraints
+        case 0x03: break;
+
+        // Should not happen
+        default: assert(false);
+        }
+    }
+
+    DEBUG_INLINE void addExtraCoeff(Face /*elem*/, unsigned ei, unsigned ni, Scalar value)
+    {
+        BlockIndex nbi = m_nodeMap[ni];
+        unsigned eio = m_extraOffset + ei;
+        assert(eio < m_size);
+
+        if(nbi.block >= 0)
+        {
+            assert(nbi.block == m_bi);
+            assert(nbi.index < m_extraOffset);  // extra should have greater indices
+            m_blockCoeffs.push_back(Triplet(eio, nbi.index, value));
+        }
+        else
+        {
+            unsigned row = eio + m_offset;
+            unsigned col = nbi.index;
+            assert(row < m_nUnk);
+            assert(col < m_nCons);
+            m_consCoeffs.push_back(Triplet(row, col, value));
+        }
+    }
+
+    template < typename Derived >
+    DEBUG_INLINE void setExtraRhs(Face /*elem*/, unsigned ei, const Eigen::DenseBase<Derived>& value)
+    {
+        unsigned eio = m_extraOffset + ei;
+        assert(eio < m_size);
+        m_rhs.row(eio) = value;
+    }
+
+
+private:
+    TripletVector&  m_blockCoeffs;
+    TripletVector&  m_consCoeffs;
+    Matrix&         m_rhs;
+    const NodeMap&  m_nodeMap;
+    unsigned        m_offset;
+    unsigned        m_extraOffset;
+#ifndef DNDEBUG
+    unsigned        m_nUnk;
+    unsigned        m_nCons;
+    unsigned        m_bi;
+    unsigned        m_size;
+#endif
+};
+
+#undef DEBUG_INLINE
 
 }
 
@@ -63,7 +182,6 @@ FemSolver<_Mesh, _ElementBuilder>::FemSolver(Mesh* _mesh, const ElementBuilder& 
 template < class _Mesh, class _ElementBuilder >
 FemSolver<_Mesh, _ElementBuilder>::~FemSolver()
 {
-    resizeBlocksLDLT(0);
 }
 
 
@@ -71,111 +189,66 @@ template < class _Mesh, class _ElementBuilder >
 void
 FemSolver<_Mesh, _ElementBuilder>::build()
 {
-    unsigned nCoefficients = 0;
+    // Cleanup error status
     m_error.resetStatus();
     m_solved = false;
-    m_elementBuilder.begin(*m_mesh);
+
+    // Compute node id to row/col mapping and initialize blocks
+    preSort();
+
+    // Pre-compute number of coefficients
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        nCoefficients += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
+        unsigned bii = m_faceBlockMap[(*elem).idx()];
+        Block& block = m_blocks[bii];
+        block.nCoeffs += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
     }
 
-    TripletVector coefficients(nCoefficients);
-    TripletVectorIterator it = coefficients.begin();
+    // Reserve memory for triplets
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
+    {
+        block->triplets.reserve(block->nCoeffs);
+    }
+
+    // Fill a Triplet vector with coefficients + fill m_b
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        m_elementBuilder.addCoefficients(it, *m_mesh, *elem, &m_error);
+        typedef internal::SolverInserter<Self> Inserter;
+
+        unsigned  bi           = m_faceBlockMap[(*elem).idx()];
+        Block&    block        = m_blocks[bi];
+        int       extraIndex   = m_fExtraIndices((*elem).idx());
+        unsigned  extraOffset  = (extraIndex < 0)? 0: m_fExtraMap[extraIndex].index;
+
+        Inserter inserter(block.triplets,
+                          m_constraintTriplets,
+                          block.rhs,
+                          m_nodeMap,
+                          block.offset,
+                          extraOffset);
+#ifndef NDEBUG
+        inserter.debug(m_nUnknowns, m_nConstraints, bi, block.size);
+#endif
+        m_elementBuilder.addCoefficients(inserter, *m_mesh, *elem, &m_error);
 
         if(m_error.status() == SolverError::STATUS_ERROR)
         {
             return;
         }
     }
-    assert(it == coefficients.end());
 
-    unsigned size = m_elementBuilder.end(*m_mesh);
+    m_constraintBlock.setFromTriplets(
+                m_constraintTriplets.begin(), m_constraintTriplets.end());
 
-    // We use nodesSize instead of nNode because we index nodes with Node::idx()
-    m_stiffnessMatrix.resize(size, size);
-    m_stiffnessMatrix.setFromTriplets(
-                coefficients.begin(), coefficients.end());
-//    std::cout << "S:\n" << Matrix(m_stiffnessMatrix) << "\n";
-
-    m_b.resize(size, m_mesh->nCoeffs());
-    m_elementBuilder.setRhs(*m_mesh, m_b, &m_error);
-    if(m_error.status() == SolverError::STATUS_ERROR)
+    // Fill the matrix
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
     {
-        return;
-    }
-}
-
-
-template < class _Mesh, class _ElementBuilder >
-void
-FemSolver<_Mesh, _ElementBuilder>::sort()
-{
-    if(m_error.status() == SolverError::STATUS_ERROR)
-    {
-        return;
-    }
-
-    int n = m_stiffnessMatrix.cols();
-    m_perm.resize(n);
-
-    m_ranges.clear();
-
-
-    Eigen::Matrix<bool, Eigen::Dynamic, 1> mask(n);
-    mask.fill(true);
-    Eigen::VectorXi stack(n);
-
-    int sPos = 0;   // search position
-    int count = 0;  // nb items in stack
-    int nUnk = 0;   // nb found unknown nodes
-
-    while(sPos < n && m_mesh->isConstraint(Node(sPos))) ++sPos;
-    if(sPos < n)
-    {
-        m_ranges.push_back(nUnk);
-        stack[count++] = sPos;
-        mask[sPos] = false;
-    }
-
-    while(count > 0)
-    {
-        int col = stack[--count];
-        m_perm[nUnk++] = col;
-
-        for(typename StiffnessMatrix::InnerIterator it(m_stiffnessMatrix, col); it ;++it)
-        {
-            if(mask[it.index()] && !m_mesh->isConstraint(Node(it.index())))
-            {
-                stack[count++] = it.index();
-                mask[it.index()] = false;
-            }
-        }
-
-        if(count == 0)
-        {
-            while(sPos < n && (!mask[sPos] || m_mesh->isConstraint(Node(sPos)))) ++sPos;
-            if(sPos < n)
-            {
-                m_ranges.push_back(nUnk);
-                stack[count++] = sPos;
-                mask[sPos] = false;
-            }
-        }
-    }
-
-    m_ranges.push_back(nUnk);
-
-    for(int col = 0; col < n; ++col)
-    {
-        assert(m_mesh->isConstraint(Node(col)) == mask[col]);
-        if(mask[col])
-            m_perm[nUnk++] = col;
+        block->matrix.setFromTriplets(
+                    block->triplets.begin(), block->triplets.end());
     }
 }
 
@@ -190,55 +263,15 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
         return;
     }
 
-    // Apply permutation
-    Eigen::PermutationMatrix<Eigen::Dynamic> perm(m_perm), permInv(perm.inverse());
-    StiffnessMatrix mat;
-    mat/*.template selfadjointView<Eigen::Lower>()*/ =
-            m_stiffnessMatrix.template selfadjointView<Eigen::Lower>().twistedBy(permInv);
-
-    unsigned nUnknowns = m_ranges.back();
-    unsigned nConstraints = m_stiffnessMatrix.cols() - nUnknowns;
-
-    m_consBlock = mat.topRightCorner(nUnknowns, nConstraints);
-
-    unsigned nbRanges = m_ranges.size()-1;
-    resizeBlocksLDLT(nbRanges);
 //#ifdef _OPENMP
 //#pragma omp parallel for schedule(static,1)
 //#endif
-    for(unsigned k = 0; k < nbRanges; ++k)
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
     {
-        int start = m_ranges[k];
-        int size  = m_ranges[k+1]-start;
-
-        // Skip unused, isolated nodes
-        if(size == 1 && mat.coeffRef(start, start) == 0)
-            continue;
-
-        StiffnessMatrix L(size,size);
-        L.reserve(size*20);
-
-        for(int j = 0; j < size; ++j)
-        {
-            L.startVec(j);
-            for(typename StiffnessMatrix::InnerIterator it(mat, start + j); it; ++it)
-            {
-                if(it.index() >= nUnknowns) continue;
-//                if(it.index() < j || it.index() >= nUnknowns) continue;
-                L.insertBackByOuterInnerUnordered(j, it.index() - start) = it.value();
-            }
-        }
-
-        L.finalize();
-
-//        std::cout << "range: " << start << " (" << m_perm[start] << "), "
-//                  << size << ", nz=" << L.nonZeros() << " ("
-//                  << 100. * L.nonZeros() / double(L.cols() * L.rows()) << "%)\n";
-
-        assert(k < m_blocksLDLT.size());
-        if(!m_blocksLDLT[k]) m_blocksLDLT[k] = new LDLT;
-        m_blocksLDLT[k]->compute(L);
-        if(internal::checkEigenSolverError(*m_blocksLDLT[k], m_error)) return;
+        if(!block->decomposition) block->decomposition = new LDLT;
+        block->decomposition->compute(block->matrix);
+        if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
     }
 }
 
@@ -255,52 +288,42 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
     }
 
     // compute RHS
-    unsigned nUnknowns = m_ranges.back();
-    unsigned nConstraints = m_stiffnessMatrix.cols() - nUnknowns;
-    Matrix constraints(nConstraints, m_mesh->nCoeffs());
+    Matrix constraints = Matrix::Zero(m_nConstraints, m_mesh->nCoeffs());
 
-    // As sort() keep constraints order, they will have the right indices.
-    unsigned count = 0;
     for(typename Mesh::NodeIterator nit = m_mesh->nodesBegin();
         nit != m_mesh->nodesEnd(); ++nit)
     {
-        if(m_mesh->isConstraint(*nit))
+        BlockIndex bi = m_nodeMap[(*nit).idx()];
+        if(m_mesh->isConstraint(*nit) && bi.block == -1 && bi.index >= 0)
         {
-            constraints.row(count++) =
-                    m_mesh->value(*nit).template cast<Scalar>();
+            constraints.row(bi.index) = m_mesh->value(*nit).template cast<Scalar>();
         }
     }
-    assert(count == nConstraints);
 
-    m_x.resize(nUnknowns, m_mesh->nCoeffs());
-    for(unsigned i = 0; i < m_x.rows(); ++i)
+    m_x = m_constraintBlock * constraints;
+
+    // Solve block by block
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
     {
-        m_x.row(i) = m_b.row(m_perm(i));
+        unsigned start = block->offset;
+        unsigned size  = block->size;
+
+        m_x.middleRows(start, size) =
+                block->decomposition->solve(block->rhs - m_x.middleRows(start, size));
+        if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
     }
 
-    m_x -= m_consBlock * constraints;
-
-    unsigned nbRanges = m_ranges.size()-1;
-    for(unsigned k = 0; k < nbRanges; ++k)
+    // Update mesh nodes
+    for(typename Mesh::NodeIterator nit = m_mesh->nodesBegin();
+        nit != m_mesh->nodesEnd(); ++nit)
     {
-        int start = m_ranges[k];
-        int size  = m_ranges[k+1]-start;
-
-        if(m_blocksLDLT[k])
+        BlockIndex bi = m_nodeMap[(*nit).idx()];
+        if(!m_mesh->isConstraint(*nit) && bi.block >= 0 && bi.index >= 0)
         {
-            m_x.middleRows(start,size) = m_blocksLDLT[k]->solve(m_x.middleRows(start, size));
-            if(internal::checkEigenSolverError(*m_blocksLDLT[k], m_error)) return;
-        }
-        break;
-    }
-
-    for(unsigned i = 0; i < nUnknowns; ++i)
-    {
-        if(m_perm[i] < m_mesh->nodesSize())
-        {
-            assert(!m_mesh->isConstraint(Node(m_perm[i])));
-            m_mesh->value(Node(m_perm[i])) = m_x.row(i).
-                        template cast<typename Mesh::Scalar>();
+            unsigned ri = m_blocks[bi.block].offset + bi.index;
+            m_mesh->value(*nit) =
+                    m_x.row(ri).template cast<typename Mesh::Scalar>();
         }
     }
 
@@ -310,11 +333,168 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
 template < class _Mesh, class _ElementBuilder >
 void
-FemSolver<_Mesh, _ElementBuilder>::resizeBlocksLDLT(unsigned size)
+FemSolver<_Mesh, _ElementBuilder>::preSort()
 {
-    for(unsigned i = size; i < m_blocksLDLT.size(); ++i)
-        delete m_blocksLDLT[i];
-    m_blocksLDLT.resize(size, 0);
+    // FIXME: This algorithm assume there is only local constraints.
+
+    typedef typename Mesh::HalfedgeAroundFaceCirculator HalfedgeCirculator;
+    typedef typename Mesh::HalfedgeAttribute HalfedgeAttribute;
+    typedef typename Mesh::Node Node;
+
+    // 1- Count the number of faces with extra constraints and the total number
+    //    of constraints.
+    unsigned nExtraFaces = 0;
+    unsigned nExtraCons  = 0;
+    for(FaceIterator elem = m_mesh->facesBegin();
+        elem != m_mesh->facesEnd(); ++elem)
+    {
+        unsigned nCons = m_elementBuilder.nExtraConstraints(*m_mesh, *elem);
+        if(nCons)
+        {
+            ++nExtraFaces;
+            nExtraCons += nCons;
+        }
+    }
+
+    // Note: these are not defivitive values. There may be less nodes than
+    // planed if not all of them are referenced by faces or some are deleted.
+    unsigned nNodes           = m_mesh->nodesSize();   // Number of nodes (worst case)
+    unsigned uPos             = 0; // r/c index of the last processed unknown node
+    unsigned uCount           = 0; // total number of contributing unknown nodes
+    unsigned cPos             = 0; // r/c index of the last processed constraint node
+    unsigned count            = 0; // nb items in stack
+    unsigned extraFacesCount  = 0; // nb faces with extra constrains
+    unsigned extraRangeStart  = 0; // index of the first extra of the current range
+    unsigned elemExtraCount   = 0; // nb extra node for the current block
+
+    // Initialize some members
+    m_blocks.clear();
+    m_blocks.reserve(32);
+    m_nodeMap.assign(nNodes, BlockIndex(-1, -1));
+    m_fExtraIndices.resize(m_mesh->facesSize()); m_fExtraIndices.fill(-1);
+    m_fExtraMap.assign(nExtraFaces, BlockIndex(-1, -1));
+    m_faceBlockMap.resize(m_mesh->facesSize());
+
+    FaceIterator    faceIt = m_mesh->facesBegin();
+    Eigen::VectorXi fStack(m_mesh->nFaces());
+    m_fMask.assign(m_mesh->nFaces(), true);
+    m_nMask.assign(nNodes, true);
+
+    // 2- Compute a mapping from node indices to column/row indices with a
+    //    breadth first search. May split the problem in independant blocks.
+
+    // Push the first face
+    m_blocks.push_back(Block());
+    m_blocks.back().offset = uPos;
+    m_fMask[(*faceIt).idx()] = false;
+    fStack(count++) = (*faceIt).idx();
+
+    while(count)
+    {
+        // Pop a face
+        unsigned fi = fStack(--count);
+        unsigned bi = m_blocks.size() - 1;
+        Face face(fi);
+
+        m_faceBlockMap[fi] = bi;
+
+        // Process each node of each halfedges
+        HalfedgeCirculator hc    = m_mesh->halfedges(face);
+        HalfedgeCirculator hcEnd = hc;
+        do {
+            for(unsigned ai = 0; ai < Mesh::HALFEDGE_ATTRIB_COUNT; ++ai) {
+                HalfedgeAttribute attr = HalfedgeAttribute(ai);
+                if(!m_mesh->hasAttribute(attr)) continue;
+
+                Node n        = m_mesh->halfedgeNode(*hc, attr);
+                unsigned ni   = n.idx();
+                Node on       = m_mesh->halfedgeOppositeNode(*hc, attr);
+                Face of       = m_mesh->face(m_mesh->oppositeHalfedge(*hc));
+                unsigned ofi  = of.idx();
+                bool isCons   = m_mesh->isConstraint(n);
+
+                // If the node is not yet pushed, do it
+                if(m_nMask[ni])
+                {
+                    m_nMask[ni] = false;
+                    if(isCons) m_nodeMap[ni]  = BlockIndex(-1, cPos++);
+                    else       m_nodeMap[ni]  = BlockIndex(bi, uPos++);
+                }
+
+                // If the node is used on the opposite face, this face must be
+                // in the same range, so push it.
+                if(!isCons && n == on && m_fMask[ofi])
+                {
+                    m_fMask[ofi]     = false;
+                    fStack(count++)  = ofi;
+                }
+            }
+
+            ++hc;
+        } while(hc != hcEnd);
+
+        unsigned nElemExtra = m_elementBuilder.nExtraConstraints(*m_mesh, face);
+        if(nElemExtra)
+        {
+            m_fExtraMap[extraFacesCount] = BlockIndex(bi, elemExtraCount);
+            m_fExtraIndices(fi) = extraFacesCount++;
+            elemExtraCount += nElemExtra;
+        }
+
+
+        // Finalize range when the stack is empty
+        if(!count)
+        {
+            // Search for unprocessed face
+            while(faceIt != m_mesh->facesEnd() && !m_fMask[(*faceIt).idx()]) ++faceIt;
+
+            // FIXME: This bypass the bloc splitting mechanism, thus creating one big bloc.
+            //   For testing purpose and/or to allow non-local constraints.
+//            if(faceIt != m_mesh->facesEnd()) {
+//                fi = (*faceIt).idx();
+//                m_fMask[fi]      = false;
+//                fStack(count++)  = fi;
+//                continue;
+//            }
+
+            // Offset extra constraints indices so that they are > to node
+            // indices. It allow extra constraints (who have 0 on the diagonal)
+            // to be on the bottom-right of the matrix.
+            for(unsigned ei = extraRangeStart; ei < extraFacesCount; ++ei)
+            {
+                m_fExtraMap[ei].index += uPos;
+            }
+            uPos += elemExtraCount;
+
+            // Finalize the block
+            m_blocks.back().size = uPos;
+            m_blocks.back().matrix.resize(uPos, uPos);
+            m_blocks.back().rhs.resize(uPos, m_mesh->nCoeffs());
+            m_blocks.back().rhs.fill(0);
+            m_blocks.back().nCoeffs = 0;
+
+            uCount          += uPos;
+            uPos             = 0;
+            extraRangeStart  = extraFacesCount;
+            elemExtraCount   = 0;
+
+            // Push the first face of the next range, if any.
+            if(faceIt != m_mesh->facesEnd())
+            {
+                fi = (*faceIt).idx();
+                m_blocks.push_back(Block());
+                m_blocks.back().offset = uCount;
+                m_fMask[fi]      = false;
+                fStack(count++)  = fi;
+            }
+        }
+    }
+
+    // Compute the real number of unknowns and constraints.
+    m_nUnknowns       = uCount;
+    m_nConstraints    = cPos;
+
+    m_constraintBlock.resize(m_nUnknowns, m_nConstraints);
 }
 
 

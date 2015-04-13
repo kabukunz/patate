@@ -67,22 +67,17 @@ protected:
 public:
     inline FVElementBuilder(Scalar sigma = Scalar(.5));
 
-    void begin(const Mesh& mesh);
-
     unsigned nCoefficients(const Mesh& mesh, Face element,
                            SolverError* error=0) const;
+    unsigned nExtraConstraints(const Mesh& mesh, Face element) const;
 
-    template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                         SolverError* error=0);
-
-    void setRhs(const Mesh& mesh, Matrix& rhs,
-                SolverError* error=0);
+    template < typename Inserter >
+    void addCoefficients(Inserter& inserter, const Mesh& mesh,
+                         Face element, SolverError* error=0);
 
 private:
-    using Base::m_size;
     Scalar m_sigma;
-    PGCMap m_pgcMap;
+//    PGCMap m_pgcMap;
 };
 
 

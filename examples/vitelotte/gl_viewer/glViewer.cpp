@@ -194,6 +194,8 @@ void GLViewer::startup(const std::string& filename)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
+    glfwSetWindowTitle(m_pWindow, filename.c_str());
+
     m_pQvg = new Mesh;
 
     if(!Vitelotte::readMvgFromFile(filename, *m_pQvg, Vitelotte::MVGReader<Mesh>::NO_WARN_UNKNOWN))

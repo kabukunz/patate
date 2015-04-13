@@ -485,6 +485,19 @@ VGMesh<_Scalar, _Dim, _Chan>::hasUnknowns() const
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+unsigned
+VGMesh<_Scalar, _Dim, _Chan>::nUnknowns() const
+{
+    unsigned nUnk = 0;
+    for(NodeIterator nit = nodesBegin();
+            nit != nodesEnd(); ++nit)
+        if(!isConstraint(*nit))
+            ++nUnk;
+    return nUnk;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::
     setVertexNode(Node node, Halfedge from, Halfedge to)

@@ -74,7 +74,10 @@ public:
     {
         CommandFactory* fact = new GenericFactory<T>();
         m_factories.push_back(fact);
-        bool isNew = m_factoryMap.insert(std::make_pair(name, fact)).second;
+#ifndef NDEBUG
+    bool isNew =
+#endif
+        m_factoryMap.insert(std::make_pair(name, fact)).second;
         assert(isNew);
     }
     void addCommandAlias(const std::string& command, const std::string& alias);

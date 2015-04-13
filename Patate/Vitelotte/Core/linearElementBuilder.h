@@ -41,9 +41,9 @@ public:
     unsigned nCoefficients(const Mesh& mesh, Face element,
                            SolverError* error=0) const;
 
-    template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                         SolverError* error=0);
+    template < typename Inserter >
+    void addCoefficients(Inserter& inserter, const Mesh& mesh,
+                         Face element, SolverError* error=0);
 };
 
 

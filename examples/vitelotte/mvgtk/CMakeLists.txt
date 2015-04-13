@@ -18,7 +18,8 @@ include_directories(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(vitelotte_mvgtk_SRCS
-	../common/textFormatter.cpp
+    solveCommand.cpp
+    ../common/textFormatter.cpp
     ../common/vgMeshWithCurves.cpp
     ../common/vgMeshWithCurvesReader.cpp
     ../common/vgMeshWithCurvesWriter.cpp
@@ -30,7 +31,6 @@ set(vitelotte_mvgtk_SRCS
     finalizeCommand.cpp
     plotCommand.cpp
     simplifyCommand.cpp
-    solveCommand.cpp
     main.cpp
 )
 add_executable(mvgtk ${vitelotte_mvgtk_SRCS})

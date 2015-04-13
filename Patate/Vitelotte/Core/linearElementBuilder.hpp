@@ -22,16 +22,16 @@ LinearElementBuilder<_Mesh, _Scalar>::
     nCoefficients(const Mesh& /*mesh*/, Face /*element*/,
                   SolverError* /*error*/) const
 {
-    return 9;
+    return 6;
 }
 
 
 template < class _Mesh, typename _Scalar >
-template < typename InIt >
+template < typename Inserter >
 void
 LinearElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                    SolverError* error)
+    addCoefficients(Inserter& inserter, const Mesh& mesh,
+                    Face element, SolverError* error)
 {
     if(mesh.valence(element) != 3)
     {
@@ -68,9 +68,9 @@ LinearElementBuilder<_Mesh, _Scalar>::
 
     for(int i = 0; i < 3; ++i)
     {
-        for(int j = 0; j < 3; ++j)
+        for(int j = i; j < 3; ++j)
         {
-            *(it++) = Triplet(nodes[i], nodes[j], v[i].dot(v[j]) * inv4A);
+            inserter.addCoeff(nodes[i], nodes[j], v[i].dot(v[j]) * inv4A);
         }
     }
 }

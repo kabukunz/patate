@@ -30,6 +30,7 @@ public:
     typedef typename Base::Mesh Mesh;
 
     typedef typename Base::Vector Vector;
+    typedef typename Base::Matrix Matrix;
     typedef typename Base::Triplet Triplet;
 
     typedef typename Base::Face Face;
@@ -41,10 +42,11 @@ public:
 
     unsigned nCoefficients(const Mesh& mesh, Face element,
                            SolverError* error=0) const;
+    unsigned nExtraConstraints(const Mesh& mesh, Face element) const;
 
-    template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                         SolverError* error=0);
+    template < typename Inserter >
+    void addCoefficients(Inserter& inserter, const Mesh& mesh,
+                         Face element, SolverError* error=0);
 };
 
 

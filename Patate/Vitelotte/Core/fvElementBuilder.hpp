@@ -24,29 +24,30 @@ FVElementBuilder<_Mesh, _Scalar>::FVElementBuilder(Scalar sigma)
 
 
 template < class _Mesh, typename _Scalar >
-void
-FVElementBuilder<_Mesh, _Scalar>::begin(const Mesh& mesh) {
-    Base::begin(mesh);
-    m_pgcMap.clear();
+unsigned
+FVElementBuilder<_Mesh, _Scalar>::
+    nCoefficients(const Mesh& mesh, Face element,
+                  SolverError* /*error*/) const
+{
+    return mesh.nVertexGradientConstraints(element)? 61: 45;
 }
 
 
 template < class _Mesh, typename _Scalar >
 unsigned
 FVElementBuilder<_Mesh, _Scalar>::
-    nCoefficients(const Mesh& mesh, Face element,
-                  SolverError* /*error*/) const
+    nExtraConstraints(const Mesh& mesh, Face element) const
 {
-    return mesh.nVertexGradientConstraints(element)? 117: 81;
+    return mesh.nVertexGradientConstraints(element)? 2: 0;
 }
 
 
 template < class _Mesh, typename _Scalar >
-template < typename InIt >
+template < typename Inserter >
 void
 FVElementBuilder<_Mesh, _Scalar>::
-    addCoefficients(InIt& it, const Mesh& mesh, Face element,
-                    SolverError* error)
+    addCoefficients(Inserter& inserter, const Mesh& mesh,
+                    Face element, SolverError* error)
 {
     if(mesh.valence(element) != 3)
     {
@@ -64,13 +65,6 @@ FVElementBuilder<_Mesh, _Scalar>::
     do ++hit;
     while(!mesh.isGradientConstraint(mesh.toVertex(*hit)) && hit != hend);
     bool isPgc = mesh.isGradientConstraint(mesh.toVertex(*hit));
-//    typename Mesh::Edge e2 = mesh.edge(*hit);
-    typename Mesh::Halfedge h2 = *hit;
-    ++hit;
-//    typename Mesh::Edge e1 = mesh.edge(*hit);
-    typename Mesh::Halfedge h1 = *hit;
-    --hit;
-//    if(isPgc) std::cout << "pgc2: " << element.idx() << "\n";
 
     bool orient[3];
     // TODO: remove dynamic allocation with dynamic dims.
@@ -145,9 +139,6 @@ FVElementBuilder<_Mesh, _Scalar>::
                 value *= -1;
             }
 
-//                *(it++) = Triplet(nodes[i], nodes[j], value);
-//                if(i != j)
-//                    *(it++) = Triplet(nodes[j], nodes[i], value);
             sm(i, j) = value;
             sm(j, i) = value;
         }
@@ -157,20 +148,13 @@ FVElementBuilder<_Mesh, _Scalar>::
     {
         for(size_t j = 0; j < 9; ++j)
         {
-            *(it++) = Triplet(nodes[i], nodes[j], sm(i, j));
+            if(nodes[i] < nodes[j]) continue;
+            inserter.addCoeff(nodes[i], nodes[j], sm(i, j));
         }
     }
 
     if(isPgc)
     {
-//        std::cout << "Flat elem: " << elem.point(0).transpose() << "\n";
-//        std::cout << "  p0: " << elem.point(0).transpose() << "\n";
-//        std::cout << "  p1: " << elem.point(1).transpose() << "\n";
-//        std::cout << "  p2: " << elem.point(2).transpose() << "\n";
-//        std::cout << "  n8: " << mesh.value(typename Mesh::Node(nodes[8])).transpose() << "\n";
-//        std::cout << "  n7: " << mesh.value(typename Mesh::Node(nodes[7])).transpose() << "\n";
-//        std::cout << "  Stiffness matrix:\n" << sm << "\n";
-
         typedef Eigen::Matrix<Scalar, 9, 1> Vector9;
         Vector9 fde1, fde2;
         fde1 <<
@@ -194,74 +178,35 @@ FVElementBuilder<_Mesh, _Scalar>::
             0,
             -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
 
-//        int ce1 = mesh.vertexGradientDummyNode(h1).idx();
-//        int ce2 = mesh.vertexGradientDummyNode(h2).idx();
-        m_pgcMap.insert(std::make_pair(m_size, h1));
-        int ce1 = (m_size++);
-        m_pgcMap.insert(std::make_pair(m_size, h2));
-        int ce2 = (m_size++);
-//        std::cout << "  ce1: " << ce1 << ", ce2: " << ce2 << "\n";
-        if(ce1 < 0 || ce2 < 0)
+        for(unsigned hi = 0; hi < 2; ++hi)
         {
-            if(error) error->error("Invalid node");
-            return;
+            ++hit; // start with the edge pointing to v0.
+            typename Mesh::Halfedge h = *hit;
+
+            typename Mesh::Vertex from = mesh.fromVertex(h);
+            typename Mesh::Vertex to   = mesh.  toVertex(h);
+
+            bool v0c = mesh.isGradientConstraint(from);
+            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+            if(!v0c) v = -v;
+            typename Mesh::Value cons = grad * v;
+            inserter.setExtraRhs(element, hi, cons.template cast<Scalar>());
         }
+
         for(size_t i = 0; i < 9; ++i)
         {
             Scalar f = (i < 6 || orient[i%3])? 1: -1;
-            *(it++) = Triplet(nodes[i], ce1, fde1(i) * f);
-            *(it++) = Triplet(ce1, nodes[i], fde1(i) * f);
-            *(it++) = Triplet(nodes[i], ce2, fde2(i) * f);
-            *(it++) = Triplet(ce2, nodes[i], fde2(i) * f);
+            if(i != 8 /*fde1(i) != Scalar(0.)*/)
+            {
+                inserter.addExtraCoeff(element, 1, nodes[i], fde1(i) * f);
+            }
+            if(i != 7 /*fde2(i) != Scalar(0.)*/)
+            {
+                inserter.addExtraCoeff(element, 0, nodes[i], fde2(i) * f);
+            }
         }
     }
-}
-
-
-template < class _Mesh, typename _Scalar >
-void
-FVElementBuilder<_Mesh, _Scalar>::
-        setRhs(const Mesh& mesh, Matrix& rhs,
-               SolverError* /*error*/) {
-
-    rhs.setZero();
-
-    for(typename PGCMap::const_iterator it = m_pgcMap.begin();
-        it != m_pgcMap.end(); ++it)
-    {
-        unsigned index = it->first;
-        typename Mesh::Halfedge h = it->second;
-
-        typename Mesh::Vertex from = mesh.fromVertex(h);
-        typename Mesh::Vertex to   = mesh.  toVertex(h);
-
-        bool v0c = mesh.isGradientConstraint(from);
-        const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
-        typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
-        if(!v0c) v = -v;
-        typename Mesh::Value cons = grad * v;
-        rhs.row(index) = cons.template cast<Scalar>();
-    }
-
-//    unsigned index = mesh.nodesCount();
-//    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
-//        hit != mesh.halfedgesEnd(); ++hit) {
-
-//        if(mesh.nVertexGradientConstraints(*hit) == 0)
-//            continue;
-
-//        typename Mesh::Vertex from = mesh.fromVertex(*hit);
-//        typename Mesh::Vertex to   = mesh.  toVertex(*hit);
-//        typename Mesh::Node n = mesh.vertexGradientDummyNode(*hit);
-//        if(n.isValid()) {
-//            bool v0c = mesh.isGradientConstraint(from);
-//            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
-//            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
-//            if(!v0c) v = -v;
-//            typename Mesh::Value cons = grad * v;
-//            rhs.row(n.idx()) = cons.template cast<Scalar>();
-//        }
-//    }
 }
 
 

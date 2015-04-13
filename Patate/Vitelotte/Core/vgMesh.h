@@ -494,6 +494,7 @@ public:
      * This function operates in \f$O(n)\f$ with \f$n\f$ the number of nodes.
      */
     inline bool hasUnknowns() const;
+    inline unsigned nUnknowns() const;
 
     /// \}
 

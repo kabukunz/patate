@@ -116,7 +116,10 @@ void Mvgtk::addCommandAlias(const std::string& command, const std::string& alias
 {
     FactoryMap::iterator it = m_factoryMap.find(command);
     assert(it != m_factoryMap.end());
-    bool isNew = m_factoryMap.insert(std::make_pair(alias, it->second)).second;
+#ifndef NDEBUG
+    bool isNew =
+#endif
+    m_factoryMap.insert(std::make_pair(alias, it->second)).second;
     assert(isNew);
 }
 

@@ -32,20 +32,10 @@ public:
     typedef typename Mesh::Face Face;
 
 public:
-    inline ElementBuilderBase() : m_size(0) {}
+    inline ElementBuilderBase() {}
 
-    inline void begin(const Mesh& mesh) { m_size = mesh.nodesSize(); }
-    unsigned end(const Mesh& /*mesh*/) { return matrixSize(); }
-
-    unsigned matrixSize() const { return m_size; }
-
-    inline void setRhs(const Mesh& /*mesh*/, Matrix& rhs,
-                       SolverError* /*error*/=0) {
-        rhs.setZero();
-    }
-
-protected:
-    unsigned m_size;
+    inline unsigned nExtraConstraints(const Mesh& /*mesh*/, Face /*element*/) const
+    { return 0; }
 };
 
 

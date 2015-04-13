@@ -126,6 +126,7 @@ Document::Document(QObject *parent)
       m_solvedMesh(),
       m_bb(),
       m_selection(),
+      m_dirtyFlags(true),
       m_fvSolver(&m_solvedMesh),
       m_undoStack(new QUndoStack(this))
 {
@@ -465,9 +466,6 @@ void Document::solve()
             m_fvSolver.build();
             std::cout << time.restart() << " ms" << std::endl;
         case DIRTY_NODE_TYPE:
-            std::cout << "Sort matrix...            " << std::flush;
-            m_fvSolver.sort();
-            std::cout << time.restart() << " ms" << std::endl;
             std::cout << "Factorize matrix...       " << std::flush;
             m_fvSolver.factorize();
             std::cout << time.restart() << " ms" << std::endl;

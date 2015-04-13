@@ -91,7 +91,8 @@ protected:
         float gpos;
 
         inline GradientStop()
-            : position(), color(), curve(), which(), gpos()
+            : position(Eigen::Vector2f::Zero()), color(Eigen::Vector4f::Zero()),
+              curve(), which(0), gpos(0)
         {}
         inline GradientStop(Mesh::Curve curve, unsigned which, float gpos,
                      const Eigen::Vector2f& position, const Eigen::Vector4f& color)

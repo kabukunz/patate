@@ -27,17 +27,11 @@ class FemSolver
 public:
     typedef _Mesh Mesh;
     typedef _ElementBuilder ElementBuilder;
+    typedef FemSolver<Mesh, ElementBuilder> Self;
 
     typedef typename ElementBuilder::Scalar Scalar;
 
-    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Triplet<Scalar> Triplet;
-    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrix;
-
-
-    typedef std::vector<Triplet> TripletVector;
-    typedef typename TripletVector::iterator TripletVectorIterator;
-
+protected:
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vertex Vertex;
     typedef typename Mesh::Face Face;
@@ -51,9 +45,6 @@ public:
     /// \brief Build the internal stiffness matrix
     void build();
 
-    /// \brief Compute a permutation matrix that separate unknowns and constraints.
-    void sort();
-
     /// \brief Factorize the unknown block of the stiffness matrix.
     void factorize();
 
@@ -63,15 +54,46 @@ public:
     inline bool isSolved() const { return m_solved; }
     inline const SolverError error() { return m_error; }
 
+public:
+    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+    typedef Eigen::Triplet<Scalar> Triplet;
+    typedef Eigen::SparseMatrix<Scalar> StiffnessMatrix;
+
+    typedef std::vector<Triplet> TripletVector;
+    typedef typename TripletVector::iterator TripletVectorIterator;
+
+    typedef std::vector<bool> BoolVector;
+    typedef std::vector<unsigned> IndexMap;
+
+    typedef Eigen::SimplicialLDLT<StiffnessMatrix, Eigen::Lower> LDLT;
+
+    struct Block
+    {
+        TripletVector    triplets;
+        StiffnessMatrix  matrix;
+        LDLT*            decomposition;
+        Matrix           rhs;      // Contains the rhs "extra" constraints
+        unsigned         offset;   // Offset to apply to block indices to get global indices
+        unsigned         size;
+        unsigned         nCoeffs;
+
+        inline Block() : decomposition(0) {}
+        inline ~Block() { delete decomposition; }
+    };
+    typedef std::vector<Block> BlockVector;
+    typedef typename BlockVector::iterator BlockIterator;
+
+    struct BlockIndex
+    {
+        int block;
+        int index;
+
+        inline BlockIndex(unsigned block, unsigned index) : block(block), index(index) {}
+    };
+    typedef std::vector<BlockIndex> NodeMap;
+
 protected:
-    typedef std::vector<unsigned> RangeVector;
-
-    typedef Eigen::SimplicialLDLT<StiffnessMatrix> LDLT;
-
-    typedef std::vector<LDLT*> BlocksLDLT;
-
-protected:
-    void resizeBlocksLDLT(unsigned size);
+    void preSort();
 
 protected:
     Mesh* m_mesh;
@@ -80,23 +102,21 @@ protected:
     SolverError m_error;
     bool m_solved;
 
-    // Build: Ax = b
-    StiffnessMatrix m_stiffnessMatrix;
-    Matrix m_b;
+    unsigned m_nUnknowns;
+    unsigned m_nConstraints;
 
-    // Sort: premutation + ranges
-    Eigen::VectorXi m_perm;
-    RangeVector m_ranges;
-
-    // Factorize: block-wise factorizations + constraint matrix
-    StiffnessMatrix m_consBlock;
-    BlocksLDLT m_blocksLDLT;
-
-    // Solve
-    Matrix m_x;
-
-
-//    unsigned m_nbCells;
+    BlockVector     m_blocks;
+    IndexMap        m_faceBlockMap;  // The face -> block index map
+    TripletVector   m_constraintTriplets;
+    StiffnessMatrix m_constraintBlock;
+    NodeMap         m_nodeMap;       // Map node->idx() -> (block id, index)
+    BoolVector      m_fMask;         // Mark faces processed by preSort
+    BoolVector      m_nMask;         // Mark nodes processed by preSort
+    Eigen::VectorXi m_fExtraIndices; // Each face with extra constraint is
+                                     //   given a unique index in the range [0..n]
+    NodeMap         m_fExtraMap;     // Map m_fExtraIndex to a column index
+                                     //   (no perm required)
+    Matrix          m_x;
 };
 
 
