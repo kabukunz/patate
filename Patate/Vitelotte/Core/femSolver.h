@@ -106,7 +106,7 @@ protected:
     unsigned m_nConstraints;
 
     BlockVector     m_blocks;
-    IndexMap        m_faceBlockMap;  // The face -> block index map
+    Eigen::VectorXi m_faceBlockMap;  // The face -> block index map
     TripletVector   m_constraintTriplets;
     StiffnessMatrix m_constraintBlock;
     NodeMap         m_nodeMap;       // Map node->idx() -> (block id, index)

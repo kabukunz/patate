@@ -200,7 +200,8 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        unsigned bii = m_faceBlockMap[(*elem).idx()];
+        unsigned bii = m_faceBlockMap((*elem).idx());
+        if(bii < 0) continue;
         Block& block = m_blocks[bii];
         block.nCoeffs += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
     }
@@ -213,12 +214,14 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     }
 
     // Fill a Triplet vector with coefficients + fill m_b
+    m_constraintTriplets.clear();
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
         typedef internal::SolverInserter<Self> Inserter;
 
-        unsigned  bi           = m_faceBlockMap[(*elem).idx()];
+        unsigned  bi           = m_faceBlockMap((*elem).idx());
+        if(bi < 0) continue;
         Block&    block        = m_blocks[bi];
         int       extraIndex   = m_fExtraIndices((*elem).idx());
         unsigned  extraOffset  = (extraIndex < 0)? 0: m_fExtraMap[extraIndex].index;
@@ -373,7 +376,7 @@ FemSolver<_Mesh, _ElementBuilder>::preSort()
     m_nodeMap.assign(nNodes, BlockIndex(-1, -1));
     m_fExtraIndices.resize(m_mesh->facesSize()); m_fExtraIndices.fill(-1);
     m_fExtraMap.assign(nExtraFaces, BlockIndex(-1, -1));
-    m_faceBlockMap.resize(m_mesh->facesSize());
+    m_faceBlockMap.resize(m_mesh->facesSize()); m_faceBlockMap.fill(-1);
 
     FaceIterator    faceIt = m_mesh->facesBegin();
     Eigen::VectorXi fStack(m_mesh->nFaces());
@@ -396,7 +399,7 @@ FemSolver<_Mesh, _ElementBuilder>::preSort()
         unsigned bi = m_blocks.size() - 1;
         Face face(fi);
 
-        m_faceBlockMap[fi] = bi;
+        m_faceBlockMap(fi) = bi;
 
         // Process each node of each halfedges
         HalfedgeCirculator hc    = m_mesh->halfedges(face);
