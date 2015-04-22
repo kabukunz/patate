@@ -135,7 +135,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
         {
             _out << " -";
 
-            --hit; hend = hit;
+            ++hit; hend = hit;
             do
             {
                 char sep = ' ';

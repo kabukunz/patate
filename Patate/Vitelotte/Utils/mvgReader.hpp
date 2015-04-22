@@ -140,13 +140,15 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
     else if(spec == "f")
     {
         m_fVertices.clear();
+        m_nodesIndices.clear();
 
         def >> std::ws;
-        int nodes[12];
 
-        for(int i = 0; i < 3; ++i)
+        unsigned nVert = 0;
+        while(def.good())
         {
             def >> m_tmp;
+            if(m_tmp == "-") break;
             parseIndicesList(m_tmp, m_faceIndices);
             if(m_faceIndices.size() < 1 || m_faceIndices.size() > 3)
                 error("Invalid number of indices");
@@ -156,20 +158,21 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
 
             if(m_faceIndices.size() > 1)
             {
-                nodes[2*i + 0] = m_faceIndices[1];
-                nodes[2*i + 1] = m_faceIndices.back();
+                m_nodesIndices.push_back(m_faceIndices[1]);
+                m_nodesIndices.push_back(m_faceIndices.back());
             }
+            ++nVert;
         }
 
         // mid nodes
+        m_nodesIndices.resize(4*nVert);
         unsigned nEAttrs = mesh.hasEdgeValue() + mesh.hasEdgeGradient();
         if(nEAttrs)
         {
-            def >> m_tmp;
             if(m_tmp != "-")
                 error("Only triangles meshes are supported");
 
-            for(int i = 0; i < 3; ++i)
+            for(int i = 0; i < nVert; ++i)
             {
                 def >> m_tmp;
                 parseIndicesList(m_tmp, m_faceIndices);
@@ -177,26 +180,26 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
                     error("Invalid number of indices");
 
                 if(mesh.hasEdgeValue())
-                    nodes[6+i] = m_faceIndices.front();
+                    m_nodesIndices[2*nVert+i] = m_faceIndices.front();
                 if(mesh.hasEdgeGradient())
-                    nodes[9+i] = m_faceIndices.back();
+                    m_nodesIndices[3*nVert+i] = m_faceIndices.back();
             }
         }
 
         typename Mesh::Face f = mesh.addFace(m_fVertices);
 
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(f);
-        for(int i = 0; i < 3; ++i)
+        for(int i = 0; i < nVert; ++i)
         {
             if(mesh.hasToVertexValue())
-                mesh.toVertexValueNode(*hit) = Node(nodes[2*i] - iOffset);
+                mesh.toVertexValueNode(*hit)   = Node(m_nodesIndices[2*i] - iOffset);
             ++hit;
             if(mesh.hasFromVertexValue())
-                mesh.fromVertexValueNode(*hit) = Node(nodes[2*i + 1] - iOffset);
+                mesh.fromVertexValueNode(*hit) = Node(m_nodesIndices[2*i + 1] - iOffset);
             if(mesh.hasEdgeValue())
-                mesh.edgeValueNode(*hit) = Node(nodes[6 + (i+2)%3] - iOffset);
+                mesh.edgeValueNode(*hit)       = Node(m_nodesIndices[2*nVert + i] - iOffset);
             if(mesh.hasEdgeGradient())
-                mesh.edgeGradientNode(*hit) = Node(nodes[9 + (i+2)%3] - iOffset);
+                mesh.edgeGradientNode(*hit)    = Node(m_nodesIndices[3*nVert + i] - iOffset);
         }
     }
 

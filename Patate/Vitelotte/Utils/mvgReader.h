@@ -84,6 +84,7 @@ protected:
     Value                  m_value;
     Gradient               m_gradient;
     std::vector<unsigned>  m_faceIndices;
+    std::vector<unsigned>  m_nodesIndices;
 };
 
 
