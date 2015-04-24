@@ -236,6 +236,7 @@ bool Mvgtk::executeCommands()
         std::ifstream in(m_inFilename.c_str());
         PatateCommon::OBJReader<Mesh> reader;
         ok = reader.read(in, mesh);
+        mesh.setNCoeffs(4);
     }
     else if(m_inFilename.rfind(".mvg") == m_inFilename.length() - 4)
     {

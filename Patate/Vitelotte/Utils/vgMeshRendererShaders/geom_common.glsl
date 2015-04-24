@@ -9,13 +9,16 @@
 layout(triangles) in;
 layout(triangle_strip, max_vertices = 3) out;
 
-in vec2 position_obj[];
+uniform vec2 viewportSize;
 
-out int gl_PrimitiveID;
-out vec3 linearBasis;
-out vec2 position;
-flat out vec2 vertices[3];
-flat out vec2 normEdges[3];
+in vec4 geom_position_obj[];
+
+flat out int frag_index;
+out vec3 frag_linearBasis;
+out vec3 frag_position_obj;
+out vec3 frag_edgeDist_scr;
+flat out vec3 frag_vertices_obj[3];
+flat out vec3 frag_normEdges_obj[3];
 
 const vec3 basis[3] = vec3[3](
     vec3(1, 0, 0),
@@ -25,16 +28,27 @@ const vec3 basis[3] = vec3[3](
 
 void main()
 {
+    vec2 position_scr[3];
+    for(int i=0; i<3; ++i)
+    {
+        position_scr[i] = (viewportSize * gl_in[i].gl_Position.xy)
+                        / (2.0 * gl_in[i].gl_Position.z);
+    }
+    float area = abs(cross(vec3(position_scr[1] - position_scr[0], 0.0),
+                           vec3(position_scr[2] - position_scr[0], 0.0)).z);
     for(int i=0; i<3; ++i)
     {
         gl_Position = gl_in[i].gl_Position;
-        gl_PrimitiveID = gl_PrimitiveIDIn;
-        linearBasis = basis[i];
-        position = position_obj[i];//gl_in[i].gl_Position.xy;
+        frag_index = gl_PrimitiveIDIn;
+        frag_linearBasis = basis[i];
+        frag_position_obj = geom_position_obj[i].xyz;
+        frag_edgeDist_scr = vec3(0.0);
+        frag_edgeDist_scr[i] = area / length(position_scr[(i+2)%3] - position_scr[(i+1)%3]);
         for(int j=0; j<3; ++j)
         {
-            vertices[j] = position_obj[j];//gl_in[j].gl_Position.xy;
-            normEdges[j] = normalize(vertices[(j+2)%3] - vertices[(j+1)%3]);
+            frag_vertices_obj[j] = geom_position_obj[j].xyz;//gl_in[j].gl_Position.xy;
+            frag_normEdges_obj[j] = normalize(geom_position_obj[(j+2)%3].xyz
+                                              - geom_position_obj[(j+1)%3].xyz);
         }
         EmitVertex();
     }

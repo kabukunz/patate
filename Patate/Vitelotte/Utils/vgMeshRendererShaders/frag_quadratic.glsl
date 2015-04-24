@@ -10,17 +10,18 @@ uniform samplerBuffer nodes;
 uniform int baseNodeIndex;
 uniform bool singularTriangles;
 
-in vec3 linearBasis;
-in vec2 position;
-flat in vec2 vertices[3];
-flat in vec2 normEdges[3];
+flat in int frag_index;
+in vec3 frag_linearBasis;
+in vec3 frag_position_obj;
+flat in vec3 frag_vertices_obj[3];
+flat in vec3 frag_normEdges_obj[3];
 
 out vec4 out_color;
 
-float irlerp(in vec2 vx, in vec2 v1, in vec2 v2);
+float irlerp(in vec3 vx, in vec3 v1, in vec3 v2);
 vec4 quadraticInterp(in vec4 colors[6]);
 
-int baseVxIndex = baseNodeIndex + gl_PrimitiveID * (6 + int(singularTriangles));
+int baseVxIndex = baseNodeIndex + frag_index * (6 + int(singularTriangles));
 int baseEdgeIndex = baseVxIndex + 3;
 
 void main(void)
@@ -36,11 +37,12 @@ void main(void)
 
     if(singularTriangles)
     {
-        colorNodes[0] = mix(colorNodes[0],
-                            texelFetch(nodes, baseVxIndex + 6),
-                            irlerp(normalize(position - vertices[0]),
-                            normEdges[2], -normEdges[1]));
+        colorNodes[0] = mix(
+            colorNodes[0],
+            texelFetch(nodes, baseVxIndex + 6),
+            irlerp(normalize(frag_position_obj - frag_vertices_obj[0]),
+                   frag_normEdges_obj[2], -frag_normEdges_obj[1]));
     }
 
-        out_color = quadraticInterp(colorNodes);
+    out_color = quadraticInterp(colorNodes);
 }

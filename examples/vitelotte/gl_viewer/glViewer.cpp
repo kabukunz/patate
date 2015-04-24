@@ -212,13 +212,16 @@ void GLViewer::startup(const std::string& filename)
     std::cout << "Nb singular : " << nSingular << "\n";
     std::cout << std::flush;
 
-    m_boundingBox.setEmpty();
+    m_boundingBox = Box(m_pQvg->nDims());
     for(Mesh::VertexIterator vit = m_pQvg->verticesBegin();
         vit != m_pQvg->verticesEnd(); ++vit)
     {
-        m_boundingBox.extend(m_pQvg->position(*vit).template head<2>());
+        m_boundingBox.extend(m_pQvg->position(*vit));
     }
 
+    Eigen::Vector3f center(0, 0, 0);
+    center.head(m_pQvg->nDims()) = m_boundingBox.center();
+    m_trackball.setSceneCenter(center);
     m_trackball.setSceneRadius(m_boundingBox.sizes().maxCoeff());
     m_trackball.setSceneDistance(m_trackball.sceneRadius() * 3.);
     m_trackball.setNearFarOffsets(-m_trackball.sceneRadius() * 100.f,
@@ -251,13 +254,13 @@ void GLViewer::render()
     m_viewMatrix = m_trackball.computeProjectionMatrix()
                  * m_trackball.computeViewMatrix();
 
-    float zoomFactor = 1;
-
     m_pQMeshRenderer->render(m_viewMatrix);
 
     if(m_showShaderWireframe)
     {
-        m_pQMeshRenderer->renderWireframe(m_viewMatrix, zoomFactor, m_lineWidth);
+        Eigen::Vector2f viewportSize(m_info.windowWidth,
+                                     m_info.windowHeight);
+        m_pQMeshRenderer->renderWireframe(m_viewMatrix, viewportSize, m_lineWidth);
     }
 
     PATATE_ASSERT_NO_GL_ERROR();

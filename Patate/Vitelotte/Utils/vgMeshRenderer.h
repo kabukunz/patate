@@ -33,7 +33,7 @@ public:
     struct WireframeUniforms
     {
         GLint viewMatrixLoc;
-        GLint zoomLoc;
+        GLint viewportSizeLoc;
         GLint lineWidthLoc;
         GLint wireframeColorLoc;
     };
@@ -141,7 +141,7 @@ public:
     void drawGeometry(unsigned geomFlags);
     void render(const Eigen::Matrix4f& viewMatrix);
     void renderWireframe(const Eigen::Matrix4f& viewMatrix,
-                         float zoom, float lineWidth = 1,
+                         const Eigen::Vector2f& viewportSize, float lineWidth = 1,
                          const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1));
 
 private:

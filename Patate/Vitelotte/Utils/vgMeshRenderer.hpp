@@ -98,7 +98,7 @@ bool VGMeshRendererResources::initWireframeShader()
         return false;
 
     unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
-    unif.zoomLoc              = shader.getUniformLocation("zoom");
+    unif.viewportSizeLoc      = shader.getUniformLocation("viewportSize");
     unif.lineWidthLoc         = shader.getUniformLocation("lineWidth");
     unif.wireframeColorLoc    = shader.getUniformLocation("wireframeColor");
 
@@ -149,7 +149,15 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
     m_nodesBuffer(0),
     m_nodesTexture(0),
 
-    m_vao(0)
+    m_vao(0),
+
+    m_vertices(),
+    m_indices(),
+    m_nodes(),
+
+    m_quadratic(false),
+    m_nTriangles(0),
+    m_nSingulars(0)
 {}
 
 
@@ -260,13 +268,6 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
-    // TODO: Remove nCoeffs limitation by providing a mechanism to convert
-    // values to colors.
-    assert(mesh.nCoeffs() <= 4);
-
-    if(!mesh.hasToVertexValue())
-        return;
-
     m_quadratic = mesh.hasEdgeValue();
 
     int nodePerTriangle = m_quadratic? 6: 3;
@@ -316,7 +317,9 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
         {
             m_indices[index + ei] = mesh.toVertex(h).idx();
             h = mesh.nextHalfedge(h);
-            m_nodes[nodeIndex + ei] = color(mesh, mesh.fromVertexValueNode(h));
+            m_nodes[nodeIndex + ei] = mesh.hasToVertexValue()?
+                        color(mesh, mesh.fromVertexValueNode(h)):
+                        Eigen::Vector4f(.8, .8, .8, 1.);
         }
         // Singular node is the last one
         if(isSingular)
@@ -464,8 +467,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
-        const Eigen::Matrix4f& viewMatrix, float zoom, float lineWidth,
-        const Eigen::Vector4f& color)
+        const Eigen::Matrix4f& viewMatrix, const Eigen::Vector2f& viewportSize,
+        float lineWidth, const Eigen::Vector4f& color)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -473,7 +476,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
     const Resources::WireframeUniforms& unif = m_resources->wireframeUniforms();
 
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
-    glUniform1f(unif.zoomLoc, zoom);
+    glUniform2fv(unif.viewportSizeLoc, 1, viewportSize.data());
     glUniform1f(unif.lineWidthLoc, lineWidth);
     glUniform4fv(unif.wireframeColorLoc, 1, color.data());
 

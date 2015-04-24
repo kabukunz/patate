@@ -206,12 +206,13 @@ OBJReader<_Mesh>::parseDefinition(const std::string& spec,
             // TODO: Use parseIndiceList to read indices
             unsigned idx;
             def >> idx;
+            idx -= 1;
             if(!def || idx >= mesh.nVertices())
             {
                 error("Invalid vertex index");
                 return true;
             }
-            m_fVertices.push_back(SurfaceMesh::Vertex(idx - 1));
+            m_fVertices.push_back(SurfaceMesh::Vertex(idx));
         }
 
         mesh.addFace(m_fVertices);

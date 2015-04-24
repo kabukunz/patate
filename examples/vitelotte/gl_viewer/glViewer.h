@@ -68,7 +68,7 @@ public:
     typedef Vitelotte::VGMesh<Scalar, Vitelotte::Dynamic, Vitelotte::Dynamic> Mesh;
     typedef Vitelotte::VGMeshRenderer<Mesh> Renderer;
 
-    typedef Eigen::AlignedBox<Scalar, 2> Box;
+    typedef Eigen::AlignedBox<Scalar, Eigen::Dynamic> Box;
 
 public:
 
