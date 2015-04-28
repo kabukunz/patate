@@ -137,6 +137,7 @@ float angle(const Eigen::Vector2f& v0, const Eigen::Vector2f v1)
     return std::atan2(Vitelotte::det2(v0, v1), v0.dot(v1));
 }
 
+
 void VGNodeRenderer::update(const Mesh& mesh, float zoom)
 {
     // TODO: support mesh with more than 2 dimesions.
@@ -182,14 +183,18 @@ bool VGNodeRenderer::fromSplit(const Mesh& mesh, Mesh::Halfedge h) const
 bool VGNodeRenderer::isConstrained(const Mesh& mesh, Mesh::Halfedge h) const
 {
     Mesh::Halfedge oh = mesh.oppositeHalfedge(h);
-    return  mesh.isConstraint(mesh.fromVertexValueNode(h))              ||
-            mesh.isConstraint(mesh.edgeValueNode(h))                    ||
-            mesh.isConstraint(mesh.edgeGradientNode(h))                 ||
-            mesh.isConstraint(mesh.toVertexValueNode(h))                  ||
-            mesh.fromVertexValueNode(h) != mesh.fromVertexValueNode(oh) ||
-            mesh.edgeValueNode(h)       != mesh.edgeValueNode(oh)       ||
-            mesh.edgeGradientNode(h)    != mesh.edgeGradientNode(oh)    ||
-            mesh.toVertexValueNode(h)     != mesh.toVertexValueNode(oh);
+    return   mesh.isConstraint(mesh.fromVertexValueNode(h))
+        ||  (mesh.hasEdgeValue()
+          && mesh.isConstraint(mesh.edgeValueNode(h)))
+        ||  (mesh.hasEdgeGradient()
+          && mesh.isConstraint(mesh.edgeGradientNode(h)))
+        ||   mesh.isConstraint(mesh.toVertexValueNode(h))
+        ||   mesh.fromVertexValueNode(h) != mesh.fromVertexValueNode(oh)
+        ||  (mesh.hasEdgeValue()
+          && mesh.edgeValueNode(h)       != mesh.edgeValueNode(oh))
+        ||  (mesh.hasEdgeGradient()
+          && mesh.edgeGradientNode(h)    != mesh.edgeGradientNode(oh))
+        ||   mesh.toVertexValueNode(h)   != mesh.toVertexValueNode(oh);
 }
 
 
@@ -207,8 +212,9 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
 
     bool boundary = mesh.isBoundary(e);
     bool fromSplit = !boundary && mesh.fromVertexValueNode(h) != mesh.toVertexValueNode(oh);
-    bool midSplit = !boundary && mesh.edgeValueNode(h) != mesh.edgeValueNode(oh);
-    bool toSplit = !boundary && mesh.toVertexValueNode(h) != mesh.fromVertexValueNode(oh);
+    bool midSplit  = !boundary && mesh.hasEdgeValue()
+                               && mesh.edgeValueNode(h)       != mesh.edgeValueNode(oh);
+    bool toSplit   = !boundary && mesh.toVertexValueNode(h)   != mesh.fromVertexValueNode(oh);
 
     bool constrained = isConstrained(mesh, h);
 
@@ -224,11 +230,14 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e)
         addEdge(p0 - n*offset, p1 - n*offset, constrained);
     }
 
-    float noffset = m_nodeOffset / zoom;
-    if((p1 - p0).squaredNorm() >= 64 * noffset * noffset)
+    if(mesh.hasEdgeValue())
     {
-        addNode2(mesh, mesh.edgeValueNode(h), mesh.edgeValueNode(oh),
-                 mid, n*noffset);
+        float noffset = m_nodeOffset / zoom;
+        if((p1 - p0).squaredNorm() >= 64 * noffset * noffset)
+        {
+            addNode2(mesh, mesh.edgeValueNode(h), mesh.edgeValueNode(oh),
+                     mid, n*noffset);
+        }
     }
 }
 

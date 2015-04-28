@@ -32,6 +32,10 @@ Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float
 GLViewer* GLViewer::m_pApp = NULL;
 
 GLViewer::GLViewer()
+    : m_pWindow(0),
+      m_pQvg(0),
+      m_pQMeshRenderer(0),
+      m_nodeRenderer(0)
 {
 }
 
@@ -176,15 +180,16 @@ void GLViewer::initVars()
 
     m_pQvg = 0;
     m_pQMeshRenderer = 0;
+    m_nodeRenderer = 0;
 
-    m_wireframe = false;
-    m_showShaderWireframe = false;
+    m_renderMode = RENDER_SOLID;
 }
 
 void GLViewer::shutdown()
 {
     delete m_pQvg;
     delete m_pQMeshRenderer;
+    delete m_nodeRenderer;
         
     glfwDestroyWindow(m_pWindow);
     m_pWindow = NULL;
@@ -242,6 +247,9 @@ void GLViewer::startup(const std::string& filename)
     m_pQMeshRenderer = new Renderer;
     m_pQMeshRenderer->updateBuffers(*m_pQvg);
 
+    m_nodeRenderer = new VGNodeRenderer;
+    m_nodeRenderer->setLinearizeSrgb(false);
+
     PATATE_ASSERT_NO_GL_ERROR();
 }
 
@@ -256,12 +264,22 @@ void GLViewer::render()
 
     m_pQMeshRenderer->render(m_viewMatrix);
 
-    if(m_showShaderWireframe)
-    {
-        Eigen::Vector2f viewportSize(m_info.windowWidth,
-                                     m_info.windowHeight);
+    Eigen::Vector2f viewportSize(m_info.windowWidth,
+                                 m_info.windowHeight);
+    switch(m_renderMode) {
+    case RENDER_WIREFRAME:
         m_pQMeshRenderer->renderWireframe(m_viewMatrix, viewportSize, m_lineWidth);
+        break;
+    case RENDER_NODES: {
+        float dxn = m_viewMatrix(0, 0) / (-m_trackball.sceneDistance() * m_viewMatrix(3, 2));
+        float dxs = dxn * viewportSize.x() / 2.;
+        m_nodeRenderer->update(*m_pQvg, dxs);
+        m_nodeRenderer->render(m_viewMatrix, viewportSize);
+        break;
     }
+    default: break;
+    }
+
 
     PATATE_ASSERT_NO_GL_ERROR();
 }
@@ -272,7 +290,7 @@ void GLViewer::onRefresh() {
 
 void GLViewer::onResize(int _w, int _h)
 {
-    m_info.windowWidth = _w;
+    m_info.windowWidth  = _w;
     m_info.windowHeight = _h;
 
     m_trackball.setScreenViewport(Eigen::AlignedBox2f(
@@ -312,22 +330,18 @@ void GLViewer::onKey(int _key, int /*_scancode*/, int _action, int /*_mods*/)
             m_needRefresh = true;
             break;
 
-        case GLFW_KEY_S:
-            m_showShaderWireframe = !m_showShaderWireframe;
+        case GLFW_KEY_1:
+            m_renderMode = RENDER_SOLID;
             m_needRefresh = true;
-            std::cout << "Shader wireframe : " << (m_showShaderWireframe ? "enabled" : "disabled") << std::endl;
             break;
 
-        case GLFW_KEY_W:
-            m_wireframe = !m_wireframe;
-            if (m_wireframe)
-            {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-            }
-            else
-            {
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-            }
+        case GLFW_KEY_2:
+            m_renderMode = RENDER_WIREFRAME;
+            m_needRefresh = true;
+            break;
+
+        case GLFW_KEY_3:
+            m_renderMode = RENDER_NODES;
             m_needRefresh = true;
             break;
 

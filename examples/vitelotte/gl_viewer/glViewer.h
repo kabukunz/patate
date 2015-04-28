@@ -35,6 +35,7 @@
 #include <Patate/vitelotte_gl.h>
 
 #include "../common/trackball.h"
+#include "../common/vgNodeRenderer.h"
 
 
 class GLViewer
@@ -125,6 +126,13 @@ public:
     GLFWwindow* getWindow(){ return m_pWindow; }
 
 private:
+    enum RenderMode {
+        RENDER_SOLID,
+        RENDER_WIREFRAME,
+        RENDER_NODES
+    };
+
+private:
     GLViewer();
     ~GLViewer();
 
@@ -133,9 +141,6 @@ private:
     void setVsync(bool _bEnable);
 
     void render();
-
-//    Eigen::Vector2f screen2scene(const float& _x, const float& _y);
-//    Eigen::Vector2f scene2screen(const float& _x, const float& _y);
 
 private:
     static void onRefreshCallback(GLFWwindow* /*_pWindow*/)
@@ -198,9 +203,9 @@ private:
     Box       m_boundingBox;
 
     Renderer* m_pQMeshRenderer;
+    VGNodeRenderer* m_nodeRenderer;
 
-    bool m_wireframe;
-    bool m_showShaderWireframe;
+    RenderMode m_renderMode;
 };
 
 #endif
