@@ -49,7 +49,7 @@ public:
     virtual ~Editor();
 
     bool showConstraints() const { return m_showConstraints; }
-    bool showWireframe() const { return m_showWireframe; }
+    bool showWireframe()   const { return m_showWireframe; }
 
     Eigen::Vector2f sceneFromView(const QPointF& view) const;
 

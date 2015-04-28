@@ -332,38 +332,50 @@ void MainWindow::updateConstraintTypeActions()
     {
         Mesh::PointConstraint pc = m_document->selection().pointConstraint();
         m_setValueTypeGroup->setEnabled(false);
-        m_setDerivTypeGroup->setEnabled(true);
-        if(mesh.isGradientConstraint(pc))
-            m_setDerivFlat->setChecked(true);
+        if(mesh.hasVertexGradientConstraint()) {
+            m_setDerivTypeGroup->setEnabled(true);
+            if(mesh.isGradientConstraint(pc))
+                m_setDerivFlat->setChecked(true);
+            else
+                m_setDerivContinuous->setChecked(true);
+        }
         else
-            m_setDerivContinuous->setChecked(true);
+        {
+            m_setDerivTypeGroup->setEnabled(false);
+        }
     }
     else if(m_document->selection().isCurve())
     {
         m_setValueTypeGroup->setEnabled(true);
-        m_setDerivTypeGroup->setEnabled(true);
-
         Mesh::Curve c = m_document->selection().curve();
         if(mesh.valueTear(c))   m_setValueDiscontinuous->setChecked(true);
         else                    m_setValueNoConitunous->setChecked(true);
 
-        bool gtear = mesh.gradientTear(c);
-        bool cleft = !mesh.valueFunction(c, Mesh::GRADIENT_LEFT).empty();
-        bool cright = !mesh.valueFunction(c, Mesh::GRADIENT_RIGHT).empty();
-//        std::cout << "plop: " << ((gtear << 2) | (cright << 1) | cleft) << ": "
-//                  << (gtear? "gDisc": "gCont") << ", "
-//                  << (cleft? "consL": "freeL") << ", "
-//                  << (cright? "consR": "freeR") << "\n";
-        switch((gtear << 2) | (cright << 1) | cleft)
+        if(mesh.hasEdgeGradient()) {
+            m_setDerivTypeGroup->setEnabled(true);
+
+            bool gtear = mesh.gradientTear(c);
+            bool cleft = !mesh.valueFunction(c, Mesh::GRADIENT_LEFT).empty();
+            bool cright = !mesh.valueFunction(c, Mesh::GRADIENT_RIGHT).empty();
+    //        std::cout << "plop: " << ((gtear << 2) | (cright << 1) | cleft) << ": "
+    //                  << (gtear? "gDisc": "gCont") << ", "
+    //                  << (cleft? "consL": "freeL") << ", "
+    //                  << (cright? "consR": "freeR") << "\n";
+            switch((gtear << 2) | (cright << 1) | cleft)
+            {
+            case 0: m_setDerivContinuous   ->setChecked(true); break;
+            case 1: m_setDerivFlat         ->setChecked(true); break;
+            case 2: m_setDerivContinuous   ->setChecked(true); break;
+            case 3: m_setDerivFlat         ->setChecked(true); break;
+            case 4: m_setDerivDiscontinuous->setChecked(true); break;
+            case 5: m_setDerivFlatLeft     ->setChecked(true); break;
+            case 6: m_setDerivFlatRight    ->setChecked(true); break;
+            case 7: m_setDerivFlat         ->setChecked(true); break;
+            }
+        }
+        else
         {
-        case 0: m_setDerivContinuous->setChecked(true); break;
-        case 1: m_setDerivFlat->setChecked(true); break;
-        case 2: m_setDerivContinuous->setChecked(true); break;
-        case 3: m_setDerivFlat->setChecked(true); break;
-        case 4: m_setDerivDiscontinuous->setChecked(true); break;
-        case 5: m_setDerivFlatLeft->setChecked(true); break;
-        case 6: m_setDerivFlatRight->setChecked(true); break;
-        case 7: m_setDerivFlat->setChecked(true); break;
+            m_setDerivTypeGroup->setEnabled(false);
         }
     }
     else
@@ -376,39 +388,44 @@ void MainWindow::updateConstraintTypeActions()
 
 void MainWindow::setConstraintType(QAction* /*action*/)
 {
-    if(m_document->selection().isPointConstraint())
+    Mesh& mesh = m_document->mesh();
+    if(m_document->selection().isPointConstraint()
+    && mesh.hasVertexGradientConstraint())
     {
-        Mesh& mesh = m_document->mesh();
         Mesh::PointConstraint pc = m_document->selection().pointConstraint();
         if(m_setDerivContinuous->isChecked())
         {
-            m_document->undoStack()->push(new SetPointConstraintGradient(
-                                m_document, pc, mesh.unconstrainedGradientValue()));
+            m_document->setPointConstraintGradient(
+                        pc, mesh.unconstrainedGradientValue());
         }
         else
         {
-            m_document->undoStack()->push(new SetPointConstraintGradient(
-                                m_document, pc, Mesh::Gradient::Zero(mesh.nCoeffs(), mesh.nDims())));
+            m_document->setPointConstraintGradient(
+                        pc, Mesh::Gradient::Zero(mesh.nCoeffs(), mesh.nDims()));
         }
         m_document->solve();
     }
     if(m_document->selection().isCurve())
     {
         Mesh::Curve c = m_document->selection().curve();
-        Mesh& mesh = m_document->mesh();
 
-        bool prevVTear = mesh.valueTear(c);
-        bool prevGTear = mesh.gradientTear(c);
-        bool prevCLeft = !mesh.valueFunction(c, Mesh::GRADIENT_LEFT).empty();
-        bool prevCRight = !mesh.valueFunction(c, Mesh::GRADIENT_RIGHT).empty();
+        bool prevVTear  = mesh.valueTear(c);
+        bool prevGTear  = mesh.hasEdgeGradient() && mesh.gradientTear(c);
+        bool prevCLeft  =  mesh.hasEdgeGradient()
+                        && !mesh.valueFunction(c, Mesh::GRADIENT_LEFT).empty();
+        bool prevCRight =  mesh.hasEdgeGradient()
+                        && !mesh.valueFunction(c, Mesh::GRADIENT_RIGHT).empty();
 
-        bool nextVTear = m_setValueDiscontinuous->isChecked();
-        bool nextGTear = !(m_setDerivContinuous->isChecked() || m_setDerivFlat->isChecked());
-        bool nextCLeft = m_setDerivFlatLeft->isChecked() || m_setDerivFlat->isChecked();
-        bool nextCRight = m_setDerivFlatRight->isChecked() || m_setDerivFlat->isChecked();
+        bool nextVTear  = m_setValueDiscontinuous->isChecked();
+        bool nextGTear  =  mesh.hasEdgeGradient()
+                        && !(m_setDerivContinuous->isChecked() || m_setDerivFlat->isChecked());
+        bool nextCLeft  =  mesh.hasEdgeGradient()
+                        && (m_setDerivFlatLeft->isChecked() || m_setDerivFlat->isChecked());
+        bool nextCRight =  mesh.hasEdgeGradient()
+                        && (m_setDerivFlatRight->isChecked() || m_setDerivFlat->isChecked());
 
         bool doSetFlags = (prevVTear != nextVTear) || (prevGTear != nextGTear);
-        bool doSetValueRight = prevVTear && !nextVTear;
+        bool doSetValueRight = !prevVTear && nextVTear;
         bool doSetDerivLeft = prevCLeft != nextCLeft;
         bool doSetDerivRight = prevCRight != nextCRight;
         unsigned nOp = doSetFlags + doSetValueRight + doSetDerivLeft + doSetDerivRight;
@@ -417,43 +434,35 @@ void MainWindow::setConstraintType(QAction* /*action*/)
 
         if(nOp != 1) m_document->undoStack()->beginMacro("Set curve type");
 
-        // It is important to set gradients before flags, because Mesh::setFlags
-        // modify gradients.
-        if(doSetValueRight)
-        {
-    //        std::cout << "Set value right\n";
-            m_document->undoStack()->push(new SetGradient(
-                    m_document, c, Mesh::VALUE_RIGHT,
-                    mesh.valueFunction(c, Mesh::GRADIENT_LEFT)));
-        }
-
         Mesh::ValueFunction flatGradient;
-        flatGradient.sample(0) = Mesh::Value::Zero(mesh.nCoeffs());
+        flatGradient.add(0, Mesh::Value::Zero(mesh.nCoeffs()));
         if(doSetDerivLeft)
         {
-    //        std::cout << "Set deriv left\n";
-            m_document->undoStack()->push(new SetGradient(
-                    m_document, c, Mesh::GRADIENT_LEFT, nextCLeft?
-                            flatGradient: Mesh::ValueFunction()));
+            m_document->setGradient(
+                        c, Mesh::GRADIENT_LEFT, nextCLeft?
+                        flatGradient: Mesh::ValueFunction());
         }
         if(doSetDerivRight)
         {
-    //        std::cout << "Set deriv right\n";
-            m_document->undoStack()->push(new SetGradient(
-                    m_document, c, Mesh::GRADIENT_RIGHT, nextCRight?
-                            flatGradient: Mesh::ValueFunction()));
+            m_document->setGradient(
+                        c, Mesh::GRADIENT_RIGHT, nextCRight?
+                        flatGradient: Mesh::ValueFunction());
         }
 
         if(doSetFlags)
         {
-            unsigned flags = (nextVTear? Mesh::VALUE_TEAR: 0) | (nextGTear? Mesh::GRADIENT_TEAR: 0);
-    //        std::cout << "Set flags: " << flags << "\n";
-            m_document->undoStack()->push(new SetCurveFlags(m_document, c, flags));
+            unsigned flags = (nextVTear? Mesh::VALUE_TEAR:    0)
+                           | (nextGTear? Mesh::GRADIENT_TEAR: 0);
+            m_document->setCurveFlags(c, flags);
+        }
+
+        if(doSetValueRight)
+        {
+            Mesh::ValueFunction& vf = mesh.valueFunction(c, Mesh::VALUE_LEFT);
+            m_document->setGradient(c, Mesh::VALUE_RIGHT, vf);
         }
 
         if(nOp != 1) m_document->undoStack()->endMacro();
-
-        m_document->solve();
     }
 }
 

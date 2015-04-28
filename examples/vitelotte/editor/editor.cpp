@@ -470,10 +470,10 @@ void Editor::dragStop(const Vector& scenePos)
                 m_dragGradientStop.curve, m_dragGradientStop.which);
     if(vg.has(newPos))
         return;
-    m_document->undoStack()->push(new MoveGradientStop(
-        m_document, m_dragGradientStop.curve, m_dragGradientStop.which,
+    m_document->moveGradientStop(
+        m_dragGradientStop.curve, m_dragGradientStop.which,
         m_dragGradientStop.gpos, newPos,
-        m_inputState == STATE_DRAG_GRADIENT_STOP));
+        m_inputState == STATE_DRAG_GRADIENT_STOP);
 
     m_inputState = STATE_DRAG_GRADIENT_STOP;
     m_dragGradientStop.gpos = newPos;
@@ -529,20 +529,18 @@ void Editor::hideDummyStop()
 
 void Editor::setStopColor(const GradientStop& gs)
 {
-    m_document->undoStack()->push(new SetGradientStopValue(
-        m_document, gs.curve, gs.which, gs.gpos, m_paintColor));
+    m_document->setGradientStopValue(
+        gs.curve, gs.which, gs.gpos, m_paintColor);
 }
 
 void Editor::addGradientStop(const GradientStop& gs)
 {
-    m_document->undoStack()->push(new AddRemoveGradientStop(
-        m_document, gs.curve, gs.which, gs.gpos, m_paintColor));
+    m_document->addGradientStop(gs.curve, gs.which, gs.gpos, m_paintColor);
 }
 
 void Editor::removeGradientStop(const GradientStop& gs)
 {
-    m_document->undoStack()->push(new AddRemoveGradientStop(
-        m_document, gs.curve, gs.which, gs.gpos));
+    m_document->removeGradientStop(gs.curve, gs.which, gs.gpos);
 }
 
 
@@ -559,8 +557,7 @@ bool Editor::trySetPointConstraint(const Vector& pos)
     float selDist = 8 / zoom();
 
     if((pcp - pos).squaredNorm() < selDist*selDist) {
-        m_document->undoStack()->push(new SetPointConstraintValue(
-            m_document, pc, m_paintColor));
+        m_document->setPointConstraintValue(pc, m_paintColor);
         return true;
     }
     return false;

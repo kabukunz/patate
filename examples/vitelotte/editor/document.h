@@ -72,8 +72,7 @@ public:
     {
         CLEAN              = 0,
         DIRTY_NODE_VALUE   = 1,
-        DIRTY_NODE_TYPE    = 2,
-        DIRTY_CONNECTIVITY = 3,
+        DIRTY_ALL          = 2,
 
         DIRTY_LEVEL_MASK   = 0x0f,
         DIRTY_CURVES_FLAG  = 0x10
@@ -119,14 +118,28 @@ public:
     Mesh& solvedMesh();
     const Mesh& solvedMesh() const;
 
+    QUndoStack* undoStack();
 
     void splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
     void mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid);
     void setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
                       const Mesh::Value& value, bool allowMerge=false);
 
+    void moveGradientStop(Mesh::Curve curve, unsigned which,
+                          Scalar fromPos, Scalar toPos, bool allowMerge=false);
+    void setGradientStopValue(Mesh::Curve curve, unsigned which,
+                              Scalar pos, const Mesh::Value& value);
+    void addGradientStop(Mesh::Curve curve, unsigned which,
+                         Scalar pos, const Mesh::Value& value);
+    void removeGradientStop(Mesh::Curve curve, unsigned which, Scalar pos);
+    void setGradient(Mesh::Curve curve, unsigned which,
+                     const Mesh::ValueFunction& gradient);
+    void setCurveFlags(Mesh::Curve curve, unsigned flags);
 
-    QUndoStack* undoStack();
+    void setPointConstraintValue(Mesh::PointConstraint pc,
+                                 const Mesh::Value& value);
+    void setPointConstraintGradient(Mesh::PointConstraint pc,
+                                    const Mesh::Gradient& gradient);
 
 public slots:
     void solve();

@@ -174,7 +174,7 @@ bool Document::isSelectionValid(MeshSelection selection)
     return selection.isNone()                                                            ||
           (selection.isVertex()          && mesh().isValid(selection.vertex()))          ||
           (selection.isEdge()            && mesh().isValid(selection.edge()))            ||
-          (selection.isPointConstraint() && mesh().isValid(selection.pointConstraint()))  ||
+          (selection.isPointConstraint() && mesh().isValid(selection.pointConstraint())) ||
           (selection.isCurve()           && mesh().isValid(selection.curve()));
 }
 
@@ -368,8 +368,7 @@ const Document::Mesh& Document::solvedMesh() const
 }
 
 
-QUndoStack* Document::undoStack()
-{
+QUndoStack* Document::undoStack() {
     return m_undoStack;
 }
 
@@ -389,7 +388,7 @@ void Document::splitNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
     // TODO: make this an UndoCommand
     Mesh::Node nn = m_mesh.addNode(m_mesh.value(n));
 
-    undoStack()->push(new SetNode(this, oh, onid, nn));
+    m_undoStack->push(new SetNode(this, oh, onid, nn));
 }
 
 
@@ -402,7 +401,7 @@ void Document::mergeNode(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid)
 
     assert(n != m_mesh.halfedgeNode(oh, onid));
 
-    undoStack()->push(new SetNode(this, oh, onid, n));
+    m_undoStack->push(new SetNode(this, oh, onid, n));
 }
 
 
@@ -419,14 +418,69 @@ void Document::setNodeValue(Mesh::Halfedge h, Mesh::HalfedgeAttribute nid,
 
         Mesh::Node nn = m_mesh.addNode(value);
 
-        undoStack()->beginMacro("set node");
-        undoStack()->push(new SetNode(this, h, nid, nn));
+        m_undoStack->beginMacro("set node");
+        m_undoStack->push(new SetNode(this, h, nid, nn));
         if(!on.isValid())
-            undoStack()->push(new SetNode(this, oh, onid, nn));
-        undoStack()->endMacro();
+            m_undoStack->push(new SetNode(this, oh, onid, nn));
+        m_undoStack->endMacro();
     }
     else
-        undoStack()->push(new SetNodeValue(this, n, value, allowMerge));
+        m_undoStack->push(new SetNodeValue(this, n, value, allowMerge));
+}
+
+
+void Document::moveGradientStop(Mesh::Curve curve, unsigned which,
+                      Scalar fromPos, Scalar toPos, bool allowMerge)
+{
+    m_undoStack->push(new MoveGradientStop(
+                          this, curve, which, fromPos, toPos, allowMerge));
+}
+
+
+void Document::setGradientStopValue(Mesh::Curve curve, unsigned which,
+                          Scalar pos, const Mesh::Value& value)
+{
+    m_undoStack->push(new SetGradientStopValue(this, curve, which, pos, value));
+}
+
+
+void Document::addGradientStop(Mesh::Curve curve, unsigned which,
+                     Scalar pos, const Mesh::Value& value)
+{
+    m_undoStack->push(new AddRemoveGradientStop(this, curve, which, pos, value));
+}
+
+
+void Document::removeGradientStop(Mesh::Curve curve, unsigned which, Scalar pos)
+{
+    m_undoStack->push(new AddRemoveGradientStop(this, curve, which, pos));
+}
+
+
+void Document::setGradient(Mesh::Curve curve, unsigned which,
+                 const Mesh::ValueFunction& gradient)
+{
+    m_undoStack->push(new SetGradient(this, curve, which, gradient));
+}
+
+
+void Document::setCurveFlags(Mesh::Curve curve, unsigned flags)
+{
+    m_undoStack->push(new SetCurveFlags(this, curve, flags));
+}
+
+
+void Document::setPointConstraintValue(Mesh::PointConstraint pc,
+                             const Mesh::Value& value)
+{
+    m_undoStack->push(new SetPointConstraintValue(this, pc, value));
+}
+
+
+void Document::setPointConstraintGradient(Mesh::PointConstraint pc,
+                                const Mesh::Gradient& gradient)
+{
+    m_undoStack->push(new SetPointConstraintGradient(this, pc, gradient));
 }
 
 
@@ -449,7 +503,7 @@ void Document::solve()
     m_finalizedMesh.deleteUnusedNodes();
     m_finalizedMesh.garbageCollection();
     if(connectivityChanged())
-        markDirty(DIRTY_CONNECTIVITY);
+        markDirty(DIRTY_ALL);
 
     m_solvedMesh = m_finalizedMesh;
 
@@ -461,11 +515,10 @@ void Document::solve()
         // TODO: m_fvSolver.clearErrors();
         switch(dirtyLevel)
         {
-        case DIRTY_CONNECTIVITY:
+        case DIRTY_ALL:
             std::cout << "Build matrix...           " << std::flush;
             m_fvSolver.build();
             std::cout << time.restart() << " ms" << std::endl;
-        case DIRTY_NODE_TYPE:
             std::cout << "Factorize matrix...       " << std::flush;
             m_fvSolver.factorize();
             std::cout << time.restart() << " ms" << std::endl;
@@ -507,7 +560,7 @@ void Document::loadMesh(const std::string& filename)
 
     unsigned dirtyCurves = (m_mesh.nCurves() || m_mesh.nPointConstraints())?
                 DIRTY_CURVES_FLAG: 0;
-    markDirty(DIRTY_CONNECTIVITY | dirtyCurves);
+    markDirty(DIRTY_ALL | dirtyCurves);
     solve();
 
     emit meshChanged();
@@ -555,76 +608,6 @@ void Document::exportPlot(const std::string& filename, unsigned layer)
     typedef Vitelotte::FVElement<float> FVElem;
 
     ::exportPlot<Mesh, FVElem>(m_solvedMesh, filename, layer, 4);
-
-//    unsigned nCount = 0;
-//    std::vector<int> indexFromNode(m_solvedMesh.nNodes(), -1);
-//    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
-//        fit != m_solvedMesh.facesEnd(); ++fit)
-//    {
-//        Mesh::Vector pts[3];
-//        Eigen::Matrix<float, 4, 6> values;
-
-//        Mesh::Halfedge h[3];
-//        h[0] = m_solvedMesh.halfedge(*fit);
-//        h[1] = m_solvedMesh.nextHalfedge(h[0]);
-//        h[2] = m_solvedMesh.nextHalfedge(h[1]);
-
-//        for(unsigned hi = 0; hi < 3; ++hi)
-//        {
-//            Mesh::Node n;
-//            Mesh::Vertex to = m_solvedMesh.toVertex(h[hi]);
-//            Mesh::Vertex from = m_solvedMesh.fromVertex(h[hi]);
-
-//            n = m_solvedMesh.toVertexValueNode(h[hi]);
-//            if(indexFromNode[n.idx()] == -1)
-//            {
-//                out << "v " << m_solvedMesh.position(to).transpose() << " ";
-//                if(m_solvedMesh.isValid(n))
-//                    out << m_solvedMesh.value(n)(layer);
-//                else
-//                    out << "0";
-//                out << "\n";
-//                indexFromNode[n.idx()] = nCount++;
-//            }
-
-//            n = m_solvedMesh.edgeValueNode(h[hi]);
-//            if(indexFromNode[n.idx()] == -1)
-//            {
-//                Mesh::Vector p = (m_solvedMesh.position(to)
-//                                + m_solvedMesh.position(from)) / 2;
-//                out << "v " << p.transpose() << " ";
-//                if(m_solvedMesh.isValid(n))
-//                    out << m_solvedMesh.value(n)(layer);
-//                else
-//                    out << "0";
-//                out << "\n";
-//                indexFromNode[n.idx()] = nCount++;
-//            }
-//        }
-//    }
-
-//    for(Mesh::FaceIterator fit = m_solvedMesh.facesBegin();
-//        fit != m_solvedMesh.facesEnd(); ++fit)
-//    {
-//        Mesh::Halfedge h[3];
-//        h[0] = m_solvedMesh.halfedge(*fit);
-//        h[1] = m_solvedMesh.nextHalfedge(h[0]);
-//        h[2] = m_solvedMesh.nextHalfedge(h[1]);
-
-//        unsigned vi[3];
-//        unsigned ei[3];
-//        for(int i = 0; i < 3; ++i)
-//        {
-//            vi[i] = indexFromNode[m_solvedMesh.toVertexValueNode(h[i]).idx()];
-//            ei[(i+1)%3] = indexFromNode[m_solvedMesh.edgeValueNode(h[i]).idx()];
-//        }
-
-////        out << "f " << vi[0]+1 << " " << vi[1]+1 << " " << vi[2]+1 << "\n";
-//        out << "f " << vi[0]+1 << " " << ei[2]+1 << " " << ei[1]+1 << "\n";
-//        out << "f " << vi[1]+1 << " " << ei[0]+1 << " " << ei[2]+1 << "\n";
-//        out << "f " << vi[2]+1 << " " << ei[1]+1 << " " << ei[0]+1 << "\n";
-//        out << "f " << ei[0]+1 << " " << ei[1]+1 << " " << ei[2]+1 << "\n";
-//    }
 }
 
 
@@ -666,7 +649,7 @@ void SetNodeValue::undo()
     bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedValue());
     bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedValue());
     m_document->markDirty((prevConstrained != newConstrained)?
-        Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
+        Document::DIRTY_ALL: Document::DIRTY_NODE_VALUE);
 }
 
 
@@ -677,7 +660,7 @@ void SetNodeValue::redo()
     bool prevConstrained = (m_prevValue != m_document->mesh().unconstrainedValue());
     bool newConstrained  = ( m_newValue != m_document->mesh().unconstrainedValue());
     m_document->markDirty((prevConstrained != newConstrained)?
-        Document::DIRTY_NODE_TYPE: Document::DIRTY_NODE_VALUE);
+        Document::DIRTY_ALL: Document::DIRTY_NODE_VALUE);
 }
 
 
@@ -714,13 +697,13 @@ SetNode::SetNode(Document* doc, Halfedge halfedge,
 void SetNode::undo()
 {
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_prevNode;
-    m_document->markDirty(Document::DIRTY_CONNECTIVITY);
+    m_document->markDirty(Document::DIRTY_ALL);
 }
 
 
 void SetNode::redo(){
     m_document->mesh().halfedgeNode(m_halfedge, m_nid) = m_newNode;
-    m_document->markDirty(Document::DIRTY_CONNECTIVITY);
+    m_document->markDirty(Document::DIRTY_ALL);
 }
 
 
@@ -845,7 +828,7 @@ void AddRemoveGradientStop::add()
     Mesh::ValueFunction& grad = mesh.valueFunction(m_curve, m_which);
     grad.add(m_pos, m_value);
 
-    unsigned dFlag = (grad.size() == 1)? Document::DIRTY_NODE_TYPE:
+    unsigned dFlag = (grad.size() == 1)? Document::DIRTY_ALL:
                                          Document::DIRTY_NODE_VALUE;
     m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
 }
@@ -856,7 +839,7 @@ void AddRemoveGradientStop::remove()
     Mesh::ValueFunction& grad = mesh.valueFunction(m_curve, m_which);
     grad.remove(m_pos);
 
-    unsigned dFlag = (grad.size() == 0)? Document::DIRTY_NODE_TYPE:
+    unsigned dFlag = (grad.size() == 0)? Document::DIRTY_ALL:
                                          Document::DIRTY_NODE_VALUE;
     m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
 }
@@ -892,7 +875,7 @@ void SetGradient::setGradient(const ValueFunction& grad)
     cgrad = grad;
 
     unsigned dFlag = (prevFree == newFree)? Document::DIRTY_NODE_VALUE:
-                                            Document::DIRTY_NODE_TYPE;
+                                            Document::DIRTY_ALL;
     m_document->markDirty(dFlag | Document::DIRTY_CURVES_FLAG);
 }
 
@@ -949,7 +932,7 @@ void SetPointConstraintGradient::redo()
 void SetPointConstraintGradient::setGradient(const NodeGradient& gradient)
 {
     m_document->mesh().gradient(m_pc) = gradient;
-    m_document->markDirty(Document::DIRTY_CONNECTIVITY | Document::DIRTY_CURVES_FLAG);
+    m_document->markDirty(Document::DIRTY_ALL | Document::DIRTY_CURVES_FLAG);
 }
 
 
@@ -981,5 +964,5 @@ void SetCurveFlags::redo()
 void SetCurveFlags::setFlags(unsigned flags)
 {
     m_document->mesh().setFlagsRaw(m_curve, flags);
-    m_document->markDirty(Document::DIRTY_CONNECTIVITY | Document::DIRTY_CURVES_FLAG);
+    m_document->markDirty(Document::DIRTY_ALL | Document::DIRTY_CURVES_FLAG);
 }
