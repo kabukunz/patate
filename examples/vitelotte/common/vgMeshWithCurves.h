@@ -62,7 +62,7 @@ public:
 
     typedef ::BezierCurve<Vector> BezierCurve;
 
-    typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
+    typedef Gradient::ConstantReturnType UnconstrainedGradientType;
 
     struct Curve : public BaseHandle
     {

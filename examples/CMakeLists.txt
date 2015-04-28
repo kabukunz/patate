@@ -14,4 +14,4 @@ if(CompilePCLExample)
 	add_subdirectory(pcl)
 endif()
 
-
+add_subdirectory(vitelotte)

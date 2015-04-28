@@ -4,7 +4,7 @@
 bool CheckCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 {
     if(opts && opts->verbose) std::cout << "Check mesh...\n";
-    bool nError = 0;
+    unsigned nError = 0;
 
     for(Mesh::NodeIterator nit = mesh.nodesBegin();
         nit != mesh.nodesEnd(); ++nit)

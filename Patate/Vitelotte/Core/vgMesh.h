@@ -296,10 +296,10 @@ public:
     inline Vertex addVertex(const Eigen::DenseBase<Derived>& pos);
 
     inline ConstVectorXpr position(Vertex v) const
-    { assert(v.idx() < verticesSize()); return m_positions.col(v.idx()); }
+    { assert(unsigned(v.idx()) < verticesSize()); return m_positions.col(v.idx()); }
 
     inline VectorXpr position(Vertex v)
-    { assert(v.idx() < verticesSize()); return m_positions.col(v.idx()); }
+    { assert(unsigned(v.idx()) < verticesSize()); return m_positions.col(v.idx()); }
 
 //    inline VertexProperty<Vector>& positionProperty() { return m_positions; }
 //    inline const VertexProperty<Vector>& positionProperty() const
@@ -475,11 +475,11 @@ public:
 
     /// \brief Read only access to the value of `node`.
     inline ConstValueXpr value(Node node) const
-    { assert(node.idx() < nodesSize()); return m_nodes.col(node.idx()); }
+    { assert(unsigned(node.idx()) < nodesSize()); return m_nodes.col(node.idx()); }
 
     /// \brief Read-write access to the value of `node`.
     inline ValueXpr value(Node node)
-    { assert(node.idx() < nodesSize()); return m_nodes.col(node.idx()); }
+    { assert(unsigned(node.idx()) < nodesSize()); return m_nodes.col(node.idx()); }
 
     inline UnconstrainedNodeType unconstrainedValue() const
     { return Value::Constant(nCoeffs(), std::numeric_limits<Scalar>::quiet_NaN()); }
@@ -632,22 +632,22 @@ protected:
     inline void triangulate() { assert(false); }
     inline void triangulate(Face /*f*/) { assert(false); }
 
-    inline bool isCollapseOk(Halfedge h) { assert(false); return false; }
-    inline void collapse(Halfedge h) { assert(false); }
+    inline bool isCollapseOk(Halfedge /*h*/) { assert(false); return false; }
+    inline void collapse(Halfedge /*h*/) { assert(false); }
 
-    inline void split(Face f, Vertex v) { assert(false); }
-    inline void split(Edge e, Vertex v) { assert(false); }
+    inline void split(Face /*f*/, Vertex /*v*/) { assert(false); }
+    inline void split(Edge /*e*/, Vertex /*v*/) { assert(false); }
 
-    inline Halfedge insertVertex(Edge e, Vertex v)
+    inline Halfedge insertVertex(Edge /*e*/, Vertex /*v*/)
         { assert(false); return Halfedge(); }
-    inline Halfedge insertVertex(Halfedge h, Vertex v)
-        { assert(false); return Halfedge(); }
-
-    inline Halfedge insertEdge(Halfedge h0, Halfedge h1)
+    inline Halfedge insertVertex(Halfedge /*h*/, Vertex /*v*/)
         { assert(false); return Halfedge(); }
 
-    inline bool isFlipOk(Edge e) const { assert(false); return false; }
-    inline void flip(Edge e) { assert(false); }
+    inline Halfedge insertEdge(Halfedge /*h0*/, Halfedge /*h1*/)
+        { assert(false); return Halfedge(); }
+
+    inline bool isFlipOk(Edge /*e*/) const { assert(false); return false; }
+    inline void flip(Edge /*e*/) { assert(false); }
 
     /// \}
 

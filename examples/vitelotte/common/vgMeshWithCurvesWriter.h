@@ -14,10 +14,10 @@ public:
 
     typedef VGMeshWithCurves Mesh;
 
-    typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::Vertex Vertex;
-    typedef typename Mesh::Value Value;
-    typedef typename Mesh::ValueFunction ValueFunction;
+    typedef Mesh::Vector Vector;
+    typedef Mesh::Vertex Vertex;
+    typedef Mesh::Value Value;
+    typedef Mesh::ValueFunction ValueFunction;
 
 public:
     VGMeshWithCurveWriter(Version version=LATEST_VERSION);

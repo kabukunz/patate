@@ -14,14 +14,14 @@ public:
 
     typedef VGMeshWithCurves Mesh;
 
-    typedef typename Mesh::Vector Vector;
-    typedef typename Mesh::Value Value;
-    typedef typename Mesh::ValueFunction ValueFunction;
+    typedef Mesh::Vector Vector;
+    typedef Mesh::Value Value;
+    typedef Mesh::ValueFunction ValueFunction;
 
-    typedef typename Mesh::Vertex Vertex;
-    typedef typename Mesh::Halfedge Halfedge;
-    typedef typename Mesh::PointConstraint PointConstraint;
-    typedef typename Mesh::Curve Curve;
+    typedef Mesh::Vertex Vertex;
+    typedef Mesh::Halfedge Halfedge;
+    typedef Mesh::PointConstraint PointConstraint;
+    typedef Mesh::Curve Curve;
 
 public:
     VGMeshWithCurveReader();

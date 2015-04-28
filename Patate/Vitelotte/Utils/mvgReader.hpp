@@ -172,7 +172,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
             if(m_tmp != "-")
                 error("Only triangles meshes are supported");
 
-            for(int i = 0; i < nVert; ++i)
+            for(unsigned i = 0; i < nVert; ++i)
             {
                 def >> m_tmp;
                 parseIndicesList(m_tmp, m_faceIndices);
@@ -189,7 +189,7 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         typename Mesh::Face f = mesh.addFace(m_fVertices);
 
         typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(f);
-        for(int i = 0; i < nVert; ++i)
+        for(unsigned i = 0; i < nVert; ++i)
         {
             if(mesh.hasToVertexValue())
                 mesh.toVertexValueNode(*hit)   = Node(m_nodesIndices[2*i] - iOffset);

@@ -244,7 +244,7 @@ template < typename _Scalar, int _Dim, int _Chan >
 bool
 VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
 {
-    return 0 <= n.idx() && n.idx() < nodesSize();
+    return 0 <= n.idx() && unsigned(n.idx()) < nodesSize();
 }
 
 

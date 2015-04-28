@@ -88,9 +88,9 @@ public:
         switch(id) {
         // Both are unknowns
         case 0x00: {
-            assert(bi0.block == m_bi && bi1.block == m_bi);
-            assert(bi0.index < m_size);
-            assert(bi1.index < m_size);
+            assert(unsigned(bi0.block) == m_bi && unsigned(bi1.block) == m_bi);
+            assert(unsigned(bi0.index) < m_size);
+            assert(unsigned(bi1.index) < m_size);
             m_blockCoeffs.push_back(Triplet(
                         std::max(bi0.index, bi1.index),
                         std::min(bi0.index, bi1.index),
@@ -102,7 +102,7 @@ public:
         case 0x01: std::swap(bi0, bi1);     // Fall-through
          // 0 is an unknown, 1 is a constraint
         case 0x02: {
-            assert(bi0.block == m_bi);
+            assert(unsigned(bi0.block) == m_bi);
             unsigned row = bi0.index + m_offset;
             unsigned col = bi1.index;
             assert(row < m_nUnk);
@@ -127,8 +127,9 @@ public:
 
         if(nbi.block >= 0)
         {
-            assert(nbi.block == m_bi);
-            assert(nbi.index < m_extraOffset);  // extra should have greater indices
+            assert(unsigned(nbi.block) == m_bi);
+            // extra should have greater indices
+            assert(nbi.index >= 0 && unsigned(nbi.index) < m_extraOffset);
             m_blockCoeffs.push_back(Triplet(eio, nbi.index, value));
         }
         else
@@ -200,7 +201,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)
     {
-        unsigned bii = m_faceBlockMap((*elem).idx());
+        int bii = m_faceBlockMap((*elem).idx());
         if(bii < 0) continue;
         Block& block = m_blocks[bii];
         block.nCoeffs += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
@@ -220,7 +221,7 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     {
         typedef internal::SolverInserter<Self> Inserter;
 
-        unsigned  bi           = m_faceBlockMap((*elem).idx());
+        int       bi           = m_faceBlockMap((*elem).idx());
         if(bi < 0) continue;
         Block&    block        = m_blocks[bi];
         int       extraIndex   = m_fExtraIndices((*elem).idx());

@@ -105,8 +105,8 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
     // Bezier Path
     else if(spec == "bp")
     {
-        typedef typename Mesh::BezierCurve BezierCurve;
-        typedef typename BezierCurve::SegmentType SegmentType;
+        typedef Mesh::BezierCurve BezierCurve;
+        typedef BezierCurve::SegmentType SegmentType;
 
         unsigned ci;
         def >> ci; PTT_ERROR_IF(!def || ci >= mesh.nCurves(), "Invalid curve index");

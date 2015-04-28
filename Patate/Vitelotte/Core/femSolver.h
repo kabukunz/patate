@@ -88,7 +88,7 @@ public:
         int block;
         int index;
 
-        inline BlockIndex(unsigned block, unsigned index) : block(block), index(index) {}
+        inline BlockIndex(int block, int index) : block(block), index(index) {}
     };
     typedef std::vector<BlockIndex> NodeMap;
 

@@ -57,7 +57,7 @@ private:
 class Mvgtk
 {
 public:
-    enum
+    enum GlobalParams
     {
         GlobalHelp,
         GlobalVerbose,
@@ -74,11 +74,7 @@ public:
     {
         CommandFactory* fact = new GenericFactory<T>();
         m_factories.push_back(fact);
-#ifndef NDEBUG
-    bool isNew =
-#endif
-        m_factoryMap.insert(std::make_pair(name, fact)).second;
-        assert(isNew);
+        m_factoryMap.insert(std::make_pair(name, fact));
     }
     void addCommandAlias(const std::string& command, const std::string& alias);
 

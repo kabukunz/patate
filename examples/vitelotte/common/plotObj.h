@@ -97,9 +97,9 @@ void exportPlot(const Mesh& mesh, const std::string& filename,
         unsigned first = count * vxPerFace + 1; // first vertex is 1 in .obj
         unsigned v0 = first;
         unsigned v1 = first + 1;
-        for(int i = 0; i < nSubdiv; ++i)
+        for(unsigned i = 0; i < nSubdiv; ++i)
         {
-            for(int j = 0; j < i; ++j)
+            for(unsigned j = 0; j < i; ++j)
             {
                 out << "f " << v0 << " " << v1 << " " << v1 + 1 << "\n";
                 out << "f " << v0 << " " << v1 + 1 << " " << v0 + 1 << "\n";

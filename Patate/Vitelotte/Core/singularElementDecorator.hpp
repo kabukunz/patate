@@ -39,7 +39,7 @@ public:
     }
 
     inline unsigned map(unsigned ni) {
-        return (ni == m_from)? m_to: ni;
+        return (ni == unsigned(m_from))? m_to: ni;
     }
 
     inline void addCoeff(unsigned ni0, unsigned ni1, Scalar value) {
