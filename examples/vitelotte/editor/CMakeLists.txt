@@ -67,6 +67,7 @@ add_custom_command(
 add_executable(editor
 	${vitelotte_editor_SRCS}
 )
+add_dependencies(examples editor)
 
 target_link_libraries(editor
     Qt5::Widgets

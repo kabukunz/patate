@@ -34,3 +34,4 @@ set(vitelotte_mvgtk_SRCS
     main.cpp
 )
 add_executable(mvgtk ${vitelotte_mvgtk_SRCS})
+add_dependencies(examples mvgtk)

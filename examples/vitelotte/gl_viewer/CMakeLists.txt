@@ -31,6 +31,7 @@ set(vitelotte_SRCS
     glViewer.cpp
 )
 add_executable(gl_viewer ${vitelotte_SRCS})
+add_dependencies(examples gl_viewer)
 
 target_link_libraries(gl_viewer
     ${GLFW3_LIBRARIES}
