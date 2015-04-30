@@ -234,6 +234,43 @@ FemSolver<_Mesh, _ElementBuilder>::solve()
 
     m_x = m_constraintBlock * constraints;
 
+    // Clear extra constraints
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
+    {
+        block->rhs.setZero();
+    }
+
+    // Fill a Triplet vector with coefficients + fill m_b
+    m_constraintTriplets.clear();
+    for(FaceIterator elem = m_mesh->facesBegin();
+        elem != m_mesh->facesEnd(); ++elem)
+    {
+        typedef internal::SolverInserter<Self> Inserter;
+
+        int       bi           = m_faceBlockMap((*elem).idx());
+        if(bi < 0) continue;
+        Block&    block        = m_blocks[bi];
+        int       extraIndex   = m_fExtraIndices((*elem).idx());
+        unsigned  extraOffset  = (extraIndex < 0)? 0: m_fExtraMap[extraIndex].index;
+
+        Inserter inserter(block.triplets,
+                          m_constraintTriplets,
+                          block.rhs,
+                          m_nodeMap,
+                          block.offset,
+                          extraOffset);
+#ifndef NDEBUG
+        inserter.debug(m_nUnknowns, m_nConstraints, bi, block.size);
+#endif
+        m_elementBuilder.addExtraConstraints(inserter, *m_mesh, *elem, &m_error);
+
+        if(m_error.status() == SolverError::STATUS_ERROR)
+        {
+            return;
+        }
+    }
+
     // Solve block by block
     for(BlockIterator block = m_blocks.begin();
         block != m_blocks.end(); ++block)
@@ -451,7 +488,7 @@ void FemSolver<_Mesh, _ElementBuilder>::buildMatrix()
         block->triplets.reserve(block->nCoeffs);
     }
 
-    // Fill a Triplet vector with coefficients + fill m_b
+    // Compute triplets for all blocks
     m_constraintTriplets.clear();
     for(FaceIterator elem = m_mesh->facesBegin();
         elem != m_mesh->facesEnd(); ++elem)

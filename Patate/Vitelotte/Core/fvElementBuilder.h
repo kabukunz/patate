@@ -75,6 +75,10 @@ public:
     void addCoefficients(Inserter& inserter, const Mesh& mesh,
                          Face element, SolverError* error=0);
 
+    template < typename Inserter >
+    inline void addExtraConstraints(Inserter& inserter, const Mesh& mesh,
+                                    Face element, SolverError* error);
+
 private:
     Scalar m_sigma;
 //    PGCMap m_pgcMap;

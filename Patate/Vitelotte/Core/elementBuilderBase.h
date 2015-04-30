@@ -36,6 +36,11 @@ public:
 
     inline unsigned nExtraConstraints(const Mesh& /*mesh*/, Face /*element*/) const
     { return 0; }
+
+    template < typename Inserter >
+    inline void addExtraConstraints(Inserter& /*inserter*/, const Mesh& /*mesh*/,
+                                    Face /*element*/, SolverError* /*error*/)
+    {}
 };
 
 

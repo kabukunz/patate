@@ -178,22 +178,6 @@ FVElementBuilder<_Mesh, _Scalar>::
             0,
             -elem.doubleArea()/(elem.edgeLength(1)*elem.edgeLength(2));
 
-        for(unsigned hi = 0; hi < 2; ++hi)
-        {
-            ++hit; // start with the edge pointing to v0.
-            typename Mesh::Halfedge h = *hit;
-
-            typename Mesh::Vertex from = mesh.fromVertex(h);
-            typename Mesh::Vertex to   = mesh.  toVertex(h);
-
-            bool v0c = mesh.isGradientConstraint(from);
-            const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
-            typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
-            if(!v0c) v = -v;
-            typename Mesh::Value cons = grad * v;
-            inserter.setExtraRhs(element, hi, cons.template cast<Scalar>());
-        }
-
         for(size_t i = 0; i < 9; ++i)
         {
             Scalar f = (i < 6 || orient[i%3])? 1: -1;
@@ -207,6 +191,42 @@ FVElementBuilder<_Mesh, _Scalar>::
             }
         }
     }
+}
+
+
+template < class _Mesh, typename _Scalar >
+template < typename Inserter >
+void
+FVElementBuilder<_Mesh, _Scalar>::
+    addExtraConstraints(Inserter& inserter, const Mesh& mesh,
+                                Face element, SolverError* /*error*/)
+{
+    typename Mesh::HalfedgeAroundFaceCirculator hit = mesh.halfedges(element);
+    typename Mesh::HalfedgeAroundFaceCirculator hend = hit;
+    do ++hit;
+    while(!mesh.isGradientConstraint(mesh.toVertex(*hit)) && hit != hend);
+    if(!mesh.isGradientConstraint(mesh.toVertex(*hit))) {
+        return;
+    }
+
+
+    for(unsigned hi = 0; hi < 2; ++hi)
+    {
+        typename Mesh::Halfedge h = *hit;
+
+        typename Mesh::Vertex from = mesh.fromVertex(h);
+        typename Mesh::Vertex to   = mesh.  toVertex(h);
+
+        bool v0c = mesh.isGradientConstraint(from);
+        const typename Mesh::Gradient& grad = mesh.gradientConstraint(v0c? from: to);
+        typename Mesh::Vector v = mesh.position(to) - mesh.position(from);
+        if(!v0c) v = -v;
+        typename Mesh::Value cons = grad * v;
+        inserter.setExtraRhs(element, hi, cons.template cast<Scalar>());
+
+        ++hit;
+    }
+
 }
 
 
