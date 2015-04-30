@@ -45,9 +45,6 @@ public:
     /// \brief Build the internal stiffness matrix
     void build();
 
-    /// \brief Factorize the unknown block of the stiffness matrix.
-    void factorize();
-
     /// \brief Solve the diffusion using the factorize unknown block.
     void solve();
 
@@ -93,7 +90,15 @@ public:
     typedef std::vector<BlockIndex> NodeMap;
 
 protected:
+    // Map each node to a row/column an split the problem in a set of
+    // independant sub-problems.
     void preSort();
+
+    // Compute the stiffness matrix coefficients.
+    void buildMatrix();
+
+    // Factorize the stiffness matrix.
+    void factorize();
 
 protected:
     Mesh* m_mesh;

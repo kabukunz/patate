@@ -197,85 +197,13 @@ FemSolver<_Mesh, _ElementBuilder>::build()
     // Compute node id to row/col mapping and initialize blocks
     preSort();
 
-    // Pre-compute number of coefficients
-    for(FaceIterator elem = m_mesh->facesBegin();
-        elem != m_mesh->facesEnd(); ++elem)
+    // Fill the blocks
+    buildMatrix();
+
+    // Factorize the lhs
+    if(m_error.status() != SolverError::STATUS_ERROR)
     {
-        int bii = m_faceBlockMap((*elem).idx());
-        if(bii < 0) continue;
-        Block& block = m_blocks[bii];
-        block.nCoeffs += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
-    }
-
-    // Reserve memory for triplets
-    for(BlockIterator block = m_blocks.begin();
-        block != m_blocks.end(); ++block)
-    {
-        block->triplets.reserve(block->nCoeffs);
-    }
-
-    // Fill a Triplet vector with coefficients + fill m_b
-    m_constraintTriplets.clear();
-    for(FaceIterator elem = m_mesh->facesBegin();
-        elem != m_mesh->facesEnd(); ++elem)
-    {
-        typedef internal::SolverInserter<Self> Inserter;
-
-        int       bi           = m_faceBlockMap((*elem).idx());
-        if(bi < 0) continue;
-        Block&    block        = m_blocks[bi];
-        int       extraIndex   = m_fExtraIndices((*elem).idx());
-        unsigned  extraOffset  = (extraIndex < 0)? 0: m_fExtraMap[extraIndex].index;
-
-        Inserter inserter(block.triplets,
-                          m_constraintTriplets,
-                          block.rhs,
-                          m_nodeMap,
-                          block.offset,
-                          extraOffset);
-#ifndef NDEBUG
-        inserter.debug(m_nUnknowns, m_nConstraints, bi, block.size);
-#endif
-        m_elementBuilder.addCoefficients(inserter, *m_mesh, *elem, &m_error);
-
-        if(m_error.status() == SolverError::STATUS_ERROR)
-        {
-            return;
-        }
-    }
-
-    m_constraintBlock.setFromTriplets(
-                m_constraintTriplets.begin(), m_constraintTriplets.end());
-
-    // Fill the matrix
-    for(BlockIterator block = m_blocks.begin();
-        block != m_blocks.end(); ++block)
-    {
-        block->matrix.setFromTriplets(
-                    block->triplets.begin(), block->triplets.end());
-    }
-}
-
-
-template < class _Mesh, class _ElementBuilder >
-void FemSolver<_Mesh, _ElementBuilder>::factorize()
-{
-    m_solved = false;
-
-    if(m_error.status() == SolverError::STATUS_ERROR)
-    {
-        return;
-    }
-
-//#ifdef _OPENMP
-//#pragma omp parallel for schedule(static,1)
-//#endif
-    for(BlockIterator block = m_blocks.begin();
-        block != m_blocks.end(); ++block)
-    {
-        if(!block->decomposition) block->decomposition = new LDLT;
-        block->decomposition->compute(block->matrix);
-        if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
+        factorize();
     }
 }
 
@@ -452,8 +380,9 @@ FemSolver<_Mesh, _ElementBuilder>::preSort()
             // Search for unprocessed face
             while(faceIt != m_mesh->facesEnd() && !m_fMask[(*faceIt).idx()]) ++faceIt;
 
-            // FIXME: This bypass the bloc splitting mechanism, thus creating one big bloc.
-            //   For testing purpose and/or to allow non-local constraints.
+            // FIXME: This bypass the bloc splitting mechanism, thus creating
+            //   a single big bloc. For testing purpose and/or to allow
+            //   non-local constraints.
 //            if(faceIt != m_mesh->facesEnd()) {
 //                fi = (*faceIt).idx();
 //                m_fMask[fi]      = false;
@@ -499,6 +428,87 @@ FemSolver<_Mesh, _ElementBuilder>::preSort()
     m_nConstraints    = cPos;
 
     m_constraintBlock.resize(m_nUnknowns, m_nConstraints);
+}
+
+
+template < class _Mesh, class _ElementBuilder >
+void FemSolver<_Mesh, _ElementBuilder>::buildMatrix()
+{
+    // Pre-compute number of coefficients
+    for(FaceIterator elem = m_mesh->facesBegin();
+        elem != m_mesh->facesEnd(); ++elem)
+    {
+        int bii = m_faceBlockMap((*elem).idx());
+        if(bii < 0) continue;
+        Block& block = m_blocks[bii];
+        block.nCoeffs += m_elementBuilder.nCoefficients(*m_mesh, *elem, &m_error);
+    }
+
+    // Reserve memory for triplets
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
+    {
+        block->triplets.reserve(block->nCoeffs);
+    }
+
+    // Fill a Triplet vector with coefficients + fill m_b
+    m_constraintTriplets.clear();
+    for(FaceIterator elem = m_mesh->facesBegin();
+        elem != m_mesh->facesEnd(); ++elem)
+    {
+        typedef internal::SolverInserter<Self> Inserter;
+
+        int       bi           = m_faceBlockMap((*elem).idx());
+        if(bi < 0) continue;
+        Block&    block        = m_blocks[bi];
+        int       extraIndex   = m_fExtraIndices((*elem).idx());
+        unsigned  extraOffset  = (extraIndex < 0)? 0: m_fExtraMap[extraIndex].index;
+
+        Inserter inserter(block.triplets,
+                          m_constraintTriplets,
+                          block.rhs,
+                          m_nodeMap,
+                          block.offset,
+                          extraOffset);
+#ifndef NDEBUG
+        inserter.debug(m_nUnknowns, m_nConstraints, bi, block.size);
+#endif
+        m_elementBuilder.addCoefficients(inserter, *m_mesh, *elem, &m_error);
+
+        if(m_error.status() == SolverError::STATUS_ERROR)
+        {
+            return;
+        }
+    }
+
+    m_constraintBlock.setFromTriplets(
+                m_constraintTriplets.begin(), m_constraintTriplets.end());
+
+    // Fill the matrix
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
+    {
+        block->matrix.setFromTriplets(
+                    block->triplets.begin(), block->triplets.end());
+    }
+}
+
+
+template < class _Mesh, class _ElementBuilder >
+void FemSolver<_Mesh, _ElementBuilder>::factorize()
+{
+//#ifdef _OPENMP
+//#pragma omp parallel for schedule(static,1)
+//#endif
+    for(BlockIterator block = m_blocks.begin();
+        block != m_blocks.end(); ++block)
+    {
+        if(!block->decomposition) block->decomposition = new LDLT;
+        block->decomposition->compute(block->matrix);
+        if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
+    }
+
+    m_solved = true;
 }
 
 

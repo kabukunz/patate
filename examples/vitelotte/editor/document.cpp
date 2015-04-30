@@ -516,11 +516,8 @@ void Document::solve()
         switch(dirtyLevel)
         {
         case DIRTY_ALL:
-            std::cout << "Build matrix...           " << std::flush;
+            std::cout << "Build...                  " << std::flush;
             m_fvSolver.build();
-            std::cout << time.restart() << " ms" << std::endl;
-            std::cout << "Factorize matrix...       " << std::flush;
-            m_fvSolver.factorize();
             std::cout << time.restart() << " ms" << std::endl;
         case DIRTY_NODE_VALUE:
             std::cout << "Solve...                  " << std::flush;
