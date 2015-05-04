@@ -71,8 +71,8 @@ if namespaces:
 		if ns != '':
 			print("}", file=out)
 	print(file=out)
- 
+
 if options.include_guard:
 	print("#endif", file=out)
-	
+
 out.close()

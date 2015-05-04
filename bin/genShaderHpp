@@ -13,3 +13,9 @@
 	-g _VITELOTTE_UTILS_VG_MESH_GL2_RENDERER_SHADERS_ \
 	-o Patate/Vitelotte/Utils/vgMeshGL2RendererShaders.hpp \
 	Patate/Vitelotte/Utils/vgMeshGL2RendererShaders/*
+
+./bin/shader2cpp \
+	-e \
+	-l \
+	-o examples/Vitelotte/common/shaders.cpp \
+	examples/Vitelotte/common/shaders/*
