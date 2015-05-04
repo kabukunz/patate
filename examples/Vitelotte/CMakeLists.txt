@@ -2,6 +2,6 @@ project(VitelotteExamples)
 
 cmake_minimum_required(VERSION 2.8)
 
-add_subdirectory(gl_viewer)
 add_subdirectory(mvgtk)
-add_subdirectory(editor)
+add_subdirectory(mvg_viewer)
+add_subdirectory(mvg_editor)

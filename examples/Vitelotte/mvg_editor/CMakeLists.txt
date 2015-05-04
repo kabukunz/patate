@@ -2,7 +2,7 @@
 # Vitelotte Editor                                                     #
 ########################################################################
 
-project(VitelotteEditor)
+project(MvgEditor)
 
 cmake_minimum_required(VERSION 2.8.11)
 
@@ -25,7 +25,7 @@ include_directories(
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(vitelotte_editor_SHADERS
+set(mvg_editor_SHADERS
 	shaders/vert_points.glsl
 	shaders/geom_points.glsl
 	shaders/frag_points.glsl
@@ -34,11 +34,11 @@ set(vitelotte_editor_SHADERS
 	shaders/frag_lines.glsl
 )
 
-qt5_add_resources(vitelotte_editor_RES
+qt5_add_resources(mvg_editor_RES
 	editor.qrc
 )
 
-set(vitelotte_editor_SRCS
+set(mvg_editor_SRCS
     ../common/orthographicCamera.cpp
     ../common/glPointRenderer.cpp
     ../common/glLineRenderer.cpp
@@ -50,26 +50,26 @@ set(vitelotte_editor_SRCS
     valueEditor.cpp
     editor.cpp
     mainWindow.cpp
-    ${vitelotte_editor_RES}
+    ${mvg_editor_RES}
     main.cpp
 )
 
 add_custom_command(
 	OUTPUT ${PROJECT_SOURCE_DIR}/shaders.cpp
-	COMMAND python3 ${PROJECT_SOURCE_DIR}/../../../bin/shader2cpp -o shaders.cpp -e ${vitelotte_editor_SHADERS}
-	DEPENDS ${vitelotte_editor_SHADERS}
+    COMMAND python3 ${PROJECT_SOURCE_DIR}/../../../bin/shader2cpp -o shaders.cpp -e ${mvg_editor_SHADERS}
+    DEPENDS ${mvg_editor_SHADERS}
 	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 	VERBATIM
 )
 #set_source_files_properties(glLineRenderer.cpp
 #	OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/shaders.hpp)
 
-add_executable(editor
-	${vitelotte_editor_SRCS}
+add_executable(mvg_editor
+    ${mvg_editor_SRCS}
 )
-add_dependencies(examples editor)
+add_dependencies(examples mvg_editor)
 
-target_link_libraries(editor
+target_link_libraries(mvg_editor
     Qt5::Widgets
     Qt5::OpenGL
     ${OPENGL_LIBRARIES}

@@ -10,7 +10,7 @@
 
 #include "../common/trackball.h"
 
-#include "glViewer.h"
+#include "mvgViewer.h"
 
 
 Eigen::Matrix4f orthogonalMatrix(float _left, float _right, float _bottom, float _top, float _near, float _far)

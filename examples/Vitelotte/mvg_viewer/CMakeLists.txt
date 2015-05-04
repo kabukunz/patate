@@ -2,7 +2,7 @@
 # Vitelotte GL Viewer                                                         #
 ###############################################################################
 
-project(VitelotteGLViewer)
+project(MvgViewer)
 
 cmake_minimum_required(VERSION 2.8)
 
@@ -22,18 +22,18 @@ include_directories(
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(vitelotte_SRCS
+set(mvg_viewer_SRCS
     ../common/trackball.cpp
     ../common/shaders.cpp
     ../common/glPointRenderer.cpp
     ../common/glLineRenderer.cpp
     ../common/vgNodeRenderer.cpp
-    glViewer.cpp
+    mvgViewer.cpp
 )
-add_executable(gl_viewer ${vitelotte_SRCS})
-add_dependencies(examples gl_viewer)
+add_executable(mvg_viewer ${mvg_viewer_SRCS})
+add_dependencies(examples mvg_viewer)
 
-target_link_libraries(gl_viewer
+target_link_libraries(mvg_viewer
     ${GLFW3_LIBRARIES}
     ${GLEW_LIBRARIES}
 )
