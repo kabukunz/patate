@@ -1,5 +1,5 @@
-#ifndef _BEZIER_CURVE_H_
-#define _BEZIER_CURVE_H_
+#ifndef _EXAMPLES_VITELOTTE_COMMON_BEZIER_CURVE_
+#define _EXAMPLES_VITELOTTE_COMMON_BEZIER_CURVE_
 
 
 #include <cassert>

@@ -1,5 +1,5 @@
-#ifndef _VITELOTTE_EXAMPLE_MVGTK_MVGTK_
-#define _VITELOTTE_EXAMPLE_MVGTK_MVGTK_
+#ifndef _MVGTK_MVGTK_
+#define _MVGTK_MVGTK_
 
 
 #include <list>

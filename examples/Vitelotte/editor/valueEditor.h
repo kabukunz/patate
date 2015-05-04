@@ -1,5 +1,5 @@
-#ifndef VALUE_EDITOR_H
-#define VALUE_EDITOR_H
+#ifndef _MVG_EDITOR_VALUE_EDITOR_
+#define _MVG_EDITOR_VALUE_EDITOR_
 
 
 #include <vector>

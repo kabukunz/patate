@@ -1,5 +1,5 @@
-#ifndef _APPLICATION_H_
-#define _APPLICATION_H_
+#ifndef _MVG_VIEWER_H_
+#define _MVG_VIEWER_H_
 
 #ifdef WIN32
 

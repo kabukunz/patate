@@ -1,5 +1,5 @@
-#ifndef _EDITOR_H_
-#define _EDITOR_H_
+#ifndef _MVG_EDITOR_EDITOR_
+#define _MVG_EDITOR_EDITOR_
 
 
 //#include <cstdlib>

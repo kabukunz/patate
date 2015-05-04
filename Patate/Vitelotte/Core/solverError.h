@@ -4,8 +4,8 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#ifndef _VITELOTTE_ELEMENT_SOLVER_ERROR_
-#define _VITELOTTE_ELEMENT_SOLVER_ERROR_
+#ifndef _VITELOTTE_SOLVER_ERROR_
+#define _VITELOTTE_SOLVER_ERROR_
 
 
 #include <string>

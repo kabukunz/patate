@@ -1,5 +1,5 @@
-#ifndef _MAIN_WINDOW_H_
-#define _MAIN_WINDOW_H_
+#ifndef _MVG_EDITOR_MAIN_WINDOW_
+#define _MVG_EDITOR_MAIN_WINDOW_
 
 
 #include <QMainWindow>

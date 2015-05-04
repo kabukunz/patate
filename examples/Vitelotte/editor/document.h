@@ -1,5 +1,5 @@
-#ifndef _DOCUMENT_H_
-#define _DOCUMENT_H_
+#ifndef _MVG_EDITOR_DOCUMENT_
+#define _MVG_EDITOR_DOCUMENT_
 
 
 #include <Eigen/Geometry>

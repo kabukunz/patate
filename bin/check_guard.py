@@ -28,34 +28,36 @@ def print_all_caps_from_camel_case(toprint, out):
 			out.write('_')
 			skip = True
 		else:
-			skip = False
+			skip = c == "_"
 		out.write(c.upper())
 
 def guard_from_filename(filename):
 	guard = StringIO('')
 	guard.write('_')
-	
+
 	d = dirname(filename)
 	if d == 'Patate':
 		guard.write('PATATE')
-	elif d.startswith('Patate/common/'):
-		print_all_caps_from_camel_case(d.replace('/', '_'), guard)		
+	elif d.startswith('Patate/common/') or d.startswith('examples/Vitelotte/common'):
+		print_all_caps_from_camel_case(d.replace('/', '_'), guard)
+	elif d.startswith('examples/'):
+		print_all_caps_from_camel_case(basename(d), guard)
 	else:
 		print_all_caps_from_camel_case(basename(dirname(d)), guard)
 
 	guard.write('_')
-	
+
 	name, ext = splitext(basename(filename))
 	print_all_caps_from_camel_case(name, guard)
 
 	guard.write('_')
-	
+
 	return guard.getvalue()
 
 current = extract_guard(argv[1])
-theorical = guard_from_filename(argv[1])
+target = guard_from_filename(argv[1])
 
-if current == theorical:
+if current == target:
 	print('\033[32m{}\033[0m: {}'.format(argv[1], current))
 else:
-	print('\033[31m{}\033[0m: {} - {}'.format(argv[1], current, theorical))
+	print('\033[31m{}\033[0m: {} - {}'.format(argv[1], current, target))
