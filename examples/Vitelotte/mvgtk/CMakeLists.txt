@@ -19,10 +19,6 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(vitelotte_mvgtk_SRCS
     solveCommand.cpp
-    ../common/textFormatter.cpp
-    ../common/vgMeshWithCurves.cpp
-    ../common/vgMeshWithCurvesReader.cpp
-    ../common/vgMeshWithCurvesWriter.cpp
     mvgtk.cpp
     checkCommand.cpp
     compactCommand.cpp
@@ -35,3 +31,7 @@ set(vitelotte_mvgtk_SRCS
 )
 add_executable(mvgtk ${vitelotte_mvgtk_SRCS})
 add_dependencies(examples mvgtk)
+
+target_link_libraries(mvgtk
+    vitelotte_examples_common
+)

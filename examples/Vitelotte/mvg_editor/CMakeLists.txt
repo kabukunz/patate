@@ -25,27 +25,11 @@ include_directories(
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(mvg_editor_SHADERS
-	shaders/vert_points.glsl
-	shaders/geom_points.glsl
-	shaders/frag_points.glsl
-	shaders/vert_lines.glsl
-	shaders/geom_lines.glsl
-	shaders/frag_lines.glsl
-)
-
 qt5_add_resources(mvg_editor_RES
 	editor.qrc
 )
 
 set(mvg_editor_SRCS
-    ../common/orthographicCamera.cpp
-    ../common/glPointRenderer.cpp
-    ../common/glLineRenderer.cpp
-    ../common/vgMeshWithCurves.cpp
-    ../common/vgMeshWithCurvesReader.cpp
-    ../common/vgNodeRenderer.cpp
-    ../common/shaders.cpp
     document.cpp
     valueEditor.cpp
     editor.cpp
@@ -54,22 +38,14 @@ set(mvg_editor_SRCS
     main.cpp
 )
 
-add_custom_command(
-	OUTPUT ${PROJECT_SOURCE_DIR}/shaders.cpp
-    COMMAND python3 ${PROJECT_SOURCE_DIR}/../../../bin/shader2cpp -o shaders.cpp -e ${mvg_editor_SHADERS}
-    DEPENDS ${mvg_editor_SHADERS}
-	WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-	VERBATIM
-)
-#set_source_files_properties(glLineRenderer.cpp
-#	OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/shaders.hpp)
-
 add_executable(mvg_editor
     ${mvg_editor_SRCS}
 )
 add_dependencies(examples mvg_editor)
+add_dependencies(mvg_editor vitelottes_vg_mesh_renderer_shaders)
 
 target_link_libraries(mvg_editor
+    vitelotte_examples_common
     Qt5::Widgets
     Qt5::OpenGL
     ${OPENGL_LIBRARIES}

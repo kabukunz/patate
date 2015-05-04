@@ -23,17 +23,14 @@ include_directories(
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(mvg_viewer_SRCS
-    ../common/trackball.cpp
-    ../common/shaders.cpp
-    ../common/glPointRenderer.cpp
-    ../common/glLineRenderer.cpp
-    ../common/vgNodeRenderer.cpp
     mvgViewer.cpp
 )
 add_executable(mvg_viewer ${mvg_viewer_SRCS})
 add_dependencies(examples mvg_viewer)
+add_dependencies(mvg_viewer vitelottes_vg_mesh_renderer_shaders)
 
 target_link_libraries(mvg_viewer
+    vitelotte_examples_common
     ${GLFW3_LIBRARIES}
     ${GLEW_LIBRARIES}
 )
