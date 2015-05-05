@@ -4,19 +4,22 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "vgMeshWithCurvesWriter.h"
+#include "mvgWithCurvesWriter.h"
 
 
-VGMeshWithCurveWriter::VGMeshWithCurveWriter(Version version)
+namespace Vitelotte
+{
+
+
+template < typename _Mesh >
+MVGWithCurvesWriter<_Mesh>::MVGWithCurvesWriter(Version version)
     : Base(version) {
 }
 
 
-void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
-    typedef Mesh::Halfedge Halfedge;
-    typedef Mesh::PointConstraint PointConstraint;
-    typedef Mesh::Curve Curve;
-
+template < typename _Mesh >
+void
+MVGWithCurvesWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) {
     Base::write(_out, mesh);
 
     for(unsigned pci = 0; pci < mesh.nPointConstraints(); ++pci)
@@ -59,22 +62,22 @@ void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
         }
         _out << "\n";
 
-        if(mesh.bezierCurve(curve).nPoints())
+        if(mesh.bezierPath(curve).nPoints())
         {
-            typedef Mesh::BezierCurve BezierCurve;
-            const BezierCurve& bc = mesh.bezierCurve(curve);
-            _out << "bp " << ci << " M " << bc.point(0).transpose().format(m_format);
-            for(unsigned si = 0; si < bc.nSegments(); ++si)
+            typedef typename Mesh::BezierPath BezierPath;
+            const BezierPath& path = mesh.bezierPath(curve);
+            _out << "bp " << ci << " M " << path.point(0).transpose().format(m_format);
+            for(unsigned si = 0; si < path.nSegments(); ++si)
             {
-                switch(bc.type(si))
+                switch(path.type(si))
                 {
-                case BezierCurve::LINEAR:    _out << " L"; break;
-                case BezierCurve::QUADRATIC: _out << " Q"; break;
-                case BezierCurve::CUBIC:     _out << " C"; break;
+                case BezierPath::LINEAR:    _out << " L"; break;
+                case BezierPath::QUADRATIC: _out << " Q"; break;
+                case BezierPath::CUBIC:     _out << " C"; break;
                 }
-                for(unsigned pi = 1; pi < bc.nPoints(si); ++pi)
+                for(unsigned pi = 1; pi < path.nPoints(si); ++pi)
                 {
-                    _out << " " << bc.point(si, pi).transpose().format(m_format);
+                    _out << " " << path.point(si, pi).transpose().format(m_format);
                 }
             }
             _out << "\n";
@@ -108,54 +111,20 @@ void VGMeshWithCurveWriter::write(std::ostream& _out, const Mesh& mesh) {
             writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT));
             _out << "\n";
         }
-//        _out << "dc"
-//             << " " << (mesh.valueFunction(curve, Mesh::VALUE_LEFT).empty()? "x": "o");
-//        if(mesh.valueTear(curve))
-//        {
-//            _out << "/" << (mesh.valueFunction(curve, Mesh::VALUE_RIGHT).empty()? "x": "o");
-//        }
-//        _out << " " << (mesh.valueFunction(curve, Mesh::GRADIENT_LEFT).empty()? "x": "o");
-//        if(mesh.gradientTear(curve))
-//        {
-//            _out << "/" << (mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT).empty()? "x": "o");
-//        }
-//        _out << ";";
-
-//        if(!mesh.valueFunction(curve, Mesh::VALUE_LEFT).empty())
-//        {
-//            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::VALUE_LEFT));
-//        }
-//        if(mesh.valueTear(curve) && !mesh.valueFunction(curve, Mesh::VALUE_RIGHT).empty())
-//        {
-//            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::VALUE_RIGHT));
-//        }
-
-//        if(!mesh.valueFunction(curve, Mesh::GRADIENT_LEFT).empty())
-//        {
-//            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_LEFT));
-//        }
-//        if(mesh.gradientTear(curve) && !mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT).empty())
-//        {
-//            writeValueFunction(_out, mesh.valueFunction(curve, Mesh::GRADIENT_RIGHT));
-//        }
-
-//        Halfedge h = mesh.firstHalfedge(curve);
-//        _out << " " << vertexIndex(mesh.fromVertex(h)) << ":" << mesh.fromCurvePos(h);
-//        while(h.isValid())
-//        {
-//            _out << " " << vertexIndex(mesh.toVertex(h)) << ":" << mesh.toCurvePos(h);
-//            h = mesh.nextCurveHalfedge(h);
-//        }
-//        _out << "\n";
     }
 }
 
 
-void VGMeshWithCurveWriter::writeValueFunction(std::ostream& out, const ValueFunction& vg) const
+template < typename _Mesh >
+void
+MVGWithCurvesWriter<_Mesh>::writeValueFunction(std::ostream& out, const ValueFunction& vg) const
 {
-    for(ValueFunction::ConstIterator stop = vg.begin();
+    for(typename ValueFunction::ConstIterator stop = vg.begin();
         stop != vg.end(); ++stop)
     {
         out << "   " << stop->first << " " << stop->second.transpose().format(m_format);
     }
+}
+
+
 }

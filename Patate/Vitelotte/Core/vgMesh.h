@@ -385,14 +385,6 @@ public:
     inline bool hasVertexGradientConstraint() const
         { return m_attributes & VERTEX_GRADIENT_CONSTRAINT_FLAG; }
 
-
-//    bool hasEdgeConstraintFlag() const { return bool(m_edgeConstraintFlag); }
-//    void setEdgeConstraintFlag(bool on);
-//    PatateCommon::Property<bool>::Reference isEdgeConstrained(Edge edge)
-//        { return m_edgeConstraintFlag[edge]; }
-//    PatateCommon::Property<bool>::ConstReference isEdgeConstrained(Edge edge) const
-//        { return m_edgeConstraintFlag[edge]; }
-
     inline Node toVertexValueNode(Halfedge h) const
         { assert(hasToVertexValue()); return m_toVertexValueNodes[h]; }
     inline Node& toVertexValueNode(Halfedge h)

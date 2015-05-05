@@ -11,7 +11,6 @@
 
 #include "Patate/vitelotte_io.h"
 
-#include "../common/vgMeshWithCurvesReader.h"
 #include "../common/plotObj.h"
 
 #include "document.h"
@@ -548,7 +547,7 @@ void Document::solve()
 
 void Document::loadMesh(const std::string& filename)
 {
-    VGMeshWithCurveReader reader;
+    Vitelotte::MVGWithCurvesReader<Mesh> reader;
     std::ifstream in(filename.c_str());
     bool ok = reader.read(in, m_mesh);
     if(!ok)
@@ -589,7 +588,8 @@ void Document::openSaveSourceMeshDialog()
 
     if(!file.isEmpty())
     {
-        Vitelotte::writeMvgToFile(file.toStdString(), m_mesh);
+        std::ofstream out(file.toLocal8Bit().data());
+        Vitelotte::MVGWithCurvesWriter<Mesh>().write(out, m_mesh);
     }
 }
 
@@ -601,7 +601,8 @@ void Document::openSaveFinalMeshDialog()
 
     if(!file.isEmpty())
     {
-        Vitelotte::writeMvgToFile(file.toStdString(), m_solvedMesh);
+        std::ofstream out(file.toLocal8Bit().data());
+        Vitelotte::MVGWithCurvesWriter<Mesh>().write(out, m_solvedMesh);
     }
 }
 

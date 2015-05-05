@@ -7,21 +7,28 @@
 #include <string>
 #include <sstream>
 
-#include "vgMeshWithCurvesReader.h"
+#include "mvgWithCurvesReader.h"
 
 
 #define PTT_ERROR_IF(_cond, _msg) do { if(_cond) { error(_msg); return true; } } while(false)
 #define PTT_RETURN_IF_ERROR() do { if(m_error) { return true; } } while(false)
 
 
-VGMeshWithCurveReader::VGMeshWithCurveReader()
+namespace Vitelotte
+{
+
+
+template < typename _Mesh >
+MVGWithCurvesReader<_Mesh>::MVGWithCurvesReader()
 {
 
 }
 
 
-bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
-                                            std::istream& def, Mesh& mesh)
+template < typename _Mesh >
+bool
+MVGWithCurvesReader<_Mesh>::parseDefinition(const std::string& spec,
+                                              std::istream& def, Mesh& mesh)
 {
     // Ponctual Value Constraint
     if(spec == "pvc")
@@ -111,14 +118,14 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
     // Bezier Path
     else if(spec == "bp")
     {
-        typedef Mesh::BezierCurve BezierCurve;
-        typedef BezierCurve::SegmentType SegmentType;
+        typedef typename Mesh::BezierPath BezierPath;
+        typedef typename BezierPath::SegmentType SegmentType;
 
         unsigned ci;
         def >> ci; PTT_ERROR_IF(!def || ci >= mesh.nCurves(), "Invalid curve index");
 
-        BezierCurve& bc = mesh.bezierCurve(Curve(ci));
-        if(bc.nPoints() != 0)
+        BezierPath& path = mesh.bezierPath(Curve(ci));
+        if(path.nPoints() != 0)
         {
             warning("Bezier curve already defined");
             return true;
@@ -126,9 +133,9 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
 
         def >> m_part; PTT_ERROR_IF(!def || m_part != "M", "Expected M path command");
         parseVector(def); PTT_RETURN_IF_ERROR();
-        bc.setFirstPoint(m_vector);
+        path.setFirstPoint(m_vector);
 
-        SegmentType type = BezierCurve::CUBIC;
+        SegmentType type = BezierPath::CUBIC;
         unsigned count = 0;
         Vector points[3];
         for(unsigned i = 0; i < 3; ++i) points[i].resize(mesh.nDims());
@@ -141,9 +148,9 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
                 def >> m_part; PTT_ERROR_IF(!def || m_part.size() != 1, "Invalid string in path definition");
                 switch(m_part[0])
                 {
-                case 'L': type = BezierCurve::LINEAR;    break;
-                case 'Q': type = BezierCurve::QUADRATIC; break;
-                case 'C': type = BezierCurve::CUBIC;     break;
+                case 'L': type = BezierPath::LINEAR;    break;
+                case 'Q': type = BezierPath::QUADRATIC; break;
+                case 'C': type = BezierPath::CUBIC;     break;
                 default: error("Unsupported path command"); return true;
                 }
             }
@@ -153,9 +160,9 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
                 points[count] = m_vector;
                 ++count;
 
-                if(count == BezierCurve::size(type) - 1)
+                if(count == BezierPath::size(type) - 1)
                 {
-                    bc.addSegment(type, points);
+                    path.addSegment(type, points);
                     count = 0;
                 }
             }
@@ -168,6 +175,10 @@ bool VGMeshWithCurveReader::parseDefinition(const std::string& spec,
     }
     return true;
 }
+
+
+}
+
 
 #undef PTT_ERROR_IF
 #undef PTT_RETURN_IF_ERROR

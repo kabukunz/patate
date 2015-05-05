@@ -11,8 +11,6 @@
 #include <Patate/vitelotte_io.h>
 
 #include "../common/textFormatter.h"
-#include "../common/vgMeshWithCurvesReader.h"
-#include "../common/vgMeshWithCurvesWriter.h"
 
 #include "mvgtk.h"
 
@@ -69,7 +67,7 @@ bool OutputCommand::execute(Mesh& mesh, const GlobalOptions* opts)
         std::cerr << "Unable to open \"" << m_outFilename << "\".";
         return false;
     }
-    VGMeshWithCurveWriter().write(out, mesh);
+    Vitelotte::MVGWithCurvesWriter<Mesh>().write(out, mesh);
     return true;
 }
 
@@ -247,7 +245,7 @@ bool Mvgtk::executeCommands()
     else if(m_inFilename.rfind(".mvg") == m_inFilename.length() - 4)
     {
         if(opts.verbose) std::cout << "Load mvg \"" << m_inFilename << "\"...\n";
-        VGMeshWithCurveReader reader;
+        Vitelotte::MVGWithCurvesReader<Mesh> reader;
         std::ifstream in(m_inFilename.c_str());
         ok = reader.read(in, mesh);
     }

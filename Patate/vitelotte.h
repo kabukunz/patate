@@ -16,6 +16,7 @@
 #include "Vitelotte/Core/morleyElement.h"
 #include "Vitelotte/Core/fvElement.h"
 #include "Vitelotte/Core/vgMesh.h"
+#include "Vitelotte/Utils/vgMeshWithCurves.h"
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/linearElementBuilder.h"
 #include "Vitelotte/Core/quadraticElementBuilder.h"

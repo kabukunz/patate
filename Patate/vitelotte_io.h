@@ -14,5 +14,8 @@
 #include "Vitelotte/Core/vgMesh.h"
 #include "Vitelotte/Utils/mvgReader.h"
 #include "Vitelotte/Utils/mvgWriter.h"
+#include "Vitelotte/Utils/vgMeshWithCurves.h"
+#include "Vitelotte/Utils/mvgWithCurvesReader.h"
+#include "Vitelotte/Utils/mvgWithCurvesWriter.h"
 
 #endif

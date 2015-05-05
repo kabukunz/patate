@@ -15,12 +15,13 @@
 
 #include <Patate/vitelotte.h>
 
-#include "../common/vgMeshWithCurves.h"
-
 
 typedef std::map<std::string, unsigned> ArgMap;
 
-typedef VGMeshWithCurves Mesh;
+typedef Vitelotte::VGMeshWithCurves<
+            float,
+            Vitelotte::Dynamic,
+            Vitelotte::Dynamic > Mesh;
 
 
 int parseAttribSet(const std::string& attr);

@@ -4,8 +4,8 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#ifndef _EXAMPLES_VITELOTTE_COMMON_BEZIER_CURVE_
-#define _EXAMPLES_VITELOTTE_COMMON_BEZIER_CURVE_
+#ifndef _VITELOTTE_BEZIER_PATH_
+#define _VITELOTTE_BEZIER_PATH_
 
 
 #include <cassert>
@@ -14,9 +14,12 @@
 #include <Eigen/Geometry>
 
 
-// TODO: Rename it BezierPath ?
+namespace Vitelotte
+{
+
+
 template < typename _Vector >
-class BezierCurve
+class BezierPath
 {
 public:
     typedef _Vector Vector;
@@ -32,7 +35,7 @@ public:
     static unsigned size(SegmentType type) { return unsigned(type); }
 
 public:
-    inline BezierCurve() {}
+    inline BezierPath() {}
 
     inline unsigned nPoints()   const { return m_points.size(); }
     inline unsigned nSegments() const { return m_segments.size(); }
@@ -47,7 +50,7 @@ public:
         return m_points.at(m_segments[si].firstPoint + pi);
     }
 
-    void setFirstPoint(const Vector& point)
+    inline void setFirstPoint(const Vector& point)
     {
         assert(nPoints() == 0);
         m_points.push_back(point);
@@ -84,5 +87,7 @@ private:
     SegmentList m_segments;
 };
 
+
+}
 
 #endif

@@ -4,16 +4,19 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#ifndef _EXAMPLES_VITELOTTE_COMMON_VG_MESH_WITH_CURVES_
-#define _EXAMPLES_VITELOTTE_COMMON_VG_MESH_WITH_CURVES_
+#ifndef _VITELOTTE_VG_MESH_WITH_CURVES_
+#define _VITELOTTE_VG_MESH_WITH_CURVES_
 
 
 #include <vector>
 
-#include <Patate/vitelotte.h>
+#include "../Core/vgMesh.h"
 
-#include "bezierCurve.h"
+#include "bezierPath.h"
 
+
+namespace Vitelotte
+{
 
 template <typename _Value>
 class PicewiseLinearFunction
@@ -54,30 +57,71 @@ private:
 };
 
 
-class VGMeshWithCurves : public Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic>
+template < typename _Scalar, int _Dims=2, int _Coeffs=4 >
+class VGMeshWithCurves : public Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs>
 {
 public:
-    typedef Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic> Base;
+    typedef Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs> Base;
 
-    typedef Base::Scalar Scalar;
-    typedef Base::Vector Vector;
-    typedef Base::Value Value;
-    typedef Base::Gradient Gradient;
+    typedef typename Base::Scalar   Scalar;
+    typedef typename Base::Vector   Vector;
+    typedef typename Base::Value    Value;
+    typedef typename Base::Gradient Gradient;
+
+    typedef typename Base::BaseHandle BaseHandle;
+    typedef typename Base::Vertex     Vertex;
+    typedef typename Base::Halfedge   Halfedge;
+    typedef typename Base::Edge       Edge;
+    typedef typename Base::Face       Face;
+    typedef typename Base::Node       Node;
+
+    typedef typename Base::VertexIterator     VertexIterator;
+    typedef typename Base::HalfedgeIterator   HalfedgeIterator;
+    typedef typename Base::HalfedgeAroundVertexCirculator
+                                              HalfedgeAroundVertexCirculator;
+
+    using Base::verticesBegin;
+    using Base::verticesEnd;
+    using Base::halfedges;
+    using Base::halfedgesBegin;
+    using Base::halfedgesEnd;
+    using Base::oppositeHalfedge;
+    using Base::isBoundary;
+
+    using Base::nCoeffs;
+    using Base::nDims;
+    using Base::unconstrainedValue;
+    using Base::hasFromVertexValue;
+    using Base::hasToVertexValue;
+    using Base::hasEdgeValue;
+    using Base::hasEdgeGradient;
+    using Base::fromVertexValueNode;
+    using Base::toVertexValueNode;
+    using Base::edgeValueNode;
+    using Base::edgeGradientNode;
+    using Base::halfedgeNode;
+    using Base::halfedgeOppositeNode;
+    using Base::halfedgeOrientation;
+    using Base::addNode;
+    using Base::setGradientConstraint;
+    using Base::removeGradientConstraint;
 
     typedef PicewiseLinearFunction<Value> ValueFunction;
 
-    typedef ::BezierCurve<Vector> BezierCurve;
+    typedef Vitelotte::BezierPath<Vector> BezierPath;
 
-    typedef Gradient::ConstantReturnType UnconstrainedGradientType;
+    typedef typename Gradient::ConstantReturnType UnconstrainedGradientType;
 
     struct Curve : public BaseHandle
     {
+        using BaseHandle::idx;
         explicit Curve(int _idx = -1) : BaseHandle(_idx) {}
         std::ostream& operator<<(std::ostream& os) const { return os << 'c' << idx(); }
     };
 
     struct PointConstraint : public BaseHandle
     {
+        using BaseHandle::idx;
         explicit PointConstraint(int _idx = -1) : BaseHandle(_idx) {}
         std::ostream& operator<<(std::ostream& os) const { return os << "pc" << idx(); }
     };
@@ -95,7 +139,7 @@ public:
         Halfedge       lastHalfedge;
         unsigned       flags;
         ValueFunction  gradient[4];
-        BezierCurve    bezierCurve;
+        BezierPath     bezierPath;
     };
 
     struct PointConstraintInfo
@@ -176,13 +220,8 @@ public:
     const ValueFunction& valueFunctionRaw(Curve c, unsigned which) const;
           ValueFunction& valueFunctionRaw(Curve c, unsigned which);
 
-    const BezierCurve& bezierCurve(Curve c) const { return m_curves.at(c.idx()).bezierCurve; }
-          BezierCurve& bezierCurve(Curve c)       { return m_curves.at(c.idx()).bezierCurve; }
-
-//    inline PointConstraint  pointConstraint(Vertex v) const
-//      { return m_pointConstraintConn[v]; }
-//    inline PointConstraint& pointConstraint(Vertex v)
-//      { return m_pointConstraintConn[v]; }
+    const BezierPath& bezierPath(Curve c) const { return m_curves.at(c.idx()).bezierPath; }
+          BezierPath& bezierPath(Curve c)       { return m_curves.at(c.idx()).bezierPath; }
 
     using Base::vertex;
     inline Vertex vertex(PointConstraint pc) const { return m_pointConstraints[pc.idx()].vertex; }
@@ -221,19 +260,25 @@ public:
 
 
 protected:
+    using Base::m_nprops;
+
+protected:
     void copyVGMeshWithCurvesMembers(const VGMeshWithCurves& other);
 
     typedef Node NodePair[2];
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
 
 protected:
-    Base::VertexProperty<PointConstraint> m_pointConstraintConn;
-    Base::HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
+    typename Base::template VertexProperty<PointConstraint> m_pointConstraintConn;
+    typename Base::template HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
     std::vector<PointConstraintInfo> m_pointConstraints;
     std::vector<CurveInfo> m_curves;
-
 };
+
+}
+
+#include "vgMeshWithCurves.hpp"
 
 
 #endif

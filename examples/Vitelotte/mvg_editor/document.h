@@ -16,11 +16,12 @@
 
 #include "Patate/vitelotte.h"
 
-#include "../common/vgMeshWithCurves.h"
-
 
 typedef float Scalar;
-typedef VGMeshWithCurves Mesh;
+typedef Vitelotte::VGMeshWithCurves<
+            float,
+            Vitelotte::Dynamic,
+            Vitelotte::Dynamic> Mesh;
 
 
 class MeshSelection

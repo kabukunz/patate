@@ -23,16 +23,12 @@ add_custom_command(
 )
 
 set(vitelotte_examples_common_SRCS
-    bezierCurve.cpp
     glLineRenderer.cpp
     glPointRenderer.cpp
     orthographicCamera.cpp
     shaders.cpp
     textFormatter.cpp
     trackball.cpp
-    vgMeshWithCurves.cpp
-    vgMeshWithCurvesReader.cpp
-    vgMeshWithCurvesWriter.cpp
     vgNodeRenderer.cpp
 )
 
