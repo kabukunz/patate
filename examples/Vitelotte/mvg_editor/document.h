@@ -14,7 +14,7 @@
 #include <QUndoCommand>
 #include <QUndoStack>
 
-#include "Patate/vitelotte.h"
+#include "Patate/vitelotte_curves.h"
 
 
 typedef float Scalar;

@@ -13,7 +13,7 @@
 #include <string>
 #include <ostream>
 
-#include <Patate/vitelotte.h>
+#include <Patate/vitelotte_curves.h>
 
 
 typedef std::map<std::string, unsigned> ArgMap;

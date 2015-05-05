@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include <Patate/common/surface_mesh/objReader.h>
-#include <Patate/vitelotte_io.h>
+#include <Patate/vitelotte_curves_io.h>
 
 #include "../common/textFormatter.h"
 
