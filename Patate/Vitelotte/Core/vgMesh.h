@@ -675,6 +675,7 @@ protected:
 
 } // namespace Vitelotte
 
+
 #include "vgMesh.hpp"
 
 

@@ -924,7 +924,7 @@ VGMesh<_Scalar, _Dim, _Chan>::resizePositionsMatrix(unsigned rows, unsigned cols
     VectorMatrix positions(rows, cols);
     unsigned minRows = std::min(rows, unsigned(m_positions.rows()));
     unsigned minCols = std::min(cols, unsigned(m_positions.cols()));
-    positions.block(0, 0, minRows, minCols) = m_positions;
+    positions.block(0, 0, minRows, minCols) = m_positions.block(0, 0, minRows, minCols);
     m_positions.swap(positions);
 }
 

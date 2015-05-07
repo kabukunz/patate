@@ -239,6 +239,7 @@ bool Mvgtk::executeCommands()
         if(opts.verbose) std::cout << "Load obj \"" << m_inFilename << "\"...\n";
         std::ifstream in(m_inFilename.c_str());
         PatateCommon::OBJReader<Mesh> reader;
+        mesh.setNDims(3);
         ok = reader.read(in, mesh);
         mesh.setNCoeffs(4);
     }

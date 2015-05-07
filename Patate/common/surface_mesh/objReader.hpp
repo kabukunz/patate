@@ -30,7 +30,7 @@ OBJBaseReader<_Mesh>::read(std::istream& in, Mesh& mesh)
 
     in.imbue(std::locale::classic());
 
-    if(in.bad())
+    if(!in.good())
     {
         error("Can not read input");
     }
@@ -132,7 +132,7 @@ OBJBaseReader<_Mesh>::error(const std::string& msg)
 {
     if(m_errorCallback)
     {
-        m_error = m_errorCallback(msg, m_lineNb, m_errorCallbackPtr);
+        m_error = m_errorCallback(msg, m_lineNb, m_errorCallbackPtr) || m_error;
     }
 }
 
@@ -143,7 +143,7 @@ OBJBaseReader<_Mesh>::warning(const std::string& msg)
 {
     if(m_warningCallback)
     {
-        m_error = m_warningCallback(msg, m_lineNb, m_errorCallbackPtr);
+        m_error = m_warningCallback(msg, m_lineNb, m_errorCallbackPtr) || m_error;
     }
 }
 
@@ -156,10 +156,18 @@ OBJReader<_Mesh>::OBJReader()
 
 template < typename _Mesh >
 void
-OBJReader<_Mesh>::parseHeader(std::istream& /*in*/, Mesh& mesh) {
-    mesh.setNDims(3);
+OBJReader<_Mesh>::parseHeader(std::istream& /*in*/, Mesh& /*mesh*/) {
     m_vector.resize(3);
 }
+
+
+//template < typename _Scalar, int _Dims, int _Coeffs >
+//void
+//OBJReader<Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs> >::parseHeader(
+//        std::istream& /*in*/, Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs>& mesh) {
+//    mesh.setNDims(3);
+//    m_vector.resize(3);
+//}
 
 
 template < typename _Mesh >
