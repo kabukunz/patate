@@ -8,37 +8,36 @@ namespace Vitelotte
   \section vitelotte_user_manual_intro Introduction
 
   - Problematic: complex vector gradients. Mesh-based vector graphics introduction and advantages.
-  - Problem with the content generation -> diffusion methods
-  - Overview of the typical use of Vitelotte: get a mesh, set constraint, solve and render.
-  - A word about mvgtk that will be used to illustrate the following ?
+  - Problem with the content generation -> diffusion methods -> solver
 
 
-  \section vitelotte_user_manual_vgmesh VGMesh
+  \section vitelotte_user_manual_overview_library Library overview
 
-  - What is the VGMesh class, its relationship with surface_mesh, what are nodes and attributes (probably require a few images).
-  - Template parameters, dimensions and coefficients.
-  - An example where we set all nodes manually ? With I/O ?
-  - Refinement: coming soon !
+  - VGMesh class to represent low-level mesh-based VG.
+  - FemSolver to solve harmonic or biharmonic diffusion over triangular meshes (extensible).
+  - VGMesh renderer to display triangular VGMesh with linear or quadratic color interpolation.
+  - MVGReader / MVGWriter to load / save VGMesh at any processing step
+  - VGMeshWithCurves for a higher-level representation aware of "diffusion curves"
 
+  To come:
 
-  \section vitelotte_user_manual_fem_solver FEM solver
-
-  - Diffusion equations and control.
-  - Fem solver introduction, presentations of the supported element.
-  - Setting up the mesh by hand, requirements and limitations.
-  - Setting up the mesh using finalize, limitations.
-  - Using the solver.
+  - VGMesh refinement to help generating meshes.
+  - Curved edges for higher quality renderings.
 
 
-  \section vitelotte_user_manual_rendering Rendering
+  \section vitelotte_user_manual_overview_tools Tools overview
 
-  - Rendering overview.
-  - Rendering customization.
+  - The mvg toolkit (`mvgtk`). Allow to do all high level operations of VGMeshWithCurves. Example:
 
+  \code{.sh}
+  # poring.mvg is a mvg with diffusion curves and point constraints.
+  # This command generate an image with quadratic interpolation using
+  # a biharmonic diffusion.
+  mvgtk -v poring.mvg conv fv c2n finalize solve out out.mvg
+  \endcode
 
-  \section vitelotte_user_manual_mvg MVG file format
-
-  - Description of the .mvg file format. Maybe move it to a dedicated page.
+  - `mvg_viewer` is a simple OpenGL viewer. It can display both 2D images and 3D meshes.
+  - `mvg_editor` is a simple editor for mvg files. Its main purpose is to allow to experiment with the representation rather than being a user-friendly tool.
 
  */
  }
