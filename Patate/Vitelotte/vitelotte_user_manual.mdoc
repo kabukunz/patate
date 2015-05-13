@@ -7,19 +7,40 @@ namespace Vitelotte
 
   \section vitelotte_user_manual_intro Introduction
 
-  - Problematic: complex vector gradients. Mesh-based vector graphics introduction and advantages.
-  - Problem with the content generation -> diffusion methods -> solver
+  The Vitelotte module provide tools to deal with mesh-based vector graphics. Mesh-based vector graphics represent complex color gradients by splitting the image in a set of faces over which color is defined with simple mathematical functions. This offers several advantages:
+
+  - **Complex color gradients**: while traditional vector graphics only allow simple color gradients, mesh-based vector graphics can represent arbitrary complex color gradient. For instance, this allow to represent realistic shading.
+  - **Scale independence**: important features, like discontinuities, can be represented exactly with curved edges while color functions are smooth at any scale.
+  - **Efficient rendering**: modern GPU excels at rendering polygons, which enable very efficient rendering.
+
+  The main drawback is that the meshes can become quite dense for complex images, with the following consequences:
+
+  - **Bigger files** compared to traditional vector graphics.
+  - **Harder to manipulate**: dense mesh are difficult to manipulate at low level, so higher level tools need to be designed.
+
+  Vitelotte provides tools to mitigate the latest point. Our diffusion solver allow to generate smooth color gradients from a sparse set of constraints in a way similar to diffusion curves.
+
+  TODO: Diffusion illustration
+
+
+  \section vitelotte_user_manual_about About this manual
+
+  This user manual is more or less designed to be read in order. The tutorial introduces some key principles and the VGMesh page details the VGMesh class which is central to Vitelotte. The rest of the manual does not need to be read in order, but require a good understanding of VGMesh.
 
 
   \section vitelotte_user_manual_overview_library Library overview
 
-  - VGMesh class to represent low-level mesh-based VG.
-  - FemSolver to solve harmonic or biharmonic diffusion over triangular meshes (extensible).
-  - VGMesh renderer to display triangular VGMesh with linear or quadratic color interpolation.
-  - MVGReader / MVGWriter to load / save VGMesh at any processing step
-  - VGMeshWithCurves for a higher-level representation aware of "diffusion curves"
+  Here is a quick overview of the main elements of Vitelotte. For a more in-depth introduction, see [the tutorial](@ref vitelotte_user_manual_tutorial_page).
 
-  To come:
+  The most important class is VGMesh as it is used both as input and output of most functionalities. It is a mesh representation that contain per-face attributes used for color interpolation. It has been designed to be easily extensible and can support various color interpolation schemes. It can also encode constraints like requiring the same color at two different points and mark some colors as "unknown" so that a solver can compute them.
+
+  The FemSolver class implement a diffusion solver. It can do harmonic or biharmonic color diffusion over a VGMesh with unknown colors. It support different kind of elements, allowing to have either linear or quadratic color interpolation over the final image.
+
+  The class VGMeshRenderer allow to render VGMesh with linear or quadratic color interpolation.
+
+  MVGReader and MVGWriter work together to save and load VGMesh in the `mvg` file format. It allow to save meshes at any processing step (e.g. before or after solve), which can be useful for debugging purpose.
+
+  A few important feature are missing in this first release. Don't worry, they are planned and should come soon:
 
   - VGMesh refinement to help generating meshes.
   - Curved edges for higher quality renderings.
@@ -27,17 +48,20 @@ namespace Vitelotte
 
   \section vitelotte_user_manual_overview_tools Tools overview
 
-  - The mvg toolkit (`mvgtk`). Allow to do all high level operations of VGMeshWithCurves. Example:
+  Vitelotte also come with a small set of tools that offer a high-level interface to the library:
 
-  \code{.sh}
-  # poring.mvg is a mvg with diffusion curves and point constraints.
-  # This command generate an image with quadratic interpolation using
-  # a biharmonic diffusion.
-  mvgtk -v poring.mvg conv fv c2n finalize solve out out.mvg
-  \endcode
+  - The mvg toolkit (`mvgtk`). Allow to do high level operations on VGMeshWithCurves. Example:
+    \code{.sh}
+    # poring.mvg is a mvg with diffusion curves and point constraints.
+    # This command generate an image with quadratic interpolation using
+    # a biharmonic diffusion.
+    mvgtk -v poring.mvg conv fv c2n finalize solve out out.mvg
+    \endcode
+
+    See [mvgtk's documentation](@ref vitelotte_example_mvgtk_page) for a complete explanation of this command.
 
   - `mvg_viewer` is a simple OpenGL viewer. It can display both 2D images and 3D meshes.
-  - `mvg_editor` is a simple editor for mvg files. Its main purpose is to allow to experiment with the representation rather than being a user-friendly tool.
+  - `mvg_editor` is a simple editor for mvg files. Its main purpose is to allow to experiment with the representation rather than being a user-friendly tool, so expect some rough edges.
 
  */
  }

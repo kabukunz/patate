@@ -20,11 +20,12 @@
 
 /// [Declare the Mesh class]
 
-// A 2D mesh representing an RGBA image (4 channels), using float both for
-// coordinates and color coefficients.
+// A mesh using floats to represent coefficient and with a dynamic number of
+// dimensions and coefficients.
 typedef Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic> Mesh;
 
 /// [Declare the Mesh class]
+
 
 int main(int argc, char** argv)
 {
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
     bool randomColors = false;
 
     srand(time(NULL));
+    srand(9);
 
     /// [Create the mesh]
 
@@ -158,8 +160,8 @@ int main(int argc, char** argv)
         solver.solve();
 
         // Check for errors
-        if(!solver.error().status() != Vitelotte::SolverError::STATUS_OK) {
-            bool error = solver.error().status() != Vitelotte::SolverError::STATUS_ERROR;
+        if(solver.error().status() != Vitelotte::SolverError::STATUS_OK) {
+            bool error = solver.error().status() == Vitelotte::SolverError::STATUS_ERROR;
             std::cerr << "Solver "
                       << (error? "error": "warning")
                       << ": " << solver.error().message() << "\n";
