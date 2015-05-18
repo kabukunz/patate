@@ -243,7 +243,7 @@ public:
 
     /// \brief Create a VGMesh with `attirbutes` flags activated.
     explicit VGMesh(unsigned attributes = 0);
-    explicit VGMesh(unsigned nDims, unsigned nCoeffs, unsigned attributes);
+    explicit VGMesh(unsigned nDims, unsigned nCoeffs, unsigned attributes=0);
     virtual ~VGMesh() {}
 
     VGMesh(const Self& other);
