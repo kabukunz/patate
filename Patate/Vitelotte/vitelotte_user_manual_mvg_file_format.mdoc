@@ -10,68 +10,120 @@
 
   \section vitelotte_user_manual_mvg_file_format_intro_sec Introduction
 
-  - The MVG file format is based on the OBJ file format, a popular format for 3D meshes.
-  - It can store surface meshes in arbitrary dimensions.
-  - It store nodes values and their connections.
-    + Nodes can have an arbitrary number of coefficient.
-    + Nodes can be unknown, thus allowing to store input mesh.
-    + Faces can reference the invalid node, allowing to store unfinalized meshes.
-  - The format is easily extensible.
+  In order to save VGMesh to disk we provide a file format called MVG. MVGs are simple text files with a syntax inspired by the OBJ file format. It supports meshes of arbitrary dimensions, any combination of attributes and nodes (including unknown and invalid nodes). This format is also easily extensible.
+
+  MVG file format is designed to be easy to use, human-readable and hackable.
+
+  Several example MVGs are available in `examples/Vitelotte/samples`.
 
 
   \section vitelotte_user_manual_mvg_file_format_description_sec Description
 
-  - A mvg file starts with a header followed by a body.
-  - The body contains the block of vertex declarations, followed by the block of nodes declarations and then
-  the block of faces declaration, in this order.
-  - Elements are referenced by index in the order of their apparition in the file. <b>Note that unlike obj files, the first element as the index 0.</b>
-  - Blank lines are supported. Comment lines start with #, but can not be placed on the first line. It is not possible to place a comment on the same line than a declaration.
-  - Unknown declarations should be ignored by the parser. This allow to store user-defined informations in mvg files while keeping them readable by unaware applications.
+  MVG files start with a header followed by a body. The body contains the block of vertex declarations, followed by the block of nodes declarations and then the block of faces declaration, in this order. Vertices and nodes are referenced by index in the order of their apparition in the file. _Note that unlike obj files, the first element has the index 0._
+
+  Blank lines and lines starting with # are ignored, but can not be placed on the first line. It is not possible to place a comment on the same line than a declaration.
+
+  Each line in the body form a declaration and starts with a keyword describing the kind of object declared, like 'v' for vertices of 'f' for faces. Lines starting with an unknown keyword are ignored by the parser. This allow to extend mvg files while keeping them readable by unaware applications.
+
 
   \subsection vitelotte_user_manual_mvg_file_format_description_header_subsec Header
 
-  - The file must start with the line
+  MVG files starts with a header. The first line _must_ be
+
   \code
   mvg 1.0
   \endcode
-  - There is then several declaration, some of them are optional:
-    + <tt>dim N</tt> : declare that the mesh is N-dimensional, ie. vertices have N coefficients. Required.
-    + <tt>coefficients N</tt> : declare that nodes have \c N coefficients. Required.
-    + <tt>attributes ATTR</tt> : declare the attributes of the mesh. Allowed \c ATTR values are none, linear, quadratic, morley and fv, each of them correspond to a flag declaration in VGMesh. Other combination are actually represented by the numerical value of the flag combination, but there is no guaranty these will remain compatible in future version of the library. Required.
-    + <tt>vertices N</tt>, <tt>nodes N</tt>, <tt>faces N</tt> : declare the number of vertices, nodes and faces. Optional and need not to reflect the file content accurately. Intended to help preallocating memory.
+
+  The following lines declare respectively the number of dimensions, the number of value's coefficients and the active attributes of the mesh:
+
+  \code
+  dim 2
+  coefficients 4
+  attributes none
+  \endcode
+
+  The parameter of `attributes` can be:
+
+  - `none`: no attributes are enabled.
+  - `linear`: equivalent to VGMesh::LINEAR_FLAGS.
+  - `quadratic`: equivalent to VGMesh::QUADRATIC_FLAGS.
+  - `morley`: equivalent to VGMesh::MORLEY_FLAGS.
+  - `fv`: equivalent to VGMesh::FV_FLAGS.
+  - an integer: any combination of flags, directly represented as a number. Human-readable forms should be preferred when possible.
+
+  Finally, you can declare the number of vertices, nodes and faces. These declarations are optional and only serve as hint for the parser to reserve memory (in other words they do not need to be accurate, which helps manual edition of files):
+
+  \code
+  vertices 1747
+  nodes 0
+  faces 3475
+  \endcode
+
 
   \subsection vitelotte_user_manual_mvg_file_format_description_body_subsec Body
 
-  - There is one declaration by line. Each declaration starts with a node identifying what kind of element is declared.
-  - Declaration must be grouped by type an in a specific order. Failing to do so \e may work with some loader but fail with others.
-
-  - Vertices declarations are like this:
+  Vertex declarations are straightforward:
   \code
   v COORDINATES
   \endcode
-  where \c COORDINATES are the coordinates of the vertex, separated by spaces or tabs.
+  where \c COORDINATES are the coordinates of the vertex, separated by spaces or tabs. The number of coordinates must match the number of dimensions declared in the header.
 
-  - Nodes declarations are similar to vectex:
+  Node declarations are similar to vertex:
   \code
   n COEFFICIENTS
   \endcode
-  where \c COEFFICIENTS are the coefficients, separated by spaces or tabs. However, unknown nodes are declared like this:
+  where \c COEFFICIENTS are the coefficients, separated by spaces or tabs. The number of coordinates must match the number of coefficients declared in the header. Unknown nodes are declared like this:
   \code
   n void
   \endcode
 
-  - Faces declarations are more involved as they contain connectivity to both vertices and nodes. They look like this:
+  Faces declarations are more involved as they contain connectivity to both vertices and nodes. With no attributes enable, they are simply:
   \code
-  f V0/NV0 V1/NV1_1/NV1_2 V2/NV2 - NE0_1/NE0_2 NE1_1/NE1_2 NE2_1/NE2_2
+  f VERTEX_INDICES
   \endcode
-  \c V0, \c V1 and \c V2 are the vertiex indices. \c NV* are the node indices associated with a vertex and \c NE* are the node associated with edges (where the edge 0 is opposite to the vertex 0). TODO: more details
+  where VERTEX_INDICES is the list of the face vertices indices (or 'x' for invalid nodes), ordered counter-clockwise. If the attirbute TO_VERTEX_VALUE is enabled, the declaration become
+  \code
+  f V0/NV0 V1/NV1 V2/NV2 ...
+  \endcode
+  where Vi is the index of the ith vertex of the face and NVi is the index of the to-vertex node attached to Vi. If FROM_VERTEX_VALUE is enabled too (to allow singularities), vertex declaration become
+  \code
+  Vi/NVi_in/NVi_out
+  \endcode
+  Where NVi_in is the node attached to the ingoing halfedge of Vi and NVi_out the node attached to the outgoing halfedge. As most of the meshes only contains a few singular vertices, it is a waste of space to systematically duplicate nodes and it makes the file harder to tweak. So there is a special rule that allow to omit the second node if it is the same as the first, leading to declarations such as
+  \code
+  f V0/NV0 V1/NV1_in/NV1_out V2/NV2
+  \endcode
+  where only V1 is singular.
+
+  Edge attributes (EDGE_VALUE and EDGE_GRADIENT), if enabled, are placed after vertices declaration, speared by the '-' token:
+  \code
+  f VERTICES - EDGES
+  \endcode
+  Where VERTICES are the vertex declaration as above and EDGES should be as many edge declarations as there is vertex. The first edge declaration correspond to the edge V0-V1, the second to V1-V2 and so on. Edge declarations take the form `N0/N1/...` where Ni are node indices. If there is only one edge attribute enabled, an edge declaration is simply a single node index. If both are enable, EDGE_VALUE is the first index and EDGE_GRADIENT the second. If none are enable, the whole edge declaration is discarded, '-' included.
+
+  While not used yet in Vitelotte, you may wish to add faces declaration (for example if you have elements with internal nodes that are not attached to vertices or edges). They should be added after edges node, separated by the '-' token.
+
+  In the end, a complete triangular face declaration with fv attributes and a singular vertex look like this:
+  \code
+  f V0/NV0 V1/NV1_in/NV1_out V2/NV2 - NEv0/NEg0 NEv1/NEg1 NEv2/NEg2
+  \endcode
 
 
   \section vitelotte_user_manual_mvg_file_format_reading_writing_sec Reading and Writing MVG
 
-  - VGMesh objects can be read with MVGReader::read().
-  - VGMesh objects can be wrote with MVGWriter::write(). MVGWritter can be configured to write a specific version of mvg files and default to the latest one. (Note that currently, only version 1.0 exists anyway.)
-  - Both of these classes can be extended. See \ref vitelotte_example_vg_mesh_with_curves_reader_page and \ref vitelotte_example_vg_mesh_with_curves_writer_page.
+  Reading a MVG can be done with the class MVGReader declared in the header `vitelotte_io.h`. In one line:
+  \code{.cpp}
+  MVGReader<Mesh>().read(inStream, mesh);
+  \endcode
+  where `inStream` is an input iosteam.
+
+  The MVGReader object has two purpose. First, it encapsulate all temporary data required to read a MVG. You can read several MVG with a single reader in order to allocate all these objects only once. The second use is error reporting. When an error or a warning is encountered, MVGReader calls a callback. By default, it just print the message on stderr, but you may wish to customize it. You can change the callbacks with OBJReader::setErrorCallback (MVGReader inherits OBJReader).
+
+  Writing MVGs is very similar to reading:
+  \code{.cpp}
+  MVGWriter<Mesh>().write(outStream, mesh);
+  \endcode
+  MVGWriter constructor takes the version of the MVG to produce as an optional parameter which default to the latest version (anyway, 1.0 is the only version existing right now).
 
 
   \section vitelotte_user_manual_mvg_file_format_extending_sec Extending MVG

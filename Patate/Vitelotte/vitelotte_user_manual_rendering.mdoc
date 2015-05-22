@@ -10,31 +10,74 @@ namespace Vitelotte {
 /*!
   \page vitelotte_user_manual_rendering_page Rendering
 
-  \section vitelotte_user_manual_rendering_intro_sec Introduction
+  \section vitelotte_user_manual_rendering_basics_sec Basic usage
 
-  - OpenGL initialization is not part of the Patate. It is your job to create a valid OpenGL context and make it active before calling VGMeshRenderer methods.
-  - Vitelotte does not include any OpenGL header, so you must do it \b before including vitelotte_gl.h. In our examples (see for instance \ref vitelotte_example_gl_viewer_page), we use GLEW.
-  - VGMeshRenderer uses OpenGL 3 features, so you will need a graphic card / drivers that support it.
-  - VGMeshRenderer will render quadratic patches if the rendered mesh has the EDGE_VALUE attribute, and linear patches otherwise. It also render singular patches correctly if there is no more than a single singularity per patch.
+  VGMeshRenderer is a simple renderer whose job is to emit the right OpenGL 3(+) calls to render a given mesh. It currently only support triangular meshes with linear or quadratic interpolation over each face. It also supports up to one singularity per triangle.
 
+  Vitelotte is an header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers as you may wish to use GLEW or a similar library that provides its own header. So, to use the renderer you need to do something like this:
 
-  \section vitelotte_user_manual_rendering_basic_sec Basic usage
+  \code{.cpp}
+  // Include some OpenGL header.
+  #include <GL/glew.h>
 
-  - First, you need to call VGMeshRenderer::initialize() \e once. It just compiles the shaders and does not change OpenGL states otherwise.
-  - Call VGMeshRenderer::updateBuffers() with a VGMesh to generate and upload to the GPU what is required for rendering it. You need to call this function every time the mesh changes or to render an other mesh.
-  - Call VGMeshRenderer::render() with a transformation matrix to do the actual rendering.
-  - VGMeshRenderer::renderWireframe() use an other shader to render antialiased wireframe.
-  - VGMeshRenderer methods change a few OpenGL states: bound buffer and texture, VAO-related stuff and active shader. It does not change anything else, so it is your job to set other states correctly. Notably:
-    + You must enable alpha blending if you want transparency effects.
-    + With the same transform matrix, VGMeshRenderer::render() and VGMeshRenderer::renderWireframe() will render the mesh at the exact same depth. If you want to draw wireframe on top of the rendered mesh, either apply an offset or set the depth test to \c GL_LEQUAL.
-  - TODO: color conversion
+  // Include Vitelotte's classes that depends on OpenGL. An OpenGL
+  // header *must* have been included beforehand.
+  #include <Patate/vitelotte_gl.h>
+  \endcode
+
+  After you created an OpenGL context, you need to initialize global resources required by VGMeshRenderer (shaders):
+
+  \code{.cpp}
+  VGMeshRendererResources resources;
+  resources.initialize();
+  \endcode
+
+  Resources can be released by calling VGMeshRendererResources::releaseGLResources() when the context is active.
+
+  Creating the renderer is straightforward:
+
+  \code{.cpp}
+  // As usual, VGMeshRenderer is parametrized by the Mesh class.
+  VGMeshRenderer<Mesh> renderer;
+  renderer.setResources(resources);
+  \endcode
+
+  Every VGMeshRenderer manages some OpenGL resources. They can be released by calling VGMeshRenderer::releaseGLResources().
+
+  To upload data required for rendering to the GPU, just do
+
+  \code{.cpp}
+  renderer.updateBuffers(mesh);
+  \endcode{.cpp}
+
+  This must be called every time the mesh is modified. Note that the renderer does not keep reference to the mesh, so it can be deleted safely even if a renderer is setup to render it.
+
+  Rendering can be done with the following methods:
+
+  \code{.cpp}
+  // Render the mesh given an Eigen::Matrix4f view matrix
+  renderer.render(viewMatrix);
+
+  // Render the mesh in wireframe
+  renderer.renderWireframe(viewMatrix, viewportSize);
+  \endcode
+
+  Coordinates of the mesh's vertices are multiplied by the viewMatrix in the shader to produce the viewport coordinate. You should build the viewMatrix yourself to place the image correctly on the screen. Wireframe rendering require the viewport size to get the width of the lines right.
+
+  Note that render() and renderWireframe should produce samples at the exact same depth. So to render a wireframe on top of a solid render, the easiest way is to set the depth test to GL_LEQUAL.
 
 
   \section vitelotte_user_manual_rendering_advanced_sec Advanced usage
 
-  - If you want more control over rendering, you can use the method VGMeshRenderer::drawGeometry(). It only execute the draw call to send the geometry but does not set the shader. It can draw only non-singular triangle with the flag VGMeshRenderer::NORMAL_TRIANGLES, only the singular with VGMeshRenderer::SINGULAR_TRIANGLES or both with an or-ed combination of them (aliased an VGMeshRenderer::ALL_TRIANGLES).
-  - This way, you can use the shader you want an do as many pass as required.
-  - TODO: Describe the vertex format and how the colors are encoded.
+  The input mesh can have an arbitrary number of dimensions and coefficients. By default, if the number of dimensions is smaller or equal to 4, the d fists coordinates are sent to OpenGL and missing ones are replaced by 0, except the last one which is set to 1. It works well with 2D and 3D meshes, and with 4D meshes where the 4th dimension is 1 (unless you know what you do). In other cases, you can pass a functor to VGMeshRenderer constructor that takes a VGMesh::Vector in parameter and returns an Eigen::Vector4f which is send to OpenGL.
+
+  A similar mechanism is available for values. By default, single valued coefficient are rendered as grayscale, 2D values are rendered as grayscale + alpha, 3D values are rendered as RGB and 4D as RGBA.
+
+  If you render with GL_FRAMEBUFFER_SRGB enabled to automatically convert linear fragment color to SRGB, the input mesh value should be linear. In order to help, you can enable SRGB to linear conversion in the solver with VGMeshRenderer::enableSrgbToLinearConversion(). Keep in mind though that for ideal results you should use the same color space for interpolation in OpenGL and in the solver (if you use the solver). Using a wrong interpolation may lead to visible artifacts (making the triangles visible). If you use a color space which is not supported by OpenGL, you need to customize the shaders.
+
+  If you want to really customize the output, you may need to write your own shaders. You can setup your own OpenGL states and then call VGMeshRenderer::drawGeometry to setup the VAO and do the draw call. This function takes a combination of the NORMAL_TRIANGLES and the SINGULAR_TRIANGLES flags in parameter to determine if it should render normal triangles, singular triangles or both.
+
+  We won't detail the way shaders works here. If you need to write custom shader, the easiest way is to start from Vitelotte's shaders (in `Patate/Vitelotte/Utils/VGMeshRendererShaders`) and modify it.
 
  */
 

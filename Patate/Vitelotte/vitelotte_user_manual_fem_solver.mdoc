@@ -12,28 +12,72 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_fem_solver_intro_sec Introduction
 
-  - The FemSolver class replace and set values of unknown nodes based on known nodes.
-  - Two kind of diffusion: Harmonic and Biharmonic, advantages and drawbacks.
-  - Two kind of output elements: linear and quadratic, trade-off
+  FemSolver allow to diffuse values (colors, ...) directly on a VGMesh using the finite element method (FEM). This is a simple way to get smooth color gradients from a sparse set of constraints.
+
+  Vitelotte currently support two kind of diffusions, with their advantages and drawbacks:
+
+  - **Harmonic** diffusion satisfy the equation
+
+    \f[ \Delta f = 0 \f]
+
+    in such a way that it interpolates constraints (nodes with a value set). This equation can be solved using very simple elements. Vitelotte currently supports linear and quadratic triangular elements for this, which uses the same interpolation function than rendering.
+
+    However, harmonic interpolation has some drawbacks. It does not allow to have \f$C^1\f$ transitions across constraint, which limit its usefulness in much cases. For instance, to represent smooth shading, biharmonic diffusion produce better results.
+
+  - **Bi-harmonic** diffusion satisfy a similar equation
+
+    \f[ \Delta^2 f = 0 \f]
+
+    Theoretically, solving this equation using FEM requires \f$C^1\f$ continuity across the elements, which in turn requires using high order elements. As this is unpractical, we use _non-conforming_ elements that do not meet this requirement but allow convergence nonetheless: Morley elements and Fraeijs de Veubeke's elements (FV). They are similar to linear and quadratic elements respectively, but add a derivative node over each edge. As these elements are not even \f$C^0\f$ on their boundaries, we just discard the derivative node for rendering and use the classical linear and quadratic element.
+
+    Bi-harmonic diffusion is a bit more costly, but also offers smoother gradients and more control. For instance, it is possible to constraint derivative nodes to add control over gradients. The main problem of bi-harmonic diffusion is that it extrapolate: it can produce values higher or lower than constraints. When diffusing colors, it means that you can have color component below 0 and above the maximum, which may lead to artifacts.
 
 
   \section vitelotte_user_manual_fem_solver_usage_sec Using the solver
 
-  - FemSolver is parametrized by a Concepts::ElementBuilderConcept class that defines the kind of diffusion used and the requirement of the input mesh. Possible choices are:
-    + LinearElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE attribute.
-    + QuadraticElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE and EDGE_VALUE attribute.
-    + MorleyElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE and EDGE_GRADIENT attributes.
-    + FVElementBuilder : do harmonic diffusion. Work with TO_VERTEX_VALUE, EDGE_VALUE AND EDGE_GRADIENT attributes.
-  - Beside this, there is the element builder decorator SingularElementDecorator that allow to handle
-    singularities. Note that it does not support elements with more than one discontinuity, so the input mesh must be sufficiently refined. Work with FROM_VERTEX_VALUE attribute.
-  - For rendering, gradient attributes are ignored, but they are necessary for the biharmonic solver and can be used to add gradient constraints.
-  - The mesh on which a FemSolver operate is given at construction and can not be changed later. A sequence of methods need to be called in order to solve the diffusion. However, if the mesh is modified and solved several time as in the \ref vitelotte_example_editor_page, some step can sometime be skipped to save time. There are the methods in order:
-    + FemSolver::build() : Build the stiffness matrix. It's a big sparse matrix that represent the diffusion problem. In must be called if the geometry change (ie, a vertex moved) or if the connectivity changed (a new node has been added, node or faces connectivity has changed, etc.)
-    + FemSolver::sort() : creates a permutation matrix that allow to separate the stiffness matrix in blocks. This need to be called after FemSolver::build() if a node changes from known to unknown or the reverse. If the types of nodes does not change and there is no change in node connectivity, it is not required to call this. However, this operation is cheap and it may not be worth the trouble to keep track of cases where calling it is not necessary and simply do it systematically after FemSolver::build().
-    + FemSolver::factorize() : factorize the diffusion problem. Need to be called after FemSolver::sort() or FemSolver::build() (if sort is skipped).
-    + FemSolver::solve() : solve the diffusion problem and replace unknown nodes of the mesh by node with the resulting value. Obviously need to be called every time the input mesh changes. If only constraint values are modified, this is the only method that needs to be called.
-  - The most time consuming operations are FemSolver::build() and FemSolver::sort(), so these are the ones you should try avoid calling if not necessary.
-  - Vertex gradient constraints are special and only supported by FVElementBuilder. It \b requires the lastest dev branch of Eigen at time of writing (2012-03-26).
+  Using the solver is quite easy. You first need to create the solver. FemSolver takes two template parameters: a VGMesh type and an ElementBuilder. Available element builders are:
+
+  - **LinearElementBuilder** solve harmonic diffusion over linear element. Input mesh must have the TO_VERTEX_VALUE attribute enabled.
+  - **QuadraticElementBuilder** solve harmonic diffusion over quadratic element. Input mesh must have the TO_VERTEX_VALUE and EDGE_VALUE attributes enabled.
+  - **MorleyElementBuilder** solve biharmonic diffusion using Morley elements. Input mesh must have TO_VERTEX_VALUE and EDGE_GRADIENT attributes enabled.
+  - **FVElementBuilder** solve biharmonic diffusion using FV elements. Input mesh must have TO_VERTEX_VALUE, EDGE_VALUE and EDGE_GRADIENT attributes enabled.
+
+  These element builder does not support singularities (in practice, the attachment point FROM_VERTEX_VALUE is ignored). To enable it, you must wrap your element builder into a SingularElementDecorator. This only support up to one singularity by element, so it may be necessary to refine the input mesh to ensure this.
+
+  There is a typical example:
+
+  \code{.cpp}
+  typedef VGMesh<float, /*...*/> Mesh;
+
+  typedef FVElementBuilder<Mesh, double> FVBuilder;
+  typedef SingularElementDecorator<FVBuilder> ElementBuilder;
+  typedef FemSolver<Mesh, ElementBuilder> Solver;
+  \endcode
+
+  Note that the element builder are parametrized by a scalar type. It will be used internally by the solver instead of the mesh Scalar type. This may be used to avoid numerical problems. In our example, we always use floats for meshes and double in the solver, as above.
+
+  All is left to do is to create a solver and solve the problem:
+
+  \code
+  Mesh mesh;
+  // [ Fill the mesh... ]
+
+  Solver solver(&mesh);
+  solver.build();
+  solver.solve();
+  \endcode
+
+  FemSolver::build() build the internal matrices and compute factorizations. It does not depend on constraint values, so if you are using the solver in an interactive application (like our `mvg_editor` example), it is not always necessary to call it. FemSolver::solve() effectively solve the diffusion and set a value to each unknown nodes of `mesh`.
+
+  The solver may fail, either because input is invalid or because of numerical instability. We try to detect errors and to provide meaningful messages in case of problem:
+
+  \code
+  SolverError::Status status = solver.error().status();
+  if(status != SolverError::STATUS_OK) {
+    cout << ((status == SolverError::STATUS_ERROR)? "Error: ": "Warning: ")
+         << solver.error().message() << endl;
+  }
+  \endcode
 
 
   \section vitelotte_user_manual_fem_solver_extending_sec FemSolver internal and extending FemSolver

@@ -7,6 +7,8 @@
 #include "solveCommand.h"
 
 
+typedef double SolverScalar;
+
 template <typename Solver>
 bool solveGeneric(Mesh& mesh)
 {
@@ -36,7 +38,7 @@ bool solveGeneric(Mesh& mesh)
 
 bool solveHarmonicLinear(Mesh& mesh, const GlobalOptions* opts)
 {
-    typedef Vitelotte::LinearElementBuilder<Mesh, double> LinearElement;
+    typedef Vitelotte::LinearElementBuilder<Mesh, SolverScalar> LinearElement;
     typedef Vitelotte::SingularElementDecorator<LinearElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
@@ -47,7 +49,7 @@ bool solveHarmonicLinear(Mesh& mesh, const GlobalOptions* opts)
 
 bool solveHarmonicQuadratic(Mesh& mesh, const GlobalOptions* opts)
 {
-    typedef Vitelotte::QuadraticElementBuilder<Mesh, double> QuadraticElement;
+    typedef Vitelotte::QuadraticElementBuilder<Mesh, SolverScalar> QuadraticElement;
     typedef Vitelotte::SingularElementDecorator<QuadraticElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
@@ -58,7 +60,7 @@ bool solveHarmonicQuadratic(Mesh& mesh, const GlobalOptions* opts)
 
 bool solveBiharmonicLinear(Mesh& mesh, const GlobalOptions* opts)
 {
-    typedef Vitelotte::MorleyElementBuilder<Mesh, double> MorleyElement;
+    typedef Vitelotte::MorleyElementBuilder<Mesh, SolverScalar> MorleyElement;
     typedef Vitelotte::SingularElementDecorator<MorleyElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 
@@ -69,7 +71,7 @@ bool solveBiharmonicLinear(Mesh& mesh, const GlobalOptions* opts)
 
 bool solveBiharmonicQuadratic(Mesh& mesh, const GlobalOptions* opts)
 {
-    typedef Vitelotte::FVElementBuilder<Mesh, double> FVElement;
+    typedef Vitelotte::FVElementBuilder<Mesh, SolverScalar> FVElement;
     typedef Vitelotte::SingularElementDecorator<FVElement> Element;
     typedef Vitelotte::FemSolver<Mesh, Element> Solver;
 

@@ -48,7 +48,7 @@ public:
     inline ~VGMeshRendererResources();
 
     inline bool initialize();
-    inline void releaseGLRessources();
+    inline void releaseGLResources();
 
     // private
     inline PatateCommon::Shader& solidLinearShader()    { return m_solidLinearShader; }
@@ -126,8 +126,8 @@ public:
                    const ValueProj& valueProj = ValueProj());
     ~VGMeshRenderer();
 
-    bool convertSrgbToLinear() const;
-    void setConvertSrgbToLinear(bool enable);
+    bool isSrgbToLinearConversionEnabled() const;
+    void enableSrgbToLinearConversion(bool enable);
 
     const PosProj&   positionProjection() const;
           PosProj&   positionProjection();
@@ -135,7 +135,7 @@ public:
           ValueProj& valueProjection();
 
     void setResources(Resources* resources);
-    void releaseGLRessources();
+    void releaseGLResources();
     void updateBuffers(const Mesh& mesh);
 
     void drawGeometry(unsigned geomFlags);

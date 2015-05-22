@@ -544,8 +544,6 @@ void FemSolver<_Mesh, _ElementBuilder>::factorize()
         block->decomposition->compute(block->matrix);
         if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
     }
-
-    m_solved = true;
 }
 
 

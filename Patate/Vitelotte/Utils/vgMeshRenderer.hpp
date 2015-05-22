@@ -19,7 +19,7 @@ VGMeshRendererResources::VGMeshRendererResources()
 
 VGMeshRendererResources::~VGMeshRendererResources()
 {
-    if(m_initialized) releaseGLRessources();
+    if(m_initialized) releaseGLResources();
 }
 
 
@@ -36,7 +36,7 @@ bool VGMeshRendererResources::initialize()
 }
 
 
-void VGMeshRendererResources::releaseGLRessources()
+void VGMeshRendererResources::releaseGLResources()
 {
     m_initialized = false;
 
@@ -164,7 +164,7 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::~VGMeshRenderer()
 {
-    releaseGLRessources();
+    releaseGLResources();
 }
 
 
@@ -201,14 +201,14 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::valueProjection()
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::convertSrgbToLinear() const
+bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::isSrgbToLinearConversionEnabled() const
 {
     return m_convertSrgbToLinear;
 }
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setConvertSrgbToLinear(bool enable)
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::enableSrgbToLinearConversion(bool enable)
 {
     m_convertSrgbToLinear = enable;
 }
@@ -225,7 +225,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setResources(
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::releaseGLRessources()
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::releaseGLResources()
 {
     if(m_ownResources)
     {
