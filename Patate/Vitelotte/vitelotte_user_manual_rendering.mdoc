@@ -25,15 +25,6 @@ namespace Vitelotte {
   #include <Patate/vitelotte_gl.h>
   \endcode
 
-  After you created an OpenGL context, you need to initialize global resources required by VGMeshRenderer (shaders):
-
-  \code{.cpp}
-  VGMeshRendererResources resources;
-  resources.initialize();
-  \endcode
-
-  Resources can be released by calling VGMeshRendererResources::releaseGLResources() when the context is active.
-
   Creating the renderer is straightforward:
 
   \code{.cpp}
@@ -48,7 +39,7 @@ namespace Vitelotte {
 
   \code{.cpp}
   renderer.updateBuffers(mesh);
-  \endcode{.cpp}
+  \endcode
 
   This must be called every time the mesh is modified. Note that the renderer does not keep reference to the mesh, so it can be deleted safely even if a renderer is setup to render it.
 
@@ -68,6 +59,18 @@ namespace Vitelotte {
 
 
   \section vitelotte_user_manual_rendering_advanced_sec Advanced usage
+
+  The renderer uses some global resources (shaders) that can be shared by several instances of VGMeshRenderer. By default, they are automatically created when needed (when you call a draw method). You can allocate them explicitly to share the resources among several renderers:
+
+  \code{.cpp}
+  # Can be called anytime
+  VGMeshRendererResources resources;
+
+  # Must be called with the correct OpenGL context active.
+  resources.initialize();
+  \endcode
+
+  Then, you can pass the resources to an instance of VGMeshRenderer on construction or with VGMeshRenderer::setResources(). Resources can be released by calling VGMeshRendererResources::releaseGLResources() when the context is active.
 
   The input mesh can have an arbitrary number of dimensions and coefficients. By default, if the number of dimensions is smaller or equal to 4, the d fists coordinates are sent to OpenGL and missing ones are replaced by 0, except the last one which is set to 1. It works well with 2D and 3D meshes, and with 4D meshes where the 4th dimension is 1 (unless you know what you do). In other cases, you can pass a functor to VGMeshRenderer constructor that takes a VGMesh::Vector in parameter and returns an Eigen::Vector4f which is send to OpenGL.
 

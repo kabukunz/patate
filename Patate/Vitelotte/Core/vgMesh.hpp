@@ -500,7 +500,7 @@ VGMesh<_Scalar, _Dim, _Chan>::nUnknowns() const
 template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::
-    setVertexNode(Node node, Halfedge from, Halfedge to)
+    setVertexNodes(Node node, Halfedge from, Halfedge to)
 {
     assert(fromVertex(from) == fromVertex(to));
     assert(hasToVertexValue());
@@ -782,7 +782,7 @@ VGMesh<_Scalar, _Dim, _Chan>::finalizeVertexArc(Halfedge from, Halfedge to)
     // The remaining option is a singularity, that require special
     // processing.
     if(isValid(n))
-        setVertexNode(n, from, to);
+        setVertexNodes(n, from, to);
     else
         setSingularity(n0, n1, from, to);
 }

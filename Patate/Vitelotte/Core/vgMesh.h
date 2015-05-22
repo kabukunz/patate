@@ -508,7 +508,7 @@ public:
      *
      * \pre `from` and `to` mush have the same source vertex.
      */
-    void setVertexNode(Node node, Halfedge from, Halfedge to);
+    void setVertexNodes(Node node, Halfedge from, Halfedge to);
 
     /**
      * \brief Similar to VGMesh::setVertexNode, but for singularities.

@@ -12,8 +12,9 @@ typedef double SolverScalar;
 template <typename Solver>
 bool solveGeneric(Mesh& mesh)
 {
-    Solver solver(&mesh);
-    solver.build();
+    Solver solver;
+    solver.build(mesh);
+    solver.solve(mesh);
 
     if(solver.error().status() == Vitelotte::SolverError::STATUS_WARNING)
     {
@@ -25,13 +26,6 @@ bool solveGeneric(Mesh& mesh)
         return false;
     }
 
-    solver.solve();
-
-    if(!solver.isSolved())
-    {
-        std::cerr << "Failed to solve the diffusion.\n";
-        return false;
-    }
     return true;
 }
 

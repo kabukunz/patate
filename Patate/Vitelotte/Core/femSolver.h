@@ -31,6 +31,11 @@ public:
 
     typedef typename ElementBuilder::Scalar Scalar;
 
+    enum
+    {
+        NO_NON_LOCAL_CONSTRAINTS = 0x01
+    };
+
 protected:
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vertex Vertex;
@@ -38,17 +43,15 @@ protected:
     typedef typename Mesh::FaceIterator FaceIterator;
 
 public:
-    inline FemSolver(Mesh* _inMesh,
-                     const ElementBuilder& elementBuilder = ElementBuilder());
+    inline FemSolver(const ElementBuilder& elementBuilder = ElementBuilder());
     ~FemSolver();
 
     /// \brief Build the internal stiffness matrix
-    void build();
+    void build(const Mesh& mesh, unsigned flags = 0);
 
     /// \brief Solve the diffusion using the factorize unknown block.
-    void solve();
+    void solve(Mesh& mesh);
 
-    inline bool isSolved() const { return m_solved; }
     inline const SolverError error() { return m_error; }
 
 public:
@@ -92,20 +95,18 @@ public:
 protected:
     // Map each node to a row/column an split the problem in a set of
     // independant sub-problems.
-    void preSort();
+    void preSort(const Mesh& mesh, unsigned flags);
 
     // Compute the stiffness matrix coefficients.
-    void buildMatrix();
+    void buildMatrix(const Mesh& mesh);
 
     // Factorize the stiffness matrix.
     void factorize();
 
 protected:
-    Mesh* m_mesh;
     ElementBuilder m_elementBuilder;
 
     SolverError m_error;
-    bool m_solved;
 
     unsigned m_nUnknowns;
     unsigned m_nConstraints;

@@ -37,9 +37,6 @@ int main(int argc, char** argv)
 
     const char* meshFilename = argv[1];
 
-    // Set to true to get the result of the first part of the tutorial.
-    bool randomColors = false;
-
     srand(time(NULL));
     srand(9);
 
@@ -72,103 +69,60 @@ int main(int argc, char** argv)
 
     /// [Convert the mesh in 2D]
 
-    if(randomColors)
+    /// [Color dots and finalize]
+
+    // Loop over each vertex
+    for(Mesh::VertexIterator vx = mesh.verticesBegin();
+        vx != mesh.verticesEnd(); ++vx)
     {
-        /// [Assign random colors]
-
-        // Loop over each vertex - see SurfaceMesh documentation
-        for(Mesh::VertexIterator vx = mesh.verticesBegin();
-            vx != mesh.verticesEnd(); ++vx)
-        {
-            // Add a node with random value.
-            // Mesh::Value is an Eigen matrix - as we set Dynamic for the number
-            // of coefficients, we have to specify explicitly the size of the vector.
-            Mesh::Node n = mesh.addNode(Mesh::Value::Random(3) / 2 + Mesh::Value::Constant(3, .5));
-
-            // Loop over (outward) adjacent halfedges
-            Mesh::HalfedgeAroundVertexCirculator h = mesh.halfedges(*vx);
-            Mesh::HalfedgeAroundVertexCirculator hEnd = h;
-            do
-            {
-                // Set the source node of h
-                mesh.halfedgeNode(*h, Mesh::FROM_VERTEX_VALUE) = n;
-                // Set the opposite node
-                mesh.halfedgeOppositeNode(*h, Mesh::FROM_VERTEX_VALUE) = n;
-                ++h;
-            } while(h != hEnd);
+        // Select some random vertices
+        if(rand() > RAND_MAX / 10) {
+            continue;
         }
 
-        // Loop over each edge
-        for(Mesh::EdgeIterator edge = mesh.edgesBegin();
-            edge != mesh.edgesEnd(); ++edge)
-        {
-            // Add a node with random value.
-            Mesh::Node n = mesh.addNode(Mesh::Value::Random(3) / 2 + Mesh::Value::Constant(3, .5));
+        // Add a node with random value.
+        Mesh::Node n = mesh.addNode(Mesh::Value::Random(3) / 2 + Mesh::Value::Constant(3, .5));
 
-            // Set the node on both sides of the edge
-            mesh.edgeValueNode(mesh.halfedge(*edge, 0)) = n;
-            mesh.edgeValueNode(mesh.halfedge(*edge, 1)) = n;
-        }
-
-        /// [Assign random colors]
+        // Set the node to a single arbitrary outward halfedge
+        mesh.fromVertexValueNode(mesh.halfedge(*vx)) = n;
     }
-    else
-    {
-        /// [Color dots and finalize]
 
-        // Loop over each vertex
-        for(Mesh::VertexIterator vx = mesh.verticesBegin();
-            vx != mesh.verticesEnd(); ++vx)
-        {
-            // Select some random vertices
-            if(rand() > RAND_MAX / 10) {
-                continue;
-            }
+    // Finalize will propagate our constraints around the constrained
+    // vertices and set unknowns to have a smooth diffusion everywhere else.
+    mesh.finalize();
 
-            // Add a node with random value.
-            Mesh::Node n = mesh.addNode(Mesh::Value::Random(3) / 2 + Mesh::Value::Constant(3, .5));
+    /// [Color dots and finalize]
 
-            // Set the node to a single arbitrary outward halfedge
-            mesh.fromVertexValueNode(mesh.halfedge(*vx)) = n;
-        }
+    /// [Create the solver]
 
-        // Finalize will propagate our constraints around the constrained
-        // vertices and set unknowns to have a smooth diffusion everywhere else.
-        mesh.finalize();
+    // The element builder type
+    typedef Vitelotte::FVElementBuilder<Mesh, double> BaseBuilder;
+    typedef Vitelotte::SingularElementDecorator<BaseBuilder> ElementBuilder;
 
-        /// [Color dots and finalize]
+    // The solver type
+    typedef Vitelotte::FemSolver<Mesh, ElementBuilder> Solver;
 
-        /// [Create the solver]
+    Solver solver;
 
-        // The element builder type
-        typedef Vitelotte::FVElementBuilder<Mesh, double> BaseBuilder;
-        typedef Vitelotte::SingularElementDecorator<BaseBuilder> ElementBuilder;
+    /// [Create the solver]
 
-        // The solver type
-        typedef Vitelotte::FemSolver<Mesh, ElementBuilder> Solver;
+    /// [Solve the diffusion]
 
-        Solver solver(&mesh);
+    // Build the internal matrix and factorize it
+    solver.build(mesh);
 
-        /// [Create the solver]
+    // Solve the diffusion
+    solver.solve(mesh);
 
-        /// [Solve the diffusion]
-
-        // Build the internal matrix and factorize it
-        solver.build();
-
-        // Solve the diffusion
-        solver.solve();
-
-        // Check for errors
-        if(solver.error().status() != Vitelotte::SolverError::STATUS_OK) {
-            bool error = solver.error().status() == Vitelotte::SolverError::STATUS_ERROR;
-            std::cerr << "Solver "
-                      << (error? "error": "warning")
-                      << ": " << solver.error().message() << "\n";
-        }
-
-        /// [Solve the diffusion]
+    // Check for errors
+    if(solver.error().status() != Vitelotte::SolverError::STATUS_OK) {
+        bool error = solver.error().status() == Vitelotte::SolverError::STATUS_ERROR;
+        std::cerr << "Solver "
+                  << (error? "error": "warning")
+                  << ": " << solver.error().message() << "\n";
     }
+
+    /// [Solve the diffusion]
 
     /// [Write the mesh]
 

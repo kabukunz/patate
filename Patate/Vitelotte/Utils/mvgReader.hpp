@@ -47,7 +47,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
         readLine(in);
         m_lineStream >> cmd;
 
-        if(cmd == "dim")
+        if(cmd == "dim" || cmd == "dimensions")
             m_lineStream >> nDims;
         else if(cmd == "parameters" || cmd == "coefficients")
             m_lineStream >> nCoeffs;

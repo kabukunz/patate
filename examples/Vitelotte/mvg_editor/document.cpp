@@ -133,7 +133,7 @@ Document::Document(QObject *parent)
       m_bb(),
       m_selection(),
       m_dirtyFlags(true),
-      m_fvSolver(&m_solvedMesh),
+      m_fvSolver(),
       m_undoStack(new QUndoStack(this))
 {
     connect(m_undoStack, SIGNAL(indexChanged(int)),
@@ -523,11 +523,11 @@ void Document::solve()
         {
         case DIRTY_ALL:
             std::cout << "Build...                  " << std::flush;
-            m_fvSolver.build();
+            m_fvSolver.build(m_solvedMesh);
             std::cout << time.restart() << " ms" << std::endl;
         case DIRTY_NODE_VALUE:
             std::cout << "Solve...                  " << std::flush;
-            m_fvSolver.solve();
+            m_fvSolver.solve(m_solvedMesh);
             std::cout << time.restart() << " ms" << std::endl;
         }
 

@@ -133,7 +133,7 @@ Eigen::Vector4f DefaultValueProj<Value>::operator()(const Value& value) const {
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
-        const PosProj& posProj, const ValueProj& valueProj) :
+        Resources* resources, const PosProj& posProj, const ValueProj& valueProj) :
     m_useVao(true),
     m_convertSrgbToLinear(false),
     m_ownResources(false),
@@ -142,7 +142,7 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
     m_valueProjection(valueProj),
     m_invalidNodeColor(Vector4::Unit(3)),
 
-    m_resources(0),
+    m_resources(resources),
 
     m_verticesBuffer(0),
     m_indicesBuffer(0),
@@ -424,13 +424,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
-    if(!m_resources)
-    {
-        m_resources = new Resources();
-        bool ok = m_resources->initialize();
-        if(!ok) std::abort();
-        m_ownResources = true;
-    }
+    if(!m_resources) initResources();
 
     PatateCommon::Shader& shader = m_quadratic?
                 m_resources->solidQuadraticShader():
@@ -472,6 +466,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
+    if(!m_resources) initResources();
+
     m_resources->wireframeShader().use();
     const Resources::WireframeUniforms& unif = m_resources->wireframeUniforms();
 
@@ -502,6 +498,18 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::color(const Mesh& mesh, Node node) 
                 m_valueProjection(mesh.value(node)):
                 m_invalidNodeColor;
     return m_convertSrgbToLinear? PatateCommon::srgbToLinear(c): c;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initResources()
+{
+    assert(!m_resources);
+
+    m_resources = new Resources();
+    bool ok = m_resources->initialize();
+    if(!ok) std::abort();
+    m_ownResources = true;
 }
 
 

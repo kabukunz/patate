@@ -122,7 +122,8 @@ public:
     };
 
 public:
-    VGMeshRenderer(const PosProj&   posProj   = PosProj(),
+    VGMeshRenderer(Resources* resources = 0,
+                   const PosProj&   posProj   = PosProj(),
                    const ValueProj& valueProj = ValueProj());
     ~VGMeshRenderer();
 
@@ -151,6 +152,8 @@ private:
 protected:
     Vector4 position(const Mesh& mesh, Vertex vx) const;
     Vector4 color(const Mesh& mesh, Node node) const;
+
+    void initResources();
 
     template < typename T >
     void createAndUploadBuffer(GLuint& glId, GLenum type,

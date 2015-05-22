@@ -31,7 +31,7 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
     int iOffset = 0;
 
     _out << "mvg 1.0\n";
-    _out << "dim " << mesh.nDims() << "\n";
+    _out << "dimensions " << mesh.nDims() << "\n";
     _out << "coefficients " << mesh.nCoeffs() << "\n";
 
     if(mesh.getAttributes() == 0)
