@@ -268,12 +268,15 @@ void GLViewer::render()
     m_viewMatrix = m_trackball.computeProjectionMatrix()
                  * m_trackball.computeViewMatrix();
 
-    m_pQMeshRenderer->render(m_viewMatrix);
+    if(m_renderMode != RENDER_WIREFRAME_ONLY) {
+        m_pQMeshRenderer->render(m_viewMatrix);
+    }
 
     Eigen::Vector2f viewportSize(m_info.windowWidth,
                                  m_info.windowHeight);
     switch(m_renderMode) {
     case RENDER_WIREFRAME:
+    case RENDER_WIREFRAME_ONLY:
         m_pQMeshRenderer->renderWireframe(m_viewMatrix, viewportSize, m_lineWidth);
         break;
     case RENDER_NODES: {
@@ -348,6 +351,11 @@ void GLViewer::onKey(int _key, int /*_scancode*/, int _action, int /*_mods*/)
 
         case GLFW_KEY_3:
             m_renderMode = RENDER_NODES;
+            m_needRefresh = true;
+            break;
+
+        case GLFW_KEY_4:
+            m_renderMode = RENDER_WIREFRAME_ONLY;
             m_needRefresh = true;
             break;
 

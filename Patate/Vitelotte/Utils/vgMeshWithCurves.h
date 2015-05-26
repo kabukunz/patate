@@ -103,6 +103,7 @@ public:
     using Base::halfedgeOppositeNode;
     using Base::halfedgeOrientation;
     using Base::addNode;
+    using Base::hasVertexGradientConstraint;
     using Base::setGradientConstraint;
     using Base::removeGradientConstraint;
 

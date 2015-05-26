@@ -29,6 +29,10 @@ enum
 };
 
 
+#define PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(_index) (1 << _index)
+#define PATATE_VG_MESH_VERTEX_ATTR_FLAG(_index) (1 << (16 + _index))
+
+
 /**
  * \brief A mesh with data suitable for representing complex color gradients,
  * among other.
@@ -135,13 +139,14 @@ public:
     enum
     {
         // Nodes
-        TO_VERTEX_VALUE_FLAG    = (1 << TO_VERTEX_VALUE),
-        FROM_VERTEX_VALUE_FLAG  = (1 << FROM_VERTEX_VALUE),
-        EDGE_VALUE_FLAG         = (1 << EDGE_VALUE),
-        EDGE_GRADIENT_FLAG      = (1 << EDGE_GRADIENT),
+        TO_VERTEX_VALUE_FLAG    = PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(TO_VERTEX_VALUE),
+        FROM_VERTEX_VALUE_FLAG  = PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(FROM_VERTEX_VALUE),
+        EDGE_VALUE_FLAG         = PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(EDGE_VALUE),
+        EDGE_GRADIENT_FLAG      = PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(EDGE_GRADIENT),
 
         // Other
-        VERTEX_GRADIENT_CONSTRAINT_FLAG = 0x100 | (1 << VERTEX_GRADIENT_CONSTRAINT),
+        VERTEX_GRADIENT_CONSTRAINT_FLAG =
+                PATATE_VG_MESH_VERTEX_ATTR_FLAG(VERTEX_GRADIENT_CONSTRAINT),
 
         // Aggregates
         LINEAR_FLAGS = TO_VERTEX_VALUE_FLAG | FROM_VERTEX_VALUE_FLAG,
@@ -301,15 +306,6 @@ public:
     inline VectorXpr position(Vertex v)
     { assert(unsigned(v.idx()) < verticesSize()); return m_positions.col(v.idx()); }
 
-//    inline VertexProperty<Vector>& positionProperty() { return m_positions; }
-//    inline const VertexProperty<Vector>& positionProperty() const
-//        { return m_positions; }
-
-//    inline bool isValid(Vertex v) const { return PatateCommon::SurfaceMesh::isValid(v); }
-//    inline bool isValid(Halfedge h) const { return PatateCommon::SurfaceMesh::isValid(h); }
-//    inline bool isValid(Edge e) const { return PatateCommon::SurfaceMesh::isValid(e); }
-//    inline bool isValid(Face f) const { return PatateCommon::SurfaceMesh::isValid(f); }
-
     using PatateCommon::SurfaceMesh::isValid;
     inline bool isValid(Node n) const;
 
@@ -386,24 +382,24 @@ public:
         { return m_attributes & VERTEX_GRADIENT_CONSTRAINT_FLAG; }
 
     inline Node toVertexValueNode(Halfedge h) const
-        { assert(hasToVertexValue()); return m_toVertexValueNodes[h]; }
+        { return halfedgeNode(h, TO_VERTEX_VALUE); }
     inline Node& toVertexValueNode(Halfedge h)
-        { assert(hasToVertexValue()); return m_toVertexValueNodes[h]; }
+        { return halfedgeNode(h, TO_VERTEX_VALUE); }
 
     inline Node fromVertexValueNode(Halfedge h) const
-        { assert(hasFromVertexValue()); return m_fromVertexValueNodes[h]; }
+        { return halfedgeNode(h, FROM_VERTEX_VALUE); }
     inline Node& fromVertexValueNode(Halfedge h)
-        { assert(hasFromVertexValue()); return m_fromVertexValueNodes[h]; }
+        { return halfedgeNode(h, FROM_VERTEX_VALUE); }
 
     inline Node edgeValueNode(Halfedge h) const
-        { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
+        { return halfedgeNode(h, EDGE_VALUE); }
     inline Node& edgeValueNode(Halfedge h)
-        { assert(hasEdgeValue()); return m_edgeValueNodes[h]; }
+        { return halfedgeNode(h, EDGE_VALUE); }
 
     inline Node edgeGradientNode(Halfedge h) const
-        { assert(hasEdgeGradient()); return m_edgeGradientNodes[h]; }
+        { return halfedgeNode(h, EDGE_GRADIENT); }
     inline Node& edgeGradientNode(Halfedge h)
-        { assert(hasEdgeGradient()); return m_edgeGradientNodes[h]; }
+        { return halfedgeNode(h, EDGE_GRADIENT); }
 
     HalfedgeAttribute oppositeAttribute(HalfedgeAttribute attr) const;
 
@@ -655,6 +651,9 @@ protected:
     /// \}
 
 protected:
+    static const char* _halfedgeAttrName[HALFEDGE_ATTRIB_COUNT];
+
+protected:
     unsigned m_attributes;
 
     PatateCommon::PropertyContainer m_nprops;
@@ -662,15 +661,13 @@ protected:
     VectorMatrix m_positions;
     VertexGradientMap m_vertexGradientConstraints;
 
-    HalfedgeProperty<Node> m_toVertexValueNodes;
-    HalfedgeProperty<Node> m_fromVertexValueNodes;
-    HalfedgeProperty<Node> m_edgeValueNodes;
-    HalfedgeProperty<Node> m_edgeGradientNodes;
+    HalfedgeProperty<Node> m_halfedgeAttributes[HALFEDGE_ATTRIB_COUNT];
 
     unsigned m_deletedNodes;
     NodeMatrix m_nodes;
     NodeProperty<bool> m_ndeleted;
     std::vector<Node> m_gcNodeMap;
+
 };
 
 } // namespace Vitelotte

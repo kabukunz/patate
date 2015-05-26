@@ -135,7 +135,8 @@ private:
     enum RenderMode {
         RENDER_SOLID,
         RENDER_WIREFRAME,
-        RENDER_NODES
+        RENDER_NODES,
+        RENDER_WIREFRAME_ONLY
     };
 
 private:

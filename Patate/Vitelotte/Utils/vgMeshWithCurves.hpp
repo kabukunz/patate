@@ -258,12 +258,14 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setNodesFromCurves()
         if(hasEdgeValue())          edgeValueNode(*hit)         = Node();
         if(hasEdgeGradient())       edgeGradientNode(*hit)      = Node();
     }
-    for(VertexIterator vit = verticesBegin();
-        vit != verticesEnd(); ++vit)
-    {
-        if(isGradientConstraint(*vit))
+    if(hasVertexGradientConstraint()) {
+        for(VertexIterator vit = verticesBegin();
+            vit != verticesEnd(); ++vit)
         {
-            removeGradientConstraint(*vit);
+            if(isGradientConstraint(*vit))
+            {
+                removeGradientConstraint(*vit);
+            }
         }
     }
 
@@ -291,7 +293,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setNodesFromCurves()
             ++hit;
         } while(hit != hend);
 
-        if(isGradientConstraint(pc))
+        if(hasVertexGradientConstraint() && isGradientConstraint(pc))
         {
             setGradientConstraint(vertex(pc), gradient(pc));
         }

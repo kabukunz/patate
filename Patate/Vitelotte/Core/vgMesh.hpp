@@ -251,12 +251,12 @@ VGMesh<_Scalar, _Dim, _Chan>::isValid(Node n) const
 template < typename _Scalar, int _Dim, int _Chan >
 void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 {
-#define PATATE_FEM_MESH_SET_ATTRIBUTE(_bit, _field, _name) do {\
-        if(!(m_attributes & _bit) && (attributes & _bit))\
-            _field = addHalfedgeProperty<Node>(_name, Node());\
-        else if((m_attributes & _bit) && !(attributes & _bit))\
-            removeHalfedgeProperty(_field);\
-    } while(0)
+//#define PATATE_FEM_MESH_SET_ATTRIBUTE(_bit, _field, _name) do {\
+//        if(!(m_attributes & _bit) && (attributes & _bit))\
+//            _field = addHalfedgeProperty<Node>(_name, Node());\
+//        else if((m_attributes & _bit) && !(attributes & _bit))\
+//            removeHalfedgeProperty(_field);\
+//    } while(0)
 
 //    if(!(m_attributes & VertexGradientConstraint) &&
 //            (attributes & VertexGradientConstraint))
@@ -266,19 +266,29 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
 //            !(attributes & VertexGradientConstraint))
 //        removeVertexProperty(m_vertexGradientConstrained);
 
-    PATATE_FEM_MESH_SET_ATTRIBUTE(
-                TO_VERTEX_VALUE_FLAG,   m_toVertexValueNodes,   "h:toVertexValueNode");
-    PATATE_FEM_MESH_SET_ATTRIBUTE(
-                FROM_VERTEX_VALUE_FLAG, m_fromVertexValueNodes, "h:fromVertexValueNode");
-    PATATE_FEM_MESH_SET_ATTRIBUTE(
-                EDGE_VALUE_FLAG,        m_edgeValueNodes,       "h:edgeValueNode");
-    PATATE_FEM_MESH_SET_ATTRIBUTE(
-                EDGE_GRADIENT_FLAG,     m_edgeGradientNodes,    "h:edgeGradientNode");
+    for(int ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai) {
+        unsigned flag = PATATE_VG_MESH_HALFEDGE_ATTR_FLAG(ai);
+        if(!(m_attributes & flag) && (attributes & flag)) {
+            m_halfedgeAttributes[ai] =
+                    addHalfedgeProperty<Node>(_halfedgeAttrName[ai], Node());
+        } else {
+            removeHalfedgeProperty(m_halfedgeAttributes[ai]);
+        }
+    }
+
+//    PATATE_FEM_MESH_SET_ATTRIBUTE(
+//                TO_VERTEX_VALUE_FLAG,   m_toVertexValueNodes,   "h:toVertexValueNode");
+//    PATATE_FEM_MESH_SET_ATTRIBUTE(
+//                FROM_VERTEX_VALUE_FLAG, m_fromVertexValueNodes, "h:fromVertexValueNode");
+//    PATATE_FEM_MESH_SET_ATTRIBUTE(
+//                EDGE_VALUE_FLAG,        m_edgeValueNodes,       "h:edgeValueNode");
+//    PATATE_FEM_MESH_SET_ATTRIBUTE(
+//                EDGE_GRADIENT_FLAG,     m_edgeGradientNodes,    "h:edgeGradientNode");
 
 
     m_attributes = attributes;
 
-#undef PATATE_FEM_MESH_SET_ATTRIBUTE
+//#undef PATATE_FEM_MESH_SET_ATTRIBUTE
 }
 
 
@@ -328,31 +338,36 @@ typename VGMesh<_Scalar, _Dim, _Chan>::Node&
 VGMesh<_Scalar, _Dim, _Chan>::
     halfedgeNode(Halfedge h, HalfedgeAttribute attr)
 {
-    switch(attr)
-    {
-    case TO_VERTEX_VALUE:
-        assert(hasToVertexValue());
-        return toVertexValueNode(h);
-    case FROM_VERTEX_VALUE:
-        assert(hasToVertexValue() || hasFromVertexValue());
-        if(hasFromVertexValue())
-        {
-            return fromVertexValueNode(h);
-        }
-        else
-        {
-            return toVertexValueNode(prevHalfedge(h));
-        }
-    case EDGE_VALUE:
-        assert(hasEdgeValue());
-        return edgeValueNode(h);
-    case EDGE_GRADIENT:
-        assert(hasEdgeGradient());
-        return edgeGradientNode(h);
-    default:
-        break;
-    }
-    abort();
+    if(attr == FROM_VERTEX_VALUE && !hasFromVertexValue())
+        attr = TO_VERTEX_VALUE;
+
+    assert(hasAttribute(attr));
+    return m_halfedgeAttributes[attr][h];
+//    switch(attr)
+//    {
+//    case TO_VERTEX_VALUE:
+//        assert(hasToVertexValue());
+//        return toVertexValueNode(h);
+//    case FROM_VERTEX_VALUE:
+//        assert(hasToVertexValue() || hasFromVertexValue());
+//        if(hasFromVertexValue())
+//        {
+//            return fromVertexValueNode(h);
+//        }
+//        else
+//        {
+//            return toVertexValueNode(prevHalfedge(h));
+//        }
+//    case EDGE_VALUE:
+//        assert(hasEdgeValue());
+//        return edgeValueNode(h);
+//    case EDGE_GRADIENT:
+//        assert(hasEdgeGradient());
+//        return edgeGradientNode(h);
+//    default:
+//        break;
+//    }
+//    abort();
 }
 
 
@@ -874,10 +889,13 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_positions = rhs.m_positions;
     m_vertexGradientConstraints = rhs.m_vertexGradientConstraints;
 
-    m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
-    m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
-    m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
-    m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
+    for(int ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai) {
+        m_halfedgeAttributes[ai] = rhs.getHalfedgeProperty<Node>(_halfedgeAttrName[ai]);
+    }
+//    m_toVertexValueNodes = getHalfedgeProperty<Node>("h:toVertexValueNode");
+//    m_fromVertexValueNodes = getHalfedgeProperty<Node>("h:fromVertexValueNode");
+//    m_edgeValueNodes = getHalfedgeProperty<Node>("h:edgeValueNode");
+//    m_edgeGradientNodes = getHalfedgeProperty<Node>("h:edgeGradientNode");
 
     m_deletedNodes = rhs.m_deletedNodes;
     m_nodes = rhs.m_nodes/*.template cast<Scalar>()*/;
@@ -939,6 +957,17 @@ VGMesh<_Scalar, _Dim, _Chan>::resizeNodesMatrix(unsigned rows, unsigned cols)
     nodes.block(0, 0, minRows, minCols) = m_nodes;
     m_nodes.swap(nodes);
 }
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+const char*
+VGMesh<_Scalar, _Dim, _Chan>::_halfedgeAttrName[] = {
+    "h:toVertexValueNode",
+    "h:fromVertexValueNode",
+    "h:edgeValueNode",
+    "h:edgeGradientNode"
+};
+
 
 
 }  // namespace Vitelotte
