@@ -490,14 +490,6 @@ public:
     /// \name High-level nodes manipulation
     /// \{
 
-//    void setValueConstraint(Halfedge h, Node from, Node mid, Node to);
-//    void setContinuousValueConstraint(Halfedge h,
-//                                      Node from, Node mid, Node to)
-//        { setValueConstraint(h, from, mid, to);
-//          setValueConstraint(oppositeHalfedge(h), to, mid, from); }
-
-//    bool isValueConstraint(Edge e) const;
-
     /**
      * \brief Set nodes of all the halfedges inbetween halfedges `from` and
      * `to` (in counter-clockwise direction) to `node`.
@@ -518,8 +510,6 @@ public:
      * \pre `fromNode` and `toNode` mush be constraints.
      */
     void setSingularity(Node fromNode, Node toNode, Halfedge from, Halfedge to);
-
-//    void removeUselessUnknownNodes();
 
     /**
      * \brief Simplify constraints when possible.

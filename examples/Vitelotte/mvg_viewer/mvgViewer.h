@@ -133,10 +133,9 @@ public:
 
 private:
     enum RenderMode {
-        RENDER_SOLID,
-        RENDER_WIREFRAME,
-        RENDER_NODES,
-        RENDER_WIREFRAME_ONLY
+        RENDER_SOLID     = 0x01,
+        RENDER_WIREFRAME = 0x02,
+        RENDER_NODES     = 0x04
     };
 
 private:
@@ -212,7 +211,7 @@ private:
     Renderer* m_pQMeshRenderer;
     VGNodeRenderer* m_nodeRenderer;
 
-    RenderMode m_renderMode;
+    unsigned m_renderMode;
 };
 
 #endif
