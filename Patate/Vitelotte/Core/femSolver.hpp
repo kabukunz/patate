@@ -193,15 +193,14 @@ FemSolver<_Mesh, _ElementBuilder>::build(const Mesh& mesh, unsigned flags)
 
     // Compute node id to row/col mapping and initialize blocks
     preSort(mesh, flags);
+    if(m_error.status() == SolverError::STATUS_ERROR) return;
 
     // Fill the blocks
     buildMatrix(mesh);
+    if(m_error.status() == SolverError::STATUS_ERROR) return;
 
     // Factorize the lhs
-    if(m_error.status() != SolverError::STATUS_ERROR)
-    {
-        factorize();
-    }
+    factorize();
 }
 
 
@@ -364,6 +363,8 @@ FemSolver<_Mesh, _ElementBuilder>::preSort(const Mesh& mesh, unsigned flags)
         HalfedgeCirculator hc    = mesh.halfedges(face);
         HalfedgeCirculator hcEnd = hc;
         do {
+            assert(!mesh.isBoundary(*hc));
+
             for(unsigned ai = 0; ai < Mesh::HALFEDGE_ATTRIB_COUNT; ++ai) {
                 HalfedgeAttribute attr = HalfedgeAttribute(ai);
                 if(!mesh.hasAttribute(attr)) continue;
@@ -374,6 +375,11 @@ FemSolver<_Mesh, _ElementBuilder>::preSort(const Mesh& mesh, unsigned flags)
                 Face of       = mesh.face(mesh.oppositeHalfedge(*hc));
                 unsigned ofi  = of.idx();
                 bool isCons   = mesh.isConstraint(n);
+
+                if(!n.isValid()) {
+                    m_error.error("Input mesh contains invalid nodes.");
+                    return;
+                }
 
                 // If the node is not yet pushed, do it
                 if(m_nMask[ni])

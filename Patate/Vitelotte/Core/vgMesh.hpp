@@ -828,7 +828,7 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
     m_vertexGradientConstraints = rhs.m_vertexGradientConstraints;
 
     for(int ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai) {
-        m_halfedgeAttributes[ai] = rhs.getHalfedgeProperty<Node>(_halfedgeAttrName[ai]);
+        m_halfedgeAttributes[ai] = getHalfedgeProperty<Node>(_halfedgeAttrName[ai]);
     }
 
     m_deletedNodes = rhs.m_deletedNodes;
