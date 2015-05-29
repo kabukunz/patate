@@ -8,10 +8,13 @@
 #define _EXAMPLES_VITELOTTE_COMMON_VG_NODE_RENDERER_
 
 
+#include <vector>
+
+#include <Eigen/Geometry>
+
 #include <Patate/vitelotte.h>
 #include <Patate/vitelotte_gl.h>
 
-//#include "vgMeshWithCurves.h"
 #include "glPointRenderer.h"
 #include "glLineRenderer.h"
 
@@ -25,7 +28,7 @@ public:
     struct PlacedNode
     {
         Mesh::Node n;
-        Mesh::Vector p;
+        Eigen::Vector2f p;
     };
 
     typedef std::vector<PlacedNode> PlacedNodeList;
@@ -54,26 +57,30 @@ public:
     Mesh::Node highlightedNode() const;
     void setHighlightedNode(Mesh::Node n);
 
-    Mesh::Node pickNode(const Mesh::Vector& p) const;
+    Mesh::Node pickNode(const Eigen::Vector2f& p) const;
 
     void clear();
-    void update(const Mesh& mesh, float zoom);
-
-    void render(const Eigen::Matrix4f& transform,
+    void update(const Mesh& mesh,
+                const Eigen::Matrix4f& transform,
                 const Eigen::Vector2f& viewportSize);
 
+    void render();
+
 private:
-    bool fromSplit(const Mesh& mesh, Mesh::Halfedge h) const;
+    bool isFromSplit(const Mesh& mesh, Mesh::Halfedge h) const;
     bool isConstrained(const Mesh& mesh, Mesh::Halfedge h) const;
+    Eigen::Vector2f project(const Mesh::Vector& pos) const;
 
-    void updateEdge(const Mesh& mesh, float zoom, Mesh::Edge e);
-    void updateVertexNodes(const Mesh& mesh, float zoom, Mesh::Vertex vx);
+    Eigen::Vector2f projPos(Mesh::Vertex vx) const;
 
-    void addEdge(const Mesh::Vector& p0, const Mesh::Vector& p1,
+    void updateEdge(const Mesh& mesh, Mesh::Edge e);
+    void updateVertexNodes(const Mesh& mesh, Mesh::Vertex vx);
+
+    void addEdge(const Eigen::Vector2f& p0, const Eigen::Vector2f& p1,
                  bool constrained);
-    void addNode(const Mesh& mesh, Mesh::Node n, const Mesh::Vector& p);
+    void addNode(const Mesh& mesh, Mesh::Node n, const Eigen::Vector2f& p);
     void addNode2(const Mesh& mesh, Mesh::Node n0, Mesh::Node n1,
-                  const Mesh::Vector& p, const Mesh::Vector& offset);
+                  const Eigen::Vector2f& p, const Eigen::Vector2f& offset);
 
     Eigen::Vector4f convColor(const Eigen::Vector4f& color) const;
 
@@ -90,6 +97,12 @@ private:
 
     GLPointRenderer m_pointRenderer;
     GLLineRenderer m_lineRenderer;
+
+    std::vector<Eigen::Vector2f> m_projPos;
+
+    Eigen::Matrix4f m_transform;
+    Eigen::Vector2f m_viewportSize;
+    Eigen::AlignedBox2f m_viewBox;
 };
 
 

@@ -278,10 +278,8 @@ void GLViewer::render()
         m_pQMeshRenderer->renderWireframe(m_viewMatrix, viewportSize, m_lineWidth);
     }
     if(m_renderMode & RENDER_NODES) {
-        float dxn = m_viewMatrix(0, 0) / (-m_trackball.sceneDistance() * m_viewMatrix(3, 2));
-        float dxs = dxn * viewportSize.x() / 2.;
-        m_nodeRenderer->update(*m_pQvg, dxs);
-        m_nodeRenderer->render(m_viewMatrix, viewportSize);
+        m_nodeRenderer->update(*m_pQvg, m_viewMatrix, viewportSize);
+        m_nodeRenderer->render();
     }
 
     PATATE_ASSERT_NO_GL_ERROR();

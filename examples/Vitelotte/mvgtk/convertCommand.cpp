@@ -4,6 +4,8 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
+#include <iomanip>
+
 #include "convertCommand.h"
 
 
@@ -31,7 +33,7 @@ bool ConvertCommand::parseArgs(int argc, char** argv, int& argi)
 
 bool ConvertCommand::execute(Mesh& mesh, const GlobalOptions* opts)
 {
-    if(opts && opts->verbose) std::cout << "Set attributes to " << m_attributes << "...\n";
+    if(opts && opts->verbose) std::cout << "Set attributes to 0x" << std::hex << m_attributes << "...\n";
 
     mesh.setAttributes(m_attributes);
 

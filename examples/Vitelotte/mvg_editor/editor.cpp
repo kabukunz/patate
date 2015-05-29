@@ -243,7 +243,9 @@ void Editor::paintGL()
 
         if(m_showWireframe)
         {
-            m_nodeRenderer.render(viewMatrix, viewportSize);
+            m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
+                                  viewMatrix, viewportSize);
+            m_nodeRenderer.render();
         }
     }
 }
@@ -594,11 +596,6 @@ void Editor::doUpdateRenderers()
         }
         for(unsigned ci = 0; ci < mesh.nCurves(); ++ci)
             drawCurve(Mesh::Curve(ci), 2, Eigen::Vector4f(0, 0, 0, 1));
-    }
-
-    if(m_showWireframe) {
-        m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
-                              zoom());
     }
 
 

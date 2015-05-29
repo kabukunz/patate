@@ -518,7 +518,6 @@ void Document::solve()
     {
         unsigned dirtyLevel = m_dirtyFlags & DIRTY_LEVEL_MASK;
 
-        // TODO: m_fvSolver.clearErrors();
         switch(dirtyLevel)
         {
         case DIRTY_ALL:
