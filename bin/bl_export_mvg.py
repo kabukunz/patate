@@ -114,9 +114,30 @@ def write_mvg(context, filepath):
 
     ncurves = write_mvg_curves(fw, mesh)
 
-    random.seed()
+#    random.seed()
+#    for i in range(ncurves):
+#        fw("dcv %d 0 %f %f %f 1\n" % (i, random.random(), random.random(), random.random()))
+    col_splits = [ 2, 2, 2 ]
+    while col_splits[0] * col_splits[1] * col_splits[2] < ncurves:
+        if col_splits[2] < col_splits[1]:
+            col_splits[2] += 1
+        elif col_splits[1] < col_splits[0]:
+            col_splits[1] += 1
+        else:
+            col_splits[0] += 1
+
+    color = [ 0, 0, 0 ]
     for i in range(ncurves):
-        fw("dcv %d 0 %f %f %f 1\n" % (i, random.random(), random.random(), random.random()))
+        fw("dcv %d 0 %f %f %f 1\n" % (i, color[0] / (col_splits[0] - 1),
+                                         color[1] / (col_splits[1] - 1),
+                                         color[2] / (col_splits[2] - 1)))
+        color[0] += 1
+        if color[0] == col_splits[0]:
+            color[0] = 0
+            color[1] += 1
+            if color[1] == col_splits[1]:
+                color[1] = 0
+                color[2] += 1
 
     file.close()
 
