@@ -61,15 +61,18 @@ bool VGMeshRendererResources::initSolidShader(
     ok &= shader.addShader(GL_FRAGMENT_SHADER, fragCode);
 
     shader.bindAttributeLocation("vx_position", VG_MESH_POSITION_ATTR_LOC);
+    shader.bindAttributeLocation("vx_normal",   VG_MESH_NORMAL_ATTR_LOC);
     ok &= shader.finalize();
 
     if(!ok)
         return false;
 
     unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
+    unif.normalMatrixLoc      = shader.getUniformLocation("normalMatrix");
     unif.nodesLoc             = shader.getUniformLocation("nodes");
     unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
     unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
+    unif.enableShadingLoc     = shader.getUniformLocation("enableShading");
 
     return true;
 }
@@ -269,6 +272,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
     PATATE_ASSERT_NO_GL_ERROR();
 
     m_quadratic = mesh.hasEdgeValue();
+    m_3d        = mesh.nDims() == 3;
 
     int nodePerTriangle = m_quadratic? 6: 3;
 
@@ -277,18 +281,17 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
     m_nTriangles = mesh.nFaces() - m_nSingulars;
 
     // Reserve buffers
-    m_vertices.resize(mesh.nVertices());
+    m_vertices.resize(mesh.verticesSize());
     m_indices.resize(m_nTriangles * 3 + m_nSingulars * 3);
     m_nodes.resize(m_nTriangles * nodePerTriangle +
                    m_nSingulars * (nodePerTriangle + 1));
 
     // Push vertices positions
-    unsigned index = 0;
     for(typename Mesh::VertexIterator vit = mesh.verticesBegin();
         vit != mesh.verticesEnd(); ++vit)
     {
-        m_vertices[index] = position(mesh, *vit);
-        ++index;
+        m_vertices[(*vit).idx()].position = position(mesh, *vit);
+        m_vertices[(*vit).idx()].normal.setZero();
     }
 
     // Push faces indices and nodes
@@ -312,9 +315,11 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
 
         unsigned& index = isSingular? singIndex: triIndex;
         unsigned& nodeIndex = isSingular? singNodeIndex: triNodeIndex;
+        Vector3 pts[3];
         // Push vertices nodes
         for(int ei = 0; ei < 3; ++ei)
         {
+            if(m_3d) pts[ei] = mesh.position(mesh.toVertex(h));
             m_indices[index + ei] = mesh.toVertex(h).idx();
             h = mesh.nextHalfedge(h);
             m_nodes[nodeIndex + ei] = mesh.hasToVertexValue()?
@@ -336,11 +341,28 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
             }
         }
 
+        if(m_3d) {
+            // Compute normals
+            Vector3 fn = (pts[1] - pts[0]).cross(pts[2] - pts[0]);
+            for(int ei = 0; ei < 3; ++ei) {
+                m_vertices[mesh.toVertex(h).idx()].normal += fn;
+                h = mesh.nextHalfedge(h);
+            }
+        }
+
         index += 3;
         nodeIndex += nodePerTriangle + isSingular;
     }
     assert(triIndex == m_nTriangles * 3 && singIndex == m_indices.size());
     assert(triNodeIndex == m_nTriangles * nodePerTriangle && singNodeIndex == m_nodes.size());
+
+    if(m_3d) {
+        // Normalize normals
+        for(typename Mesh::VertexIterator vit = mesh.verticesBegin();
+            vit != mesh.verticesEnd(); ++vit) {
+            m_vertices[(*vit).idx()].normal.normalize();
+        }
+    }
 
     // Create and upload buffers
     createAndUploadBuffer(m_verticesBuffer, GL_ARRAY_BUFFER,
@@ -398,11 +420,19 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
 
     if(setupBuffers)
     {
-        glEnableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
         glBindBuffer(GL_ARRAY_BUFFER, m_verticesBuffer);
+
+        glEnableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
         glVertexAttribPointer(Resources::VG_MESH_POSITION_ATTR_LOC,
                               4, GL_FLOAT,
-                              false, sizeof(Vector4), 0);
+                              false, sizeof(GlVertex),
+                              PATATE_FIELD_OFFSET(GlVertex, position));
+
+        glEnableVertexAttribArray(Resources::VG_MESH_NORMAL_ATTR_LOC);
+        glVertexAttribPointer(Resources::VG_MESH_NORMAL_ATTR_LOC,
+                              3, GL_FLOAT,
+                              false, sizeof(GlVertex),
+                              PATATE_FIELD_OFFSET(GlVertex, normal));
 
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer);
     }
@@ -436,8 +466,11 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
 
     shader.use();
 
+    Eigen::Matrix3f normalMatrix = viewMatrix.topLeftCorner<3, 3>();
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
+    glUniformMatrix3fv(unif.normalMatrixLoc, 1, false, normalMatrix.data());
     glUniform1i(unif.nodesLoc, NODES_TEXTURE_UNIT);
+    glUniform1i(unif.enableShadingLoc, m_3d);
 
     glActiveTexture(GL_TEXTURE0 + NODES_TEXTURE_UNIT);
     glBindTexture(GL_TEXTURE_BUFFER, m_nodesTexture);

@@ -12,10 +12,14 @@ layout(triangle_strip, max_vertices = 3) out;
 uniform vec2 viewportSize;
 
 in vec4 geom_position_obj[];
+in vec3 geom_normal_obj[];
+in vec3 geom_normal_view[];
 
 flat out int frag_index;
 out vec3 frag_linearBasis;
 out vec3 frag_position_obj;
+out vec3 frag_normal_obj;
+out vec3 frag_normal_view;
 out vec3 frag_edgeDist_scr;
 flat out vec3 frag_vertices_obj[3];
 flat out vec3 frag_normEdges_obj[3];
@@ -42,6 +46,8 @@ void main()
         frag_index = gl_PrimitiveIDIn;
         frag_linearBasis = basis[i];
         frag_position_obj = geom_position_obj[i].xyz;
+        frag_normal_obj = geom_normal_obj[i];
+        frag_normal_view = geom_normal_view[i];
         frag_edgeDist_scr = vec3(0.0);
         frag_edgeDist_scr[i] = area / length(position_scr[(i+2)%3] - position_scr[(i+1)%3]);
         for(int j=0; j<3; ++j)

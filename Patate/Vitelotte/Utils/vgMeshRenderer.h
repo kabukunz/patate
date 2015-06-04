@@ -25,9 +25,11 @@ public:
     struct SolidUniforms
     {
         GLint viewMatrixLoc;
+        GLint normalMatrixLoc;
         GLint nodesLoc;
         GLint baseNodeIndexLoc;
         GLint singularTrianglesLoc;
+        GLint enableShadingLoc;
     };
 
     struct WireframeUniforms
@@ -40,7 +42,8 @@ public:
 
     enum
     {
-        VG_MESH_POSITION_ATTR_LOC
+        VG_MESH_POSITION_ATTR_LOC,
+        VG_MESH_NORMAL_ATTR_LOC
     };
 
 public:
@@ -106,6 +109,7 @@ public:
 
     typedef VGMeshRendererResources Resources;
 
+    typedef Eigen::Vector3f Vector3;
     typedef Eigen::Vector4f Vector4;
 
     enum
@@ -149,6 +153,12 @@ private:
     typedef std::vector<unsigned> IndicesVector;
     typedef std::vector<Vector4> Vector4Vector;
 
+    struct GlVertex {
+        Vector4 position;
+        Vector3 normal;
+    };
+    typedef std::vector<GlVertex> VertexVector;
+
 protected:
     Vector4 position(const Mesh& mesh, Vertex vx) const;
     Vector4 color(const Mesh& mesh, Node node) const;
@@ -178,11 +188,12 @@ private:
 
     GLuint m_vao;
 
-    Vector4Vector m_vertices;
+    VertexVector  m_vertices;
     IndicesVector m_indices;
     Vector4Vector m_nodes;
 
     bool     m_quadratic;
+    bool     m_3d;
     unsigned m_nTriangles;
     unsigned m_nSingulars;
 };

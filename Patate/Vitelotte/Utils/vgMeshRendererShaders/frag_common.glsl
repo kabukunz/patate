@@ -37,3 +37,39 @@ vec4 quadraticInterp(in vec4 colors[6])
         colors[4] * 4. * frag_linearBasis.z * frag_linearBasis.x +
         colors[5] * 4. * frag_linearBasis.x * frag_linearBasis.y;
 }
+
+float diffuse(in vec3 n, in vec3 l)
+{
+    return clamp(dot(n, l), 0., 1.);
+}
+
+vec3 linearToSrgb(in vec3 linear)
+{
+    vec3 srgb = linear;
+    srgb[0] = (linear[0] > 0.0031308)?
+              1.055 * pow(linear[0], 1./2.4):
+              12.92 * linear[0];
+    srgb[1] = (linear[1] > 0.0031308)?
+              1.055 * pow(linear[1], 1./2.4):
+              12.92 * linear[1];
+    srgb[2] = (linear[2] > 0.0031308)?
+              1.055 * pow(linear[2], 1./2.4):
+              12.92 * linear[2];
+    return srgb;
+}
+
+
+vec3 srgbToLinear(in vec3 srgb)
+{
+    vec3 linear = srgb;
+    linear[0] = (linear[0] > 0.04045)?
+                pow((linear[0]+0.055) / 1.055, 2.4):
+                linear[0] / 12.92;
+    linear[1] = (linear[1] > 0.04045)?
+                pow((linear[1]+0.055) / 1.055, 2.4):
+                linear[1] / 12.92;
+    linear[2] = (linear[2] > 0.04045)?
+                pow((linear[2]+0.055) / 1.055, 2.4):
+                linear[2] / 12.92;
+    return linear;
+}

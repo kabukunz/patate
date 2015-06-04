@@ -7,13 +7,19 @@
 #version 410 core
 
 uniform mat4 viewMatrix;
+uniform mat3 normalMatrix;
 
 in vec4 vx_position;
+in vec3 vx_normal;
 
 out vec4 geom_position_obj;
+out vec3 geom_normal_obj;
+out vec3 geom_normal_view;
 
 void main(void)
 {
     gl_Position = viewMatrix * vx_position;
     geom_position_obj = vx_position;
+    geom_normal_obj = vx_normal;
+    geom_normal_view = normalMatrix * vx_normal;
 }
