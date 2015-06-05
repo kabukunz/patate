@@ -8,14 +8,26 @@ cmake_minimum_required(VERSION 2.8)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake)
 
-find_package(X11 REQUIRED)
-find_package(Eigen3 REQUIRED)
-find_package(GLEW REQUIRED)
+find_package(X11)
+find_package(OpenGL)
+find_package(GLEW)
 find_package(GLFW3)
 
-if ( NOT GLFW3_FOUND )
-    message(WARNING "GLFW3 not found, skipping MvgViewer")
-else ( NOT GLFW3_FOUND )
+set(mvg_viewer_MISSING "")
+if(NOT X11_FOUND)
+    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} X11")
+endif()
+if(NOT OPENGL_FOUND)
+    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} OpenGL")
+endif()
+if(NOT GLEW_FOUND)
+    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} GLEW")
+endif()
+if(NOT GLFW3_FOUND)
+    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} GLFW3")
+endif()
+
+if(NOT mvg_viewer_MISSING)
     include_directories(
         ${EIGEN3_INCLUDE_DIR}
         ${GLEW_INCLUDE_DIRS}
@@ -37,6 +49,8 @@ else ( NOT GLFW3_FOUND )
         ${GLFW3_LIBRARIES}
         ${GLEW_LIBRARIES}
     )
-endif( NOT GLFW3_FOUND )
+else()
+    message(WARNING "Skipping mvg_viewer because of the following missing dependencies:${mvg_viewer_MISSING}")
+endif()
 
 

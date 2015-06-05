@@ -8,46 +8,63 @@ cmake_minimum_required(VERSION 2.8.11)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake)
 
-find_package(Eigen3 REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(Qt5Widgets REQUIRED)
-find_package(Qt5OpenGL REQUIRED)
+find_package(OpenGL)
+find_package(GLEW)
+find_package(Qt5Widgets)
+find_package(Qt5OpenGL)
 
-set(CMAKE_AUTOMOC ON)
+set(mvg_editor_MISSING "")
+if(NOT OPENGL_FOUND)
+    set(mvg_editor_MISSING "${mvg_editor_MISSING} OpenGL")
+endif()
+if(NOT GLEW_FOUND)
+    set(mvg_editor_MISSING "${mvg_editor_MISSING} GLEW")
+endif()
+if(NOT Qt5Widgets_FOUND)
+    set(mvg_editor_MISSING "${mvg_editor_MISSING} Qt5Widgets")
+endif()
+if(NOT Qt5OpenGL_FOUND)
+    set(mvg_editor_MISSING "${mvg_editor_MISSING} Qt5OpenGL")
+endif()
 
-include_directories(
-    ${EIGEN3_INCLUDE_DIR}
-	${OPENGL_INCLUDE_DIR}
-    ${GLEW_INCLUDE_DIRS}
-    "../../.."
-)
+if(NOT mvg_editor_MISSING)
+    set(CMAKE_AUTOMOC ON)
 
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
+    include_directories(
+        ${EIGEN3_INCLUDE_DIR}
+        ${OPENGL_INCLUDE_DIR}
+        ${GLEW_INCLUDE_DIRS}
+        "../../.."
+    )
 
-qt5_add_resources(mvg_editor_RES
-	editor.qrc
-)
+    set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(mvg_editor_SRCS
-    document.cpp
-    valueEditor.cpp
-    editor.cpp
-    mainWindow.cpp
-    ${mvg_editor_RES}
-    main.cpp
-)
+    qt5_add_resources(mvg_editor_RES
+        editor.qrc
+    )
 
-add_executable(mvg_editor
-    ${mvg_editor_SRCS}
-)
-add_dependencies(examples mvg_editor)
-add_dependencies(mvg_editor vitelottes_vg_mesh_renderer_shaders)
+    set(mvg_editor_SRCS
+        document.cpp
+        valueEditor.cpp
+        editor.cpp
+        mainWindow.cpp
+        ${mvg_editor_RES}
+        main.cpp
+    )
 
-target_link_libraries(mvg_editor
-    vitelotte_examples_common
-    Qt5::Widgets
-    Qt5::OpenGL
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
-)
+    add_executable(mvg_editor
+        ${mvg_editor_SRCS}
+    )
+    add_dependencies(examples mvg_editor)
+    add_dependencies(mvg_editor vitelottes_vg_mesh_renderer_shaders)
+
+    target_link_libraries(mvg_editor
+        vitelotte_examples_common
+        Qt5::Widgets
+        Qt5::OpenGL
+        ${OPENGL_LIBRARIES}
+        ${GLEW_LIBRARIES}
+    )
+else()
+    message(WARNING "Skipping mvg_editor because of the following missing dependencies:${mvg_editor_MISSING}")
+endif()
