@@ -50,7 +50,7 @@ PROJECT_BRIEF          =
 # exceed 55 pixels and the maximum width should not exceed 200 pixels.
 # Doxygen will copy the logo to the output directory.
 
-PROJECT_LOGO           = @CMAKE_CURRENT_SOURCE_DIR@/doc/html/images/logoSmall.png
+PROJECT_LOGO           = @CMAKE_CURRENT_SOURCE_DIR@/doc-src/html/images/logoSmall.png
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
@@ -598,7 +598,7 @@ FILE_VERSION_FILTER    =
 # You can optionally specify a file name after the option, if omitted
 # DoxygenLayout.xml will be used as the name of the layout file.
 
-LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/doc/layout.xml
+LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/doc-src/layout.xml
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files
 # containing the references data. This must be a list of .bib files. The
@@ -786,7 +786,7 @@ EXAMPLE_RECURSIVE      = YES
 # directories that contain image that are included in the documentation (see
 # the \image command).
 
-IMAGE_PATH             = @CMAKE_CURRENT_SOURCE_DIR@/doc/html/images
+IMAGE_PATH             = @CMAKE_CURRENT_SOURCE_DIR@/doc-src/images
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should
 # invoke to filter for each input file. Doxygen will invoke the filter program
@@ -947,7 +947,7 @@ HTML_FOOTER            =
 # style sheet in the HTML output directory as well, or it will be erased!
 
 HTML_STYLESHEET        =
-HTML_EXTRA_STYLESHEET  = @CMAKE_CURRENT_SOURCE_DIR@/doc/patate.css
+HTML_EXTRA_STYLESHEET  = @CMAKE_CURRENT_SOURCE_DIR@/doc-src/patate.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
