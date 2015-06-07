@@ -13,12 +13,12 @@ namespace Vitelotte {
 
   VGMesh is the heart of Vitelotte: it is both the class that represent mesh-based vector images and the class used as input of the solver.
 
-  VGMesh inherit PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other patates in the future. We will not enter in detail about how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an halfedge-based data structure, so if you are familiar with this using it should be quite straightforward.
+  VGMesh inherit PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other patates in the future. We will not enter in detail about how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an [halfedge-based data structure](https://en.wikipedia.org/wiki/Doubly_connected_edge_list), so if you are familiar with this, using it should be quite straightforward.
 
-  There is a few things to know about surface mesh. First, surface mesh allow to add arbitrary properties to any kind of element. For instance, vertices coordinates are just a vertex property of vectors. Secondly, mesh's elements (vertices, faces, ...) are manipulated through _handles_. These handle are really just indices that allow to find elements inside the property arrays. So to access the coordinate of some vertex, you need a handle to that vertex and the "position" vertex property. In practice, standard property are accessible directly from the mesh, so you end up with this kind of code:
+  There is a few things to know about surface mesh. First, surface mesh allow to add arbitrary properties to any kind of element. For instance, vertices coordinates are just a vertex property. Secondly, mesh's elements (vertices, faces, ...) are manipulated through _handles_. These handles are really just indices that allow to find elements inside the property arrays. So to access the coordinate of some vertex, you need a handle to that vertex and the "position" vertex property. In practice, standard property are accessible directly from the mesh, so you end up with this kind of code:
 
   \code{.cpp}
-  Vertex vx = /*...*/; // Some vertex
+  Vertex vx = [...]; // Some vertex
   // Get the outgoing halfedge associated with vx
   Halfedge h = mesh.halfedge(vx);
   // Set the coordinate of the target vertex of h
@@ -28,7 +28,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_dims_coeffs_sec Dimensions and coefficients
 
-  VGMesh allow to customize the type of coordinates and the type of values (we use the term value instead of color as a VGMesh can be used to store colors, normals, heights or anything else) through template parameters. The first parameter is the underlying scalar type (typically `float` or `double`). The two other set respectively the number of dimension of coordinates and the number of coefficients per value. Setting these values at compile time is not always practical, so you can use the special value Vitelotte::Dynamic which allow to set them a run time:
+  VGMesh allow to customize the type of coordinates and the type of values through template parameters (we use the term value instead of color as a VGMesh can be used to store colors, normals, displacement vectors or anything else). The first parameter is the underlying scalar type (typically `float` or `double`). The two other set respectively the number of dimensions and the number of coefficients per value. Setting these values at compile time is not always practical, so you can use the special value Vitelotte::Dynamic which allow to set them a run time:
 
   \code
   // Declare a Mesh type with dynamic dimensions and values.
@@ -44,7 +44,18 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_nodes_sec Nodes
 
-  VGMesh has the concept of _node_. As explained in [the tutorial](@ref vitelotte_user_manual_tutorial_page), a node define a value on the mesh. A single node can be referenced by several _attachment points_, typically all halfedge around a vertex reference the same node unless the vertex lie on a discontinuity. Finally, nodes work like surface mesh's elements: they are just handles and you can define your own properties.
+  VGMesh has the concept of _node_. As explained in [the tutorial](@ref vitelotte_user_manual_tutorial_page), a node define a value on the mesh. A single node can be referenced by several _attachment points_, typically all attachment points around a vertex reference the same node unless the vertex lie on a discontinuity. Also, nodes work like work mesh's elements: they are just handles and you can define your own properties on the nodes.
+
+  \code
+  // Create a node
+  Node constraint = mesh.addNode(Value([...]));
+  // Add node without parameter create an unknown node with the special
+  // value mesh.unconstrainedValue()
+  Node unknown = mesh.addNode();
+
+  // Read/write access to some node's value
+  mesh.value(constraint) = Value([...]);
+  \endcode
 
   There is currently 4 attachment points supported by VGMesh (more can be added with properties). All of them are defined by halfedge:
 
@@ -69,8 +80,8 @@ namespace Vitelotte {
   Then, you can get/set nodes this way:
 
   \code
-  Halfedge h = /*...*/;                   // Some halfedge
-  Node n = mesh.addNode(Value(/*...*/));  // Add a new node
+  Halfedge h = [...];                   // Some halfedge
+  Node n = mesh.addNode(Value([...]));  // Add a new node
   mesh.fromVertexValueNode(h) = n;
   mesh.toVertexValueNode(h)   = n;
   mesh.edgeValueNode(h)       = n;
@@ -87,11 +98,11 @@ namespace Vitelotte {
 
   \image html vitelotte/singularities.png "The two extremities of the curve are singularities."
 
-  When used with a solver, nodes can have the special value "unknown" (returned by VGMesh::unknownValue()). This allow to mark nodes that the solver has to compute. Known nodes thus behave as constraints the solver must satisfy. There is an illustration of an input to the solver (for simplicity, when two opposite nodes on an edge are the same, they are merged):
+  When used with a solver, nodes can have the special value "unknown" (returned by VGMesh::unconstrainedValue()). This allow to mark nodes that the solver has to find. Nodes with a known value thus behave as constraints the solver must satisfy. There is an illustration of an input to the solver (for simplicity, when two opposite nodes on an edge are the same, they are merged):
 
-  \image html vitelotte/nodes.svg "A typical input to the solver. White dots are unknown nodes an orange ones are constraints."
+  \image html vitelotte/nodes.svg "A typical input to the solver. White dots are unknown nodes an orange ones are constraints. Numbers are node indices."
 
-  There is no direct way to delete a node. The only be done with VGMesh::deleteUnusedNode() that scan the whole mesh and mark all unused nodes fore deletion. The rational behind this is that we can not check if a node is used efficiently on deletion, so deleting a node could result in an invalid mesh.
+  There is no direct way to delete a node. The only be done with VGMesh::deleteUnusedNode() that scan the whole mesh and mark all unused nodes for deletion. The rational behind this is that we can not check if a node is used efficiently on deletion, so deleting a node could result in an invalid mesh.
 
 
   \section vitelotte_user_manual_vg_mesh_nodes_manipulation_sec High-level node manipulation
@@ -126,15 +137,14 @@ namespace Vitelotte {
 
   Vertices nodes (TO_VERTEX_VALUE and FROM_VERTEX_VALUE) are a bit more complicated. It first cycle through all edges to create a list of constrained edges. For each edges around each vertices, it apply the following rules:
 
-  - If both sides have different nodes constrained to the same value, they are merged (one is discarded).
-  - If both sides have invalid nodes, or one is invalid and the other is an unknown, or both are the _same_ unknown node, then both sides are discarded.
+  - If both sides have invalid nodes, or one is invalid and the other is an unknown, or both are the _same_ unknown node, then both sides are set to invalid.
   - If one side is constrained and the other invalid, the constrained node is set on both side.
   - Else there is two different nodes on each sides and nothing is done.
 
-  In the end, either both sides of the edge are valid or none. Edges are added to the constraint list if they are linked to valid nodes. If there is no constraint around a vertex, a new unknown node is added and both sides of an edge are set to it to create one. Now every arcs (halfedges between two constrained edges) are handled separately. Note that the first and last halfedges have a node set and not the others. This lead to:
+  In the end, both sides of the edge are either valid or none. Edges are added to the constraint list if they are linked to valid nodes. If there is no constraint around a vertex, a new unknown node is added to both sides of an arbitrary edge. Now every arcs (halfedges between two constrained edges) are handled separately. Note that the first and last halfedges have a node set and not the others. This lead to:
 
   - If both extremities are the same, all halfedges of the arc are set to it.
-  - If both nodes are different unknowns, one is discarded and all halfedges of the arc are set to the other. This mean that we disallow singularity here. It makes sense because the solver would try very hard to set the same value on all nodes here. Avoiding a singularity reduces the number of node and make the solver faster.
+  - If both nodes are different unknowns, one is discarded and all halfedges of the arc are set to the other. This mean that we disallow singularity here. It makes sense because the solver would try very hard to set the same value on all nodes here. Avoiding a singularity reduces the number of node and make the solver faster and more robust.
   - If one node is unknown and the other is constrained, all halfedges of the arc are set to the constraint node and the unknown is discarded for the same reason as above.
   - If both nodes are constraints with different values, we call VGMesh::setSingularity.
 
@@ -150,7 +160,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_topology Topological operations
 
-  The current version of VGMesh does not support topological operations. However, reimplementing surface mesh's low-level topological operations, and maybe higher-level refinement, are planned for the next release, so stay tunned.
+  The current version of VGMesh does not support topological operations. However, it is planned tou reimplement surface mesh's low-level topological operations, and maybe higher-level refinement, so stay tunned.
 
 
  */

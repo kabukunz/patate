@@ -14,7 +14,7 @@ namespace Vitelotte {
 
   VGMeshRenderer is a simple renderer whose job is to emit the right OpenGL 3(+) calls to render a given mesh. It currently only support triangular meshes with linear or quadratic interpolation over each face. It also supports up to one singularity per triangle.
 
-  Vitelotte is an header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers as you may wish to use GLEW or a similar library that provides its own header. So, to use the renderer you need to do something like this:
+  Vitelotte is a header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers because you may wish to use GLEW or a similar library that provides its own header and it may produce conflicts. So, to use the renderer you need to include your OpenGL header *before* vitelotte's header like this:
 
   \code{.cpp}
   // Include some OpenGL header.
@@ -30,7 +30,6 @@ namespace Vitelotte {
   \code{.cpp}
   // As usual, VGMeshRenderer is parametrized by the Mesh class.
   VGMeshRenderer<Mesh> renderer;
-  renderer.setResources(resources);
   \endcode
 
   Every VGMeshRenderer manages some OpenGL resources. They can be released by calling VGMeshRenderer::releaseGLResources().
@@ -53,12 +52,14 @@ namespace Vitelotte {
   renderer.renderWireframe(viewMatrix, viewportSize);
   \endcode
 
-  Coordinates of the mesh's vertices are multiplied by the viewMatrix in the shader to produce the viewport coordinate. You should build the viewMatrix yourself to place the image correctly on the screen. Wireframe rendering require the viewport size to get the width of the lines right.
+  Coordinates of the mesh vertices are multiplied by the viewMatrix in the shader to produce the OpenGL clip coordinates. You should build the viewMatrix yourself to place the image correctly on the screen. Wireframe rendering require the viewport size to get the width of the lines right.
 
   Note that render() and renderWireframe should produce samples at the exact same depth. So to render a wireframe on top of a solid render, the easiest way is to set the depth test to GL_LEQUAL.
 
 
   \section vitelotte_user_manual_rendering_advanced_sec Advanced usage
+
+  \subsection vitelotte_user_manual_rendering_sharing_resources Sharing resources
 
   The renderer uses some global resources (shaders) that can be shared by several instances of VGMeshRenderer. By default, they are automatically created when needed (when you call a draw method). You can allocate them explicitly to share the resources among several renderers:
 
@@ -72,15 +73,23 @@ namespace Vitelotte {
 
   Then, you can pass the resources to an instance of VGMeshRenderer on construction or with VGMeshRenderer::setResources(). Resources can be released by calling VGMeshRendererResources::releaseGLResources() when the context is active.
 
-  The input mesh can have an arbitrary number of dimensions and coefficients. By default, if the number of dimensions is smaller or equal to 4, the d fists coordinates are sent to OpenGL and missing ones are replaced by 0, except the last one which is set to 1. It works well with 2D and 3D meshes, and with 4D meshes where the 4th dimension is 1 (unless you know what you do). In other cases, you can pass a functor to VGMeshRenderer constructor that takes a VGMesh::Vector in parameter and returns an Eigen::Vector4f which is send to OpenGL.
+  \subsection vitelotte_user_manual_rendering_projection Coordinates and value projections
 
-  A similar mechanism is available for values. By default, single valued coefficient are rendered as grayscale, 2D values are rendered as grayscale + alpha, 3D values are rendered as RGB and 4D as RGBA.
+  The input mesh can have an arbitrary number of dimensions and coefficients. By default, if the number of dimensions is smaller or equal to 4, the d fists coordinates are sent to OpenGL and missing ones are replaced by 0, except the last one which is set to 1. It works well with 2D and 3D meshes, and with 4D meshes where the 4th dimension is 1 (unless you know what you do). In other cases, you can pass a functor to VGMeshRenderer constructor that takes a VGMesh::Vector reference in parameter and returns an Eigen::Vector4f which is send to OpenGL.
+
+  A similar mechanism is available for values. By default, single valued coefficient are rendered as grayscale, 2D values are rendered as grayscale + alpha, 3D values are rendered as RGB and 4D as RGBA. Sending more than 4 coefficients to the shaders is not currently supported.
+
+  \subsection vitelotte_user_manual_rendering_color_space Color spaces
+
+  TODO: make it a proper section and update it
 
   If you render with GL_FRAMEBUFFER_SRGB enabled to automatically convert linear fragment color to SRGB, the input mesh value should be linear. In order to help, you can enable SRGB to linear conversion in the solver with VGMeshRenderer::enableSrgbToLinearConversion(). Keep in mind though that for ideal results you should use the same color space for interpolation in OpenGL and in the solver (if you use the solver). Using a wrong interpolation may lead to visible artifacts (making the triangles visible). If you use a color space which is not supported by OpenGL, you need to customize the shaders.
 
+  \subsection vitelotte_user_manual_rendering_custom_shaders Customizing shaders
+
   If you want to really customize the output, you may need to write your own shaders. You can setup your own OpenGL states and then call VGMeshRenderer::drawGeometry to setup the VAO and do the draw call. This function takes a combination of the NORMAL_TRIANGLES and the SINGULAR_TRIANGLES flags in parameter to determine if it should render normal triangles, singular triangles or both.
 
-  We won't detail the way shaders works here. If you need to write custom shader, the easiest way is to start from Vitelotte's shaders (in `Patate/Vitelotte/Utils/VGMeshRendererShaders`) and modify it.
+  We won't detail the way shaders works here. If you need to write custom shader, the easiest way is to start from Vitelotte's shaders (in `Patate/Vitelotte/Utils/VGMeshRendererShaders`) and modify them.
 
  */
 

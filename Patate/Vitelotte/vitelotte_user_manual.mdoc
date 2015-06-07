@@ -32,15 +32,15 @@ namespace Vitelotte
 
   Here is a quick overview of the main elements of Vitelotte. For a more in-depth introduction, see [the tutorial](@ref vitelotte_user_manual_tutorial_page).
 
-  The most important class is VGMesh as it is used both as input and output of most functionalities. It is a mesh representation that contain per-face attributes used for color interpolation. It has been designed to be easily extensible and can support various color interpolation schemes. It can also encode constraints like requiring the same color at two different points and mark some colors as "unknown" so that a solver can compute them.
+  At the hearth of Vitelotte is the VGMesh class. It is a mesh representation that contain per-face attributes used for color interpolation. It has been designed to be easily extensible and can support various color interpolation schemes. It can also represent a mesh with some color constraints to use as solver input.
 
   The FemSolver class implement a diffusion solver. It can do harmonic or biharmonic color diffusion over a VGMesh with unknown colors. It support different kind of elements, allowing to have either linear or quadratic color interpolation over the final image.
 
   The class VGMeshRenderer allow to render VGMesh with linear or quadratic color interpolation.
 
-  MVGReader and MVGWriter work together to save and load VGMesh in the `mvg` file format. It allow to save meshes at any processing step (e.g. before or after solve), which can be useful for debugging purpose.
+  MVGReader and MVGWriter work together to save and load VGMesh in the `mvg` file format. It allow to save meshes at any processing step (i.e. before or after solve), which can be useful for debugging purpose.
 
-  A few important feature are missing in this first release. Don't worry, they are planned and should come soon:
+  A few important feature are missing in this first release. Don't worry, they are planned and should come very soon:
 
   - VGMesh refinement to help generating meshes.
   - Curved edges for higher quality renderings.
@@ -52,7 +52,7 @@ namespace Vitelotte
 
   - The mvg toolkit (`mvgtk`). Allow to do high level operations on VGMeshWithCurves. Example:
     \code{.sh}
-    # poring.mvg is a mvg with diffusion curves and point constraints.
+    # poring.mvg is a mvg with diffusion curves and point gradient constraints.
     # This command generate an image with quadratic interpolation using
     # a biharmonic diffusion.
     mvgtk -v poring.mvg conv fv c2n finalize solve out out.mvg
