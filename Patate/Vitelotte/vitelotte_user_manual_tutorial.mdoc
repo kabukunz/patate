@@ -11,7 +11,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_tutorial_introduction_sec Introduction
 
-  This tutorial will guide you through a simple program while introducing the main concepts of Vitelotte. We will load an `.obj` mesh in a VGMesh, then we will set a few constraints and solve the diffusion before saving the result in a `.mvg`. The result can be visualized using the [mvg_viewer example](@ref vitelotte_example_mvg_viewer_page).
+  This tutorial will guide you through a simple program while introducing the main concepts of Vitelotte. We will load a `.obj` mesh in a VGMesh, then we will set a few constraints and solve the diffusion before saving the result in a `.mvg`. The result can be visualized using the [mvg_viewer example](@ref vitelotte_example_mvg_viewer_page).
 
   \image html vitelotte/tutorial_solved.png "The final result."
 
@@ -65,7 +65,7 @@ namespace Vitelotte {
 
   So, for each vertex we throw a dice such that we have 1 chance out of 10 to add a constraint for this vertex. If so, we just select an outgoing halfedge and assign a node with a random color to the "fromVertexValue" attachment point (it correspond to the source vertex). We don't need to set this node for each adjacent halfedges as VGMesh::finalize will do it for us.
 
-  Note that the finalize uses some heuristics and does not handle all tricky cases. For instance, it is not guaranteed to work for non-local constraints (if a node is used at different places on the mesh). See the documentation for details.
+  Note that finalize uses some heuristics and does not handle all tricky cases. For instance, it is not guaranteed to work for non-local constraints (if a node is used at different places on the mesh). This method is described in details in [the dedicated section of VGMesh's user manual](@ref vitelotte_user_manual_vg_mesh_finalize_subsec).
 
   \todo link to doc
 
@@ -80,13 +80,13 @@ namespace Vitelotte {
 
   \snippet Vitelotte/tutorial/tutorial.cpp Create the solver
 
-  The FemSolver class is parametrized with the mesh and an ElementBuilder. The element builder describe how to build the stiffness matrix and so varies in function of the element type we want to use. FVElementBuilder is the class to solve the diffusion with FV elements. This class does not support singular elements directly, so we decorate it with the SingularElementDecorator. This may seems complicated, but in practice we always do this, so there is no need to worry about the details (unless you want to implement your own element type).
+  The FemSolver class is parametrized with the mesh and an ElementBuilder. The element builder describe how to build the stiffness matrix and so varies in function of the element type we want to use. FVElementBuilder uses FV elements that allow to compute biharmonic diffusion and obtain quadratic color interpolation in the end. Element builders do not support singular elements directly, so we need to decorate them with the SingularElementDecorator. This may seems complicated, but in practice we always do this, so there is no need to worry about the details (unless you want to implement your own element type).
 
   Solving is now straightforward:
 
   \snippet Vitelotte/tutorial/tutorial.cpp Solve the diffusion
 
-  Why is there two steps ? FemSolver::build construct the matrix and invert it. It is time consuming but does not depend on the right hand side of the problem: the actual values of the constraint. This mean that you don't need to call this costly step if you only modify the values. However, if there is a change in geometry, in connectivity (including nodes) or in the type of some node (switching to unknown or constraint), then you _need_ to call it. In case of doubt, just call it to be sure.
+  Why is there two steps ? FemSolver::build construct the matrix and invert it. It is time consuming but does not depend on the right hand side of the problem, i.e. the actual values of the constraint. This mean that you don't need to call this costly step if you only modify the values. However, if there is a change in geometry, in connectivity (including nodes) or in the type of some node (switching to unknown or constraint), then you _need_ to call it. In case of doubt, just call it to be sure.
 
   FemSolver::solve does what its name state. This will set a value to all unknown nodes, thus producing the final image. Note that the solver may fail, either because the input mesh is invalid or because the problem is numerically unstable, so check for errors.
 
@@ -95,15 +95,15 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_tutorial_output_sec Writing mvg
 
-  All is left to do is to save our VGMesh in the `.mvg` file format to load it with mvg_viewer. We will not describe the format here, it has its own page. Just know that it is a simple text-based format inspired from the obj mesh format.
+  All is left to do is to save our VGMesh in the `.mvg` file format to load it with mvg_viewer. We will not describe the format here, it has [its own page](@ref vitelotte_user_manual_mvg_file_format_page). Just know that it is a simple text-based format inspired from the obj mesh format.
 
   Saving is straightforward and really similar to the code to read the mesh:
 
   \snippet Vitelotte/tutorial/tutorial.cpp Write the mesh
 
-  We change the attributes to VGMesh::QUADRATIC_FLAGS to discard VGMesh::EDGE_GRADIENT which is necessary for the solver but useless for rendering. This allow to reduce slightly the output size.
+  We change the attributes of the mesh from VGMesh::FV_FLAGS to VGMesh::QUADRATIC_FLAGS. It has the effect of discarding the attribute VGMesh::EDGE_GRADIENT which is necessary for the solver but useless for rendering. This allow to reduce slightly the output size.
 
-  This is it ! If you want to dive further in Vitelotte, you can read the rest of this manual or browse the references.
+  This is it ! If you want to dive further in Vitelotte, you should [take a look at the VGMesh class manual page](@ref vitelotte_user_manual_vg_mesh_page), because we overlooked some important details here.
 
  */
 

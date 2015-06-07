@@ -14,16 +14,16 @@
 
   MVG file format is designed to be easy to use, human-readable and hackable.
 
-  Several example MVGs are available in `examples/Vitelotte/samples`.
+  Several sample MVGs are available in `examples/Vitelotte/samples`.
 
 
   \section vitelotte_user_manual_mvg_file_format_description_sec Description
 
-  MVG files start with a header followed by a body. The body contains the block of vertex declarations, followed by the block of nodes declarations and then the block of faces declaration, in this order. Vertices and nodes are referenced by index in the order of their apparition in the file. _Note that unlike obj files, the first element has the index 0._
+  MVG files start with a header followed by a body. The body contains the block of vertex declarations, followed by the block of nodes declarations and then the block of faces declaration, in this order. Vertices and nodes are referenced by index in the order of their apparition in the file. _Note that unlike obj files, the first elements have the index 0._
 
   Blank lines and lines starting with # are ignored, but can not be placed on the first line. It is not possible to place a comment on the same line than a declaration.
 
-  Each line in the body form a declaration and starts with a keyword describing the kind of object declared, like 'v' for vertices of 'f' for faces. Lines starting with an unknown keyword are ignored by the parser. This allow to extend mvg files while keeping them readable by unaware applications.
+  Each line in the form a declaration and starts with a keyword describing the kind of object declared, like 'v' for vertices of 'f' for faces. Lines starting with an unknown keyword are ignored by the parser. This allow to extend mvg files while keeping them readable by unaware applications.
 
 
   \subsection vitelotte_user_manual_mvg_file_format_description_header_subsec Header
@@ -37,7 +37,7 @@
   The following lines declare respectively the number of dimensions, the number of value's coefficients and the active attributes of the mesh:
 
   \code
-  dim 2
+  dimensions 2
   coefficients 4
   attributes none
   \endcode
