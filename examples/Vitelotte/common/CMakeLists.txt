@@ -35,5 +35,6 @@ set(vitelotte_examples_common_SRCS
 add_library(vitelotte_examples_common
     ${vitelotte_examples_common_SRCS}
 )
-add_dependencies(examples vitelotte_examples_common)
+add_dependencies(vitelotte_examples vitelotte_examples_common)
 add_dependencies(vitelotte_examples_common vitelottes_vg_mesh_renderer_shaders)
+

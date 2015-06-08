@@ -41,7 +41,7 @@ if(NOT mvg_viewer_MISSING)
         mvgViewer.cpp
     )
     add_executable(mvg_viewer ${mvg_viewer_SRCS})
-    add_dependencies(examples mvg_viewer)
+    add_dependencies(vitelotte_examples mvg_viewer)
     add_dependencies(mvg_viewer vitelottes_vg_mesh_renderer_shaders)
 
     target_link_libraries(mvg_viewer
@@ -52,5 +52,4 @@ if(NOT mvg_viewer_MISSING)
 else()
     message(WARNING "Skipping mvg_viewer because of the following missing dependencies:${mvg_viewer_MISSING}")
 endif()
-
 

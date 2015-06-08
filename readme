@@ -1,7 +1,7 @@
 /*
  This Source Code Form is subject to the terms of the Mozilla Public
  License, v. 2.0. If a copy of the MPL was not distributed with this
- file, You can obtain one at http://mozilla.org/MPL/2.0/. 
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
 
@@ -9,18 +9,18 @@
 1. Using the Patate library
 ***************************
 
-There is no need to compile this library to use it. Simply add the Patate/ directory to your include path. 
+There is no need to compile this library to use it. Simply add the Patate/ directory to your include path.
 The only required dependency is on the Eigen library for linear algebra, vectors and matrices purposes.
 A significant portion of the library is also CUDA-compatible, please refer to the documentation for details.
 
-The Patate library is divided into modules (a.k.a. "patates"), and you may include each of them separately. 
+The Patate library is divided into modules (a.k.a. "patates"), and you may include each of them separately.
 The best way to find out how to use a module is to start from tutorials provided in the documentation.
 Various examples are also documented and their source code provided in the examples/ directory.
 
 Further sections explain how to build the documentation and compile the examples.
-An online version of the documentation for the last release is also available at 
+An online version of the documentation for the last release is also available at
   http://patate.gforge.inria.fr/html/
-For more information 
+For more information
 
 
 2. Building the documentation
@@ -47,5 +47,6 @@ To compile examples, use the following command from the build/ directory:
 
 The example binaries will then be found in the build/examples/ directory.
 
-
+If you want to compile examples of a single module, you can use the targets <module>_examples:
+  make grenaille_examples
 

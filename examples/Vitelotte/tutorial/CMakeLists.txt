@@ -21,4 +21,5 @@ set(vitelotte_tutorial_SRCS
     tutorial.cpp
 )
 add_executable(tutorial ${vitelotte_tutorial_SRCS})
-add_dependencies(examples tutorial)
+add_dependencies(vitelotte_examples tutorial)
+

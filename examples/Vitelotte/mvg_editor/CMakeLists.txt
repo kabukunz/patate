@@ -55,7 +55,7 @@ if(NOT mvg_editor_MISSING)
     add_executable(mvg_editor
         ${mvg_editor_SRCS}
     )
-    add_dependencies(examples mvg_editor)
+    add_dependencies(vitelotte_examples mvg_editor)
     add_dependencies(mvg_editor vitelottes_vg_mesh_renderer_shaders)
 
     target_link_libraries(mvg_editor
@@ -68,3 +68,4 @@ if(NOT mvg_editor_MISSING)
 else()
     message(WARNING "Skipping mvg_editor because of the following missing dependencies:${mvg_editor_MISSING}")
 endif()
+

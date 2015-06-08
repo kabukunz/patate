@@ -28,8 +28,9 @@ set(vitelotte_mvgtk_SRCS
     main.cpp
 )
 add_executable(mvgtk ${vitelotte_mvgtk_SRCS})
-add_dependencies(examples mvgtk)
+add_dependencies(vitelotte_examples mvgtk)
 
 target_link_libraries(mvgtk
     vitelotte_examples_common
 )
+
