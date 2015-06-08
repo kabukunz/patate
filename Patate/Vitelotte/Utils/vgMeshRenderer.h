@@ -131,9 +131,6 @@ public:
                    const ValueProj& valueProj = ValueProj());
     ~VGMeshRenderer();
 
-    bool isSrgbToLinearConversionEnabled() const;
-    void enableSrgbToLinearConversion(bool enable);
-
     const PosProj&   positionProjection() const;
           PosProj&   positionProjection();
     const ValueProj& valueProjection()    const;

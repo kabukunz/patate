@@ -138,7 +138,6 @@ template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
         Resources* resources, const PosProj& posProj, const ValueProj& valueProj) :
     m_useVao(true),
-    m_convertSrgbToLinear(false),
     m_ownResources(false),
 
     m_positionProjection(posProj),
@@ -200,20 +199,6 @@ typename VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::ValueProj&
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::valueProjection()
 {
     return m_valueProjection;
-}
-
-
-template < class _Mesh, typename _PosProj, typename _ValueProj >
-bool VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::isSrgbToLinearConversionEnabled() const
-{
-    return m_convertSrgbToLinear;
-}
-
-
-template < class _Mesh, typename _PosProj, typename _ValueProj >
-void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::enableSrgbToLinearConversion(bool enable)
-{
-    m_convertSrgbToLinear = enable;
 }
 
 
@@ -530,7 +515,7 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::color(const Mesh& mesh, Node node) 
     Vector4 c = (mesh.isValid(node) && mesh.isConstraint(node))?
                 m_valueProjection(mesh.value(node)):
                 m_invalidNodeColor;
-    return m_convertSrgbToLinear? PatateCommon::srgbToLinear(c): c;
+    return c;
 }
 
 
