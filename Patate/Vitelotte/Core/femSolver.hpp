@@ -186,13 +186,13 @@ FemSolver<_Mesh, _ElementBuilder>::~FemSolver()
 
 template < class _Mesh, class _ElementBuilder >
 void
-FemSolver<_Mesh, _ElementBuilder>::build(const Mesh& mesh, unsigned flags)
+FemSolver<_Mesh, _ElementBuilder>::build(const Mesh& mesh)
 {
     // Cleanup error status
     m_error.resetStatus();
 
     // Compute node id to row/col mapping and initialize blocks
-    preSort(mesh, flags);
+    preSort(mesh);
     if(m_error.status() == SolverError::STATUS_ERROR) return;
 
     // Fill the blocks
@@ -294,7 +294,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve(Mesh& mesh)
 
 template < class _Mesh, class _ElementBuilder >
 void
-FemSolver<_Mesh, _ElementBuilder>::preSort(const Mesh& mesh, unsigned flags)
+FemSolver<_Mesh, _ElementBuilder>::preSort(const Mesh& mesh)
 {
     // FIXME: This algorithm assume there is only local constraints.
 
@@ -416,15 +416,15 @@ FemSolver<_Mesh, _ElementBuilder>::preSort(const Mesh& mesh, unsigned flags)
             // Search for unprocessed face
             while(faceIt != mesh.facesEnd() && !m_fMask[(*faceIt).idx()]) ++faceIt;
 
-            // FIXME: This bypass the bloc splitting mechanism, thus creating
+            // NOTE: This bypass the bloc splitting mechanism, thus creating
             //   a single big bloc. For testing purpose and/or to allow
             //   non-local constraints.
-            if(!(flags & NO_NON_LOCAL_CONSTRAINTS) && faceIt != mesh.facesEnd()) {
-                fi = (*faceIt).idx();
-                m_fMask[fi]      = false;
-                fStack(count++)  = fi;
-                continue;
-            }
+//            if(faceIt != mesh.facesEnd()) {
+//                fi = (*faceIt).idx();
+//                m_fMask[fi]      = false;
+//                fStack(count++)  = fi;
+//                continue;
+//            }
 
             // Offset extra constraints indices so that they are > to node
             // indices. It allow extra constraints (who have 0 on the diagonal)

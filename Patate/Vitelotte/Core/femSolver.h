@@ -31,11 +31,6 @@ public:
 
     typedef typename ElementBuilder::Scalar Scalar;
 
-    enum
-    {
-        NO_NON_LOCAL_CONSTRAINTS = 0x01
-    };
-
 protected:
     typedef typename Mesh::Node Node;
     typedef typename Mesh::Vertex Vertex;
@@ -47,7 +42,7 @@ public:
     ~FemSolver();
 
     /// \brief Build the internal stiffness matrix
-    void build(const Mesh& mesh, unsigned flags = 0);
+    void build(const Mesh& mesh);
 
     /// \brief Solve the diffusion using the factorize unknown block.
     void solve(Mesh& mesh);
@@ -95,7 +90,7 @@ public:
 protected:
     // Map each node to a row/column an split the problem in a set of
     // independant sub-problems.
-    void preSort(const Mesh& mesh, unsigned flags);
+    void preSort(const Mesh& mesh);
 
     // Compute the stiffness matrix coefficients.
     void buildMatrix(const Mesh& mesh);
