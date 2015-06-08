@@ -20,7 +20,7 @@
 
 /// [Declare the Mesh class]
 
-// A mesh using floats to represent coefficient and with a dynamic number of
+// A mesh using floats to represent coefficients and with a dynamic number of
 // dimensions and coefficients.
 typedef Vitelotte::VGMesh<float, Vitelotte::Dynamic, Vitelotte::Dynamic> Mesh;
 

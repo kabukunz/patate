@@ -10,31 +10,33 @@
 
   \section vitelotte_user_manual_mvg_file_format_intro_sec Introduction
 
-  In order to save VGMesh to disk we provide a file format called MVG. MVGs are simple text files with a syntax inspired by the OBJ file format. It supports meshes of arbitrary dimensions, any combination of attributes and nodes (including unknown and invalid nodes). This format is also easily extensible.
+  In order to save VGMesh to disk we provide a file format called MVG (for Mesh-based Vector Graphics). MVGs are simple text files with a syntax inspired from the OBJ file format. It supports meshes of arbitrary dimensions, any combination of attributes and nodes (including unknown and invalid nodes). This format is also easily extensible.
 
-  MVG file format is designed to be easy to use, human-readable and hackable.
+  The MVG file format is designed to be easy to use, human-readable and hackable.
 
   Several sample MVGs are available in `examples/Vitelotte/samples`.
 
 
   \section vitelotte_user_manual_mvg_file_format_description_sec Description
 
-  MVG files start with a header followed by a body. The body contains the block of vertex declarations, followed by the block of nodes declarations and then the block of faces declaration, in this order. Vertices and nodes are referenced by index in the order of their apparition in the file. _Note that unlike obj files, the first elements have the index 0._
+  MVG files start with a header followed by a body. The body contains the block of vertex declarations, followed by the block of nodes declarations and then the block of faces declaration, in this order. Vertices and nodes are referenced by index in the order of their apparition in the file.
+
+  \warning Note that unlike obj files, the first elements have the index 0.
 
   Blank lines and lines starting with # are ignored, but can not be placed on the first line. It is not possible to place a comment on the same line than a declaration.
 
-  Each line in the form a declaration and starts with a keyword describing the kind of object declared, like 'v' for vertices of 'f' for faces. Lines starting with an unknown keyword are ignored by the parser. This allow to extend mvg files while keeping them readable by unaware applications.
+  Each line is in the form a declaration and starts with a keyword describing the kind of object declared, like 'v' for vertices of 'f' for faces. Lines starting with an unknown keyword are ignored by the parser. This allow to extend mvg files while keeping them readable by unaware applications.
 
 
   \subsection vitelotte_user_manual_mvg_file_format_description_header_subsec Header
 
-  MVG files starts with a header. The first line _must_ be
+  A MVG file starts with a header. The first line _must_ be
 
   \code
   mvg 1.0
   \endcode
 
-  The following lines declare respectively the number of dimensions, the number of value's coefficients and the active attributes of the mesh:
+  The following lines declare respectively the number of dimensions, the number of value coefficients and the active attributes of the mesh:
 
   \code
   dimensions 2
@@ -77,7 +79,7 @@
   n void
   \endcode
 
-  Faces declarations are more involved as they contain connectivity to both vertices and nodes. With no attributes enable, they are simply:
+  Faces declarations are more involved as they contain connectivity to both vertices and nodes. With no attributes enabled, they are simply:
   \code
   f VERTEX_INDICES
   \endcode
@@ -89,7 +91,7 @@
   \code
   Vi/NVi_in/NVi_out
   \endcode
-  Where NVi_in is the node attached to the ingoing halfedge of Vi and NVi_out the node attached to the outgoing halfedge. As most of the meshes only contains a few singular vertices, it is a waste of space to systematically duplicate nodes and it makes the file harder to tweak. So there is a special rule that allow to omit the second node if it is the same as the first, leading to declarations such as
+  Where NVi_in is the node attached to the ingoing halfedge of Vi and NVi_out the node attached to the outgoing halfedge. As most of the meshes only contains a few singular vertices, it is a waste of space to systematically duplicate nodes and it makes the file harder to tweak. So there is a special rule that permits to omit the second node if it is the same as the first, leading to declarations such as
   \code
   f V0/NV0 V1/NV1_in/NV1_out V2/NV2
   \endcode
@@ -99,7 +101,7 @@
   \code
   f VERTICES - EDGES
   \endcode
-  Where VERTICES are the vertex declaration as above and EDGES should be as many edge declarations as there is vertex. The first edge declaration correspond to the edge V0-V1, the second to V1-V2 and so on. Edge declarations take the form `N0/N1/...` where Ni are node indices. If there is only one edge attribute enabled, an edge declaration is simply a single node index. If both are enable, EDGE_VALUE is the first index and EDGE_GRADIENT the second. If none are enable, the whole edge declaration is discarded, '-' included.
+  VERTICES are the vertex declaration as above and EDGES should be as many edge declarations as there is vertex. The first edge declaration correspond to the edge V0-V1, the second to V1-V2 and so on. Edge declarations take the form `N0/N1/...` where Ni are node indices. If there is only one edge attribute enabled, an edge declaration is simply a single node index. If both are enabled, EDGE_VALUE is the first index and EDGE_GRADIENT the second. If none is enabled, the whole edge declaration is discarded, '-' included.
 
   While not used yet in Vitelotte, you may wish to add faces declaration (for example if you have elements with internal nodes that are not attached to vertices or edges). They should be added after edges node, separated by the '-' token.
 
@@ -124,13 +126,6 @@
   MVGWriter<Mesh>().write(outStream, mesh);
   \endcode
   MVGWriter constructor takes the version of the MVG to produce as an optional parameter which default to the latest version (anyway, 1.0 is the only version existing right now).
-
-
-  \section vitelotte_user_manual_mvg_file_format_extending_sec Extending MVG
-
-  - The mvg file format can be extended easily by adding new declaration. This is used by \ref vitelotte_example_vg_mesh_with_curves_reader_page and \ref vitelotte_example_vg_mesh_with_curves_writer_page to support \ref vitelotte_example_vg_mesh_with_curves_page.
-  - TODO describe the extension ?
-
 
 
  */
