@@ -11,65 +11,67 @@
 namespace Vitelotte
 {
 
-/**
- * \brief Concepts used in Vitelotte.
- */
-namespace Concept
-{
+///**
+// * \brief Concepts used in Vitelotte.
+// */
+//namespace Concept
+//{
 
-/**
- * \brief ElementConcept represents an interpolation function over a
- * face.
- */
-template < class _Mesh, typename _Scalar >
-class ElementConcept
-{
-}
+// TODO: Update this to match real code
 
-
-/**
- * \brief Describe the procedure to compute the stiffness matrix of an element.
- */
-template < class _Mesh, typename _Scalar >
-class ElementBuilderConcept
-{
-public:
-    /**
-     * \brief The scalar type used by the FEM solver.
-     *
-     * May be different from the scalar type used by the Mesh.
-     */
-    typedef _Scalar Scalar;
-
-    /**
-     * \brief The type of the mesh containing the elements.
-     */
-    typedef _Mesh Mesh;
-
-public:
-    /**
-     * \brief Return the number of coefficients in the element stiffness
-     * matrix.
-     *
-     * The returned value *must* be the number of coefficients pushed by
-     * addCoefficients().
-     */
-    unsigned nCoefficients(const Mesh& mesh, Face element) const;
-
-    /**
-     * \brief Compute the coefficients of the element stiffness matrix and
-     * add them to `it`.
-     *
-     * Note that the number of coefficients pushed *must* be the value returned
-     * by nCoefficients().
-     */
-    template < typename InIt >
-    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
-
-};
+///**
+// * \brief ElementConcept represents an interpolation function over a
+// * face.
+// */
+//template < class _Mesh, typename _Scalar >
+//class ElementConcept
+//{
+//}
 
 
+///**
+// * \brief Describe the procedure to compute the stiffness matrix of an element.
+// */
+//template < class _Mesh, typename _Scalar >
+//class ElementBuilderConcept
+//{
+//public:
+//    /**
+//     * \brief The scalar type used by the FEM solver.
+//     *
+//     * May be different from the scalar type used by the Mesh.
+//     */
+//    typedef _Scalar Scalar;
 
-}
+//    /**
+//     * \brief The type of the mesh containing the elements.
+//     */
+//    typedef _Mesh Mesh;
+
+//public:
+//    /**
+//     * \brief Return the number of coefficients in the element stiffness
+//     * matrix.
+//     *
+//     * The returned value *must* be the number of coefficients pushed by
+//     * addCoefficients().
+//     */
+//    unsigned nCoefficients(const Mesh& mesh, Face element) const;
+
+//    /**
+//     * \brief Compute the coefficients of the element stiffness matrix and
+//     * add them to `it`.
+//     *
+//     * Note that the number of coefficients pushed *must* be the value returned
+//     * by nCoefficients().
+//     */
+//    template < typename InIt >
+//    void addCoefficients(InIt& it, const Mesh& mesh, Face element) const;
+
+//};
+
+
+
+//}
 
 }
