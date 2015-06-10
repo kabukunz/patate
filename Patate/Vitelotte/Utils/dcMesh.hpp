@@ -4,7 +4,7 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#include "vgMeshWithCurves.h"
+#include "dcMesh.h"
 
 
 namespace Vitelotte
@@ -32,7 +32,7 @@ typename PicewiseLinearFunction<_Value>::Value
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves()
+DCMesh<_Scalar, _Dim, _Chan>::DCMesh()
 {
     m_pointConstraintConn = Base::template addVertexProperty<PointConstraint>(
                                                 "v:pointConstraintConnectivity");
@@ -42,7 +42,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves()
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves(unsigned nDims, unsigned nCoeffs)
+DCMesh<_Scalar, _Dim, _Chan>::DCMesh(unsigned nDims, unsigned nCoeffs)
     : Base(nDims, nCoeffs, 0)
 {
     m_pointConstraintConn = Base::template addVertexProperty<PointConstraint>(
@@ -53,7 +53,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves(unsigned nDims, unsigne
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves(const VGMeshWithCurves& other)
+DCMesh<_Scalar, _Dim, _Chan>::DCMesh(const DCMesh& other)
     : Base(other)
 {
     copyVGMeshWithCurvesMembers(other);
@@ -61,8 +61,8 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::VGMeshWithCurves(const VGMeshWithCurves&
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMeshWithCurves<_Scalar, _Dim, _Chan>&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::operator=(const VGMeshWithCurves& other)
+DCMesh<_Scalar, _Dim, _Chan>&
+DCMesh<_Scalar, _Dim, _Chan>::operator=(const DCMesh& other)
 {
     if(&other == this) return *this;
 
@@ -74,8 +74,8 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::operator=(const VGMeshWithCurves& other)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-VGMeshWithCurves<_Scalar, _Dim, _Chan>&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::assign(const VGMeshWithCurves& other)
+DCMesh<_Scalar, _Dim, _Chan>&
+DCMesh<_Scalar, _Dim, _Chan>::assign(const DCMesh& other)
 {
     if(&other == this) return *this;
 
@@ -87,8 +87,8 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::assign(const VGMeshWithCurves& other)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::Curve
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::addCurve(unsigned flags)
+typename DCMesh<_Scalar, _Dim, _Chan>::Curve
+DCMesh<_Scalar, _Dim, _Chan>::addCurve(unsigned flags)
 {
     Curve c(nCurves());
     CurveInfo ci;
@@ -100,7 +100,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::addCurve(unsigned flags)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::addHalfedgeToCurve(Curve c, Halfedge h, float from, float to)
+DCMesh<_Scalar, _Dim, _Chan>::addHalfedgeToCurve(Curve c, Halfedge h, float from, float to)
 {
     assert(isValid(c));
     assert(isValid(h));
@@ -135,7 +135,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::addHalfedgeToCurve(Curve c, Halfedge h, 
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::setFlags(Curve c, unsigned flags)
+DCMesh<_Scalar, _Dim, _Chan>::setFlags(Curve c, unsigned flags)
 {
     assert(isValid(c));
 
@@ -150,7 +150,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setFlags(Curve c, unsigned flags)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::setFlagsRaw(Curve c, unsigned flags)
+DCMesh<_Scalar, _Dim, _Chan>::setFlagsRaw(Curve c, unsigned flags)
 {
     assert(isValid(c));
 
@@ -160,16 +160,16 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setFlagsRaw(Curve c, unsigned flags)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-const typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::ValueFunction&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunction(Curve c, unsigned which) const
+const typename DCMesh<_Scalar, _Dim, _Chan>::ValueFunction&
+DCMesh<_Scalar, _Dim, _Chan>::valueFunction(Curve c, unsigned which) const
 {
-    return const_cast<VGMeshWithCurves*>(this)->valueFunction(c, which);
+    return const_cast<DCMesh*>(this)->valueFunction(c, which);
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::ValueFunction&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunction(Curve c, unsigned which)
+typename DCMesh<_Scalar, _Dim, _Chan>::ValueFunction&
+DCMesh<_Scalar, _Dim, _Chan>::valueFunction(Curve c, unsigned which)
 {
     assert(isValid(c));
     assert(which < 4);
@@ -191,16 +191,16 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunction(Curve c, unsigned which)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-const typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::ValueFunction&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunctionRaw(Curve c, unsigned which) const
+const typename DCMesh<_Scalar, _Dim, _Chan>::ValueFunction&
+DCMesh<_Scalar, _Dim, _Chan>::valueFunctionRaw(Curve c, unsigned which) const
 {
-    return const_cast<VGMeshWithCurves*>(this)->valueFunctionRaw(c, which);
+    return const_cast<DCMesh*>(this)->valueFunctionRaw(c, which);
 }
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::ValueFunction&
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunctionRaw(Curve c, unsigned which)
+typename DCMesh<_Scalar, _Dim, _Chan>::ValueFunction&
+DCMesh<_Scalar, _Dim, _Chan>::valueFunctionRaw(Curve c, unsigned which)
 {
     assert(isValid(c));
     assert(which < 4);
@@ -211,7 +211,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::valueFunctionRaw(Curve c, unsigned which
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::setVertex(PointConstraint pc, Vertex vx) {
+DCMesh<_Scalar, _Dim, _Chan>::setVertex(PointConstraint pc, Vertex vx) {
     assert(!m_pointConstraintConn[vx].isValid());
     if(vertex(pc).isValid()) {
         m_pointConstraintConn[vertex(pc)] = PointConstraint();
@@ -222,8 +222,8 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setVertex(PointConstraint pc, Vertex vx)
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::PointConstraint
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::addPointConstraint(Vertex vx)
+typename DCMesh<_Scalar, _Dim, _Chan>::PointConstraint
+DCMesh<_Scalar, _Dim, _Chan>::addPointConstraint(Vertex vx)
 {
     PointConstraint pc(nPointConstraints());
     PointConstraintInfo pci;
@@ -237,7 +237,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::addPointConstraint(Vertex vx)
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::clear()
+DCMesh<_Scalar, _Dim, _Chan>::clear()
 {
     Base::clear();
     m_pointConstraints.clear();
@@ -247,7 +247,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::clear()
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::setNodesFromCurves()
+DCMesh<_Scalar, _Dim, _Chan>::setNodesFromCurves()
 {
     m_nprops.resize(0);
     for(HalfedgeIterator hit = halfedgesBegin();
@@ -378,8 +378,8 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::setNodesFromCurves()
 
 
 template < typename _Scalar, int _Dim, int _Chan >
-typename VGMeshWithCurves<_Scalar, _Dim, _Chan>::Value
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::evalValueFunction(
+typename DCMesh<_Scalar, _Dim, _Chan>::Value
+DCMesh<_Scalar, _Dim, _Chan>::evalValueFunction(
         Curve c, unsigned which, float pos) const
 {
     return valueFunction(c, which)(pos);
@@ -388,7 +388,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::evalValueFunction(
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::copyVGMeshWithCurvesMembers(const VGMeshWithCurves& other)
+DCMesh<_Scalar, _Dim, _Chan>::copyVGMeshWithCurvesMembers(const DCMesh& other)
 {
     m_pointConstraintConn = Base::template vertexProperty<PointConstraint>(
                                                 "v:pointConstraintConnectivity");
@@ -402,7 +402,7 @@ VGMeshWithCurves<_Scalar, _Dim, _Chan>::copyVGMeshWithCurvesMembers(const VGMesh
 
 template < typename _Scalar, int _Dim, int _Chan >
 void
-VGMeshWithCurves<_Scalar, _Dim, _Chan>::addGradientNodes(
+DCMesh<_Scalar, _Dim, _Chan>::addGradientNodes(
         Node nodes[2], Curve c, unsigned gType, float pos)
 {
     bool tear = (gType == VALUE)? valueTear(c): gradientTear(c);

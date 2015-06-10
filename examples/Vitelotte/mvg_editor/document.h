@@ -18,7 +18,7 @@
 
 
 typedef float Scalar;
-typedef Vitelotte::VGMeshWithCurves<
+typedef Vitelotte::DCMesh<
             float,
             Vitelotte::Dynamic,
             Vitelotte::Dynamic> Mesh;

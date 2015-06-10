@@ -8,13 +8,12 @@
 /*!
   \page vitelotte_example_common_page Vitelotte common utilities
 
-  The <tt>common</tt> directory under the <tt>example/vitelotte</tt> directory contains pieces of code used by several examples. The most notable one is VGMeshWithCurves which shows how to extend the VGMesh class in order to add high level informations about diffusion curves.
+  The <tt>common</tt> directory under the <tt>example/vitelotte</tt> directory contains pieces of code used by several examples.
 
   This directory contains:
-  - VGMeshWithCurves, an extension of VGMesh that contains higher level informations. VGMeshWithCurvesReader and VGMeshWithCurvesWritet allow to read and write <tt>.mvg</tt> files extended to support curve constraints and point constraints. These classes are used by all other examples.
-  - VGNodeRenderer is a class that allow to render a wireframe version of the mesh where constrained edges are bold and doubled if they represent a value discontinuity, and also display nodes per edges. It can be used to have a better understanding of the connectivity of a mesh, making it a useful debugging tool. This class rely on GLLineRenderer and GLPointRenderer and is used by examples doing rendering.
-  - OrthographicCamera is a simple orthographic camera used by the viewer examples.
-  - <tt>plotObj.h</tt> contains a simple function that convert a 2D mvg file in a 3D plot. Used by the <tt>plot</tt> command of mvgtk and useful for debugging.
+  - GLLineRenderer and GLPointRenderer respectively renders lines and points in OpenGL. They use custom shader to produce high quality result with antialiasing.
+  - VGNodeRenderer renders a wireframe version of the mesh where constrained edges are bold and doubled if they represent a value discontinuity, and also display nodes per edges. It can be used to have a better understanding of the connectivity of a mesh, making it a useful debugging tool. This class rely on GLLineRenderer and GLPointRenderer and is used by examples doing rendering.
+  - <tt>plotObj.h</tt> contains a function that convert a 2D mvg file in a 3D plot. Used by the <tt>plot</tt> command of mvgtk and useful for debugging.
   - <tt>textFormatter.h</tt> contains a simple function to break paragraph into multiple lines. Used by mvgtk for help display.
   - <tt>shaders.cpp</tt> contains the shaders required by the various OpenGL classes in this directory. It is an automatically generated file that regroup the content of the <tt>shaders</tt> directory in a single .cpp.
 

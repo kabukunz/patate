@@ -18,7 +18,7 @@
 
 typedef std::map<std::string, unsigned> ArgMap;
 
-typedef Vitelotte::VGMeshWithCurves<
+typedef Vitelotte::DCMesh<
             float,
             Vitelotte::Dynamic,
             Vitelotte::Dynamic > Mesh;

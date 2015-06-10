@@ -11,6 +11,6 @@
 
 #include "vitelotte.h"
 
-#include "Vitelotte/Utils/vgMeshWithCurves.h"
+#include "Vitelotte/Utils/dcMesh.h"
 
 #endif

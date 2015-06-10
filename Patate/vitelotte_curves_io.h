@@ -9,7 +9,7 @@
 
 #include <Eigen/Core>
 
-#include "Vitelotte/Utils/vgMeshWithCurves.h"
+#include "Vitelotte/Utils/dcMesh.h"
 #include "Vitelotte/Utils/mvgWithCurvesReader.h"
 #include "Vitelotte/Utils/mvgWithCurvesWriter.h"
 

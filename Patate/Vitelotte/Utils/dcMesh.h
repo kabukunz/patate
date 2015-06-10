@@ -4,8 +4,8 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-#ifndef _VITELOTTE_VG_MESH_WITH_CURVES_
-#define _VITELOTTE_VG_MESH_WITH_CURVES_
+#ifndef _VITELOTTE_DC_MESH_
+#define _VITELOTTE_DC_MESH_
 
 
 #include <vector>
@@ -58,7 +58,7 @@ private:
 
 
 template < typename _Scalar, int _Dims=2, int _Coeffs=4 >
-class VGMeshWithCurves : public Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs>
+class DCMesh : public Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs>
 {
 public:
     typedef Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs> Base;
@@ -170,12 +170,12 @@ public:
     };
 
 public:
-    VGMeshWithCurves();
-    VGMeshWithCurves(unsigned nDims, unsigned nCoeffs);
-    VGMeshWithCurves(const VGMeshWithCurves& other);
+    DCMesh();
+    DCMesh(unsigned nDims, unsigned nCoeffs);
+    DCMesh(const DCMesh& other);
 
-    VGMeshWithCurves& operator=(const VGMeshWithCurves& other);
-    VGMeshWithCurves& assign(const VGMeshWithCurves& other);
+    DCMesh& operator=(const DCMesh& other);
+    DCMesh& assign(const DCMesh& other);
 
     inline Curve  curve(Halfedge h) const { return m_halfedgeCurveConn[h].curve; }
     inline Curve& curve(Halfedge h)       { return m_halfedgeCurveConn[h].curve; }
@@ -264,7 +264,7 @@ protected:
     using Base::m_nprops;
 
 protected:
-    void copyVGMeshWithCurvesMembers(const VGMeshWithCurves& other);
+    void copyVGMeshWithCurvesMembers(const DCMesh& other);
 
     typedef Node NodePair[2];
     void addGradientNodes(Node nodes[2], Curve c, unsigned gType, float pos);
@@ -279,7 +279,7 @@ protected:
 
 }
 
-#include "vgMeshWithCurves.hpp"
+#include "dcMesh.hpp"
 
 
 #endif
