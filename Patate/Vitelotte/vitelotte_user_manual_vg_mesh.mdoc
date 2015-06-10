@@ -13,7 +13,7 @@ namespace Vitelotte {
 
   VGMesh is the heart of Vitelotte: it is both the class that represent mesh-based vector images and the class used as input of the solver.
 
-  VGMesh inherits PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other patates in the future. We will not describe in detail about how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an [halfedge-based data structure](https://en.wikipedia.org/wiki/Doubly_connected_edge_list), so if you are familiar with this, using it should be quite straightforward.
+  VGMesh inherits PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other patates in the future. We will not describe in detail how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an [halfedge-based data structure](https://en.wikipedia.org/wiki/Doubly_connected_edge_list), so if you are familiar with this, using it should be quite straightforward.
 
   There is a few things to know about surface mesh. First, surface mesh permits to add arbitrary properties to any kind of element. For instance, vertices coordinates are just a vertex property. Secondly, mesh's elements (vertices, faces, ...) are manipulated through _handles_. These handles are really just indices that allow you to find elements inside the property arrays. So to access the coordinate of some vertex, you need a handle to that vertex and the "position" vertex property. In practice, standard properties are accessible directly from the mesh, so you end up with this kind of code:
 
@@ -44,7 +44,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_nodes_sec Nodes
 
-  VGMesh has the concept of _node_. As explained in [the tutorial](@ref vitelotte_user_manual_tutorial_page), a node defines a value on the mesh. A single node can be referenced by several _attachment points_, typically all attachment points around a vertex reference the same node unless the vertex lies on a discontinuity. Also, nodes work like mesh elements: they are just handles and you can define your own properties on the nodes.
+  VGMesh has the concept of _node_. A node either has a given value, in which case it act as a constraint, or is left unspecified. A single node can be referenced by several _attachment points_. Typically all attachment points around a vertex reference the same node unless the vertex lies on a discontinuity. Also, nodes work like mesh elements: they are just handles and you can define your own properties on the nodes.
 
   \code
   // Create a node
@@ -64,7 +64,7 @@ namespace Vitelotte {
   - VGMesh::TO_VERTEX_VALUE: represents the value at the \e target vertex of an halfedge.
   - VGMesh::FROM_VERTEX_VALUE: represents the value at the \e source vertex of an halfedge.
   - VGMesh::EDGE_VALUE: represents the value on an halfedge (typically, on the midpoint).
-  - VGMesh::EDGE_GRADIENT: represents the orthogonal \e derivative on an halfedge. Depending on the interpolation function, it can be the derivative at the midpoint (morley) or the average derivative over the edge (FV). The direction of the derivative depends on the halfedge orientation: if VGMesh::halfedgeOrientation() is true, it is the derivative inward, else the derivative outward.
+  - VGMesh::EDGE_GRADIENT: represents the orthogonal \e derivative on an halfedge. Depending on the interpolation function, it can be the derivative at the midpoint (morley elements) or the average derivative over the edge (FV elements). See the [solvers documentation](vitelotte_user_manual_fem_solver_page) for more details. The direction of the derivative depends on the halfedge orientation: if VGMesh::halfedgeOrientation() is true, it is the derivative inward, else the derivative outward.
 
   Before using one of these attachment points, you must enable the corresponding mesh _attribute_. For instance, to use quadratic interpolation (all of the above attachment points except EDGE_GRADIENT), you can do:
 

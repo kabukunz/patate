@@ -14,7 +14,7 @@ namespace Vitelotte {
 
   VGMeshRenderer is a simple renderer whose job is to emit the right OpenGL 3(+) calls to render a given mesh. Currently it only support triangular meshes with linear or quadratic interpolation over each face. It also supports up to one singularity per triangle.
 
-  Vitelotte is a header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers because you may wish to use GLEW or a similar library that provides its own header and it may produce conflicts. So, to use the renderer you need to include your OpenGL header *before* vitelotte's header like this:
+  Vitelotte is a header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers because you may wish to use GLEW or a similar library that provides its own header and it may produce conflicts. So, to use the renderer you need to include your OpenGL header *before* `Patate/vitelotte_gl.h` like this:
 
   \code{.cpp}
   // Include some OpenGL header.
@@ -24,6 +24,8 @@ namespace Vitelotte {
   // header *must* have been included beforehand.
   #include <Patate/vitelotte_gl.h>
   \endcode
+
+  Note that only `Patate/vitelotte_gl.h` depends on OpenGL. Other Vitelotte headers do not require to do this.
 
   Creating the renderer is straightforward:
 

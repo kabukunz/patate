@@ -42,6 +42,18 @@ namespace Vitelotte
 
   MVGReader and MVGWriter work together to save and load a VGMesh in the `mvg` file format. It allows users to save meshes at any processing step (i.e., before or after a solve), which can be useful for debugging purposes.
 
+  There are several header to include Vitelotte:
+  \code
+  // include VGMesh and all solver classes
+  #include <Patate/vitelotte.h>
+
+  // include VGMesh and rendering classes, see renderer documentation.
+  #include <Patate/vitelotte_gl.h>
+
+  // include VGMesh and mvg reader / writer
+  #include <Patate/vitelotte_io.h>
+  \endcode
+
   A few important features are missing in this first release. Don't worry, they are planned and should come very soon:
 
   - VGMesh refinement to help generating meshes with extra details around diffusion curves.

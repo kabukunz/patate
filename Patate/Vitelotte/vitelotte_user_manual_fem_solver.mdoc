@@ -38,7 +38,9 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_fem_solver_usage_sec Using the solver
 
-  Using the solver is quite easy. You first need to create the solver. FemSolver takes two template parameters: a VGMesh type and an ElementBuilder. Currently, only triangular elements are supported. Here is a short description of available element builders:
+  Using the solver is quite easy. You first need to include the header `Patate/vitelotte.h` to get access to the required classes.
+
+  FemSolver takes two template parameters: a VGMesh type and an ElementBuilder. Currently, only triangular elements are supported. Here is a short description of available element builders:
 
   - **LinearElementBuilder** solves harmonic diffusion over linear elements. Input mesh must have the TO_VERTEX_VALUE attribute enabled.
   - **QuadraticElementBuilder** solves harmonic diffusion over quadratic elements. Input mesh must have the TO_VERTEX_VALUE and EDGE_VALUE attributes enabled.
