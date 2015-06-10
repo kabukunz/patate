@@ -37,51 +37,7 @@ enum
  * \brief A mesh with data suitable for representing complex color gradients,
  * among other.
  *
- * Most generically, VGMesh represent a <em>n</em>-valued function over
- * a 2D surface embedded in a <em>d</em>-dimensional space. The number
- * of coefficients \e n and the number of dimension \e d are specified
- * by the template parameters \p _Coeffs and \p _Dims respectively. This
- * parameters can be set to the constant \c Dynamic if you want to be
- * able to set them at run time, or to a numeric constant for better
- * compile-time error checking and better performances.
- *
- * The surface is represented by a polygonal mesh. In practice, VGMesh
- * inherits from the class PatateCommon::SurfaceMesh, a customized
- * version of the
- * <a href="http://opensource.cit-ec.de/projects/surface_mesh">
- * Surface_mesh library</a>, which use an halfedge-based data structure.
- *
- * \section vitelotte_vg_mesh_attributes_nodes Attributes and Nodes
- *
- * The function value is defined per-face by some interpolation methods,
- * represented by the <tt>*Element</tt> classes
- * (see Concept::ElementConcept).
- *
- * Different interpolation methods requires different set of sample
- * points on each face. For instance, a linear interpolation
- * over a triangle only require values on the triangle vertices, where
- * quadratic interpolation require additional values at edge's midpoint.
- * The information stored to represent value samples is defined by the
- * mesh's \e attributes.
- *
- * Attributes are first set by the constructor and can be later
- * modified by calling setAttributes().
- *
- * \note There is currently no simple way to convert a `VGMesh` of one kind
- * to an other of an other kind (different `Scalar` type, different dimension,
- * etc.)
- *
- *
- * \note There is currently no way to delete nodes, except by using
- * deleteUnusedNodes() method. The rational behind this is that it would be
- * unsafe because some halfedge may reference it. As we don't have connectivity
- * information for the nodes and that it would be too expansive to go through
- * all halfedges each time we remove a node, it is better that way.
- *
- *
- * \note We may add connectivity information for nodes, but it would be quite
- * expansive in terms of memory and not very useful. We may add it later
- * and make it optional.
+ * For more details about VGMesh, see the [user manual](vitelotte_user_manual_vg_mesh_page).
  */
 template < typename _Scalar, int _Dims=2, int _Coeffs=4 >
 class VGMesh: public PatateCommon::SurfaceMesh

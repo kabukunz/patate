@@ -15,6 +15,9 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief A class that encodes the status of a FemSolver object.
+ */
 class SolverError
 {
 public:

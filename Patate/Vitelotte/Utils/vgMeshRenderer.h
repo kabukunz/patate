@@ -20,6 +20,10 @@
 namespace Vitelotte {
 
 
+/**
+ * \brief The VGMeshRendererResources encapsulate resources required by
+ * VGMeshRenderer for sharing.
+ */
 class VGMeshRendererResources {
 public:
     struct SolidUniforms
@@ -90,6 +94,9 @@ struct DefaultValueProj {
 };
 
 
+/**
+ * \brief An OpenGL 3 renderer to display VGMesh objects.
+ */
 template < class _Mesh,
            typename _PosProj   = DefaultPosProj  <typename _Mesh::Vector>,
            typename _ValueProj = DefaultValueProj<typename _Mesh::Value> >

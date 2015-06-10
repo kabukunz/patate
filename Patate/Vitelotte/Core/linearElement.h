@@ -17,6 +17,9 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief Provides method to evaluate linear elements and their derivatives.
+ */
 template < typename _Scalar >
 class LinearElement
 {

@@ -19,7 +19,10 @@
 namespace Vitelotte
 {
 
-
+/**
+ * \brief Quadratic element builder, for harmonic interpolation with quadratic
+ * triangles output.
+ */
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
 class QuadraticElementBuilder : public ElementBuilderBase<_Mesh, _Scalar>
 {

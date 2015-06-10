@@ -19,6 +19,9 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief Provides method to evaluate quadratic elements and their derivatives.
+ */
 template < typename _Scalar >
 class QuadraticElement : protected LinearElement<_Scalar>
 {

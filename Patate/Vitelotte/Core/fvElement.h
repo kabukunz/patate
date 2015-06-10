@@ -19,6 +19,9 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief Provides method to evaluate FV elements and their derivatives.
+ */
 template < typename _Scalar >
 class FVElement : protected LinearElement<_Scalar>
 {

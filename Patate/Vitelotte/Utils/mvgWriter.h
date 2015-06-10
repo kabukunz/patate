@@ -21,9 +21,9 @@ namespace Vitelotte
 
 
 /**
- * \brief The MVGWriter class allow to save FemMesh objects in `.mvg` files.
+ * \brief The MVGWriter class writes VGMesh objects in `.mvg` files.
  *
- * \see FemMesh MVGReader
+ * \see VGMesh MVGReader
  */
 template < typename _Mesh >
 class MVGWriter
@@ -55,10 +55,8 @@ public:
 
     /**
      * \brief Write `mesh` in the stream `out` as a `.mvg` file.
-     * \param mesh The QMesh to save.
-     * \param out The output stream.
      */
-    void write(std::ostream& _out, const Mesh& mesh);
+    void write(std::ostream& out, const Mesh& mesh);
 
 protected:
     int vertexIndex(Vertex vx) const;

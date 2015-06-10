@@ -18,6 +18,10 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief The base of every element builder. Provides default implementations
+ * of some methods.
+ */
 template < class _Mesh, typename _Scalar >
 class ElementBuilderBase
 {

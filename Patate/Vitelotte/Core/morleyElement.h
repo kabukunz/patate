@@ -19,6 +19,9 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief Provides method to evaluate Morley elements and their derivatives.
+ */
 template < typename _Scalar >
 class MorleyElement : protected LinearElement<_Scalar>
 {

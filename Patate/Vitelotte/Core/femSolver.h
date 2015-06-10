@@ -21,6 +21,13 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief A diffusion solver based on the Finite Element Method.
+ *
+ * \tparam _Mesh The VGMesh type on which the solver operates.
+ * \tparam _ElementBuilder An ElementBuilder class that describe the type of
+ * elements used by the solver, and by extension the kind of diffusion to do.
+ */
 template < class _Mesh, class _ElementBuilder >
 class FemSolver
 {
@@ -41,12 +48,17 @@ public:
     inline FemSolver(const ElementBuilder& elementBuilder = ElementBuilder());
     ~FemSolver();
 
-    /// \brief Build the internal stiffness matrix
+    /// \brief Build the internal stiffness matrix from `mesh`.
     void build(const Mesh& mesh);
 
-    /// \brief Solve the diffusion using the factorize unknown block.
+    /// \brief Solve the diffusion problem created by `build()` on `mesh`.
+    ///
+    /// Parameters of `build()` and `solve()` do not need to be the same, but
+    /// they must have the same connectivity. (In other words, only constrained
+    /// nodes values should differ.)
     void solve(Mesh& mesh);
 
+    /// \brief Returns a SolverError object describing the state of the solver.
     inline const SolverError error() { return m_error; }
 
 public:

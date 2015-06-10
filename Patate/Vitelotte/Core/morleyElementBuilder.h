@@ -20,6 +20,10 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief Morley element builder, for harmonic interpolation with linear
+ * triangles output.
+ */
 template < class _Mesh, typename _Scalar = typename _Mesh::Scalar >
 class MorleyElementBuilder : public ElementBuilderBase<_Mesh, _Scalar>
 {

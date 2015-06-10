@@ -20,6 +20,10 @@ namespace Vitelotte
 {
 
 
+/**
+ * \brief An element builder decorator that add support for elements with at
+ * most one singularity.
+ */
 template < class _Element >
 class SingularElementDecorator : public _Element
 {

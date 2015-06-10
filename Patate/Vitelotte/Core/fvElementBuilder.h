@@ -19,7 +19,11 @@ namespace Vitelotte
 
 
 /**
- * Fraeijs de Veubeke's elements.
+ * \brief Fraeijs de Veubeke's (FV) element builder, for harmonic interpolation
+ * with quadratic triangles output.
+ *
+ * Use this element builder to solve biharmonic diffusion and get an image
+ * with quadratic interpolation.
  *
  * FV elements have 6 value nodes, 3 at each vertex (v) and 3 at edge midpoints
  * (e), plus 3 gradient nodes corresponding to the mean value of the first
