@@ -1,0 +1,19 @@
+mvg 1.0
+dimensions 2
+coefficients 4
+attributes linear
+v 0 0
+v 1 0
+v .5 0.866
+v -0.819152044 0.573576436
+v -1 0
+v -.5 -0.866
+n void
+n void
+n void
+n void
+f 0/1/0 1/x 2/x
+f 0/0/2 2/x 3/x
+f 0/x/3 3/x 4/x
+f 0/2/x 4/x 5/x
+f 0/3/1 5/x 1/x

@@ -1,0 +1,24 @@
+mvg 1.0
+dimensions 2
+coefficients 4
+attributes linear
+vertices 6
+nodes 6
+faces 5
+v 0 0
+v 1 0
+v 0.5 0.866
+v -0.819152 0.573576
+v -1 0
+v -0.5 -0.866
+n void
+n void
+n void
+n void
+n void
+n void
+f 0/0 1/1 2/2
+f 0/0 2/2 3/3
+f 0/0 3/3 4/4
+f 0/0 4/4 5/5
+f 0/0 5/5 1/1

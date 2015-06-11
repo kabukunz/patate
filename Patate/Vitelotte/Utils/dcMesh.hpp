@@ -12,8 +12,8 @@ namespace Vitelotte
 
 
 template <typename _Value>
-typename PicewiseLinearFunction<_Value>::Value
-    PicewiseLinearFunction<_Value>::operator()(float x) const
+typename PiecewiseLinearFunction<_Value>::Value
+    PiecewiseLinearFunction<_Value>::operator()(float x) const
 {
     assert(!empty());
 

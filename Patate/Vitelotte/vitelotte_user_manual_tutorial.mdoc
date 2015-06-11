@@ -13,7 +13,7 @@ namespace Vitelotte {
 
   This tutorial will guide you through a simple program while introducing the main concepts of Vitelotte. We will load a `.obj` mesh in a VGMesh, then we will set a few punctual constraints and solve the diffusion before saving the result in a `.mvg`. While we will not manipulate diffusion curves for the sake of simplicity, we will show enough to get you started. The result can be visualized using the [mvg_viewer example](@ref vitelotte_example_mvg_viewer_page) program.
 
-  \image html vitelotte/tutorial_solved.png "The final result."
+  \image html vitelotte/tutorial_overview.svg "The final program takes a mesh as input, add some random color constraints and diffuse them using the solver."
 
   The complete source is available in `examples/Vitelotte/tutorial`.
 
@@ -47,6 +47,8 @@ namespace Vitelotte {
 
   We will now pick a random set of vertices and assign a random color constraint to each one. The rest of the mesh must be as smooth as possible. So, all attachment points around a constrained vertex must point to the same constrained nodes, and all attachment points around the other vertices must point to their respective unknown node. FV elements also have some attachment points on the edges of the mesh that must be set correctly.
 
+  \image html vitelotte/tutorial_constraints.svg "The first step is to add color constraints to some vectices."
+
   It may seems complicated, but in practice we will use the VGMesh::finalize method to do most of the job. All we have to do is to set _one_ attachment point somewhere around each constrained vertex before calling this method and we are done. This give us:
 
   \snippet Vitelotte/tutorial/tutorial.cpp Color dots and finalize
@@ -68,6 +70,8 @@ namespace Vitelotte {
 
   The FemSolver class is parametrized with the mesh and an ElementBuilder. The element builder describes how to build the stiffness matrix and so varies in function of the element type we want to use. FVElementBuilder uses FV elements that allow to compute biharmonic diffusion and obtain quadratic color interpolation in the end. Element builders do not support singular elements directly, so we need to decorate them with the SingularElementDecorator. This may seem complicated, but in practice we always do this, so there is no need to worry about the details (unless you want to implement your own element type).
 
+  \image html vitelotte/tutorial_solver.svg "The sover interpolates color constraints. Here, we do biharmonic interpolation."
+
   Solving is now straightforward:
 
   \snippet Vitelotte/tutorial/tutorial.cpp Solve the diffusion
@@ -75,9 +79,6 @@ namespace Vitelotte {
   Why are there two steps ? FemSolver::build constructs the matrix and inverts it. It is time consuming but does not depend on the right hand side of the problem, i.e. the actual values of the constraints. This means that you don't need to call this costly step if you only modify the values. However, if there is a change in geometry, in connectivity (including nodes) or in the type of some node (switching to unknown or constraint), then you _need_ to call it again. In case of doubt, just call it to be sure.
 
   FemSolver::solve does what its name states. This will set a value to all unknown nodes, thus producing the final image. Note that the solver may fail, either because the input mesh is invalid or because the problem is numerically unstable, so check for errors.
-
-  \image html vitelotte/tutorial_solved.png "The final result."
-
 
   \section vitelotte_user_manual_tutorial_output_sec Writing to mvg
 

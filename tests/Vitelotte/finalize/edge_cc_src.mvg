@@ -1,0 +1,12 @@
+mvg 1.0
+dimensions 2
+coefficients 4
+attributes quadratic
+v -0.866 -.5
+v 0.866 .5
+v -1 1
+v 1 -1
+n 1 0 0 1
+n 0 1 0 1
+f 0/x 1/x 2/x - 0 x x
+f 1/x 0/x 3/x - 1 x x

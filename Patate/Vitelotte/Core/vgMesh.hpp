@@ -754,10 +754,8 @@ VGMesh<_Scalar, _Dim, _Chan>::finalizeEdge(Edge e)
         bool n0v = n0.isValid();
         bool n1v = n1.isValid();
 
-        // if both are invalid, create a single node. Else, create
-        // nodes independently, thus producing a discontinuity.
-        if(!n0v && !isBoundary(h0)) n0 = addNode();
-        if(!n1v && !isBoundary(h1)) n1 = n0v? addNode(): n0;
+        if(!n0v && !isBoundary(h0)) n0 = n1v? n1: addNode();
+        if(!n1v && !isBoundary(h1)) n1 = n0.isValid()? n0: addNode();
     }
     if(hasEdgeGradient())
     {
@@ -766,10 +764,8 @@ VGMesh<_Scalar, _Dim, _Chan>::finalizeEdge(Edge e)
         bool n0v = n0.isValid();
         bool n1v = n1.isValid();
 
-        // if both are invalid, create a single node. Else, create
-        // nodes independently, thus producing a discontinuity.
-        if(!n0v && !isBoundary(h0)) n0 = addNode();
-        if(!n1v && !isBoundary(h1)) n1 = n0v? addNode(): n0;
+        if(!n0v && !isBoundary(h0)) n0 = n1v? n1: addNode();
+        if(!n1v && !isBoundary(h1)) n1 = n0.isValid()? n0: addNode();
     }
 }
 

@@ -127,26 +127,25 @@ namespace Vitelotte {
 
   When preparing the input of the solver, setting all nodes for each attachment point by hand can be tedious. We provide the method VGMesh::finalize() that takes a mesh with a few constraints set and "guesses" all the missing ones using heuristics.
 
-  For edge nodes (EDGE_VALUE and EDGE_GRADIENT), the algorithm is straighforward. For each edge:
+  Finalize process each vertex and each edge in turn. If attachment points around a vertex all reference an invalid node, a new unknown node is created an assigned to them, thus constraining the result to be continuous. Same thing goes for edges, if both edge-value nodes are invalid, they are set to a new unknown node, and similarly for edge-gradient nodes.
 
-  - If both opposite nodes are invalid, a new unknown node is added and set on both side.
-  - If one side is linked to the node `n` and the other is invalid, it is set to `n` too.
-  - If both nodes are valid, nothing is done.
+  \image html vitelotte/finalize_invalid.svg "Vertex and edges without valid nodes are bound to a new unknown node. Small black dots represent invalid nodes and numbers represent unknown nodes."
 
-  In other words, to create a discontinuity both sides of the edge must be constrained. Else the edge is set to be smooth.
+  Obviously, if two opposite nodes on an edge are set, they are left untouched.
 
-  Vertices nodes (TO_VERTEX_VALUE and FROM_VERTEX_VALUE) are a bit more complicated. It first cycle through all edges to create a list of constrained edges. For each edges around each vertex, it applies the following rules:
+  \image html vitelotte/finalize_edge_constraint.svg "If two opposite nodes on an edge are set, they are left untouched. Colored dot represent constraints. Different colors mean different constraints."
 
-  - If both sides have invalid nodes, or one is invalid and the other is an unknown, or both are the _same_ unknown node, then both sides are set to invalid.
-  - If one side is constrained and the other invalid, the constrained node is set on both side.
-  - Else there are two different nodes on each sides and nothing is done.
+  Vertices are a bit more complicated to process. Let's assume that edges around a vertex have either both of their nodes set or none. For each vertex, the algorithm starts from a valid node and turn around the vertex in search for the next valid node. Now we can set the invalid nodes in-between from the two boundary nodes using the following rules:
 
-  In the end, both sides of the edge are either valid or none. Edges are added to the constraint list if they are linked to valid nodes. If there is no constraint around a vertex, a new unknown node is added to both sides of an arbitrary edge. Now every arcs (halfedges between two constrained edges) are handled separately. Note that the first and last halfedges have a node set and not the others. This leads to:
+  \image html vitelotte/finalize_vertex_simple.svg "When both extremities are the same node, intermediate nodes are set to it."
 
-  - If both extremities are the same, all halfedges of the arc are set to it.
-  - If both nodes are different unknowns, one is discarded and all halfedges of the arc are set to the other. This mean that we disallow singularities here. It makes sense because the solver would try very hard to set the same value on all nodes here. Avoiding a singularity reduces the number of nodes and makes the solver faster and more robust.
-  - If one node is unknown and the other is constrained, all halfedges of the arc are set to the constraint node and the unknown is discarded for the same reason as above.
-  - If both nodes are constraints with different values, we call VGMesh::setSingularity.
+  \image html vitelotte/finalize_vertex_singular.svg "When both extremities are two different constraint nodes, intermediate edges get their own constraint node."
+
+  \image html vitelotte/finalize_vertex_cross.svg "When both extremities are two different unknown nodes, intermediate and the last nodes are set to the first one. This might lead to unexpected results in complex cases like non-local constraints."
+
+  \image html vitelotte/finalize_vertex_continuous_edge.svg "Finally, when two side of an edge point to the same unknown node, they are ignored."
+
+  What happen when, given a pair of opposite nodes, one is valid an the other is not ? The known node is simply assigned on both sides. However, it is recommended to avoid it when possible or to use it only on simplest cases, like in the tutorial.
 
   \warning This algorithm is not perfect. As it does simplifications (mainly replacing unknown nodes by others) it may not produce the intended result in case of non-local constraints (when a same unknown node is used on different places on the mesh).
 

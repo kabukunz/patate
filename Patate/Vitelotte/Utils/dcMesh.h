@@ -18,8 +18,12 @@
 namespace Vitelotte
 {
 
+
+/**
+ * \brief A 1D piecewise linear function.
+ */
 template <typename _Value>
-class PicewiseLinearFunction
+class PiecewiseLinearFunction
 {
 public:
     typedef _Value Value;
@@ -32,7 +36,7 @@ public:
     typedef typename Samples::const_iterator ConstIterator;
 
 public:
-    PicewiseLinearFunction() {}
+    PiecewiseLinearFunction() {}
 
     bool     empty() const { return m_samples.empty(); }
     unsigned size()  const { return m_samples.size(); }
@@ -57,6 +61,9 @@ private:
 };
 
 
+/**
+ * \brief A VGMesh with diffusion curves.
+ */
 template < typename _Scalar, int _Dims=2, int _Coeffs=4 >
 class DCMesh : public Vitelotte::VGMesh<_Scalar, _Dims, _Coeffs>
 {
@@ -107,7 +114,7 @@ public:
     using Base::setGradientConstraint;
     using Base::removeGradientConstraint;
 
-    typedef PicewiseLinearFunction<Value> ValueFunction;
+    typedef PiecewiseLinearFunction<Value> ValueFunction;
 
     typedef Vitelotte::BezierPath<Vector> BezierPath;
 
