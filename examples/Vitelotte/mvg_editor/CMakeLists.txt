@@ -30,6 +30,11 @@ endif()
 if(NOT mvg_editor_MISSING)
     set(CMAKE_AUTOMOC ON)
 
+    # Remove a warning triggred by Qt.
+    if(CMAKE_COMPILER_IS_GNUCXX)
+        set(CMAKE_CXX_FLAGS "-Wno-long-long ${CMAKE_CXX_FLAGS}")
+    endif(CMAKE_COMPILER_IS_GNUCXX)
+
     include_directories(
         ${EIGEN3_INCLUDE_DIR}
         ${OPENGL_INCLUDE_DIR}
