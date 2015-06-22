@@ -11,6 +11,7 @@ namespace Vitelotte
 {
 
 
+#define PTT_VOID
 #define PTT_ERROR_IF(_cond, _msg, _ret) do { if(_cond) { error(_msg); return _ret; } } while(false)
 #define PTT_RETURN_IF_ERROR(_ret) do { if(m_error) { return _ret; } } while(false)
 
@@ -244,7 +245,7 @@ MVGReader<_Mesh>::parseValue(std::istream& in) {
     for(unsigned i = 0; i < m_value.size(); ++i) {
         in >> m_value(i);
     }
-    PTT_ERROR_IF(!in, "Invalid value specification",);
+    PTT_ERROR_IF(!in, "Invalid value specification", PTT_VOID);
     in >> std::ws;
 }
 
@@ -253,16 +254,16 @@ template < typename _Mesh >
 void
 MVGReader<_Mesh>::parseValueWithVoid(std::istream& in, Mesh& mesh) {
     in >> std::ws;
-    PTT_ERROR_IF(!in.good(), "Invalid value specification",);
+    PTT_ERROR_IF(!in.good(), "Invalid value specification", PTT_VOID);
     if(std::isalpha(in.peek()))
     {
         in >> m_tmp;
-        PTT_ERROR_IF(m_tmp != "void", "Invalid value specification",);
+        PTT_ERROR_IF(m_tmp != "void", "Invalid value specification", PTT_VOID);
         m_value = mesh.unconstrainedValue();
     }
     else
     {
-        parseValue(in); PTT_RETURN_IF_ERROR();
+        parseValue(in); PTT_RETURN_IF_ERROR(PTT_VOID);
     }
     in >> std::ws;
 }
@@ -274,7 +275,7 @@ MVGReader<_Mesh>::parseGradient(std::istream& in) {
     for(unsigned i = 0; i < m_gradient.size(); ++i) {
         in >> m_gradient(i);
     }
-    PTT_ERROR_IF(!in, "Invalid gradient specification",);
+    PTT_ERROR_IF(!in, "Invalid gradient specification", PTT_VOID);
     in >> std::ws;
 }
 
@@ -295,6 +296,7 @@ bool readMvgFromFile(const std::string& filename, Mesh& mesh, unsigned flags)
 }
 
 
+#undef PTT_VOID
 #undef PTT_ERROR_IF
 #undef PTT_RETURN_IF_ERROR
 

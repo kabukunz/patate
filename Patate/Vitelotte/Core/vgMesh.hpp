@@ -499,7 +499,7 @@ VGMesh<_Scalar, _Dim, _Chan>::
     Scalar fromAngle = std::atan2(fromVec.y(), fromVec.x());
     Scalar toAngle   = std::atan2(  toVec.y(),   toVec.x());
     Scalar totalAngle = toAngle - fromAngle;
-    if(totalAngle < 1.e-8) totalAngle += 2.*M_PI;
+    if(totalAngle < Scalar(1.e-8)) totalAngle += Scalar(2.*M_PI);
 
     Node n = fromNode;
     Halfedge h = from;
@@ -516,9 +516,9 @@ VGMesh<_Scalar, _Dim, _Chan>::
             // Current Halfedge is reversed.
             Vector vec = position(fromVertex(h)) - v;
             Scalar angle = std::atan2(vec.y(), vec.x()) - fromAngle;
-            if(angle < 1.e-8) angle += 2.*M_PI;
+            if(angle < Scalar(1.e-8)) angle += Scalar(2.*M_PI);
             Scalar a = angle / totalAngle;
-            n = addNode((1.-a) * fromValue + a * toValue);
+            n = addNode((Scalar(1)-a) * fromValue + a * toValue);
         }
         else
             n = toNode;

@@ -51,8 +51,8 @@ Eigen::Vector2f Editor::sceneFromView(const QPointF& view) const
 Eigen::Vector2f Editor::screenToNormalized(const QPointF& screen) const
 {
     return Eigen::Vector2f(
-                screen.x() * 2.f / width() - 1.f,
-                (height()-screen.y()) * 2.f / height() - 1.f);
+                float(screen.x()) * 2.f / width() - 1.f,
+                (height()-float(screen.y())) * 2.f / height() - 1.f);
 }
 
 
@@ -72,7 +72,7 @@ void Editor::centerView()
     Eigen::Vector3f center;
     center << bb.center(), 0;
     Eigen::Vector3f scale;
-    scale(0) = bb.sizes().maxCoeff() * .6;
+    scale(0) = bb.sizes().maxCoeff() * .6f;
     scale(1) = scale(0);
     scale(2) = 1;
     m_camera.setViewBox(OrthographicCamera::ViewBox(
@@ -607,7 +607,7 @@ void Editor::doUpdateRenderers()
         Eigen::Vector3f p; p << mesh.position(v), 0;
 
         float innerRadius = 3;
-        float outerRadius = innerRadius + 1.5;
+        float outerRadius = innerRadius + 1.5f;
         Eigen::Vector4f innerColor(1., 1., 1., 1.);
         Eigen::Vector4f outerColor(0., 0., 0., 1.);
 
@@ -621,10 +621,10 @@ void Editor::doUpdateRenderers()
         Eigen::Vector3f p0; p0 << mesh.position(mesh.vertex(e, 0)), 0;
         Eigen::Vector3f p1; p1 << mesh.position(mesh.vertex(e, 1)), 0;
 
-        float innerWidth = 1.5;
-        float outerWidth = 4.5;
-        Eigen::Vector4f innerColor(1., 1., 1., 1.);
-        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+        float innerWidth = 1.5f;
+        float outerWidth = 4.5f;
+        Eigen::Vector4f innerColor(1.f, 1.f, 1.f, 1.f);
+        Eigen::Vector4f outerColor(0.f, 0.f, 0.f, 1.f);
 
         m_lineRenderer.addPoint(p0, outerWidth, outerColor);
         m_lineRenderer.addPoint(p1, outerWidth, outerColor);
@@ -635,10 +635,10 @@ void Editor::doUpdateRenderers()
     }
     else if(sel.isCurve())
     {
-        float innerWidth = 1.5;
-        float outerWidth = 4.5;
-        Eigen::Vector4f innerColor(1., 1., 1., 1.);
-        Eigen::Vector4f outerColor(0., 0., 0., 1.);
+        float innerWidth = 1.5f;
+        float outerWidth = 4.5f;
+        Eigen::Vector4f innerColor(1.f, 1.f, 1.f, 1.f);
+        Eigen::Vector4f outerColor(0.f, 0.f, 0.f, 1.f);
 
         Mesh::Curve curve = sel.curve();
 
@@ -646,10 +646,10 @@ void Editor::doUpdateRenderers()
         drawCurve(curve, innerWidth, innerColor);
 
         float innerRadius = 3;
-        float outerRadius = innerRadius + 1.5;
+        float outerRadius = innerRadius + 1.5f;
 
         bool tear = mesh.valueTear(curve);
-        Scalar offset = tear? 8: 0;
+        Scalar offset = tear? 8.f: 0.f;
 
         addGradientStops(curve, Mesh::VALUE_LEFT, offset);
 
@@ -803,7 +803,7 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
     {
         Eigen::Vector3f p;
         p << gsit->position, 0;
-        Mesh::Value outerColor = (gsit->color.head<3>().sum() < 1.5)?
+        Mesh::Value outerColor = (gsit->color.head<3>().sum() < 1.5f)?
                     Mesh::Value::Constant(m_document->mesh().nCoeffs(), 1).eval():
                     Mesh::Value::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);
@@ -814,7 +814,7 @@ void Editor::drawGradientStops(float innerRadius, float outerRadius)
     {
         Eigen::Vector3f p;
         p << m_dummyStop.position, 0;
-        Mesh::Value outerColor = (m_dummyStop.color.head<3>().sum() < 1.5)?
+        Mesh::Value outerColor = (m_dummyStop.color.head<3>().sum() < 1.5f)?
                     Mesh::Value::Constant(m_document->mesh().nCoeffs(), 1).eval():
                     Mesh::Value::Unit(m_document->mesh().nCoeffs(), 3).eval();
         m_pointRenderer.addPoint(p, outerRadius, outerColor);

@@ -179,10 +179,10 @@ void VGNodeRenderer::render()
 {
     Eigen::Matrix4f transform;
     transform <<
-            2./m_viewportSize.x(), 0, 0, 0,
-            0, 2./m_viewportSize.y(), 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 1;
+            2.f/m_viewportSize.x(), 0.f, 0.f, 0.f,
+            0.f, 2.f/m_viewportSize.y(), 0.f, 0.f,
+            0.f, 0.f, 0.f, 0.f,
+            0.f, 0.f, 0.f, 1.f;
     m_lineRenderer.upload();
     m_lineRenderer.render(transform, m_viewportSize);
 
@@ -223,7 +223,7 @@ Eigen::Vector2f VGNodeRenderer::project(const Mesh::Vector& pos) const {
     unsigned size = std::min(unsigned(pos.size()), 3u);
     p.head(size) = pos.head(size);
     p = m_transform * p;
-    return p.head<2>().array() * m_viewportSize.array() / (2. * p.w());
+    return p.head<2>().array() * m_viewportSize.array() / (2.f * p.w());
 }
 
 
@@ -239,7 +239,7 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, Mesh::Edge e)
 
     Eigen::Vector2f p0 = projPos(mesh.fromVertex(h));
     Eigen::Vector2f p1 = projPos(mesh.toVertex(h));
-    Eigen::Vector2f mid = (p0 + p1) / 2;
+    Eigen::Vector2f mid = (p0 + p1) / 2.f;
 
     Eigen::Vector2f v = (p1 - p0).normalized();
     Eigen::Vector2f n(2); n << -v.y(), v.x();
@@ -264,7 +264,7 @@ void VGNodeRenderer::updateEdge(const Mesh& mesh, Mesh::Edge e)
 
     if(mesh.hasEdgeValue())
     {
-        if((p1 - p0).squaredNorm() >= 64 * m_nodeOffset * m_nodeOffset)
+        if((p1 - p0).squaredNorm() >= 64.f * m_nodeOffset * m_nodeOffset)
         {
             addNode2(mesh, mesh.edgeValueNode(h), mesh.edgeValueNode(oh),
                      mid, n*m_nodeOffset);
@@ -280,7 +280,7 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, Mesh::Vertex vx)
 
     Eigen::Vector2f p = projPos(vx);
 
-    float radius = 0;
+    float radius = 0.f;
     float minSqrEdgeLen = (projPos(mesh.toVertex(*hit)) - p).squaredNorm();
     bool constrained = false;
     do
@@ -327,10 +327,10 @@ void VGNodeRenderer::updateVertexNodes(const Mesh& mesh, Mesh::Vertex vx)
         } while(hit != hend);
     }
 
-    if(constrained && m_viewBox.exteriorDistance(p) < m_edgeOffset + 1.5)
+    if(constrained && m_viewBox.exteriorDistance(p) < m_edgeOffset + 1.5f)
     {
         m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
-                                 m_edgeOffset + 1.5, convColor(m_baseColor));
+                                 m_edgeOffset + 1.5f, convColor(m_baseColor));
     }
 }
 
@@ -349,7 +349,7 @@ void VGNodeRenderer::addEdge(const Eigen::Vector2f& p0, const Eigen::Vector2f& p
     }
 
     Eigen::Vector4f c = convColor(constrained? m_baseColor: m_unconstrainedColor);
-    float r = constrained? 1.5: .5;
+    float r = constrained? 1.5f: .5f;
 
     m_lineRenderer.addPoint((Eigen::Vector3f() << p0, 0).finished(),
                             r, c);
@@ -362,10 +362,10 @@ void VGNodeRenderer::addEdge(const Eigen::Vector2f& p0, const Eigen::Vector2f& p
 void VGNodeRenderer::addNode(const Mesh& mesh, Mesh::Node n, const Eigen::Vector2f& p){
     Eigen::Vector4f color = convColor(
                 (mesh.isValid(n) && n == m_highlightedNode)?
-                    Eigen::Vector4f(1, 1, 1, 1):
+                    Eigen::Vector4f(1.f, 1.f, 1.f, 1.f):
                     m_baseColor);
 
-    if(m_viewBox.exteriorDistance(p) > m_nodeRadius + .5) {
+    if(m_viewBox.exteriorDistance(p) > m_nodeRadius + .5f) {
         return;
     }
 
@@ -379,18 +379,18 @@ void VGNodeRenderer::addNode(const Mesh& mesh, Mesh::Node n, const Eigen::Vector
 
     if(mesh.isValid(n) && mesh.isConstraint(n))
     {
-        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
-                                 m_nodeRadius + .5, color);
+        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0.f).finished(),
+                                 m_nodeRadius + .5f, color);
 
         Mesh::Value v = mesh.value(n);
         v(3) = 1;
-        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
-                                 m_nodeRadius - 1, convColor(v));
+        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0.f).finished(),
+                                 m_nodeRadius - 1.f, convColor(v));
     }
     else
     {
-        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0).finished(),
-                                 1.5, color);
+        m_pointRenderer.addPoint((Eigen::Vector3f() << p, 0.f).finished(),
+                                 1.5f, color);
     }
 }
 

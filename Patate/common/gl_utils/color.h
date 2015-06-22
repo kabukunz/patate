@@ -28,9 +28,9 @@ inline Eigen::Vector4f linearRGBToSrgb(const Eigen::Vector4f& linear)
 {
     Eigen::Vector4f srgb = linear;
     for(int i=0; i<3; ++i)
-        srgb(i) = linear(i) > 0.0031308?
-                    1.055 * std::pow(linear(i), 1/2.4):
-                    12.92 * linear(i);
+        srgb(i) = linear(i) > 0.0031308f?
+                    1.055f * std::pow(linear(i), 1.f/2.4f):
+                    12.92f * linear(i);
     return srgb;
 }
 
@@ -39,9 +39,9 @@ inline Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb)
 {
     Eigen::Vector4f linear = srgb;
     for(int i=0; i<3; ++i)
-        linear(i) = linear(i) > 0.04045?
-                    std::pow((linear(i)+0.055) / 1.055, 2.4):
-                    linear(i) / 12.92;
+        linear(i) = linear(i) > 0.04045f?
+                    std::pow((linear(i)+0.055f) / 1.055f, 2.4f):
+                    linear(i) / 12.92f;
     return linear;
 }
 
@@ -50,9 +50,9 @@ inline Eigen::Vector3f srgbFromLinearRGB(const Eigen::Vector3f& lrgb)
 {
     Eigen::Vector3f srgb = lrgb;
     for(int i=0; i<3; ++i)
-        srgb(i) = lrgb(i) > 0.0031308?
-                    1.055 * std::pow(lrgb(i), 1/2.4):
-                    12.92 * lrgb(i);
+        srgb(i) = lrgb(i) > 0.0031308f?
+                    1.055f * std::pow(lrgb(i), 1.f/2.4f):
+                    12.92f * lrgb(i);
     return srgb;
 }
 
@@ -61,18 +61,18 @@ inline Eigen::Vector3f linearRGBFromSrgb(const Eigen::Vector3f& srgb)
 {
     Eigen::Vector3f lrgb = srgb;
     for(int i=0; i<3; ++i)
-        lrgb(i) = lrgb(i) > 0.04045?
-                    std::pow((lrgb(i)+0.055) / 1.055, 2.4):
-                    lrgb(i) / 12.92;
+        lrgb(i) = lrgb(i) > 0.04045f?
+                    std::pow((lrgb(i)+0.055f) / 1.055f, 2.4f):
+                    lrgb(i) / 12.92f;
     return lrgb;
 }
 
 
 inline Eigen::Vector3f linearRGBFromCieXYZ(const Eigen::Vector3f& cieXYZ) {
     static const Eigen::Matrix3f xyzToRgb = (Eigen::Matrix3f() <<
-         3.2406, -1.5372, -0.4986,
-        -0.9689,  1.8758,  0.0415,
-         0.0557, -0.2040,  1.0570
+         3.2406f, -1.5372f, -0.4986f,
+        -0.9689f,  1.8758f,  0.0415f,
+         0.0557f, -0.2040f,  1.0570f
     ).finished();
 
     return xyzToRgb * cieXYZ;
@@ -81,9 +81,9 @@ inline Eigen::Vector3f linearRGBFromCieXYZ(const Eigen::Vector3f& cieXYZ) {
 
 inline Eigen::Vector3f cieXYZFromLinearRGB(const Eigen::Vector3f& lrgb) {
     static const Eigen::Matrix3f rgbToxyz = (Eigen::Matrix3f() <<
-         0.4124, 0.3576, 0.1805,
-         0.2126, 0.7152, 0.0722,
-         0.0193, 0.1192, 0.9505
+         0.4124f, 0.3576f, 0.1805f,
+         0.2126f, 0.7152f, 0.0722f,
+         0.0193f, 0.1192f, 0.9505f
     ).finished();
 
     return rgbToxyz * lrgb;
@@ -94,28 +94,39 @@ namespace internal {
 
     template < typename Scalar >
     struct LabHelper {
-    static const Scalar thresold  = 6. / 29.;
-    static const Scalar thresold2 = thresold  * thresold;
-    static const Scalar thresold3 = thresold2 * thresold;
+    static const Scalar thresold;
+    static const Scalar thresold2;
+    static const Scalar thresold3;
     static const Eigen::Matrix<Scalar, 3, 1> white;
 
     static inline Scalar f(Scalar v) {
         return (v > thresold3)?
-                    std::pow(v, 1./3.):
-                    1. / (3. * thresold2) * v + (4. / 29.);
+                    std::pow(v, Scalar(1./3.)):
+                    Scalar(1.) / (Scalar(3.) * thresold2) * v + Scalar(4. / 29.);
     }
 
     static inline Scalar fInv(Scalar v) {
         return (v > thresold)?
-                    std::pow(v, 3.):
-                    3. * thresold2 * (v - (4. / 29.));
+                    std::pow(v, Scalar(3.)):
+                    Scalar(3.) * thresold2 * (v - Scalar(4. / 29.));
     }
     };
 
     template < typename Scalar >
+    const Scalar LabHelper<Scalar>::thresold = Scalar(6. / 29.);
+    template < typename Scalar >
+    const Scalar LabHelper<Scalar>::thresold2 =
+            LabHelper<Scalar>::thresold * LabHelper<Scalar>::thresold;
+    template < typename Scalar >
+    const Scalar LabHelper<Scalar>::thresold3 =
+            LabHelper<Scalar>::thresold2 * LabHelper<Scalar>::thresold;
+
+    template < typename Scalar >
     const Eigen::Matrix<Scalar, 3, 1> LabHelper<Scalar>::white =
-            Eigen::Matrix<Scalar, 3, 1>(0.95047, 1, 1.08883);
+            Eigen::Matrix<Scalar, 3, 1>(0.95047f, 1.f, 1.08883f);
 }
+
+
 
 
 inline Eigen::Vector3f cieLabFromCieXYZ(const Eigen::Vector3f& cieXYZ)
@@ -124,9 +135,9 @@ inline Eigen::Vector3f cieLabFromCieXYZ(const Eigen::Vector3f& cieXYZ)
 
     float fy = LH::f(cieXYZ(1) / LH::white(1));
     return Eigen::Vector3f(
-                1.16 * fy - 0.16,
-                5.00 * (LH::f(cieXYZ(0) / LH::white(0)) - fy),
-                2.00 * (fy - LH::f(cieXYZ(2) / LH::white(2))));
+                1.16f * fy - 0.16f,
+                5.00f * (LH::f(cieXYZ(0) / LH::white(0)) - fy),
+                2.00f * (fy - LH::f(cieXYZ(2) / LH::white(2))));
 }
 
 
@@ -134,11 +145,11 @@ inline Eigen::Vector3f cieXYZFromCieLab(const Eigen::Vector3f& cielab)
 {
     typedef internal::LabHelper<float> LH;
 
-    float lf = (cielab(0) + 0.16) / 1.16;
+    float lf = (cielab(0) + 0.16f) / 1.16f;
     return Eigen::Vector3f(
-                LH::white(0) * LH::fInv(lf + cielab(1) / 5.00),
+                LH::white(0) * LH::fInv(lf + cielab(1) / 5.00f),
                 LH::white(1) * LH::fInv(lf),
-                LH::white(2) * LH::fInv(lf - cielab(2) / 2.00));
+                LH::white(2) * LH::fInv(lf - cielab(2) / 2.00f));
 }
 
 

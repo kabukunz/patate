@@ -7,7 +7,7 @@
 #include "trackball.h"
 
 
-#define ORTHO_THRESOLD 1.e2
+#define ORTHO_THRESOLD 1.e2f
 
 Eigen::Matrix4f orthographicProjection(
         float l, float r, float b, float t, float n, float f) {
@@ -298,7 +298,7 @@ Eigen::Vector2f Trackball::normFromScr(const Eigen::Vector2f& scrPos) const {
 
 Eigen::Quaternionf Trackball::computeRotation(const Eigen::Vector2f& scrPos) const {
     Eigen::Vector2f v = (_scrMouseInit - scrPos)
-                      * (2. * M_PI / _scrViewport.sizes().x());
+                      * (float(2. * M_PI) / _scrViewport.sizes().x());
     Eigen::Vector3f x = Eigen::Vector3f::UnitX();
     Eigen::Vector3f y = Eigen::Vector3f::UnitY();
     return _scnOrientInit * Eigen::Quaternionf(Eigen::AngleAxisf(v.x(), y))

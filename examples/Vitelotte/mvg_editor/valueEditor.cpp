@@ -417,7 +417,7 @@ ValueEditor::Mesh::Value ValueEditor::value(Mesh::Node n) const
 Eigen::Vector2f ValueEditor::nodePos(const Eigen::Vector2f& dir, float offset) const
 {
     Eigen::Vector2f center(width() / 2, height() / 2);
-    float nodeDist = center.minCoeff() * .6;
+    float nodeDist = center.minCoeff() * .6f;
 
     Eigen::Vector2f n(-dir.y(), dir.x());
     return center + dir * nodeDist + n * offset;
@@ -444,7 +444,7 @@ Eigen::Vector2f ValueEditor::gradientHandleOffset(
     if(mesh().halfedgeOrientation(m_leftHalfedge))
         v.y() = -v.y();
 
-    float baseLen = edgeValueCenter().minCoeff() * .7;
+    float baseLen = edgeValueCenter().minCoeff() * .7f;
     float len = baseLen - index * (baseLen / 9);
     return v*len;
 }
@@ -565,7 +565,7 @@ void ValueEditor::drawEdge(QPainter& p)
             m.position(m.fromVertex(lh))).normalized();
     v.y() = -v.y();
     Eigen::Vector2f n(-v.y(), v.x());
-    float edgeLen = center.minCoeff() * .8;
+    float edgeLen = center.minCoeff() * .8f;
 
     m_pen.setWidth(2);
     p.setPen(m_pen);
@@ -636,7 +636,7 @@ void ValueEditor::drawVertexValueNode(QPainter& p, const DisplayEdge& de)
     Eigen::Vector2f epos = nodePos(de.dir, m_edgeOffset * de.offset);
     Eigen::Vector2f normal(-de.dir.y(), de.dir.x());
     Mesh::Node n = mesh().halfedgeNode(dn.sel.h, dn.sel.hn);
-    float nodeDist = center.minCoeff() * .2;
+    float nodeDist = center.minCoeff() * .2f;
     bool isSel = (dn.sel == m_selection);
     Eigen::Vector2f td(-de.dir.y(), de.dir.x());
     if(de.offset < 0)
@@ -666,7 +666,7 @@ void ValueEditor::drawNode(QPainter& p, const Eigen::Vector2f& pos,
     {
     case UnsetNode:
     {
-        float size = isSel? m_nodeSize: m_nodeSize / 2.;
+        float size = isSel? m_nodeSize: m_nodeSize / 2.f;
         m_pen.setWidthF(0);
         p.setPen(m_pen);
         p.setBrush(Qt::black);

@@ -55,7 +55,7 @@ bool CheckCommand::execute(Mesh& mesh, const GlobalOptions* opts)
                 ++nError;
                 if(opts && opts->verbose)
                 {
-                    std::cout << "  Area: " << det / 2. << "\n";
+                    std::cout << "  Area: " << det / 2.f << "\n";
 
                     Mesh::Halfedge hend = h;
                     do

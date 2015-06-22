@@ -234,7 +234,7 @@ void GLViewer::startup(const std::string& filename)
     center.head(m_pQvg->nDims()) = m_boundingBox.center();
     m_trackball.setSceneCenter(center);
     m_trackball.setSceneRadius(m_boundingBox.sizes().maxCoeff());
-    m_trackball.setSceneDistance(m_trackball.sceneRadius() * 3.);
+    m_trackball.setSceneDistance(m_trackball.sceneRadius() * 3.f);
     m_trackball.setNearFarOffsets(-m_trackball.sceneRadius() * 100.f,
                                    m_trackball.sceneRadius() * 100.f);
     m_trackball.setScreenViewport(Eigen::AlignedBox2f(
