@@ -73,6 +73,8 @@ bool VGMeshRendererResources::initSolidShader(
     unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
     unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
     unif.enableShadingLoc     = shader.getUniformLocation("enableShading");
+    unif.meshColorSpaceLoc    = shader.getUniformLocation("meshColorSpace");
+    unif.screenColorSpaceLoc  = shader.getUniformLocation("screenColorSpace");
 
     return true;
 }
@@ -143,6 +145,8 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
     m_positionProjection(posProj),
     m_valueProjection(valueProj),
     m_invalidNodeColor(Vector4::Unit(3)),
+    m_meshColorSpace(PatateCommon::COLOR_NONE),
+    m_screenColorSpace(PatateCommon::COLOR_SRGB),
 
     m_resources(resources),
 
@@ -203,6 +207,20 @@ VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::valueProjection()
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
+ColorSpace VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::screenColorSpace() const
+{
+    return m_screenColorSpace;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setScreenColorSpace(ColorSpace cs) const
+{
+    m_screenColorSpace = cs;
+}
+
+
+template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setResources(
         Resources* resources)
 {
@@ -258,6 +276,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
 
     m_quadratic = mesh.hasEdgeValue();
     m_3d        = mesh.nDims() == 3;
+    m_meshColorSpace = mesh.colorSpace();
 
     int nodePerTriangle = m_quadratic? 6: 3;
 
@@ -456,6 +475,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
     glUniformMatrix3fv(unif.normalMatrixLoc, 1, false, normalMatrix.data());
     glUniform1i(unif.nodesLoc, NODES_TEXTURE_UNIT);
     glUniform1i(unif.enableShadingLoc, m_3d);
+    glUniform1i(unif.meshColorSpaceLoc, m_meshColorSpace);
+    glUniform1i(unif.screenColorSpaceLoc, m_screenColorSpace);
 
     glActiveTexture(GL_TEXTURE0 + NODES_TEXTURE_UNIT);
     glBindTexture(GL_TEXTURE_BUFFER, m_nodesTexture);

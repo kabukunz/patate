@@ -43,7 +43,20 @@ float diffuse(in vec3 n, in vec3 l)
     return clamp(dot(n, l), 0., 1.);
 }
 
-vec3 linearToSrgb(in vec3 linear)
+
+///////////////////////////////////////////////////////////////////////////////
+// Color space conversion
+
+const int COLOR_NONE       = 0;
+const int COLOR_SRGB       = 1;
+const int COLOR_LINEAR_RGB = 2;
+const int COLOR_CIE_XYZ    = 3;
+const int COLOR_CIE_LAB    = 4;
+
+
+// SRGB <-> linear rgbToxyz
+
+vec3 srgbFromLinearRGB(in vec3 linear)
 {
     vec3 srgb = linear;
     srgb[0] = (linear[0] > 0.0031308)?
@@ -58,8 +71,7 @@ vec3 linearToSrgb(in vec3 linear)
     return srgb;
 }
 
-
-vec3 srgbToLinear(in vec3 srgb)
+vec3 linearRGBFromSrgb(in vec3 srgb)
 {
     vec3 linear = srgb;
     linear[0] = (linear[0] > 0.04045)?
@@ -73,3 +85,100 @@ vec3 srgbToLinear(in vec3 srgb)
                 linear[2] / 12.92;
     return linear;
 }
+
+
+// Linear RGB <-> Cie XYZ
+
+const mat3 xyzToRgb = mat3(
+     3.2406, -1.5372, -0.4986,
+    -0.9689,  1.8758,  0.0415,
+     0.0557, -0.2040,  1.0570
+);
+
+vec3 linearRGBFromCieXYZ(vec3 cieXYZ) {
+    return transpose(xyzToRgb) * cieXYZ;
+}
+
+mat3 rgbToxyz = mat3(
+     0.4124, 0.3576, 0.1805,
+     0.2126, 0.7152, 0.0722,
+     0.0193, 0.1192, 0.9505
+);
+
+vec3 cieXYZFromLinearRGB(vec3 lrgb) {
+    return transpose(rgbToxyz) * lrgb;
+}
+
+
+// Cie XYZ <-> Cie La*b*
+
+float cieLabF(float v) {
+    return (v > 0.008856452)?
+                pow(v, 1./3.):
+                1. / (3. * 0.042806183) * v + (4. / 29.);
+}
+
+float cieLabFInv(float v) {
+    return (v > 0.206896552)?
+                pow(v, 3.):
+                3. * 0.042806183 * (v - (4. / 29.));
+}
+
+const vec3 cieLabWhite = vec3(0.95047, 1, 1.08883);
+
+vec3 cieLabFromCieXYZ(vec3 cieXYZ)
+{
+    float fy = cieLabF(cieXYZ[1] / cieLabWhite[1]);
+    return vec3(
+            1.16 * fy - 0.16,
+            5.00 * (cieLabF(cieXYZ[0] / cieLabWhite[0]) - fy),
+            2.00 * (fy - cieLabF(cieXYZ[2] / cieLabWhite[2])));
+}
+
+
+vec3 cieXYZFromCieLab(vec3 cielab)
+{
+    float lf = (cielab[0] + 0.16) / 1.16;
+    return vec3(
+            cieLabWhite[0] * cieLabFInv(lf + cielab[1] / 5.00),
+            cieLabWhite[1] * cieLabFInv(lf),
+            cieLabWhite[2] * cieLabFInv(lf - cielab[2] / 2.00));
+}
+
+
+// General color conversion
+
+vec3 convertColor(in vec3 fromColor, in int from, in int to)
+{
+    if(from == COLOR_NONE || to == COLOR_NONE || from == to)
+        return fromColor;
+
+    vec3 color = fromColor;
+
+    // To XYZ
+    if(from == COLOR_SRGB) {
+        color = linearRGBFromSrgb(color);
+        from = COLOR_LINEAR_RGB;
+        if(to == COLOR_LINEAR_RGB) return color;
+    }
+    if(from == COLOR_LINEAR_RGB) {
+        color = cieXYZFromLinearRGB(color);
+    }
+    if(from == COLOR_CIE_LAB) {
+        color = cieXYZFromCieLab(color);
+    }
+
+    // From XYZ
+    if(to < COLOR_CIE_XYZ) {
+        color = linearRGBFromCieXYZ(color);
+        if(to == COLOR_SRGB) {
+            color = srgbFromLinearRGB(color);
+        }
+    } else if(to == COLOR_CIE_LAB) {
+        color = cieLabFromCieXYZ(color);
+    }
+
+    return color;
+}
+
+

@@ -31,8 +31,8 @@ class MVGWriter
 public:
     typedef _Mesh Mesh;
 
-    typedef typename Mesh::Vertex Vertex;
-    typedef typename Mesh::Node   Node;
+    typedef typename Mesh::Vertex      Vertex;
+    typedef typename Mesh::Node        Node;
 
     typedef std::vector<int> IndexMap;
 

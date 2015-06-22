@@ -8,8 +8,10 @@
 #include <iostream>
 
 #include "mvgtk.h"
+#include "changeColorSpaceCommand.h"
 #include "checkCommand.h"
 #include "compactCommand.h"
+#include "convertColorSpaceCommand.h"
 #include "convertCommand.h"
 #include "curvesToNodesCommand.h"
 #include "finalizeCommand.h"
@@ -25,8 +27,10 @@ int main(int argc, char** argv)
 {
     Mvgtk mvgtk;
 
+    mvgtk.registerCommand<ChangeColorSpaceCommand>("set-cs");
     mvgtk.registerCommand<CheckCommand>("check");
     mvgtk.registerCommand<CompactCommand>("compact");
+    mvgtk.registerCommand<ConvertColorSpaceCommand>("conv-cs");
     mvgtk.registerCommand<ConvertCommand>("convert");
     mvgtk.registerCommand<CurvesToNodesCommand>("curves-to-nodes");
     mvgtk.registerCommand<FinalizeCommand>("finalize");

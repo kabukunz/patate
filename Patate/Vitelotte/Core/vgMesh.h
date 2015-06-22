@@ -17,10 +17,14 @@
 #include <Eigen/Core>
 
 #include "../../common/surface_mesh/surfaceMesh.h"
+#include "../../common/gl_utils/color.h"
 
 
 namespace Vitelotte
 {
+
+
+using PatateCommon::ColorSpace;
 
 
 enum
@@ -111,7 +115,6 @@ public:
         MORLEY_FLAGS = LINEAR_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/,
         FV_FLAGS = QUADRATIC_FLAGS | EDGE_GRADIENT_FLAG | VERTEX_GRADIENT_CONSTRAINT_FLAG
     };
-
 
 public:
     /// this class iterates linearly over all nodes
@@ -264,6 +267,14 @@ public:
 
     using PatateCommon::SurfaceMesh::isValid;
     inline bool isValid(Node n) const;
+
+    inline ColorSpace colorSpace() const {
+        return m_colorSpace;
+    }
+
+    inline void setColorSpace(ColorSpace colorSpace) {
+        m_colorSpace = colorSpace;
+    }
 
     /**
      * \brief Return a boolean such that opposite halfedges give a different
@@ -601,6 +612,7 @@ protected:
 
 protected:
     unsigned m_attributes;
+    ColorSpace m_colorSpace;
 
     PatateCommon::PropertyContainer m_nprops;
 

@@ -6,6 +6,14 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_multi_test(element.cpp)
 
+include_directories(
+    ${EIGEN3_INCLUDE_DIR}
+    "../../.."
+)
+add_executable(test_color_spaces
+    test_color_spaces.cpp
+)
+
 #############################################
 #set(fv_SRCS
 #    fv.cpp

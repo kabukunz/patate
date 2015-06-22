@@ -39,6 +39,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
     unsigned nDims = 2;
     unsigned nCoeffs = 4;
     unsigned attributes = 0;
+    ColorSpace colorSpace = PatateCommon::COLOR_NONE;
     unsigned nVert = 1024;
     unsigned nNode = 1024;
     unsigned nFace = 1024;
@@ -72,9 +73,17 @@ MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
                 attributes = Mesh::MORLEY_FLAGS;
             else if(cmd == "fv")
                 attributes = Mesh::FV_FLAGS;
+            else
+                error("unknown attribute type");
         }
         else if(cmd == "mesh")
             m_lineStream >> attributes;
+        else if(cmd == "colorSpace") {
+            m_lineStream >> cmd;
+            bool ok = false;
+            colorSpace = PatateCommon::colorSpaceFromName(cmd, &ok);
+            if(!ok) error("unknown color space");
+        }
         else if(cmd == "vertices")
             m_lineStream >> nVert;
         else if(cmd == "nodes")
@@ -101,6 +110,7 @@ MVGReader<_Mesh>::parseHeader(std::istream& in, Mesh& mesh)
 
     mesh.clear();
     mesh.setAttributes(attributes);
+    mesh.setColorSpace(colorSpace);
     mesh.setNDims(nDims);
     mesh.setNCoeffs(nCoeffs);
     mesh.reserve(nVert, nVert+nFace, nFace, nNode);

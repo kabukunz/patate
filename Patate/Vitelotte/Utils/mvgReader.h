@@ -42,10 +42,10 @@ public:
     typedef _Mesh Mesh;
     typedef PatateCommon::OBJBaseReader<Mesh> Base;
 
-    typedef typename Mesh::Vector    Vector;
-    typedef typename Mesh::Vertex    Vertex;
-    typedef typename Mesh::Value     Value;
-    typedef typename Mesh::Gradient  Gradient;
+    typedef typename Mesh::Vector      Vector;
+    typedef typename Mesh::Vertex      Vertex;
+    typedef typename Mesh::Value       Value;
+    typedef typename Mesh::Gradient    Gradient;
 
     enum {
         NO_WARN_UNKNOWN = 0x01

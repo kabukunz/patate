@@ -20,6 +20,8 @@
 namespace Vitelotte {
 
 
+using PatateCommon::ColorSpace;
+
 /**
  * \brief The VGMeshRendererResources encapsulate resources required by
  * VGMeshRenderer for sharing.
@@ -34,6 +36,8 @@ public:
         GLint baseNodeIndexLoc;
         GLint singularTrianglesLoc;
         GLint enableShadingLoc;
+        GLint meshColorSpaceLoc;
+        GLint screenColorSpaceLoc;
     };
 
     struct WireframeUniforms
@@ -143,6 +147,9 @@ public:
     const ValueProj& valueProjection()    const;
           ValueProj& valueProjection();
 
+    ColorSpace screenColorSpace() const;
+    void setScreenColorSpace(ColorSpace cs) const;
+
     void setResources(Resources* resources);
     void releaseGLResources();
     void updateBuffers(const Mesh& mesh);
@@ -179,9 +186,11 @@ private:
     bool m_convertSrgbToLinear;
     bool m_ownResources;
 
-    PosProj   m_positionProjection;
-    ValueProj m_valueProjection;
-    Vector4   m_invalidNodeColor;
+    PosProj    m_positionProjection;
+    ValueProj  m_valueProjection;
+    Vector4    m_invalidNodeColor;
+    ColorSpace m_meshColorSpace;
+    ColorSpace m_screenColorSpace;
 
     Resources* m_resources;
 

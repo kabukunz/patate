@@ -2,6 +2,7 @@ mvg 1.0
 dim 2
 coefficients 4
 attributes none
+colorSpace srgb
 vertices 6197
 nodes 0
 faces 12376

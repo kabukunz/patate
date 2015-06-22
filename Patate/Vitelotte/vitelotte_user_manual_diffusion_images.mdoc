@@ -1,0 +1,30 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+/*!
+  \page vitelotte_user_manual_diffusion_images_page Diffusion images
+
+  Diffusion images are image produced by diffusing colors defined on curves and points thorough the domain. It offers a simple way to create and edit images with few textures but complex colors gradients.
+
+  Diffusing colors from some constraints is the same as finding a function that interpolates these constraints. There is obviously several ways to do this. We will discuss two of them here: harmonic and bi-harmonic interpolation.
+
+  TODO: harmonic vs biharmonic diffusion
+
+
+  \section Color spaces
+
+  Interpolating colors can be done in various color spaces, with different results. Which color space should be used may depend on the application. There is a quick comparison of different color spaces.
+
+  SRGB: SRGB is the standard color space for common screens. As such, working directly in SRGB has the advantage that it does not require any color conversion to be displayed. Moreover, varying colors intensity linearly in SRGB produce a perceptually nearly linear color gradient. The main drawback is that intermediate colors when interpolating between two bright and saturated colors tend to be too dark.
+
+  Linear RGB or XYZ: Working in a linear color space may be necessary sometimes. For instance, Applying shading on a surface should be done in a linear color space to get good results. It is however not really practical to create color gradient because of the strong non-linearity of human perception.
+
+  Cie Lab: The Lab color space has been designed specifically to be close to human perception. Computing the distance between two colors in Lab should give a good idea of how different the colors are for a human. This color space produce good results to compute diffusion image while avoiding artifacts we have in SRGB. Although Lab conversion is the more expansive, this is the recommended color space to work with diffusion images.
+
+  Keep in mind that to avoid artifacts with Vitelotte, you should compute diffusion and interpolate colors over each face using the same color space. Failing to do so may make the edge more easily noticeable.
+
+ */

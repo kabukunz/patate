@@ -10,6 +10,8 @@ uniform samplerBuffer nodes;
 uniform int baseNodeIndex;
 uniform bool singularTriangles;
 uniform bool enableShading;
+uniform int meshColorSpace;
+uniform int screenColorSpace;
 
 flat in int frag_index;
 in vec3 frag_linearBasis;
@@ -24,8 +26,7 @@ out vec4 out_color;
 float irlerp(in vec3 vx, in vec3 v1, in vec3 v2);
 vec4 quadraticInterp(in vec4 colors[6]);
 float diffuse(in vec3 n, in vec3 l);
-vec3 linearToSrgb(in vec3 linear);
-vec3 srgbToLinear(in vec3 srgb);
+vec3 convertColor(in vec3 fromColor, in int from, in int to);
 
 int baseVxIndex = baseNodeIndex + frag_index * (3 + int(singularTriangles));
 
@@ -56,10 +57,17 @@ void main(void)
     out_color = linearInterp(colorNodes);
 
     if(enableShading) {
+        // Shading is done in linear RGB
+        out_color.rgb = convertColor(out_color.rgb, meshColorSpace, 2);
+
         vec3 n = normalize(frag_normal_view);
         vec3 light = vec3(0.);
         light = diffuse(n, normalize(vec3(-.2, 0, -1.))) * vec3(1., .9, .8) * .8
               + diffuse(n, normalize(vec3( 1, .2,  .2))) * vec3(.8, .9, 1.) * .6;
-        out_color.rgb = linearToSrgb(light * srgbToLinear(out_color.rgb));
+
+        out_color.rgb = convertColor(light * out_color.rgb,
+                                     1, screenColorSpace);
+    } else {
+        out_color.rgb = convertColor(out_color.rgb, meshColorSpace, screenColorSpace);
     }
 }

@@ -47,6 +47,8 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
     else
         _out << "attributes " << mesh.getAttributes() << "\n";
 
+    _out << "colorSpace " << PatateCommon::getColorSpaceName(mesh.colorSpace()) << "\n";
+
     _out << "vertices " << mesh.nVertices() << "\n";
     _out << "nodes " << mesh.nNodes() << "\n";
     _out << "faces " << mesh.nFaces() << "\n";
