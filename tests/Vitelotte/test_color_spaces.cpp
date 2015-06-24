@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 #include <Patate/common/gl_utils/color.h>
 
@@ -50,7 +51,7 @@ void drawGradient(Image& img,
     for(unsigned y = 0; y < gh; ++y) {
         for(unsigned x = 0; x < gw; ++x) {
             float a = float(x) / (gw-1);
-            img(x+ow, y+oh) = conv((1.-a)*from + a*to);
+            img(x+ow, y+oh) = conv((1.f-a)*from + a*to);
         }
     }
 }
@@ -66,13 +67,24 @@ Color srgbFromXYZ(const Color& c) {
 Color srgbFromLab(const Color& c) {
     return srgbFromXYZ(cieXYZFromCieLab(c));
 }
+Color srgbFromLuv(const Color& c) {
+    return srgbFromXYZ(cieXYZFromCieLuv(c));
+}
 
 Color XYZFromSrgb(const Color& c) {
     return cieXYZFromLinearRGB(linearRGBFromSrgb(c));
 }
-
 Color labFromSrgb(const Color& c) {
     return cieLabFromCieXYZ(XYZFromSrgb(c));
+}
+Color luvFromSrgb(const Color& c) {
+    return cieLuvFromCieXYZ(XYZFromSrgb(c));
+}
+
+
+void printColor(const Color& c) {
+    for(int i = 0; i < 3; ++i)
+        std::cout << " " << std::setprecision(4) << std::setw(7) << std::fixed << c(i);
 }
 
 
@@ -97,7 +109,7 @@ int main(int argc, char** argv) {
 //    Color to(1, 1, 1);
 
     unsigned w = gw;
-    unsigned h = 3 * gh * colors.size();
+    unsigned h = 4 * gh * colors.size();
 
     Image img(w, h);
 
@@ -119,9 +131,15 @@ int main(int argc, char** argv) {
                      labFromSrgb(it->to),
                      srgbFromLab,
                      gw, gh, 0, (row++)*gh);
+        drawGradient(img,
+                     luvFromSrgb(it->from),
+                     luvFromSrgb(it->to),
+                     srgbFromLuv,
+                     gw, gh, 0, (row++)*gh);
     }
 
-//    Color c(.01, .01, .01);
+//    Color c(1, 1, 1);
+//    Color c(.01, .00, .0);
 //    std::cout << "c srgb: " << c.transpose() << "\n";
 //    c = linearRGBFromSrgb(c);
 //    std::cout << "c lrgb: " << c.transpose() << "\n";
@@ -131,10 +149,66 @@ int main(int argc, char** argv) {
 //    std::cout << "c lab : " << c.transpose() << "\n";
 //    c = cieXYZFromCieLab(c);
 //    std::cout << "c xyz : " << c.transpose() << "\n";
+//    c = cieLuvFromCieXYZ(c);
+//    std::cout << "c luv : " << c.transpose() << "\n";
+//    c = cieXYZFromCieLuv(c);
+//    std::cout << "c xyz : " << c.transpose() << "\n";
 //    c = linearRGBFromCieXYZ(c);
 //    std::cout << "c lrgb: " << c.transpose() << "\n";
 //    c = srgbFromLinearRGB(c);
 //    std::cout << "c srgb: " << c.transpose() << "\n";
+
+    std::cout << "  srgb:r";
+    std::cout << "  srgb:g";
+    std::cout << "  srgb:b";
+    std::cout << "  lrgb:r";
+    std::cout << "  lrgb:g";
+    std::cout << "  lrgb:b";
+    std::cout << "   xyz:x";
+    std::cout << "   xyz:y";
+    std::cout << "   xyz:z";
+    std::cout << "   lab:l";
+    std::cout << "   lab:a";
+    std::cout << "   lab:b";
+    std::cout << "  xyz':x";
+    std::cout << "  xyz':y";
+    std::cout << "  xyz':z";
+    std::cout << "   luv:l";
+    std::cout << "   luv:u";
+    std::cout << "   luv:v";
+    std::cout << " xyz'':x";
+    std::cout << " xyz'':y";
+    std::cout << " xyz'':z";
+    std::cout << " lrgb':r";
+    std::cout << " lrgb':g";
+    std::cout << " lrgb':b";
+    std::cout << " srgb':r";
+    std::cout << " srgb':g";
+    std::cout << " srgb':b";
+    std::cout << "\n";
+    for(int i = 0; i < 1001; ++i) {
+        float f = float(i) / 1000.f;
+        Color c(f, f, f);
+        c = srgbFromLinearRGB(c);
+        printColor(c);
+        c = linearRGBFromSrgb(c);
+        printColor(c);
+        c = cieXYZFromLinearRGB(c);
+        printColor(c);
+        c = cieLabFromCieXYZ(c);
+        printColor(c);
+        c = cieXYZFromCieLab(c);
+        printColor(c);
+        c = cieLuvFromCieXYZ(c);
+        printColor(c);
+        c = cieXYZFromCieLuv(c);
+        printColor(c);
+        c = linearRGBFromCieXYZ(c);
+        printColor(c);
+        c = srgbFromLinearRGB(c);
+        printColor(c);
+        std::cout << "\n";
+    }
 
 //    typedef internal::LabHelper<float> LH;
 //    float test = 0.0001;

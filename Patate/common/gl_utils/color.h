@@ -20,38 +20,19 @@ enum ColorSpace {
     COLOR_SRGB,
     COLOR_LINEAR_RGB,
     COLOR_CIE_XYZ,
-    COLOR_CIE_LAB
+    COLOR_CIE_LAB,
+    COLOR_CIE_LUV
 };
 
 
-inline Eigen::Vector4f linearRGBToSrgb(const Eigen::Vector4f& linear)
-{
-    Eigen::Vector4f srgb = linear;
-    for(int i=0; i<3; ++i)
-        srgb(i) = linear(i) > 0.0031308f?
-                    1.055f * std::pow(linear(i), 1.f/2.4f):
-                    12.92f * linear(i);
-    return srgb;
-}
-
-
-inline Eigen::Vector4f srgbToLinear(const Eigen::Vector4f& srgb)
-{
-    Eigen::Vector4f linear = srgb;
-    for(int i=0; i<3; ++i)
-        linear(i) = linear(i) > 0.04045f?
-                    std::pow((linear(i)+0.055f) / 1.055f, 2.4f):
-                    linear(i) / 12.92f;
-    return linear;
-}
-
+// SRGB <-> linear RGB
 
 inline Eigen::Vector3f srgbFromLinearRGB(const Eigen::Vector3f& lrgb)
 {
     Eigen::Vector3f srgb = lrgb;
     for(int i=0; i<3; ++i)
         srgb(i) = lrgb(i) > 0.0031308f?
-                    1.055f * std::pow(lrgb(i), 1.f/2.4f):
+                    1.055f * std::pow(lrgb(i), 1.f/2.4f) - .055f:
                     12.92f * lrgb(i);
     return srgb;
 }
@@ -67,6 +48,8 @@ inline Eigen::Vector3f linearRGBFromSrgb(const Eigen::Vector3f& srgb)
     return lrgb;
 }
 
+
+// linear RGB <-> CIE XYZ
 
 inline Eigen::Vector3f linearRGBFromCieXYZ(const Eigen::Vector3f& cieXYZ) {
     static const Eigen::Matrix3f xyzToRgb = (Eigen::Matrix3f() <<
@@ -89,6 +72,8 @@ inline Eigen::Vector3f cieXYZFromLinearRGB(const Eigen::Vector3f& lrgb) {
     return rgbToxyz * lrgb;
 }
 
+
+// CIE XYZ <-> CIE LAB
 
 namespace internal {
 
@@ -153,6 +138,43 @@ inline Eigen::Vector3f cieXYZFromCieLab(const Eigen::Vector3f& cielab)
 }
 
 
+// CIE XYZ <-> CIE LUV
+
+inline Eigen::Vector3f cieLuvFromCieXYZ(const Eigen::Vector3f& cieXYZ)
+{
+    const float wu = 0.197839825f;
+    const float wv = 0.468336303f;
+
+    float l = (cieXYZ(1) <= 0.008856452f)?
+                    9.03296296296f * cieXYZ(1):
+                    1.16f * std::pow(cieXYZ(1), 1.f/3.f) - .16f;
+    float d = cieXYZ(0) + 15.f * cieXYZ(1) + 3.f * cieXYZ(2);
+
+    return Eigen::Vector3f(
+                l,
+                (d > .001f)? 13.f * l * (4.f*cieXYZ(0) / d - wu): 0.f,
+                (d > .001f)? 13.f * l * (9.f*cieXYZ(1) / d - wv): 0.f);
+}
+
+
+inline Eigen::Vector3f cieXYZFromCieLuv(const Eigen::Vector3f& cieluv)
+{
+    const float wu = 0.197839825f;
+    const float wv = 0.468336303f;
+
+    float up_13l = cieluv(1) + wu * (13.f * cieluv(0));
+    float vp_13l = cieluv(2) + wv * (13.f * cieluv(0));
+
+    float y = (cieluv(0) <= .08f)?
+                    cieluv(0) * 0.1107056f:
+                    std::pow((cieluv(0)+.16f) / 1.16f, 3.f);
+    return Eigen::Vector3f(
+                (vp_13l > .001f)? 2.25f * y * up_13l / vp_13l: 0.f,
+                y,
+                (vp_13l > .001f)? y * (156.f*cieluv(0) - 3.f*up_13l - 20.f*vp_13l) / (4.f * vp_13l): 0.f);
+}
+
+
 inline ColorSpace colorSpaceFromName(const std::string& name, bool* ok=0) {
     if(ok) *ok = true;
     if(     name == "none")       return COLOR_NONE;
@@ -160,6 +182,7 @@ inline ColorSpace colorSpaceFromName(const std::string& name, bool* ok=0) {
     else if(name == "linear_rgb") return COLOR_LINEAR_RGB;
     else if(name == "cie_xyz")    return COLOR_CIE_XYZ;
     else if(name == "cie_lab")    return COLOR_CIE_LAB;
+    else if(name == "cie_luv")    return COLOR_CIE_LUV;
 
     if(ok) *ok = false;
     return COLOR_NONE;
@@ -173,6 +196,7 @@ inline const char* getColorSpaceName(ColorSpace cs) {
     case COLOR_LINEAR_RGB:  return "linear_rgb";
     case COLOR_CIE_XYZ:     return "cie_xyz";
     case COLOR_CIE_LAB:     return "cie_lab";
+    case COLOR_CIE_LUV:     return "cie_luv";
     }
     return "none";
 }
@@ -204,6 +228,9 @@ inline Eigen::Vector3f convertColor(const Eigen::Vector3f& fromColor,
     case COLOR_CIE_LAB:
         color = cieXYZFromCieLab(color);
         break;
+    case COLOR_CIE_LUV:
+        color = cieXYZFromCieLuv(color);
+        break;
     }
 
     // From XYZ
@@ -223,6 +250,9 @@ inline Eigen::Vector3f convertColor(const Eigen::Vector3f& fromColor,
         break;
     case COLOR_CIE_LAB:
         color = cieLabFromCieXYZ(color);
+        break;
+    case COLOR_CIE_LUV:
+        color = cieLuvFromCieXYZ(color);
         break;
     }
 

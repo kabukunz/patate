@@ -52,26 +52,27 @@ const int COLOR_SRGB       = 1;
 const int COLOR_LINEAR_RGB = 2;
 const int COLOR_CIE_XYZ    = 3;
 const int COLOR_CIE_LAB    = 4;
+const int COLOR_CIE_LUV    = 5;
 
 
 // SRGB <-> linear rgbToxyz
 
-vec3 srgbFromLinearRGB(in vec3 linear)
+vec3 srgbFromLinearRGB(const in vec3 linear)
 {
     vec3 srgb = linear;
     srgb[0] = (linear[0] > 0.0031308)?
-              1.055 * pow(linear[0], 1./2.4):
+              1.055 * pow(linear[0], 1./2.4) - .055f:
               12.92 * linear[0];
     srgb[1] = (linear[1] > 0.0031308)?
-              1.055 * pow(linear[1], 1./2.4):
+              1.055 * pow(linear[1], 1./2.4) - .055f:
               12.92 * linear[1];
     srgb[2] = (linear[2] > 0.0031308)?
-              1.055 * pow(linear[2], 1./2.4):
+              1.055 * pow(linear[2], 1./2.4) - .055f:
               12.92 * linear[2];
     return srgb;
 }
 
-vec3 linearRGBFromSrgb(in vec3 srgb)
+vec3 linearRGBFromSrgb(const in vec3 srgb)
 {
     vec3 linear = srgb;
     linear[0] = (linear[0] > 0.04045)?
@@ -95,7 +96,7 @@ const mat3 xyzToRgb = mat3(
      0.0557, -0.2040,  1.0570
 );
 
-vec3 linearRGBFromCieXYZ(vec3 cieXYZ) {
+vec3 linearRGBFromCieXYZ(const in vec3 cieXYZ) {
     return transpose(xyzToRgb) * cieXYZ;
 }
 
@@ -105,20 +106,20 @@ mat3 rgbToxyz = mat3(
      0.0193, 0.1192, 0.9505
 );
 
-vec3 cieXYZFromLinearRGB(vec3 lrgb) {
+vec3 cieXYZFromLinearRGB(const in vec3 lrgb) {
     return transpose(rgbToxyz) * lrgb;
 }
 
 
-// Cie XYZ <-> Cie La*b*
+// Cie XYZ <-> Cie Lab
 
-float cieLabF(float v) {
+float cieLabF(const in float v) {
     return (v > 0.008856452)?
                 pow(v, 1./3.):
                 1. / (3. * 0.042806183) * v + (4. / 29.);
 }
 
-float cieLabFInv(float v) {
+float cieLabFInv(const in float v) {
     return (v > 0.206896552)?
                 pow(v, 3.):
                 3. * 0.042806183 * (v - (4. / 29.));
@@ -126,7 +127,7 @@ float cieLabFInv(float v) {
 
 const vec3 cieLabWhite = vec3(0.95047, 1, 1.08883);
 
-vec3 cieLabFromCieXYZ(vec3 cieXYZ)
+vec3 cieLabFromCieXYZ(const in vec3 cieXYZ)
 {
     float fy = cieLabF(cieXYZ[1] / cieLabWhite[1]);
     return vec3(
@@ -136,13 +137,49 @@ vec3 cieLabFromCieXYZ(vec3 cieXYZ)
 }
 
 
-vec3 cieXYZFromCieLab(vec3 cielab)
+vec3 cieXYZFromCieLab(const in vec3 cielab)
 {
     float lf = (cielab[0] + 0.16) / 1.16;
     return vec3(
             cieLabWhite[0] * cieLabFInv(lf + cielab[1] / 5.00),
             cieLabWhite[1] * cieLabFInv(lf),
             cieLabWhite[2] * cieLabFInv(lf - cielab[2] / 2.00));
+}
+
+
+// Cie XYZ <-> Cie Luv
+
+vec3 cieLuvFromCieXYZ(const in vec3 cieXYZ)
+{
+    const float wu = 0.197839825f;
+    const float wv = 0.468336303f;
+
+    float l = (cieXYZ[1] <= 0.008856452f)?
+                    9.03296296296f * cieXYZ[1]:
+                    1.16f * pow(cieXYZ[1], 1.f/3.f) - .16f;
+    float d = cieXYZ[0] + 15.f * cieXYZ[1] + 3.f * cieXYZ[2];
+
+    return vec3(
+                l,
+                (d > .001f)? 13.f * l * (4.f*cieXYZ[0] / d - wu): 0.f,
+                (d > .001f)? 13.f * l * (9.f*cieXYZ[1] / d - wv): 0.f);
+}
+
+vec3 cieXYZFromCieLuv(const in vec3 cieluv)
+{
+    const float wu = 0.197839825f;
+    const float wv = 0.468336303f;
+
+    float up_13l = cieluv[1] + wu * (13.f * cieluv[0]);
+    float vp_13l = cieluv[2] + wv * (13.f * cieluv[0]);
+
+    float y = (cieluv[0] <= .08f)?
+                    cieluv[0] * 0.1107056f:
+                    pow((cieluv[0]+.16f) / 1.16f, 3.f);
+    return vec3(
+                (vp_13l > .001f)? 2.25f * y * up_13l / vp_13l: 0.f,
+                y,
+                (vp_13l > .001f)? y * (156.f*cieluv[0] - 3.f*up_13l - 20.f*vp_13l) / (4.f * vp_13l): 0.f);
 }
 
 
@@ -167,6 +204,9 @@ vec3 convertColor(in vec3 fromColor, in int from, in int to)
     if(from == COLOR_CIE_LAB) {
         color = cieXYZFromCieLab(color);
     }
+    if(from == COLOR_CIE_LUV) {
+        color = cieXYZFromCieLuv(color);
+    }
 
     // From XYZ
     if(to < COLOR_CIE_XYZ) {
@@ -176,6 +216,8 @@ vec3 convertColor(in vec3 fromColor, in int from, in int to)
         }
     } else if(to == COLOR_CIE_LAB) {
         color = cieLabFromCieXYZ(color);
+    } else if(to == COLOR_CIE_LUV) {
+        color = cieLuvFromCieXYZ(color);
     }
 
     return color;

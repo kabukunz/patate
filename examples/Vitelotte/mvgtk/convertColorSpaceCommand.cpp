@@ -85,6 +85,16 @@ bool ConvertColorSpaceCommand::execute(Mesh& mesh, const GlobalOptions* opts)
         }
     }
 
+    for(unsigned pci = 0; pci < mesh.nPointConstraints(); ++pci) {
+        Mesh::PointConstraint pc(pci);
+
+        if(mesh.isValueConstraint(pc)) {
+            Eigen::Vector3f c = mesh.value(pc).head<3>().cast<float>();
+            c = convertColor(c, mesh.colorSpace(), m_colorSpace);
+            mesh.value(pc).head<3>() = c.cast<Mesh::Scalar>();
+        }
+    }
+
     std::vector<bool> nmask(mesh.nodesSize(), true);
     for(Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
         hit != mesh.halfedgesEnd(); ++hit) {
@@ -110,8 +120,8 @@ bool ConvertColorSpaceCommand::execute(Mesh& mesh, const GlobalOptions* opts)
                 warnInvalidGradient = false;
             }
         }
-
     }
+
     mesh.setColorSpace(m_colorSpace);
 
     return true;

@@ -415,7 +415,7 @@ Eigen::Vector4f VGNodeRenderer::convColor(const Eigen::Vector4f& color) const
 {
     if(m_linearizeSrgb)
     {
-        return PatateCommon::srgbToLinear(color);
+        return (Eigen::Vector4f() << PatateCommon::linearRGBFromSrgb(color.head<3>()), 1).finished();
     }
     return color;
 }
