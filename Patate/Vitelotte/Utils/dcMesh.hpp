@@ -307,6 +307,12 @@ DCMesh<_Scalar, _Dim, _Chan>::setNodesFromCurves()
         if(!lh.isValid())
             continue;
 
+        const BezierPath& path = bezierPath(c);
+        unsigned si = 0;
+        Scalar splitPos = 0;
+        CurvedEdge head;
+        CurvedEdge tail = path.nSegments()? path.getSegment(si): CurvedEdge();
+
         Node fromNode[2];
         addGradientNodes(fromNode, c, VALUE, fromCurvePos(lh));
         do {
@@ -352,28 +358,31 @@ DCMesh<_Scalar, _Dim, _Chan>::setNodesFromCurves()
 
             }
 
+            if(tail.type() != BEZIER_EMPTY) {
+                Scalar csi;
+                Scalar curvePos = std::modf(toCurvePos(lh) * path.nSegments() + 0.e-5, &csi);
+
+                if(unsigned(csi) == si) {
+                    Scalar pos = (curvePos - splitPos) / (1 - splitPos);
+                    tail.split(pos, head, tail);
+                    setEdgeCurve(lh, head);
+                    splitPos = curvePos;
+                } else {
+                    setEdgeCurve(lh, tail);
+                    ++si;
+                    tail = (si < path.nSegments())?
+                                path.getSegment(si):
+                                CurvedEdge();
+                    splitPos = 0;
+                }
+            }
+
+
             fromNode[0] = toNode[0];
             fromNode[1] = toNode[1];
             lh = nextCurveHalfedge(lh);
         } while(lh.isValid());
     }
-
-//    if(flags_ & FLAT_BOUNDARY)
-//    {
-//        Halfedge h;
-//        for(EdgeIterator eit = edgesBegin();
-//            eit != edgesEnd(); ++eit)
-//        {
-//            if(!isBoundary(*eit))
-//                continue;
-//            for(int i = 0; i < 2; ++i)
-//            {
-//                h = halfedge(*eit, i);
-//                if(!isBoundary(h))
-//                    edgeGradientNode(h) = addNode(Value::Constant(0));
-//            }
-//        }
-//    }
 }
 
 

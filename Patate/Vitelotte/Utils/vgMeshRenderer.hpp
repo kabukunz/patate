@@ -54,8 +54,10 @@ bool VGMeshRendererResources::initSolidShader(
     bool ok = true;
     ok &= shader.addShader(GL_VERTEX_SHADER,
                            VGMeshRendererShaders::vert_common_glsl);
-    ok &= shader.addShader(GL_GEOMETRY_SHADER,
-                           VGMeshRendererShaders::geom_common_glsl);
+    ok &= shader.addShader(GL_TESS_CONTROL_SHADER,
+                           VGMeshRendererShaders::ctrl_common_glsl);
+    ok &= shader.addShader(GL_TESS_EVALUATION_SHADER,
+                           VGMeshRendererShaders::eval_common_glsl);
     ok &= shader.addShader(GL_FRAGMENT_SHADER,
                            VGMeshRendererShaders::frag_common_glsl);
     ok &= shader.addShader(GL_FRAGMENT_SHADER, fragCode);
@@ -72,6 +74,7 @@ bool VGMeshRendererResources::initSolidShader(
     unif.nodesLoc             = shader.getUniformLocation("nodes");
     unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
     unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
+    unif.smoothnessLoc        = shader.getUniformLocation("smoothness");
     unif.enableShadingLoc     = shader.getUniformLocation("enableShading");
     unif.meshColorSpaceLoc    = shader.getUniformLocation("meshColorSpace");
     unif.screenColorSpaceLoc  = shader.getUniformLocation("screenColorSpace");
@@ -89,8 +92,13 @@ bool VGMeshRendererResources::initWireframeShader()
     bool ok = true;
     ok &= shader.addShader(GL_VERTEX_SHADER,
                            VGMeshRendererShaders::vert_common_glsl);
-    ok &= shader.addShader(GL_GEOMETRY_SHADER,
-                           VGMeshRendererShaders::geom_common_glsl);
+    ok &= shader.addShader(GL_TESS_CONTROL_SHADER,
+                           VGMeshRendererShaders::ctrl_common_glsl);
+    ok &= shader.addShader(GL_TESS_EVALUATION_SHADER,
+                           VGMeshRendererShaders::eval_common_glsl);
+    // Uncomment this to display tesselated wireframe.
+//    ok &= shader.addShader(GL_GEOMETRY_SHADER,
+//                           VGMeshRendererShaders::geom_common_glsl);
     ok &= shader.addShader(GL_FRAGMENT_SHADER,
                            VGMeshRendererShaders::frag_common_glsl);
     ok &= shader.addShader(GL_FRAGMENT_SHADER,
@@ -104,6 +112,7 @@ bool VGMeshRendererResources::initWireframeShader()
 
     unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
     unif.viewportSizeLoc      = shader.getUniformLocation("viewportSize");
+    unif.smoothnessLoc        = shader.getUniformLocation("smoothness");
     unif.lineWidthLoc         = shader.getUniformLocation("lineWidth");
     unif.wireframeColorLoc    = shader.getUniformLocation("wireframeColor");
 
@@ -289,8 +298,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
     }
 
     // Reserve buffers
-    m_vertices.resize(mesh.verticesSize());
-    m_indices.resize(m_nTriangles * 3 + m_nSingulars * 3);
+    m_vertices.resize(mesh.verticesSize() + 2 * mesh.edgesSize());
+    m_indices.resize((m_nTriangles * 3 + m_nSingulars * 3) * 3);
     m_nodes.resize(m_nTriangles * nodePerTriangle +
                    m_nSingulars * (nodePerTriangle + 1));
 
@@ -300,6 +309,37 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
     {
         m_vertices[(*vit).idx()].position = position(mesh, *vit);
         m_vertices[(*vit).idx()].normal.setZero();
+    }
+
+    // Subdivide curved edges
+    unsigned nVertices = mesh.verticesSize();
+    for(typename Mesh::EdgeIterator eit = mesh.edgesBegin();
+        eit != mesh.edgesEnd(); ++eit)
+    {
+        unsigned i1 = nVertices + 2 * (*eit).idx();
+        unsigned i2 = i1 + 1;
+
+        typename Mesh::Halfedge h = mesh.halfedge(*eit, 0);
+        bool orient = mesh.halfedgeOrientation(h);
+        const Vector& v0 = mesh.position(orient? mesh.toVertex(h): mesh.fromVertex(h));
+        const Vector& v3 = mesh.position(orient? mesh.fromVertex(h): mesh.toVertex(h));
+        if(!mesh.isCurved(*eit) || mesh.edgeCurve(*eit).type() == BEZIER_LINEAR) {
+            m_vertices[i1].position = m_positionProjection(
+                        (2 * v0 + v3) / 3);
+            m_vertices[i2].position = m_positionProjection(
+                        (v0 + 2 * v3) / 3);
+        } else if(mesh.edgeCurve(*eit).type() == BEZIER_QUADRATIC) {
+            m_vertices[i1].position = m_positionProjection(
+                        (v0 + 2 * mesh.edgeCurve(*eit).point(1)) / 3);
+            m_vertices[i2].position = m_positionProjection(
+                        (2 * mesh.edgeCurve(*eit).point(1) + v3) / 3);
+        } else {
+            m_vertices[i1].position = m_positionProjection(
+                        mesh.edgeCurve(*eit).point(1));
+            m_vertices[i2].position = m_positionProjection(
+                        mesh.edgeCurve(*eit).point(2));
+        }
+        // Normals are interpolated later.
     }
 
     // Push faces indices and nodes
@@ -328,8 +368,12 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
         for(int ei = 0; ei < 3; ++ei)
         {
             if(m_3d) pts[ei] = mesh.position(mesh.toVertex(h));
-            m_indices[index + ei] = mesh.toVertex(h).idx();
+            m_indices[3 * (index + ei)] = mesh.toVertex(h).idx();
             h = mesh.nextHalfedge(h);
+            m_indices[3 * (index + ei) + 1] = nVertices + 2 * mesh.edge(h).idx()
+                    + mesh.halfedgeOrientation(h);
+            m_indices[3 * (index + ei) + 2] = nVertices + 2 * mesh.edge(h).idx()
+                    + 1 - mesh.halfedgeOrientation(h);
             m_nodes[nodeIndex + ei] = mesh.hasToVertexValue()?
                         color(mesh, mesh.fromVertexValueNode(h)):
                         Eigen::Vector4f(.8, .8, .8, 1.);
@@ -361,8 +405,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
         index += 3;
         nodeIndex += nodePerTriangle + isSingular;
     }
-    assert(triIndex == m_nTriangles * 3 && singIndex == m_indices.size());
-    assert(triNodeIndex == m_nTriangles * nodePerTriangle && singNodeIndex == m_nodes.size());
+//    assert(triIndex == m_nTriangles * 3 && singIndex == m_indices.size());
+//    assert(triNodeIndex == m_nTriangles * nodePerTriangle && singNodeIndex == m_nodes.size());
 
     if(m_3d) {
         // Normalize normals
@@ -446,10 +490,9 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer);
     }
 
-    PATATE_ASSERT_NO_GL_ERROR();
-    glDrawElements(GL_TRIANGLES, nPrimitives * 3, GL_UNSIGNED_INT,
-                   (const void*)(firstPrimitive * 3 * sizeof(unsigned)));
-    PATATE_ASSERT_NO_GL_ERROR();
+    glPatchParameteri(GL_PATCH_VERTICES, 9);
+    glDrawElements(GL_PATCHES, nPrimitives * 9, GL_UNSIGNED_INT,
+                  (const void*)(firstPrimitive * 9 * sizeof(unsigned)));
 
     if(m_useVao) {
         glBindVertexArray(0);
@@ -464,7 +507,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& viewMatrix)
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(
+        const Eigen::Matrix4f& viewMatrix, float smoothness)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -484,6 +528,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
     glUniformMatrix3fv(unif.normalMatrixLoc, 1, false, normalMatrix.data());
     glUniform1i(unif.nodesLoc, NODES_TEXTURE_UNIT);
+    glUniform1f(unif.smoothnessLoc, smoothness);
     glUniform1i(unif.enableShadingLoc, m_3d);
     glUniform1i(unif.meshColorSpaceLoc, m_meshColorSpace);
     glUniform1i(unif.screenColorSpaceLoc, m_screenColorSpace);
@@ -511,7 +556,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(const Eigen::Matrix4f& 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
         const Eigen::Matrix4f& viewMatrix, const Eigen::Vector2f& viewportSize,
-        float lineWidth, const Eigen::Vector4f& color)
+        float lineWidth, const Eigen::Vector4f& color, float smoothness)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -522,6 +567,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
 
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
     glUniform2fv(unif.viewportSizeLoc, 1, viewportSize.data());
+    glUniform1f(unif.smoothnessLoc, smoothness);
     glUniform1f(unif.lineWidthLoc, lineWidth);
     glUniform4fv(unif.wireframeColorLoc, 1, color.data());
 

@@ -822,6 +822,7 @@ VGMesh<_Scalar, _Dim, _Chan>::copyVGMeshMembers(const Self& rhs)
 
     m_positions = rhs.m_positions;
     m_vertexGradientConstraints = rhs.m_vertexGradientConstraints;
+    m_curvedEdges = rhs.m_curvedEdges;
 
     for(int ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai) {
         m_halfedgeAttributes[ai] = getHalfedgeProperty<Node>(_halfedgeAttrName[ai]);

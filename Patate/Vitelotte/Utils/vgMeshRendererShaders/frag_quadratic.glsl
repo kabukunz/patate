@@ -15,7 +15,7 @@ uniform int screenColorSpace;
 
 flat in int frag_index;
 in vec3 frag_linearBasis;
-in vec3 frag_position_obj;
+in vec4 frag_position_obj;
 in vec3 frag_normal_obj;
 in vec3 frag_normal_view;
 flat in vec3 frag_vertices_obj[3];
@@ -47,7 +47,7 @@ void main(void)
         colorNodes[0] = mix(
             colorNodes[0],
             texelFetch(nodes, baseVxIndex + 6),
-            irlerp(normalize(frag_position_obj - frag_vertices_obj[0]),
+            irlerp(normalize(frag_position_obj.xyz - frag_vertices_obj[0]),
                    frag_normEdges_obj[2], -frag_normEdges_obj[1]));
     }
 

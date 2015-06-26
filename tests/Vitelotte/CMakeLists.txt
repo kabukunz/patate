@@ -5,6 +5,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 ################################################################################
 
 add_multi_test(element.cpp)
+add_multi_test(testBezierPath.cpp)
 
 include_directories(
     ${EIGEN3_INCLUDE_DIR}

@@ -71,9 +71,10 @@ MVGWithCurvesWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh) {
             {
                 switch(path.type(si))
                 {
-                case BezierPath::LINEAR:    _out << " L"; break;
-                case BezierPath::QUADRATIC: _out << " Q"; break;
-                case BezierPath::CUBIC:     _out << " C"; break;
+                case BEZIER_LINEAR:    _out << " L"; break;
+                case BEZIER_QUADRATIC: _out << " Q"; break;
+                case BEZIER_CUBIC:     _out << " C"; break;
+                case BEZIER_EMPTY:     continue;
                 }
                 for(unsigned pi = 1; pi < path.nPoints(si); ++pi)
                 {

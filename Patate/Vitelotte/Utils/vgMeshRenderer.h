@@ -36,6 +36,7 @@ public:
         GLint nodesLoc;
         GLint baseNodeIndexLoc;
         GLint singularTrianglesLoc;
+        GLfloat smoothnessLoc;
         GLint enableShadingLoc;
         GLint meshColorSpaceLoc;
         GLint screenColorSpaceLoc;
@@ -45,6 +46,7 @@ public:
     {
         GLint viewMatrixLoc;
         GLint viewportSizeLoc;
+        GLfloat smoothnessLoc;
         GLint lineWidthLoc;
         GLint wireframeColorLoc;
     };
@@ -156,10 +158,11 @@ public:
     void updateBuffers(const Mesh& mesh);
 
     void drawGeometry(unsigned geomFlags);
-    void render(const Eigen::Matrix4f& viewMatrix);
+    void render(const Eigen::Matrix4f& viewMatrix, float smoothness = 8);
     void renderWireframe(const Eigen::Matrix4f& viewMatrix,
                          const Eigen::Vector2f& viewportSize, float lineWidth = 1,
-                         const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1));
+                         const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1),
+                         float smoothness = 8);
 
 private:
     typedef std::vector<unsigned> IndicesVector;

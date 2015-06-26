@@ -160,6 +160,21 @@ MVGWriter<_Mesh>::write(std::ostream& _out, const Mesh& mesh)
         _out << "\n";
     }
 
+    for(typename Mesh::HalfedgeIterator hit = mesh.halfedgesBegin();
+        hit != mesh.halfedgesEnd(); ++hit)
+    {
+        if(!mesh.isCurved(*hit) || mesh.halfedgeOrientation(*hit)) continue;
+        const typename Mesh::CurvedEdge& ce = mesh.edgeCurve(*hit);
+        if(ce.type() == BEZIER_EMPTY || ce.type() == BEZIER_LINEAR) continue;
+        _out << "ce " << vertexIndex(mesh.fromVertex(*hit))
+             << " "   << vertexIndex(mesh.toVertex(*hit))
+             << " "   << ce.point(1).transpose().format(m_format);
+        if(ce.type() == BEZIER_CUBIC) {
+            _out << " " << ce.point(2).transpose().format(m_format);
+        }
+        _out << "\n";
+    }
+
     if(mesh.hasVertexGradientConstraint())
     {
         for(VertexIterator vit = mesh.verticesBegin();

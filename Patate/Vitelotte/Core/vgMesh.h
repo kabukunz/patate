@@ -19,6 +19,8 @@
 #include "../../common/surface_mesh/surfaceMesh.h"
 #include "../../common/gl_utils/color.h"
 
+#include "bezierPath.h"
+
 
 namespace Vitelotte
 {
@@ -59,6 +61,8 @@ public:
     typedef Eigen::Matrix<Scalar, DimsAtCompileTime, 1> Vector;
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, 1> Value;
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, DimsAtCompileTime> Gradient;
+
+    typedef BezierSegment<Vector> CurvedEdge;
 
 protected:
     typedef Eigen::Matrix<Scalar, DimsAtCompileTime, Eigen::Dynamic> VectorMatrix;
@@ -112,7 +116,7 @@ public:
         LINEAR_FLAGS = TO_VERTEX_VALUE_FLAG | FROM_VERTEX_VALUE_FLAG,
         QUADRATIC_FLAGS = LINEAR_FLAGS | EDGE_VALUE_FLAG,
 
-        MORLEY_FLAGS = LINEAR_FLAGS | EDGE_GRADIENT_FLAG /*| VertexGradientSpecial*/,
+        MORLEY_FLAGS = LINEAR_FLAGS | EDGE_GRADIENT_FLAG,
         FV_FLAGS = QUADRATIC_FLAGS | EDGE_GRADIENT_FLAG | VERTEX_GRADIENT_CONSTRAINT_FLAG
     };
 
@@ -274,6 +278,33 @@ public:
 
     inline void setColorSpace(ColorSpace colorSpace) {
         m_colorSpace = colorSpace;
+    }
+
+    inline bool isCurved(Edge e) const {
+        return m_curvedEdges.find(e) != m_curvedEdges.end();
+    }
+
+    inline bool isCurved(Halfedge h) const {
+        return isCurved(edge(h));
+    }
+
+    inline const CurvedEdge& edgeCurve(Edge e) const {
+        return m_curvedEdges.at(e);
+    }
+
+    inline CurvedEdge edgeCurve(Halfedge h) const {
+        return halfedgeOrientation(h)?
+                    edgeCurve(edge(h)).getBackward():
+                    edgeCurve(edge(h));
+    }
+
+    inline void setEdgeCurve(Edge e, const CurvedEdge& curve) {
+        m_curvedEdges[e] = curve;
+    }
+
+    inline void setEdgeCurve(Halfedge h, const CurvedEdge& curve) {
+        if(halfedgeOrientation(h)) setEdgeCurve(edge(h), curve.getBackward());
+        else                       setEdgeCurve(edge(h), curve);
     }
 
     /**
@@ -568,8 +599,12 @@ protected:
     // FIXME: Would likely be better to use a hash map, but this is only
     // available in C++11...
     typedef std::pair<Vertex, Gradient> VertexGradientPair;
-    typedef std::map<Vertex, Gradient, std::less<Vertex>, Eigen::aligned_allocator<VertexGradientPair> > VertexGradientMap;
-    typedef std::map<Halfedge, Node> HalfedgeNodeMap;
+    typedef std::map<Vertex, Gradient, std::less<Vertex>,
+                     Eigen::aligned_allocator<VertexGradientPair> > VertexGradientMap;
+
+    typedef std::pair<Edge, CurvedEdge> EdgeCurvePair;
+    typedef std::map<Edge, CurvedEdge, std::less<Edge>,
+                     Eigen::aligned_allocator<EdgeCurvePair> >  CurvedEdgesMap;
 
 protected:
     /// \name Removed topological operations
@@ -619,6 +654,7 @@ protected:
 
     VectorMatrix m_positions;
     VertexGradientMap m_vertexGradientConstraints;
+    CurvedEdgesMap m_curvedEdges;
 
     HalfedgeProperty<Node> m_halfedgeAttributes[HALFEDGE_ATTRIB_COUNT];
 

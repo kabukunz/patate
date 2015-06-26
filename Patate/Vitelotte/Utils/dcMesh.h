@@ -14,8 +14,6 @@
 
 #include "../Core/vgMesh.h"
 
-#include "bezierPath.h"
-
 
 namespace Vitelotte
 {
@@ -78,6 +76,8 @@ public:
     typedef typename Base::Value    Value;
     typedef typename Base::Gradient Gradient;
 
+    typedef typename Base::CurvedEdge CurvedEdge;
+
     typedef typename Base::BaseHandle BaseHandle;
     typedef typename Base::Vertex     Vertex;
     typedef typename Base::Halfedge   Halfedge;
@@ -95,6 +95,7 @@ public:
     using Base::halfedges;
     using Base::halfedgesBegin;
     using Base::halfedgesEnd;
+    using Base::setEdgeCurve;
     using Base::oppositeHalfedge;
     using Base::isBoundary;
 

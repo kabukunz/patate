@@ -214,6 +214,32 @@ MVGReader<_Mesh>::parseDefinition(const std::string& spec,
         }
     }
 
+    else if(spec == "ce")
+    {
+        unsigned v0;
+        unsigned v1;
+        def >> v0 >> v1;
+        PTT_ERROR_IF(!def || v0 >= mesh.nVertices(), "Invalid vertex index", true);
+        PTT_ERROR_IF(!def || v1 >= mesh.nVertices(), "Invalid vertex index", true);
+
+        typename Mesh::Halfedge h = mesh.findHalfedge(Vertex(v0), Vertex(v1));
+        PTT_ERROR_IF(!h.isValid(), "Invalid edge", true);
+
+        typename Mesh::CurvedEdge ce;
+        ce.setType(BEZIER_QUADRATIC);
+        parseVector(def); PTT_RETURN_IF_ERROR(true);
+        ce.point(1) = m_vector;
+        if(!def.eof()) {
+            ce.setType(BEZIER_CUBIC);
+            parseVector(def); PTT_RETURN_IF_ERROR(true);
+            ce.point(2) = m_vector;
+        }
+        ce.point(0) = mesh.position(Vertex(v0));
+        ce.point(ce.type() - 1) = mesh.position(Vertex(v1));
+
+        mesh.setEdgeCurve(h, ce);
+    }
+
     else if(spec == "vgc")
     {
         unsigned vxIdx;

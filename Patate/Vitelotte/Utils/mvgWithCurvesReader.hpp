@@ -119,7 +119,6 @@ MVGWithCurvesReader<_Mesh>::parseDefinition(const std::string& spec,
     else if(spec == "bp")
     {
         typedef typename Mesh::BezierPath BezierPath;
-        typedef typename BezierPath::SegmentType SegmentType;
 
         unsigned ci;
         def >> ci; PTT_ERROR_IF(!def || ci >= mesh.nCurves(), "Invalid curve index");
@@ -135,7 +134,7 @@ MVGWithCurvesReader<_Mesh>::parseDefinition(const std::string& spec,
         parseVector(def); PTT_RETURN_IF_ERROR();
         path.setFirstPoint(m_vector);
 
-        SegmentType type = BezierPath::CUBIC;
+        BezierSegmentType type = BEZIER_CUBIC;
         unsigned count = 0;
         Vector points[3];
         for(unsigned i = 0; i < 3; ++i) points[i].resize(mesh.nDims());
@@ -148,9 +147,9 @@ MVGWithCurvesReader<_Mesh>::parseDefinition(const std::string& spec,
                 def >> m_part; PTT_ERROR_IF(!def || m_part.size() != 1, "Invalid string in path definition");
                 switch(m_part[0])
                 {
-                case 'L': type = BezierPath::LINEAR;    break;
-                case 'Q': type = BezierPath::QUADRATIC; break;
-                case 'C': type = BezierPath::CUBIC;     break;
+                case 'L': type = BEZIER_LINEAR;    break;
+                case 'Q': type = BEZIER_QUADRATIC; break;
+                case 'C': type = BEZIER_CUBIC;     break;
                 default: error("Unsupported path command"); return true;
                 }
             }
