@@ -569,7 +569,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::createAndUploadBuffer(
         glGenBuffers(1, &glId);
     }
     glBindBuffer(type, glId);
-    glBufferData(type, data.size() * sizeof(Vec::value_type),
+    glBufferData(type, data.size() * sizeof(typename Vec::value_type),
                  &(data[0]), usage);
 }
 
