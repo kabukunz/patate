@@ -6,12 +6,9 @@
 
 #include <GL/glew.h>
 
+#include "shaders.h"
+
 #include "glLineRenderer.h"
-
-
-extern const char* vert_lines_glsl;
-extern const char* geom_lines_glsl;
-extern const char* frag_lines_glsl;
 
 
 GLLineRenderer::GLLineRenderer()

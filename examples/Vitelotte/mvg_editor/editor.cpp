@@ -778,7 +778,7 @@ float Editor::closestPos(Mesh::Curve curve, const Vector& p,
 }
 
 
-void Editor::drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color)
+void Editor::drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f& color)
 {
     Mesh& mesh = m_document->mesh();
 

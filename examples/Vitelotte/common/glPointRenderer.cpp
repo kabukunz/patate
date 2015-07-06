@@ -6,12 +6,9 @@
 
 #include <GL/glew.h>
 
+#include "shaders.h"
+
 #include "glPointRenderer.h"
-
-
-extern char* vert_points_glsl;
-extern char* geom_points_glsl;
-extern char* frag_points_glsl;
 
 
 GLPointRenderer::GLPointRenderer()

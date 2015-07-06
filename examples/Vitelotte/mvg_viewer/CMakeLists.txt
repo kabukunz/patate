@@ -2,21 +2,16 @@
 # Vitelotte GL Viewer                                                         #
 ###############################################################################
 
-project(MvgViewer)
 
-cmake_minimum_required(VERSION 2.8)
-
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake)
-
-find_package(X11)
+#find_package(X11)
 find_package(OpenGL)
 find_package(GLEW)
 find_package(GLFW3)
 
 set(mvg_viewer_MISSING "")
-if(NOT X11_FOUND)
-    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} X11")
-endif()
+#if(NOT X11_FOUND)
+#    set(mvg_viewer_MISSING "${mvg_viewer_MISSING} X11")
+#endif()
 if(NOT OPENGL_FOUND)
     set(mvg_viewer_MISSING "${mvg_viewer_MISSING} OpenGL")
 endif()

@@ -158,7 +158,7 @@ protected:
     float closestPos(Mesh::Curve curve, const Vector& p,
                      unsigned* which=0, float* sqrDist=0);
 
-    void drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color);
+    void drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f& color);
     void drawGradientStops(float innerRadius, float outerRadius);
 
 protected:

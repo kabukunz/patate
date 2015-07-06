@@ -7,7 +7,6 @@
 
 
 
-extern const char* vert_points_glsl;
 const char* vert_points_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -34,7 +33,6 @@ const char* vert_points_glsl =
 	"}\n"
 	"";
 
-extern const char* geom_points_glsl;
 const char* geom_points_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -92,7 +90,6 @@ const char* geom_points_glsl =
 	"}\n"
 	"";
 
-extern const char* frag_points_glsl;
 const char* frag_points_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -119,7 +116,6 @@ const char* frag_points_glsl =
 	"}\n"
 	"";
 
-extern const char* vert_lines_glsl;
 const char* vert_lines_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -146,7 +142,6 @@ const char* vert_lines_glsl =
 	"}\n"
 	"";
 
-extern const char* geom_lines_glsl;
 const char* geom_lines_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
@@ -210,7 +205,6 @@ const char* geom_lines_glsl =
 	"}\n"
 	"";
 
-extern const char* frag_lines_glsl;
 const char* frag_lines_glsl =
 	"/*\n"
 	" This Source Code Form is subject to the terms of the Mozilla Public\n"
