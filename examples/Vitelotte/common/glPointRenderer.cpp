@@ -64,6 +64,10 @@ void GLPointRenderer::upload()
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
+	if(m_points.empty()) {
+		return;
+	}
+
     if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {
         m_shader.create();

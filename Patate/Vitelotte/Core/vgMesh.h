@@ -567,7 +567,8 @@ public:
 protected:
     // FIXME: Would likely be better to use a hash map, but this is only
     // available in C++11...
-    typedef std::map<Vertex, Gradient> VertexGradientMap;
+    typedef std::pair<Vertex, Gradient> VertexGradientPair;
+    typedef std::map<Vertex, Gradient, std::less<Vertex>, Eigen::aligned_allocator<VertexGradientPair> > VertexGradientMap;
     typedef std::map<Halfedge, Node> HalfedgeNodeMap;
 
 protected:

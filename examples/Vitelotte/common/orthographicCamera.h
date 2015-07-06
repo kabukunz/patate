@@ -34,6 +34,8 @@ public:
 
     Eigen::Matrix4f projectionMatrix() const;
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
     ViewBox m_viewBox;
 };

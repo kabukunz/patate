@@ -62,6 +62,8 @@ public:
     Eigen::Vector2f screenToNormalized(const QPointF& screen) const;
     QPointF normalizedToScreen(const Eigen::Vector2f& normalized) const;
 
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 public slots:
     void centerView();
     void setDocument(Document* document);
@@ -112,9 +114,11 @@ protected:
         }
         inline bool operator!=(const GradientStop& other) const
         { return !(*this == other); }
+
+		EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
-    typedef std::vector<GradientStop> GradientStopList;
+    typedef std::vector<GradientStop, Eigen::aligned_allocator<GradientStop> > GradientStopList;
 
     enum InputState
     {

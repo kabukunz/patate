@@ -9,6 +9,7 @@
 
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include "../../common/gl_utils/shader.h"
 #include "../../common/gl_utils/color.h"
@@ -162,13 +163,13 @@ public:
 
 private:
     typedef std::vector<unsigned> IndicesVector;
-    typedef std::vector<Vector4> Vector4Vector;
+    typedef std::vector<Vector4, Eigen::aligned_allocator<Vector4> > Vector4Vector;
 
     struct GlVertex {
         Vector4 position;
         Vector3 normal;
     };
-    typedef std::vector<GlVertex> VertexVector;
+    typedef std::vector<GlVertex, Eigen::aligned_allocator<GlVertex> > VertexVector;
 
 protected:
     Vector4 position(const Mesh& mesh, Vertex vx) const;
@@ -176,9 +177,9 @@ protected:
 
     void initResources();
 
-    template < typename T >
+    template < typename Vec >
     void createAndUploadBuffer(GLuint& glId, GLenum type,
-                               const std::vector<T>& data,
+                               const Vec& data,
                                GLenum usage = GL_DYNAMIC_DRAW);
 
 private:

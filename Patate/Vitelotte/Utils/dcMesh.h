@@ -10,6 +10,8 @@
 
 #include <vector>
 
+#include <Eigen/StdVector>
+
 #include "../Core/vgMesh.h"
 
 #include "bezierPath.h"
@@ -29,7 +31,8 @@ public:
     typedef _Value Value;
 
 private:
-    typedef std::map<float, Value> Samples;
+    typedef std::pair<float, Value> FloatValuePair;
+    typedef std::map<float, Value, std::less<float>, Eigen::aligned_allocator<FloatValuePair> > Samples;
 
 public:
     typedef typename Samples::iterator Iterator;
@@ -280,7 +283,7 @@ protected:
     typename Base::template VertexProperty<PointConstraint> m_pointConstraintConn;
     typename Base::template HalfedgeProperty<HalfedgeCurveConnectivity> m_halfedgeCurveConn;
 
-    std::vector<PointConstraintInfo> m_pointConstraints;
+    std::vector<PointConstraintInfo, Eigen::aligned_allocator<PointConstraintInfo> > m_pointConstraints;
     std::vector<CurveInfo> m_curves;
 };
 
