@@ -31,6 +31,8 @@ options = argparser.parse_args()
 namespaces = options.namespace.split('::')
 
 out = open(options.output, 'w') if options.output != '-' else stdout
+if options.extern and options.output:
+	hdr_out = open(options.output.replace(".cpp", ".h"), 'w')
 
 if options.license:
 	print(license_text, file=out)
@@ -58,7 +60,7 @@ for shader_file in options.shaders:
 	with open(shader_file) as shader:
 		var_name = sub(r'\W', '_', basename(shader_file), flags=ASCII)
 		if options.extern:
-			print('extern const char* {};'.format(var_name), file=out)
+			print('extern const char* {};'.format(var_name), file=hdr_out)
 			print('const char* {} ='.format(var_name), file=out)
 		else:
 			print('static const char* {} ='.format(var_name), file=out)

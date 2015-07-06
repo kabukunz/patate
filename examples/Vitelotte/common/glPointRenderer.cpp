@@ -6,12 +6,9 @@
 
 #include <GL/glew.h>
 
+#include "shaders.h"
+
 #include "glPointRenderer.h"
-
-
-extern char* vert_points_glsl;
-extern char* geom_points_glsl;
-extern char* frag_points_glsl;
 
 
 GLPointRenderer::GLPointRenderer()
@@ -66,6 +63,10 @@ void GLPointRenderer::addPoint(const Eigen::Vector3f& pos, float radius,
 void GLPointRenderer::upload()
 {
     PATATE_ASSERT_NO_GL_ERROR();
+
+	if(m_points.empty()) {
+		return;
+	}
 
     if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {

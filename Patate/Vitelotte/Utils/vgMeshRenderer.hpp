@@ -139,7 +139,7 @@ Eigen::Vector4f DefaultValueProj<Value>::operator()(const Value& value) const {
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
         Resources* resources, const PosProj& posProj, const ValueProj& valueProj) :
-    m_useVao(true),
+	m_useVao(),
     m_ownResources(false),
 
     m_positionProjection(posProj),
@@ -284,6 +284,10 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::updateBuffers(const Mesh& mesh
     m_nSingulars = mesh.nSingularFaces();
     m_nTriangles = mesh.nFaces() - m_nSingulars;
 
+    if(m_nSingulars + m_nTriangles == 0) {
+        return;
+    }
+
     // Reserve buffers
     m_vertices.resize(mesh.verticesSize());
     m_indices.resize(m_nTriangles * 3 + m_nSingulars * 3);
@@ -415,9 +419,9 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
     }
 
     bool setupBuffers = !m_useVao || !m_vao;
-    if(m_useVao)
+	if(m_useVao)
     {
-        if(!m_vao)
+		if(!m_vao)
             glGenVertexArrays(1, &m_vao);
         glBindVertexArray(m_vao);
     }
@@ -444,10 +448,13 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
     glDrawElements(GL_TRIANGLES, nPrimitives * 3, GL_UNSIGNED_INT,
                   (const void*)(firstPrimitive * 3 * sizeof(unsigned)));
 
-    if(m_useVao)
-        glBindVertexArray(0);
-    else
-        glDisableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
+	if(m_useVao) {
+		glBindVertexArray(0);
+	}
+	else {
+		glDisableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
+		glDisableVertexAttribArray(Resources::VG_MESH_NORMAL_ATTR_LOC);
+	}
 
     PATATE_ASSERT_NO_GL_ERROR();
 }
@@ -553,16 +560,16 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::initResources()
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-template < typename T >
+template < typename Vec >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::createAndUploadBuffer(
-        GLuint& glId, GLenum type, const std::vector<T>& data, GLenum usage)
+        GLuint& glId, GLenum type, const Vec& data, GLenum usage)
 {
     if(!glId)
     {
         glGenBuffers(1, &glId);
     }
     glBindBuffer(type, glId);
-    glBufferData(type, data.size() * sizeof(T),
+    glBufferData(type, data.size() * sizeof(Vec::value_type),
                  &(data[0]), usage);
 }
 

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 
 #include <Patate/vitelotte.h>
 #include <Patate/vitelotte_gl.h>
@@ -31,7 +32,7 @@ public:
         Eigen::Vector2f p;
     };
 
-    typedef std::vector<PlacedNode> PlacedNodeList;
+    typedef std::vector<PlacedNode, Eigen::aligned_allocator<PlacedNode> > PlacedNodeList;
 
 public:
     VGNodeRenderer();
@@ -65,6 +66,8 @@ public:
                 const Eigen::Vector2f& viewportSize);
 
     void render();
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     bool isFromSplit(const Mesh& mesh, Mesh::Halfedge h) const;

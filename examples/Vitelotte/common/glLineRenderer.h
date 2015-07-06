@@ -11,6 +11,7 @@
 #include <vector>
 
 #include <Eigen/Dense>
+#include <Eigen/StdVector>
 
 #include "Patate/common/gl_utils/shader.h"
 
@@ -43,12 +44,17 @@ public:
     void render(const Eigen::Matrix4f& viewMatrix,
                 const Eigen::Vector2f& viewportSize);
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+private:
+    typedef std::vector<Point, Eigen::aligned_allocator<Point> > PointVector;
+
 private:
     float m_defaultWidth;
     Eigen::Vector4f m_defaultColor;
 
     bool m_startNewLine;
-    std::vector<Point> m_points;
+    PointVector m_points;
     std::vector<int> m_firsts;
     std::vector<int> m_sizes;
 

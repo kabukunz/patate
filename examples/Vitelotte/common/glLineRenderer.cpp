@@ -6,12 +6,9 @@
 
 #include <GL/glew.h>
 
+#include "shaders.h"
+
 #include "glLineRenderer.h"
-
-
-extern const char* vert_lines_glsl;
-extern const char* geom_lines_glsl;
-extern const char* frag_lines_glsl;
 
 
 GLLineRenderer::GLLineRenderer()
@@ -83,6 +80,10 @@ void GLLineRenderer::endLine()
 void GLLineRenderer::upload()
 {
     PATATE_ASSERT_NO_GL_ERROR();
+
+	if(m_points.empty()) {
+		return;
+	}
 
     if(m_shader.status() == PatateCommon::Shader::UNINITIALIZED)
     {

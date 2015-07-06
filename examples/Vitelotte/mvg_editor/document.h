@@ -202,6 +202,8 @@ public:
     virtual int id() const;
     virtual bool mergeWith(const QUndoCommand* command);
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
     Document* m_document;
     Node m_node;
@@ -223,6 +225,8 @@ public:
 
     virtual void undo();
     virtual void redo();
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     Document* m_document;
@@ -277,6 +281,8 @@ public:
     virtual void undo();
     virtual void redo();
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
     void setColor(const Value& color);
 
@@ -307,6 +313,8 @@ public:
 
     virtual void undo();
     virtual void redo();
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     void add();
@@ -360,6 +368,8 @@ public:
     virtual void undo();
     virtual void redo();
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
     void setValue(const Value& value);
 
@@ -383,6 +393,8 @@ public:
 
     virtual void undo();
     virtual void redo();
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     void setGradient(const NodeGradient& gradient);

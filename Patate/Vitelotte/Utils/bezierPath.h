@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <Eigen/Geometry>
+#include <Eigen/StdVector>
 
 
 namespace Vitelotte
@@ -79,7 +80,7 @@ private:
         unsigned    firstPoint;
     };
 
-    typedef std::vector<Vector>  PointList;
+    typedef std::vector<Vector, Eigen::aligned_allocator<Vector> >  PointList;
     typedef std::vector<Segment> SegmentList;
 
 private:

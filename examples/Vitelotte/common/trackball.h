@@ -92,8 +92,10 @@ public:
     void grow(float factor);
 
     /// \brief Do a dolly zoom: move the camera and change the fov so that the
-    /// subject in the same frame.
+    /// subject stay in the same frame.
     void dollyZoom(float factor);
+
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     Eigen::Vector2f normFromScr(const Eigen::Vector2f& scrPos) const;

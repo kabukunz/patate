@@ -6,6 +6,7 @@
 
 
 #include <cassert>
+#include <cctype>
 
 #include "textFormatter.h"
 

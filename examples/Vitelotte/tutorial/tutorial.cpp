@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <fstream>
+#include <ctime>
 
 // Include the obj reader
 #include <Patate/common/surface_mesh/objReader.h>

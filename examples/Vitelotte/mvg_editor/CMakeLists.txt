@@ -2,12 +2,6 @@
 # Vitelotte Editor                                                     #
 ########################################################################
 
-project(MvgEditor)
-
-cmake_minimum_required(VERSION 2.8.11)
-
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../../../cmake)
-
 find_package(OpenGL)
 find_package(GLEW)
 find_package(Qt5Widgets)

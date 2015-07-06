@@ -194,16 +194,24 @@ void Editor::initializeGL()
         std::cerr << "GLEW initialization error: '" << glewGetErrorString(res) <<"'\n";
         abort();
     }
-    else if(!GLEW_VERSION_3_0)
+	else if(!GLEW_VERSION_4_0)
     {
-        std::cerr << "OpenGL 3.0 not supported. Aborting.\n";
+        std::cerr << "OpenGL 4.0 not supported. Aborting.\n";
         abort();
     }
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	std::cerr << "LOL ? " << glGenVertexArrays << "\n";
+
+	glGetError();  // FIXME: avoid a GL error, but why glewInit fail ?
+
+	PATATE_ASSERT_NO_GL_ERROR();
+	glEnable(GL_BLEND);
+	PATATE_ASSERT_NO_GL_ERROR();
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	PATATE_ASSERT_NO_GL_ERROR();
 
     glClearColor(.5, .5, .5, 1.);
+	PATATE_ASSERT_NO_GL_ERROR();
 
     m_initialized = true;
     if(m_document) {
@@ -778,7 +786,7 @@ float Editor::closestPos(Mesh::Curve curve, const Vector& p,
 }
 
 
-void Editor::drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f color)
+void Editor::drawCurve(Mesh::Curve curve, float width, const Eigen::Vector4f& color)
 {
     Mesh& mesh = m_document->mesh();
 
