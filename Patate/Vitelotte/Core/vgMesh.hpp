@@ -256,7 +256,7 @@ void VGMesh<_Scalar, _Dim, _Chan>::setAttributes(unsigned attributes)
         if(!(m_attributes & flag) && (attributes & flag)) {
             m_halfedgeAttributes[ai] =
                     addHalfedgeProperty<Node>(_halfedgeAttrName[ai], Node());
-        } else {
+        } else if((m_attributes & flag) && !(attributes & flag)) {
             removeHalfedgeProperty(m_halfedgeAttributes[ai]);
         }
     }
