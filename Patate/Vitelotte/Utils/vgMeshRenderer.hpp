@@ -139,7 +139,7 @@ Eigen::Vector4f DefaultValueProj<Value>::operator()(const Value& value) const {
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::VGMeshRenderer(
         Resources* resources, const PosProj& posProj, const ValueProj& valueProj) :
-	m_useVao(),
+    m_useVao(true),
     m_ownResources(false),
 
     m_positionProjection(posProj),
@@ -419,9 +419,9 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
     }
 
     bool setupBuffers = !m_useVao || !m_vao;
-	if(m_useVao)
+    if(m_useVao)
     {
-		if(!m_vao)
+        if(!m_vao)
             glGenVertexArrays(1, &m_vao);
         glBindVertexArray(m_vao);
     }
@@ -437,6 +437,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
                               PATATE_FIELD_OFFSET(GlVertex, position));
 
         glEnableVertexAttribArray(Resources::VG_MESH_NORMAL_ATTR_LOC);
+
         glVertexAttribPointer(Resources::VG_MESH_NORMAL_ATTR_LOC,
                               3, GL_FLOAT,
                               false, sizeof(GlVertex),
@@ -445,16 +446,18 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indicesBuffer);
     }
 
+    PATATE_ASSERT_NO_GL_ERROR();
     glDrawElements(GL_TRIANGLES, nPrimitives * 3, GL_UNSIGNED_INT,
-                  (const void*)(firstPrimitive * 3 * sizeof(unsigned)));
+                   (const void*)(firstPrimitive * 3 * sizeof(unsigned)));
+    PATATE_ASSERT_NO_GL_ERROR();
 
-	if(m_useVao) {
-		glBindVertexArray(0);
-	}
-	else {
-		glDisableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
-		glDisableVertexAttribArray(Resources::VG_MESH_NORMAL_ATTR_LOC);
-	}
+    if(m_useVao) {
+        glBindVertexArray(0);
+    }
+    else {
+        glDisableVertexAttribArray(Resources::VG_MESH_POSITION_ATTR_LOC);
+        glDisableVertexAttribArray(Resources::VG_MESH_NORMAL_ATTR_LOC);
+    }
 
     PATATE_ASSERT_NO_GL_ERROR();
 }

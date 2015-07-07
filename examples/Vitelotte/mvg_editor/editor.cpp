@@ -194,24 +194,18 @@ void Editor::initializeGL()
         std::cerr << "GLEW initialization error: '" << glewGetErrorString(res) <<"'\n";
         abort();
     }
-	else if(!GLEW_VERSION_4_0)
+    else if(!GLEW_VERSION_4_0)
     {
         std::cerr << "OpenGL 4.0 not supported. Aborting.\n";
         abort();
     }
 
-	std::cerr << "LOL ? " << glGenVertexArrays << "\n";
+    glGetError();  // FIXME: avoid a GL error, but why glewInit fail ?
 
-	glGetError();  // FIXME: avoid a GL error, but why glewInit fail ?
-
-	PATATE_ASSERT_NO_GL_ERROR();
-	glEnable(GL_BLEND);
-	PATATE_ASSERT_NO_GL_ERROR();
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	PATATE_ASSERT_NO_GL_ERROR();
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glClearColor(.5, .5, .5, 1.);
-	PATATE_ASSERT_NO_GL_ERROR();
 
     m_initialized = true;
     if(m_document) {

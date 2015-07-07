@@ -21,9 +21,9 @@ QuadraticElementBuilder<_Mesh, _Scalar>::initializeMatrices()
 
     // 'Magic' initialization of base matrices for quadratic elements.
     // See Paul Tsipouras, Compact representation of triangular finite
-    //	elements for Poisson's equation, International Journal for
-    //	Numerical Methods in Engineering, Volume 11, Issue 3, pages 419-430,
-    //	1977
+    //  elements for Poisson's equation, International Journal for
+    //  Numerical Methods in Engineering, Volume 11, Issue 3, pages 419-430,
+    //  1977
 
     const Scalar _1_6 = Scalar(1.) / Scalar(6.);
     const Scalar _2_3 = Scalar(2.) / Scalar(3.);

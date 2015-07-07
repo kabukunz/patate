@@ -26,7 +26,12 @@ int main(int argc, char** argv)
     }
 
     QGLFormat glFormat;
-//    glFormat.setVersion(4, 0);
+    // For some reasons, GLEW fails with a 4.0 context under Windows but need
+    // it under Linux.
+    // FIXME: clean this mess, and check under macOSX.
+#ifndef _WIN32
+    glFormat.setVersion(4, 0);
+#endif
     glFormat.setSampleBuffers(true);
     glFormat.setSamples(16);
     QGLFormat::setDefaultFormat(glFormat);
