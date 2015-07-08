@@ -226,7 +226,8 @@ FemSolver<_Mesh, _ElementBuilder>::solve(Mesh& mesh)
         }
     }
 
-    m_x = m_constraintBlock * constraints;
+    m_x.resize(m_nUnknowns, mesh.nCoeffs());
+    Matrix b = m_constraintBlock * constraints;
 
     // Clear extra constraints
     for(BlockIterator block = m_blocks.begin();
@@ -273,7 +274,7 @@ FemSolver<_Mesh, _ElementBuilder>::solve(Mesh& mesh)
         unsigned size  = block->size;
 
         m_x.middleRows(start, size) =
-                block->decomposition->solve(block->rhs - m_x.middleRows(start, size));
+                block->decomposition->solve(block->rhs - b.middleRows(start, size));
         if(internal::checkEigenSolverError(*block->decomposition, m_error)) return;
     }
 
