@@ -75,6 +75,12 @@ namespace Vitelotte {
 
   Then, you can pass the resources to an instance of VGMeshRenderer on construction or with VGMeshRenderer::setResources(). Resources can be released by calling VGMeshRendererResources::releaseGLResources() when the context is active.
 
+  \subsection vitelotte_user_manual_rendering_color_spaces Color Spaces
+
+  The renderer support several color spaces natively. It does color interpolation in the space returned by VGMesh::colorSpace() and does the conversion to the screen color space just before outputting colors to the framebuffer. By default, the screen color space is assumed to be SRGB, but it can be changed with VGMeshRenderer::setScreenColorSpace(). If you do rendering with GL_FRAMEBUFFER_SRGB enabled, you should set the screen color space to linear.
+
+  If the mesh values does not represent colors, its color space should be COLOR_NONE. In this case, no color conversion is performed.
+
   \subsection vitelotte_user_manual_rendering_projection Coordinates and value projections
 
   The input mesh can have an arbitrary number of dimensions and coefficients. By default, if the number of dimensions is smaller or equal to 4, the d fists coordinates are sent to OpenGL and missing ones are replaced by 0, except the last one which is set to 1. It works well with 2D and 3D meshes, and with 4D meshes where the 4th dimension is 1 (unless you know what you do). In other cases, you can pass a functor to VGMeshRenderer constructor that takes a VGMesh::Vector reference in parameter and returns an Eigen::Vector4f which is sent to OpenGL.
