@@ -15,12 +15,20 @@
 #include "Vitelotte/Core/quadraticElement.h"
 #include "Vitelotte/Core/morleyElement.h"
 #include "Vitelotte/Core/fvElement.h"
+
 #include "Vitelotte/Core/vgMesh.h"
+#include "Vitelotte/Utils/mvgReader.h"
+#include "Vitelotte/Utils/mvgWriter.h"
+
 #include "Vitelotte/Core/femSolver.h"
 #include "Vitelotte/Core/linearElementBuilder.h"
 #include "Vitelotte/Core/quadraticElementBuilder.h"
 #include "Vitelotte/Core/morleyElementBuilder.h"
 #include "Vitelotte/Core/fvElementBuilder.h"
 #include "Vitelotte/Core/singularElementDecorator.h"
+
+#include "Vitelotte/Utils/dcMesh.h"
+#include "Vitelotte/Utils/mvgWithCurvesReader.h"
+#include "Vitelotte/Utils/mvgWithCurvesWriter.h"
 
 #endif

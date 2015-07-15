@@ -9,8 +9,7 @@
 #include <QFileDialog>
 #include <QTime>
 
-#include "Patate/vitelotte_curves.h"
-#include "Patate/vitelotte_curves_io.h"
+#include "Patate/vitelotte.h"
 
 #include "../common/plotObj.h"
 

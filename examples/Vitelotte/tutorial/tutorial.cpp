@@ -12,11 +12,8 @@
 // Include the obj reader
 #include <Patate/common/surface_mesh/objReader.h>
 
-// Include the core of vitelotte: VGMesh and the solver
+// Include all vitelotte except OpenGL related classes
 #include <Patate/vitelotte.h>
-
-// Include the class to deal with mvg input/output
-#include <Patate/vitelotte_io.h>
 
 
 /// [Declare the Mesh class]

@@ -10,9 +10,8 @@
 
 #include <GL/glew.h>
 
+#include "Patate/vitelotte.h"
 #include "Patate/vitelotte_gl.h"
-#include "Patate/Vitelotte/Utils/mvgReader.h"
-#include "Patate/Vitelotte/Utils/mvgWriter.h"
 
 #include "../common/trackball.h"
 
