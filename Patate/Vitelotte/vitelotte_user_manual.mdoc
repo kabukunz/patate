@@ -7,7 +7,7 @@ namespace Vitelotte
 
   \section vitelotte_user_manual_intro Introduction
 
-  The Vitelotte module provides tools to smoothly interpolate a set of constraints on a mesh. Its primary intent is to provide an efficient solver to create _diffusion curves images_ \cite Orzan:2008:DiffusionCurves. The diffusion solver is able to do harmonic and biharmonic interpolation on triangular meshes and output meshes with either linear or quadratic color interpolation over each face \cite Boye:2012:VectorialSolver.
+  The Vitelotte module provides tools to smoothly interpolate a set of constraints on a mesh. Its primary intent is to provide an efficient solver to create _diffusion curves images_ \cite Orzan:2008:DiffusionCurves. It includes a FEM-based diffusion solver is able to do harmonic and biharmonic interpolation on triangular meshes with either linear or quadratic color interpolation over each face \cite Boye:2012:VectorialSolver.
 
   \image html vitelotte/vitelotte_overview.svg "Vitelotte takes a mesh with constraints along a curve as input (left) and produce a mesh with colors interpolated over each face (right)."
 
@@ -17,9 +17,9 @@ namespace Vitelotte
 
   This approach has several advantages:
 
-  - **Scale independence**: important features, like discontinuities, are represented exactly with curved edges while color functions are smooth at any scale. (Note: curved edges are not implemented yet, they will be in the next release.)
-  - **Efficient rendering**: modern GPU excel at rendering polygons, which enable very fast rendering. We provide an OpenGL renderer for demonstration.
-  - **Arbitrary dimensions**: our solver can work on surface of any dimension. So, you can just use a planar 2D mesh but also diffuse color on 3D surface meshes.
+  - **Scale independence**: important features, like discontinuities, are represented exactly with curved edges while color functions are smooth at any scale.
+  - **Efficient rendering**: modern GPU excel at rendering polygons, which enable very fast rendering. Vitelotte contains an OpenGL 4 renderer that supports all the features of our meshes (curved edges, singularities, ...).
+  - **Arbitrary dimensions**: our solver can work on surfaces of any dimension. So, you can just use a planar 2D mesh but also diffuse color on 3D surface meshes.
   - **Memory tradeoff**: the result of the diffusion can be a bit heavy with dense meshes. If data size matters, you may wish to store the mesh and the constraint and recompute the diffusion when required, which allow to trade CPU time for memory.
 
   Note that you are not constrained to diffuse colors with Vitelotte. You can also interpolate normals, displacement vectors or anything else that can be represented as a vectors.
@@ -54,10 +54,7 @@ namespace Vitelotte
   #include <Patate/vitelotte_io.h>
   \endcode
 
-  A few important features are missing in this first release. Don't worry, they are planned and should come very soon:
-
-  - VGMesh refinement to help generating meshes with extra details around diffusion curves.
-  - Curved edges for higher quality renderings, even with low resolution meshes.
+  There is currently no easy way to manipulate the topology of a VGMesh, except the low-level mesh manipulation methods that do not preserve constraints. Don't worry, it is planned for the next release which should come very soon.
 
 
   \section vitelotte_user_manual_overview_tools Tools overview

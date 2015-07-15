@@ -13,7 +13,7 @@ namespace Vitelotte {
 
   VGMesh is the heart of Vitelotte: it is both the class that represent mesh-based vector images and the class used as input of the solver.
 
-  VGMesh inherits PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other patates in the future. We will not describe in detail how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an [halfedge-based data structure](https://en.wikipedia.org/wiki/Doubly_connected_edge_list), so if you are familiar with this, using it should be quite straightforward.
+  VGMesh inherits PatateCommon::SurfaceMesh, which is adapted from the [Surface_mesh](http://opensource.cit-ec.de/projects/surface_mesh) library. Note that SurfaceMesh is in the namespace PatateCommon because it might be useful for other modules in the future. We will not describe in detail how to manipulate SurfaceMesh objects here so don't hesitate to consult the references. This is an [halfedge-based data structure](https://en.wikipedia.org/wiki/Doubly_connected_edge_list), so if you are familiar with this, using it should be quite straightforward.
 
   There is a few things to know about surface mesh. First, surface mesh permits to add arbitrary properties to any kind of element. For instance, vertices coordinates are just a vertex property. Secondly, mesh's elements (vertices, faces, ...) are manipulated through _handles_. These handles are really just indices that allow you to find elements inside the property arrays. So to access the coordinate of some vertex, you need a handle to that vertex and the "position" vertex property. In practice, standard properties are accessible directly from the mesh, so you end up with this kind of code:
 
@@ -28,7 +28,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_dims_coeffs_sec Dimensions and coefficients
 
-  VGMesh allow you to customize the type of coordinates and the type of values through template parameters (we use the term value instead of color as a VGMesh can be used to store colors, normals, displacement vectors or anything else). The first parameter is the underlying scalar type (typically `float` or `double`). The two other set respectively the number of dimensions and the number of coefficients per value. Setting these values at compile time is not always practical, so you can use the special value Vitelotte::Dynamic which allow you to set them a run time:
+  VGMesh allow you to customize the type of coordinates and the type of values through template parameters (we use the term value instead of color as a VGMesh can be used to store colors, normals, displacement vectors or anything else). The first parameter is the underlying scalar type (typically `float` or `double`). The two other set respectively the number of dimensions and the number of coefficients per value. Setting these values at compile time is not always practical, so you can use the special value Vitelotte::Dynamic which allow you to choose them a run time:
 
   \code
   // Declare a Mesh type with dynamic dimensions and values.
@@ -64,7 +64,7 @@ namespace Vitelotte {
   - VGMesh::TO_VERTEX_VALUE: represents the value at the \e target vertex of an halfedge.
   - VGMesh::FROM_VERTEX_VALUE: represents the value at the \e source vertex of an halfedge.
   - VGMesh::EDGE_VALUE: represents the value on an halfedge (typically, on the midpoint).
-  - VGMesh::EDGE_GRADIENT: represents the orthogonal \e derivative on an halfedge. Depending on the interpolation function, it can be the derivative at the midpoint (morley elements) or the average derivative over the edge (FV elements). See the [solvers documentation](vitelotte_user_manual_fem_solver_page) for more details. The direction of the derivative depends on the halfedge orientation: if VGMesh::halfedgeOrientation() is true, it is the derivative inward, else the derivative outward.
+  - VGMesh::EDGE_GRADIENT: represents the orthogonal \e derivative on an halfedge. Depending on the interpolation function, it can be the derivative at the midpoint (morley elements) or the average derivative over the edge (FV elements). See the [solvers documentation](@ref vitelotte_user_manual_fem_solver_page) for more details. The direction of the derivative depends on the halfedge orientation: if VGMesh::halfedgeOrientation() is true, it is the derivative inward, else the derivative outward.
 
   Before using one of these attachment points, you must enable the corresponding mesh _attribute_. For instance, to use quadratic interpolation (all of the above attachment points except EDGE_GRADIENT), you can do:
 
@@ -98,11 +98,36 @@ namespace Vitelotte {
 
   \image html vitelotte/singularities.png "The two extremities of the curve are singularities."
 
+  \warning For simplicity, both FemSolver and VGMeshRenderer support only one singularity per triangle. It is always possible to overcome this limitation by subdividing edges that connect two singularities. As area around singularities typically show fast and complex values variations, it is anyway a good idea to refine these parts to ensure good quality results.
+
   When used with a solver, nodes can have the special value "unknown" (returned by VGMesh::unconstrainedValue()). This permits to mark nodes that the solver has to find. Nodes with a known value thus behave as constraints the solver must satisfy. Here is an illustration of an input to the solver (for simplicity, when two opposite nodes on an edge are the same, they are merged):
 
   \image html vitelotte/nodes.svg "A typical input to the solver. White dots are unknown nodes and orange ones are constraints. Numbers are node indices."
 
-  There is no direct way to delete a node. The only way is to call VGMesh::deleteUnusedNode() that scans the whole mesh and marks all unused nodes for deletion. The rationale behind this is that we can not check if a node is used efficiently on deletion, so deleting a node could result in an invalid mesh.
+  There is no direct way to delete a node. The only way is to call VGMesh::deleteUnusedNode() that scans the whole mesh and marks all unused nodes for deletion. The rationale behind this is that we can not check efficiently if a node is used on deletion, so deleting a node could result in an invalid mesh.
+
+
+  \section vitelotte_user_manual_vg_mesh_vertex_gradient_constraints_sec Vertex gradient constraints
+
+  Elements using the VGMesh::EDGE_GRADIENT attribute support constraining derivative. However, it only apply to edge constraints. Sometime, it can be useful to have a gradient constraint on a specific vertex.
+
+  Some elements support vertex _gradient_ constraints. Unlike what we have seen before, they are set by vertex and not by halfedge. By default, all vertices are unconstrained. You can manipulate vertex gradient constraints like this:
+
+  \code
+  Vertex vx = [...];
+
+  // Set a constraint:
+  mesh.setGradientConstraint(vx, Gradient([...]));
+
+  // Test if a vertex has a gradient constraint:
+  if(mesh.hasGradientConstraint(vx)) {
+    // Get a constraint. WARNING: fail if the vertex has no constraint:
+    Mesh::Gradient g = mesh.gradientConstraint(vx);
+  }
+
+  // Remove a gradient constraint:
+  mesh.removeGradientConstraint(vx);
+  \endcode
 
 
   \section vitelotte_user_manual_vg_mesh_nodes_manipulation_sec High-level node manipulation
@@ -113,19 +138,19 @@ namespace Vitelotte {
   // `n0` and `n1` are nodes and `h0` and `h1` are two halfedges with the same
   // _from_ vertex `vx`.
 
-  // Set nodes adjacent to vx in the arc [h0, h1[ to n0.
+  // Set nodes adjacent to vx in the arc [h0, h1[ (counterclockwise) to n0.
   mesh.setVertexNode(n0, h0, h1);
 
-  // Set nodes adjacent to vx in the arc [h0, h1[ to values interpolated
-  // from the value of n0 (in the direction of h0) to the value of n1
-  // in the direction of h1).
+  // Set nodes adjacent to vx in the arc [h0, h1[ (counterclockwise) to
+  // values interpolated from the value of n0 (in the direction of h0)
+  // to the value of n1 in the direction of h1).
   mesh.setSingularity(n0, n1, h0, h1);
   \endcode
 
 
   \subsection vitelotte_user_manual_vg_mesh_finalize_subsec The finalize method
 
-  When preparing the input of the solver, setting all nodes for each attachment point by hand can be tedious. We provide the method VGMesh::finalize() that takes a mesh with a few constraints set and "guesses" all the missing ones using heuristics.
+  When preparing the input of the solver, setting all nodes for each attachment points by hand can be tedious. We provide the method VGMesh::finalize() that takes a mesh with a few constraints set and "guesses" all the missing ones using heuristics.
 
   Finalize process each vertex and each edge in turn. If attachment points around a vertex all reference an invalid node, a new unknown node is created an assigned to them, thus constraining the result to be continuous. Same thing goes for edges, if both edge-value nodes are invalid, they are set to a new unknown node, and similarly for edge-gradient nodes.
 
@@ -145,7 +170,7 @@ namespace Vitelotte {
 
   \image html vitelotte/finalize_vertex_continuous_edge.svg "Finally, when two side of an edge point to the same unknown node, they are ignored."
 
-  What happen when, given a pair of opposite nodes, one is valid an the other is not ? The known node is simply assigned on both sides. However, it is recommended to avoid it when possible or to use it only on simplest cases, like in the tutorial.
+  What happen when, given a pair of opposite nodes, one is valid an the other is not ? The known node is simply assigned on both sides, then the above rules apply. However, it is recommended to avoid this situation when possible or to use it only on simplest cases, like in the tutorial.
 
   \warning This algorithm is not perfect. As it does simplifications (mainly replacing unknown nodes by others) it may not produce the intended result in case of non-local constraints (when a same unknown node is used on different places on the mesh).
 
@@ -159,7 +184,7 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_vg_mesh_topology Topological operations
 
-  The current version of VGMesh does not support topological operations. However, we plan to reimplement surface mesh's low-level topological operations, and maybe higher-level refinement, so stay tunned.
+  The current version of VGMesh does not support topological operations. You can use surface mesh's low-level topological operations, but they do not update nodes and attachment points. We plan to implement similar nodes-aware operations for input meshes and maybe higher-level refinement in the next release, so stay tunned.
 
 
  */

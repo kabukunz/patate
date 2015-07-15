@@ -12,9 +12,9 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_rendering_basics_sec Basic usage
 
-  VGMeshRenderer is a simple renderer whose job is to emit the right OpenGL 3(+) calls to render a given mesh. Currently it only support triangular meshes with linear or quadratic interpolation over each face. It also supports up to one singularity per triangle.
+  VGMeshRenderer is a simple renderer whose job is to emit the right OpenGL 4 calls to render a given mesh. Currently it supports triangular meshes with linear or quadratic interpolation over each face, up to one singularity per triangle and curved edges.
 
-  Vitelotte is a header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers because you may wish to use GLEW or a similar library that provides its own header and it may produce conflicts. So, to use the renderer you need to include your OpenGL header *before* `Patate/vitelotte_gl.h` like this:
+  Vitelotte is a header-only library, and its job is not to deal with OpenGL context creation and management. In practice, Vitelotte does not even include OpenGL headers because you may wish to use GLEW or a similar library that provides its own header that would lead to conflicts. So, to use the renderer you need to include your OpenGL header *before* `Patate/vitelotte_gl.h` like this:
 
   \code{.cpp}
   // Include some OpenGL header.
@@ -63,7 +63,7 @@ namespace Vitelotte {
 
   \subsection vitelotte_user_manual_rendering_sharing_resources Sharing resources
 
-  The renderer uses some global resources (shaders) that can be shared by several instances of VGMeshRenderer. By default, they are automatically created when needed (when you call a draw method). You can allocate them explicitly to share the resources among several renderers:
+  The renderer uses some global resources (shaders) that can be shared by several instances of VGMeshRenderer. By default, they are automatically created when needed (when you call a render method). You can allocate them explicitly to share the resources among several renderers:
 
   \code{.cpp}
   // Can be called anytime
@@ -85,7 +85,7 @@ namespace Vitelotte {
 
   If you want to really customize the output, you may need to write your own shaders. You can setup your own OpenGL states and then call VGMeshRenderer::drawGeometry to setup the VAO and do the draw call. This function takes a combination of the NORMAL_TRIANGLES and the SINGULAR_TRIANGLES flags in parameter to determine if it should render normal triangles, singular triangles or both.
 
-  Detailing the way shaders work would be mostly paraphrasing shader code. So if you need to write custom shaders, the easiest way is to start from Vitelotte's shaders (in `Patate/Vitelotte/Utils/VGMeshRendererShaders`) and modify them. If you need help, don't hesitate to send a mail to [our mailing list](mailto:patate-devel@lists.gforge.inria.fr)
+  Detailing the way shaders work would be mostly paraphrasing shader code. So if you need to write custom shaders, the easiest way is to start from Vitelotte's shaders (in `Patate/Vitelotte/Utils/VGMeshRendererShaders`) and modify them. If you need help, don't hesitate to send a mail to [our mailing list](mailto:patate-info@lists.gforge.inria.fr)
 
  */
 
