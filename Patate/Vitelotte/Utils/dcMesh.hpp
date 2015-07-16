@@ -360,7 +360,7 @@ DCMesh<_Scalar, _Dim, _Chan>::setNodesFromCurves()
 
             if(tail.type() != BEZIER_EMPTY) {
                 Scalar csi;
-                Scalar curvePos = std::modf(toCurvePos(lh) * path.nSegments() + 0.e-5, &csi);
+                Scalar curvePos = std::modf(toCurvePos(lh) * path.nSegments() + 1.e-5, &csi);
 
                 if(unsigned(csi) == si) {
                     Scalar pos = (curvePos - splitPos) / (1 - splitPos);
