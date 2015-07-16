@@ -52,6 +52,7 @@ protected slots:
     void pickColor();
     void updateConstraintTypeActions();
     void setConstraintType(QAction* action);
+    void updateSelectionStatusMsg();
 
 signals:
     void editModeChanged(int editMode);

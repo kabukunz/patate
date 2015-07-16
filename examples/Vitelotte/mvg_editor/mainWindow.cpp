@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QColorDialog>
 #include <QIcon>
+#include <QStatusBar>
 
 #include "document.h"
 #include "editor.h"
@@ -58,6 +59,9 @@ MainWindow::MainWindow(QWidget* parent)
       m_editMode(EDIT_NODES),
       m_interactionEnabled(false)
 {
+    // Ensure a status bar is created.
+    statusBar();
+
     m_splitter = new QSplitter;
     setCentralWidget(m_splitter);
 
@@ -77,6 +81,8 @@ MainWindow::MainWindow(QWidget* parent)
             this, SLOT(updateConstraintTypeActions()));
     connect(m_document, SIGNAL(selectionChanged()),
             this, SLOT(updateConstraintTypeActions()));
+    connect(m_document, SIGNAL(selectionChanged()),
+            this, SLOT(updateSelectionStatusMsg()));
 
     connect(this, SIGNAL(currentColorChanged(QColor)),
             m_editor, SLOT(setPaintColor(QColor)));
@@ -469,6 +475,33 @@ void MainWindow::setConstraintType(QAction* /*action*/)
         }
 
         if(nOp != 1) m_document->undoStack()->endMacro();
+    }
+}
+
+
+void MainWindow::updateSelectionStatusMsg()
+{
+    MeshSelection sel = m_document->selection();
+    switch(sel.type()) {
+    case MeshSelection::SelectionNone:
+        statusBar()->clearMessage();
+        break;
+    case MeshSelection::SelectionVertex:
+        statusBar()->showMessage(QString("Selected vertex %1")
+                                 .arg(sel.vertex().idx()));
+        break;
+    case MeshSelection::SelectionEdge:
+        statusBar()->showMessage(QString("Selected edge %1")
+                                 .arg(sel.edge().idx()));
+        break;
+    case MeshSelection::SelectionPointConstraint:
+        statusBar()->showMessage(QString("Selected point constraint %1")
+                                 .arg(sel.pointConstraint().idx()));
+        break;
+    case MeshSelection::SelectionCurve:
+        statusBar()->showMessage(QString("Selected curve %1")
+                                 .arg(sel.curve().idx()));
+        break;
     }
 }
 
