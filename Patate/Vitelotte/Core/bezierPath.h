@@ -104,7 +104,7 @@ public:
         Self tail = *this;
         *(out++) = std::make_pair(Scalar(0), point(0));
         for(unsigned i = 0; i < nSplit; ++i) {
-            Scalar x = Scalar(i+1) / Scalar(nSplit + 2);
+            Scalar x = Scalar(i+1) / Scalar(nSplit + 1);
             tail.split(x, head, tail);
             *(out++) = std::make_pair(x, tail.point(0));
         }
@@ -138,7 +138,13 @@ public:
     inline unsigned nPoints(unsigned si) const { return size(type(si)); }
 
     inline const Vector& point(unsigned pi) const { return m_points.at(pi); }
+    inline       Vector& point(unsigned pi)       { return m_points.at(pi); }
     inline const Vector& point(unsigned si, unsigned pi) const
+    {
+        assert(si < nSegments() && pi < nPoints(si));
+        return m_points.at(m_segments[si].firstPoint + pi);
+    }
+    inline       Vector& point(unsigned si, unsigned pi)
     {
         assert(si < nSegments() && pi < nPoints(si));
         return m_points.at(m_segments[si].firstPoint + pi);
