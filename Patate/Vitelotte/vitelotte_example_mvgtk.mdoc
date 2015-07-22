@@ -14,7 +14,7 @@ namespace Vitelotte {
 
   The MVG Toolkit, aka. <tt>mvgtk</tt> is more than a simple example, it is a command-line interface to the Vitelotte library. It makes high level operations on mvg files possible without writing C++ code.
 
-  There is a typical use of <tt>mvgtk</tt>:
+  Here is a typical use of <tt>mvgtk</tt>:
   \code
   $ mvgtk -v my_file.mvg conv fv finalize solve out out.mvg
   Load mvg "my_file.mvg"...
@@ -25,11 +25,11 @@ namespace Vitelotte {
   Output "out.mvg"...
   \endcode
 
-  Mvgtk first takes a list of global options, in this case <tt>-v</tt> that enable the verbose mode (mvgtk does not print anything without it, unless there is an error). Then you must specify the input file. Note that beside mvg files, mvgtk can load .obj files that will be treated as 3D mvg with no attributes. The rest of the command line is a sequence of command (with options) that are executed in order on the mesh. Most commands modify the mesh for the subsequent operations. There is what the above line is doing:
-  1. The <tt>conv fv</tt> command (convert) set the mesh attributes to represent FV elements. In practice, just call \c VGMesh::setAttributes(VGMesh::FV_FLAGS).
-  2. The <tt>finalize</tt> command finalize the mesh (see \ref vitelotte_user_manual_vg_mesh_finalize_subsec). Just call <tt>VGMesh::finalize()</tt> as you may guess.
-  3. The <tt>solve</tt> command solve the diffusion. The code of this command is a little bit more involved as it as to create the right solver class depending on the mesh attributes, call the right sequence of methods on it and do some error handling.
-  4. Finally the <tt>out out.mvg</tt> command output the resulting mesh in the file <tt>out.mvg</tt>. This is the only command of the line that does not modify the mesh. Note that it is possible to use this command several time, for instance to output intermediate results.
+  Mvgtk first take a list of global options, in this case <tt>-v</tt> that enables the verbose mode (mvgtk does not print anything without it, unless there is an error). Then you must specify the input file. Note that beside mvg files, mvgtk can load .obj files that will be treated as 3D mvg with no attributes. The rest of the command line is a sequence of command (with options) that are executed in order on the mesh. Most commands modify the mesh for the subsequent operations. Here is what the above line is doing:
+  1. The <tt>conv fv</tt> command (convert) sets the mesh attributes to represent FV elements. In practice, just call \c VGMesh::setAttributes(VGMesh::FV_FLAGS).
+  2. The <tt>finalize</tt> command finalizes the mesh (see \ref vitelotte_user_manual_vg_mesh_finalize_subsec). Just call <tt>VGMesh::finalize()</tt> as you may guess.
+  3. The <tt>solve</tt> command solves the diffusion. The code of this command is a little bit more involved as it has to create the right solver class depending on the mesh attributes, call the right sequence of methods on it and do some error handling.
+  4. Finally the <tt>out out.mvg</tt> command outputs the resulting mesh in the file <tt>out.mvg</tt>. This is the only command of the line that does not modify the mesh. Note that it is possible to use this command several times, for instance to output intermediate results.
 
   The complete list of commands and options can always be found by calling <tt>mvgtk --help</tt>.
 
@@ -46,14 +46,14 @@ namespace Vitelotte {
 
   The <tt>check</tt> command does some sanity check on the mesh. Potential problems are printed on the standard output. Subsequent commands are only executed if no error was found.
 
-  This command takes no parameter, but output more detailed diagnostic in case of error in verbose mode.
+  This command takes no parameter, but outputs a more detailed diagnostic in verbose mode.
 
-  Note that this command do not check exhaustively for all possible inconsistencies in the mesh, so the fact this command succeed is no guarantee that subsequent commands will.
+  Note that this command does not check exhaustively for all possible inconsistencies in the mesh; hence its success is no guarantee that subsequent commands will work.
 
 
   \subsection vitelotte_example_mvgtk_compact_command_sub Compact command
 
-  The <tt>compact</tt> command remove all unused nodes in the mesh (nodes not referenced by an element), making it more compact. This command takes no options.
+  The <tt>compact</tt> command removes all unused nodes in the mesh (nodes not referenced by an element), making it more compact. This command takes no options.
 
   The implementation of this command is straightforward:
   \include Vitelotte/mvgtk/compactCommand.cpp
@@ -61,28 +61,28 @@ namespace Vitelotte {
 
   \subsection vitelotte_example_mvgtk_convert_command_sub Convert command
 
-  The <tt>convert ATTR</tt> (or <tt>conv</tt>) command allow to change the attributes set of the mesh, thus effectively converting the mesh to a new kind of element. The mandatory parameter ATTR describe the new set of attributes. It must be one of the following:
+  The <tt>convert ATTR</tt> (or <tt>conv</tt>) command permits to change the attributes of the mesh, thus effectively converting the mesh to a new kind of element. The mandatory parameter ATTR describes the new set of attributes. It must be one of the following:
   - <tt>none</tt>: removes all attributes.
   - <tt>linear</tt>: set attributes to represent linear elements. See VGMesh::LINEAR_FLAGS.
   - <tt>quadratic</tt>: set attributes to represent quadratic elements. See VGMesh::QUADRATIC_FLAGS.
   - <tt>morley</tt>: set attributes to represent morley elements. See VGMesh::MORLEY_FLAGS.
   - <tt>fv</tt>: set attributes to represent FV elements. See VGMesh::FV_FLAGS.
 
-  If you use <tt>convert</tt> to remove attributes from the mesh, it may be worth to call <tt>compact</tt> afterward to remove no longer used nodes as this is not done automatically.
+  If you use <tt>convert</tt> to remove attributes from the mesh, it may be worth calling <tt>compact</tt> afterward to remove no longer used nodes as this is not done automatically.
 
   \include Vitelotte/mvgtk/convertCommand.cpp
 
 
   \subsection vitelotte_example_mvgtk_c2n_command_sub Curves-to-nodes command
 
-  The <tt>curves-to-nodes</tt> (or <tt>c2n</tt>) command set nodes constraints according to curves and point constraints (those are high level constraints defined in the DCMesh class). This command first remove all nodes. Note that the resulting mesh will only have constrained nodes set, so you probably want to call <tt>finalize</tt> afterward.
+  The <tt>curves-to-nodes</tt> (or <tt>c2n</tt>) command sets nodes constraints according to curves and point constraints (those are high level constraints defined in the DCMesh class). This command first removes all nodes. Note that the resulting mesh will only have constrained nodes set, so you probably want to call <tt>finalize</tt> afterward.
 
   \include Vitelotte/mvgtk/curvesToNodesCommand.cpp
 
 
   \subsection vitelotte_example_mvgtk_finalize_command_sub Finalize command
 
-  The <tt>finalize</tt> command finalize the mesh. See \ref vitelotte_user_manual_vg_mesh_finalize_subsec for a detailed explanation of the finalization mechanism.
+  The <tt>finalize</tt> command finalizes the mesh. See \ref vitelotte_user_manual_vg_mesh_finalize_subsec for a detailed explanation of the finalization mechanism.
 
   The code is as simple as it can be:
   \include Vitelotte/mvgtk/finalizeCommand.cpp
@@ -95,23 +95,23 @@ namespace Vitelotte {
 
   \subsection vitelotte_example_mvgtk_plot_command_sub Plot command
 
-  The <tt>plot COEFF SUBDIV FILENAME</tt> command output the mesh in the file FILENAME as a .obj. The \c x and \c y vertices coordinates are not modified and the \c z coordinate is the value of the coefficient COEFF. The SUBDIV parameter allow to control the level of subdivision each element. The mesh must be 2D.
+  The <tt>plot COEFF SUBDIV FILENAME</tt> command outputs the mesh in the file FILENAME as a .obj. The \c x and \c y vertex coordinates are not modified and the \c z coordinate is the value of the coefficient COEFF. For instance, to visualize the red channel of the diffusion curve image as a height field, you should use a value of 0 for COEFF. The SUBDIV parameter permits to control the level of subdivision of each element in the plot. The mesh must be 2D.
 
-  Note that elements subdivision depends on the current mesh attributes. If the mesh represent FV element, the plot will show FV element (which produces discontinuities at their boundaries). You can use <tt>convert</tt> before calling <tt>plot</tt> to change the elements used.
+  Note that elements subdivision depends on the current mesh attributes. If the mesh represents FV element, the plot will show FV elements (which produce discontinuities at their boundaries). You can use <tt>convert</tt> before calling <tt>plot</tt> to change the elements used.
 
   \include Vitelotte/mvgtk/plotCommand.cpp
 
 
   \subsection vitelotte_example_mvgtk_simplify_command_sub Simplify command
 
-  The <tt>simplify</tt> (or <tt>simp</tt>) command simplify a mesh by removing the nodes that can be reconstructed with <tt>finalize</tt>. It can be used to reduce file size before output.
+  The <tt>simplify</tt> (or <tt>simp</tt>) command simplifies a mesh by removing the nodes that can be reconstructed with <tt>finalize</tt>. It can be used to reduce file size before output.
 
   \include Vitelotte/mvgtk/simplifyCommand.cpp
 
 
   \subsection vitelotte_example_mvgtk_solve_command_sub Solve command
 
-  The <tt>solver</tt> command applies the FEM solver on the input mesh to compute values of the unknown node. For more information about how the solver works, including what kind of input it expects, see \ref vitelotte_user_manual_fem_solver_page.
+  The <tt>solve</tt> command applies the FEM solver on the input mesh to compute values of the unknown node. For more information about how the solver works, including what kind of input it expects, see \ref vitelotte_user_manual_fem_solver_page.
 
   \include Vitelotte/mvgtk/solveCommand.cpp
 

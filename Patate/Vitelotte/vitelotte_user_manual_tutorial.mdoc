@@ -11,14 +11,14 @@ namespace Vitelotte {
 
   \section vitelotte_user_manual_tutorial_introduction_sec Introduction
 
-  This tutorial will guide you through a simple program while introducing the main concepts of Vitelotte. We will load a `.obj` mesh in a VGMesh, then we will set a few punctual constraints and solve the diffusion before saving the result in a `.mvg`. While we will not manipulate diffusion curves for the sake of simplicity, we will show enough to get you started. The result can be visualized using the [mvg_viewer example](@ref vitelotte_example_mvg_viewer_page) program.
+  This tutorial will guide you through a simple program while introducing the main concepts of Vitelotte. We will load a `.obj` mesh in a VGMesh, then we will set a few point constraints and solve the diffusion before saving the result in a `.mvg`. While we will not manipulate diffusion curves for the sake of simplicity, we will show enough to get you started. The result can be visualized using the [mvg_viewer example](@ref vitelotte_example_mvg_viewer_page) program.
 
-  \image html vitelotte/tutorial_overview.svg "The final program takes a mesh as input, add some random color constraints and diffuse them using the solver."
+  \image html vitelotte/tutorial_overview.svg "The final program takes a mesh as input, adds some random color constraints and diffuses them using the solver."
 
   The complete source is available in `examples/Vitelotte/tutorial`.
 
 
-  Our program is composed of 2 steps. First, we will load a mesh (from an obj file) and assign some random color constraints on it. This is the most complicated part. Then, we will send the mesh to the solver to get the final result that will be saved in the mvg file format.
+  Our program is composed of 2 steps. First, we will load a mesh (from an obj file) and assign some random color constraints on it. Second, we will send the mesh to the solver to get the final result that will be saved in the mvg file format.
 
 
   \section vitelotte_user_manual_tutorial_preparing_the_mesh_sec Preparing the mesh
@@ -39,17 +39,17 @@ namespace Vitelotte {
 
   You might wonder why we need to create a temporary ObjReader object. This can have several uses. One of them is that it permits to customize error reporting: by default it prints errors on `stderr`, but you can set your own callbacks. Another is that you can use the same reader for several files to avoid to reallocate some internal buffers. Other readers like the MVGReader use the same principle.
 
-  We assume that the obj file we just loaded contains only vertices on the x-y plane, so we will discard the z coordinate. This result in a 2D mesh that represent our image. This is simply done by changing the number of dimensions of the mesh with VGMesh::setNDims(). Note that this function is naive: if you reduce the number of dimensions it will just discard extra coordinates, and if you increase it, new coordinates _will not be initialized_.
+  We assume that the obj file we just loaded contains only vertices on the x-y plane, so we will discard the z coordinate. This results in a 2D mesh that represents our image. This is simply done by changing the number of dimensions of the mesh with VGMesh::setNDims(). Note that this function is naive: if you reduce the number of dimensions it will just discard extra coordinates, and if you increase it, new coordinates _will not be initialized_.
 
   \snippet Vitelotte/tutorial/tutorial.cpp Convert the mesh in 2D
 
-  Time for some theory. Each face of the mesh contains a number of _attachment points_ that depend on the currently active attributes. To be a valid input for the solver, each attachment point must be linked to a _node_. Nodes can either be a constraint (when they have an associated value) or be a placeholder for an unknown value that the solver has to compute (we call these _unknown nodes_). Now, we can control the diffusion by wisely connecting nodes to attachment points. For example, if you want to diffuse color across an edge, attachment points on both sides must be linked to the same nodes (constrained or not), which constraint the fact that they will have the same color.
+  Time for some theory. Each face of the mesh contains a number of _attachment points_ that depend on the currently active attributes. To be a valid input for the solver, each attachment point must be linked to a _node_. Nodes can either be a constraint (when they have an associated value) or be a placeholder for an unknown value that the solver has to compute (we call these _unknown nodes_). Now, we can control the diffusion by wisely connecting nodes to attachment points. For example, if you want to diffuse color across an edge, attachment points on both sides must be linked to the same nodes (constrained or not), which esnures they will have the same color.
 
-  We will now pick a random set of vertices and assign a random color constraint to each one. The rest of the mesh is unconstrained must be as smooth as possible. So, all attachment points around a constrained vertex must point to the same constrained nodes, and all attachment points around the other vertices must point to their respective unknown node. FV elements also have some attachment points on the edges of the mesh that must be set correctly.
+  We will now pick a random set of vertices and assign a random color constraint to each one. The rest of the mesh is unconstrained. So, all attachment points around a constrained vertex must point to the same constrained nodes, and all attachment points around the other vertices must point to their respective unknown node. FV elements also have some attachment points on the edges of the mesh that must be set correctly.
 
   \image html vitelotte/tutorial_constraints.svg "The first step is to add color constraints to some vectices."
 
-  It may seems complicated, but in practice we will use the VGMesh::finalize method to do most of the job. All we have to do is to set _one_ attachment point somewhere around each constrained vertex before calling this method and we are done. This give us:
+  It may seems complicated, but in practice we will use the VGMesh::finalize method to do most of the job. All we have to do is to set _one_ attachment point somewhere around each constrained vertex before calling this method and we are done. This gives us:
 
   \snippet Vitelotte/tutorial/tutorial.cpp Color dots and finalize
 
@@ -76,7 +76,7 @@ namespace Vitelotte {
 
   \snippet Vitelotte/tutorial/tutorial.cpp Solve the diffusion
 
-  Why are there two steps ? FemSolver::build constructs the matrix and inverts it. It is time consuming but does not depend on the right hand side of the problem, i.e. the actual values of the constraints. This means that you don't need to call this costly step if you only modify the values, which typically happen in interactive applications like `mvg_editor`. However, if there is a change in geometry, in connectivity (including nodes) or in the type of some node (switching to unknown or constraint), then you _need_ to call it again. In case of doubt, just call it to be sure.
+  Why are there two steps ? FemSolver::build constructs the matrix and inverts it. It is time consuming but does not depend on the right hand side of the problem, i.e. the actual values of the constraints. This means that you don't need to call this costly step if you only modify the values, which typically happens in interactive applications like `mvg_editor`. However, if there is a change in geometry, in connectivity (including nodes) or in the type of some node (switching to unknown or constraint), then you _need_ to call it again. In case of doubt, just call it to be sure.
 
   FemSolver::solve does what its name states. This will set a value to all unknown nodes, thus producing the final image. Note that the solver may fail, either because the input mesh is invalid or because the problem is numerically unstable, so check for errors.
 

@@ -18,7 +18,7 @@ namespace Vitelotte {
 
   - **Harmonic** diffusion satisfies the equation
 
-    \f[ \Delta f = 0, f(x_i) = v_i \f]
+    \f[ \Delta f = 0, \quad f(x_i) = v_i \f]
 
     in such a way that it interpolates constraints (nodes with a value set). This equation can be solved using very simple elements. Vitelotte currently supports *linear* and *quadratic* triangular elements for this, which uses the same interpolation functions than rendering.
 
@@ -26,13 +26,13 @@ namespace Vitelotte {
 
   - **Bi-harmonic** diffusion satisfies a similar equation
 
-    \f[ \Delta^2 f = 0, f(x_i) = v_i, \nabla f(x_i) = g_i \f]
+    \f[ \Delta^2 f = 0, \quad f(x_i) = v_i, \quad \nabla f(x_i) = g_i \f]
 
-    Bi-harmonic diffusion is a bit more costly, but also offers smoother gradients and more control. For instance, it is possible to constraint derivative nodes to add control over gradients. A drawback of bi-harmonic diffusion is that it extrapolates: it can produce values higher or lower than constraints. When diffusing colors, it means that you can have color components below 0 and above the maximum, which may in turn lead to artifacts.
+    Bi-harmonic diffusion is a bit more costly, but also offers smoother gradients and more control. For instance, it is possible to constrain derivative nodes to add control over gradients. A drawback of bi-harmonic diffusion is that it extrapolates: it can produce values higher or lower than constraints. When diffusing colors, it means that you can have color components below 0 and above the maximum, which may in turn lead to artifacts.
 
     Theoretically, solving this equation using FEM requires \f$C^1\f$ continuity across the elements, which in turn requires using high order elements. As this is unpractical, we use _non-conforming_ elements that do not meet this requirement but ensure convergence nonetheless: Morley elements and Fraeijs de Veubeke's elements (FV). They are similar to linear and quadratic elements respectively, but add a derivative node over each edge.
 
-    hese elements are not even \f$C^0\f$ on their boundaries, they are not suited for rendering. Instead, we interpolate value nodes per-element (thus ignoring gradient nodes), which lead to the linear and quadratic interpolation functions used for harmonic elements.
+    These elements are not even \f$C^0\f$ on their boundaries, they are not suited for rendering. Instead, we interpolate value nodes per-element (thus ignoring gradient nodes), which lead to the linear and quadratic interpolation functions used for harmonic elements.
 
 
 
