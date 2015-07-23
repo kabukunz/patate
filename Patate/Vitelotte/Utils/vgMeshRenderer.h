@@ -164,6 +164,8 @@ public:
                          const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1),
                          float smoothness = 8);
 
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
 private:
     typedef std::vector<unsigned> IndicesVector;
     typedef std::vector<Vector4, Eigen::aligned_allocator<Vector4> > Vector4Vector;

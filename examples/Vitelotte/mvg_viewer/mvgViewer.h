@@ -9,24 +9,6 @@
 
 #ifdef WIN32
 
-#pragma once
-
-#ifdef _DEBUG
-#pragma comment(lib, "glfw3d.lib")
-#else
-#pragma comment(lib, "glfw3.lib")
-#pragma comment(lib, "opengl32.lib")
-#pragma comment(lib, "glew32.liib")
-#endif
-
-#ifdef _DEBUG
-#define DEBUG_NEW new(_NORMAL_BLOCK, __FILE__, __LINE__)
-#define new DEBUG_NEW
-#define _CRTDBG_MAP_ALLOC
-
-#include <crtdbg.h>
-#endif // _DEBUG
-
 #define _CRT_SECURE_NO_WARNINGS 1
 #define WIN32_LEAN_AND_MEAN 1
 
@@ -130,6 +112,8 @@ public:
     }
 
     GLFWwindow* getWindow(){ return m_pWindow; }
+
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
 private:
     enum RenderMode {
