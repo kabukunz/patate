@@ -14,7 +14,7 @@ elseif (UNIX)
 	set(_GLFW_X11 1)
 	set(_GLFW_GLX 1)
 else()
-    message(FATAL_ERROR "No supported platform was detected")
+    message(WARNING "No supported platform was detected")
 endif()
 
 #--------------------------------------------------------------------
@@ -44,7 +44,7 @@ endif()
 #--------------------------------------------------------------------
 if (_GLFW_X11)
 
-	find_package(X11)
+    find_package(X11 REQUIRED)
 
 	# Set up library and include paths
 	list(APPEND GLFW3_INCLUDE_DIRS ${X11_X11_INCLUDE_PATH})
@@ -55,15 +55,15 @@ if (_GLFW_X11)
 
 	# Check for XRandR (modern resolution switching and gamma control)
 	if (NOT X11_Xrandr_FOUND)
-		message(FATAL_ERROR "The RandR library and headers were not found")
+        message(WARNING "The RandR library and headers were not found")
 	endif()
 
 	list(APPEND GLFW3_INCLUDE_DIRS ${X11_Xrandr_INCLUDE_PATH})
 	list(APPEND GLFW3_LIBRARIES ${X11_Xrandr_LIB})
 
 	# Check for XInput (high-resolution cursor motion)
-	if (NOT X11_Xinput_FOUND)
-		message(FATAL_ERROR "The XInput library and headers were not found")
+    if (NOT X11_Xinput_FOUND)
+        message(WARNING "The XInput library and headers were not found")
 	endif()
 
 	list(APPEND GLFW3_INCLUDE_DIRS ${X11_Xinput_INCLUDE_PATH})
@@ -77,7 +77,7 @@ if (_GLFW_X11)
 
 	# Check for Xf86VidMode (fallback gamma control)
 	if (NOT X11_xf86vmode_FOUND)
-		message(FATAL_ERROR "The Xf86VidMode library and headers were not found")
+        message(WARNING "The Xf86VidMode library and headers were not found")
 	endif()
 
 	list(APPEND GLFW3_INCLUDE_DIRS ${X11_xf86vmode_INCLUDE_PATH})
@@ -91,7 +91,7 @@ if (_GLFW_X11)
 
 	# Check for Xkb (X keyboard extension)
 	if (NOT X11_Xkb_FOUND)
-		message(FATAL_ERROR "The X keyboard extension headers were not found")
+        message(WARNING "The X keyboard extension headers were not found")
 	endif() 
 
 	list(APPEND glfw_INCLUDE_DIR ${X11_Xkb_INCLUDE_PATH})
