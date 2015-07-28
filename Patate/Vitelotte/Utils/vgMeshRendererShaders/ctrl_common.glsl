@@ -75,16 +75,17 @@ void main(void)
                 = normalize(ctrl_position_obj[((i+2)%3)*3].xyz - ctrl_position_obj[((i+1)%3)*3].xyz);
     }
 
+    bvec3 isEdgeLinear = bvec3(isLinear(0), isLinear(1), isLinear(2));
     gl_TessLevelOuter = float[4](
-                isLinear(1)? 1: smoothness,
-                isLinear(2)? 1: smoothness,
-                isLinear(0)? 1: smoothness,
+                isEdgeLinear[1]? 1: smoothness,
+                isEdgeLinear[2]? 1: smoothness,
+                isEdgeLinear[0]? 1: smoothness,
                 1);
+    gl_TessLevelInner = float[2](all(isEdgeLinear)? 1: smoothness, 1);
     // Uncomment this for adaptive smoothing (using a very rough heristic).
 //    gl_TessLevelOuter = float[4](
 //                max(curviness(1) * smoothness, 1),
 //                max(curviness(2) * smoothness, 1),
 //                max(curviness(0) * smoothness, 1),
 //                1);
-    gl_TessLevelInner = float[2](1, 1);
 }
