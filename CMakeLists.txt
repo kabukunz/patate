@@ -83,7 +83,7 @@ add_custom_target(vitelottes_vg_mesh_renderer_shaders
 
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-  set (PATATE_PROJECT_NUMBER ${GIT_CHANGESET})
+  set (PATATE_PROJECT_NUMBER "0.5")
 
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doc-src/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
 
