@@ -101,8 +101,9 @@ protected:
 protected:
     using Base::m_vector;
 
-    std::vector<Vertex>  m_fVertices;
-
+    std::vector<Vertex>   m_fVertices;
+    std::string           m_token;
+    std::vector<unsigned> m_indiceList;
 };
 
 

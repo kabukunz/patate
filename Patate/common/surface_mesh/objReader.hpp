@@ -217,12 +217,16 @@ OBJReader<_Mesh>::parseDefinition(const std::string& spec,
 
         def >> std::ws;
 
+        m_indiceList.clear();
         while(def.good())
         {
-            // TODO: Use parseIndiceList to read indices
-            unsigned idx;
-            def >> idx;
-            idx -= 1;
+            def >> m_token;
+            Base::parseIndicesList(m_token, m_indiceList);
+            if(m_indiceList.size() < 1) {
+                error("Invalid vertex indices");
+                return true;
+            }
+            unsigned idx = m_indiceList[0] - 1;
             if(!def || idx >= mesh.nVertices())
             {
                 error("Invalid vertex index");
