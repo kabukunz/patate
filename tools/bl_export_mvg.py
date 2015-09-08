@@ -20,6 +20,9 @@ bl_info = {
 
 def write_path(fw, vmap):
     curr_vx = None
+    # If there is one, start at an extremity (nedges == 1) else start at
+    # an arbitrary curve vertex (this mean that open curves are
+    # processed first, then closed curves.
     for vx, elist in vmap.items():
         nedges = len(elist)
         if nedges > 0:
@@ -29,29 +32,26 @@ def write_path(fw, vmap):
     if curr_vx is None:
         return 0
 
+    # Create an ordered list of the edges of the curve
     path = []
     while True:
-#        print("from %d" % (curr_vx.index))
         elist = vmap[curr_vx]
         if len(elist) == 0: break
         edge = elist.pop()
 
         path.append(edge)
-#        print("edge %d %d" % (edge.verts[0].index, edge.verts[1].index))
 
         curr_vx = edge.other_vert(curr_vx)
         vmap[curr_vx].remove(edge)
-#        print("to %d" % (curr_vx.index))
 
+    # Write the curve
     total_len = sum(map(lambda e: e.calc_length(), path))
     accum = 0
     fw("c %d 0" % (curr_vx.index))
-#    print("v", curr_vx.index)
     for edge in reversed(path):
         accum += edge.calc_length()
         curr_vx = edge.other_vert(curr_vx)
         fw(" %d %f" % (curr_vx.index, accum / total_len))
-#        print("v", curr_vx.index)
     fw("\n")
 
     return len(path)
@@ -62,21 +62,13 @@ def write_mvg_curves(fw, mesh):
 
     if len(edges) == 0:
         print("No edge selected.")
-        return {'CANCELLED'}
+        return 0
 
     vmap = {}
     for edge in edges:
         for vx in edge.verts:
             elist = vmap.setdefault(vx, [])
             elist.append(edge)
-
-#           print(vmap)
-#        for e in edges:
-#            print("e %d %d" % (e.verts[0].index, e.verts[1].index))
-#        for v, el in vmap.items():
-#            print("v %d:" % (v.index))
-#            for e in el:
-#                print("  e %d %d" % (e.verts[0].index, e.verts[1].index))
 
     count = 0
     while write_path(fw, vmap) > 0:
@@ -85,7 +77,7 @@ def write_mvg_curves(fw, mesh):
     return count
 
 
-def write_mvg(context, filepath):
+def write_mvg(context, filepath, triangulate = True, random_values = True):
     mesh_data = context.active_object.data
     if type(mesh_data) is not bpy.types.Mesh:
         return {'CANCELED'}
@@ -99,45 +91,53 @@ def write_mvg(context, filepath):
         mesh = bmesh.new()
         mesh.from_mesh(mesh_data)
 
+    # Write header
     fw("mvg 1.0\n")
-    fw("dim 3\n")
+    fw("dimensions 3\n")
     fw("coefficients 4\n")
     fw("attributes none\n")
+    fw("colorSpace srgb\n")
 
+    # Write mesh
     for v in mesh.verts:
-        fw("v %f %f %f\n" % v.co.yzx[:])
-    for f in mesh.faces:
-        fw("f")
-        for v in f.verts:
-            fw(" %d" % (v.index))
-        fw("\n")
+        fw("v %f %f %f\n" % (v.co.x, v.co.z, -v.co.y))
 
+    for f in mesh.faces:
+        if triangulate:
+            verts = f.verts
+            for i in range(2, len(verts)):
+                fw("f %d %d %d\n" % (verts[0].index, verts[i-1].index, verts[i].index))
+        else:
+            fw("f")
+            for v in f.verts:
+                fw(" %d" % (v.index))
+            fw("\n")
+
+    # Write curves
     ncurves = write_mvg_curves(fw, mesh)
 
-#    random.seed()
-#    for i in range(ncurves):
-#        fw("dcv %d 0 %f %f %f 1\n" % (i, random.random(), random.random(), random.random()))
-    col_splits = [ 2, 2, 2 ]
-    while col_splits[0] * col_splits[1] * col_splits[2] < ncurves:
-        if col_splits[2] < col_splits[1]:
-            col_splits[2] += 1
-        elif col_splits[1] < col_splits[0]:
-            col_splits[1] += 1
-        else:
-            col_splits[0] += 1
+    if random_values:
+        col_splits = [ 2, 2, 2 ]
+        while col_splits[0] * col_splits[1] * col_splits[2] < ncurves:
+            if col_splits[2] < col_splits[1]:
+                col_splits[2] += 1
+            elif col_splits[1] < col_splits[0]:
+                col_splits[1] += 1
+            else:
+                col_splits[0] += 1
 
-    color = [ 0, 0, 0 ]
-    for i in range(ncurves):
-        fw("dcv %d 0 %f %f %f 1\n" % (i, color[0] / (col_splits[0] - 1),
-                                         color[1] / (col_splits[1] - 1),
-                                         color[2] / (col_splits[2] - 1)))
-        color[0] += 1
-        if color[0] == col_splits[0]:
-            color[0] = 0
-            color[1] += 1
-            if color[1] == col_splits[1]:
-                color[1] = 0
-                color[2] += 1
+        color = [ 0, 0, 0 ]
+        for i in range(ncurves):
+            fw("dcv %d 0 %f %f %f 1\n" % (i, color[0] / (col_splits[0] - 1),
+                                             color[1] / (col_splits[1] - 1),
+                                             color[2] / (col_splits[2] - 1)))
+            color[0] += 1
+            if color[0] == col_splits[0]:
+                color[0] = 0
+                color[1] += 1
+                if color[1] == col_splits[1]:
+                    color[1] = 0
+                    color[2] += 1
 
     file.close()
 
@@ -164,6 +164,12 @@ class ExportMvg(Operator, ExportHelper):
             options={'HIDDEN'},
             )
 
+    triangulate = BoolProperty(
+            name="Triangulate",
+            description="Export triangulated mesh. Recommended because currently Vitelotte supports only triangulated mesh.",
+            default=True
+            )
+
     random_values = BoolProperty(
             name="Random values",
             description="Export random color for each curve.",
@@ -171,7 +177,8 @@ class ExportMvg(Operator, ExportHelper):
             )
 
     def execute(self, context):
-        return write_mvg(context, self.filepath)
+        return write_mvg(context, self.filepath, self.triangulate,
+                         self.random_values)
 
 
 # Only needed if you want to add into a dynamic menu
