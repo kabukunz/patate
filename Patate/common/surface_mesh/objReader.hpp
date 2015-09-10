@@ -89,6 +89,7 @@ OBJBaseReader<_Mesh>::readLine(std::istream& in)
     ++m_lineNb;
     m_lineStream.str(m_line);
     m_lineStream.seekg(0);
+    m_lineStream.clear();
     return ok;
 }
 
