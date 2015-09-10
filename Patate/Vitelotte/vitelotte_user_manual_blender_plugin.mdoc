@@ -1,0 +1,24 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+/*!
+  \page vitelotte_user_manual_blender_plugin_page Blender plugin
+
+  We provide a Blender plugin that allow to export Blender meshes as mvg files directly. Besides exporting the mesh, it also export edges marked as *seams* as diffusion curves.
+
+  To enable the plugin in Blender, go in file > user preference > Add-ons > install from file, select `patate/tools/bl_export_mvg.py` and activate the plugin by checking the checkbox. Now, you can export the selected mesh by selecting file > export > mesh-based vector graphics (.mvg). Note that enabled plugins are saved with your .blend files, so you have to repeat the process every time you start a new project.
+
+  Two options are available:
+  - **Triangulate** automatically export a triangulated mesh. This is enabled by default because currently Vitelotte solver only support triangle mesh.
+  - **Random value** assign random colors to each exported curves. (when disabled, curves have no properties.)
+
+
+  <b>How curves are extracted:</b> The plugin use a very simple algorithm to export curves. It start from a vertex with only one adjacent seam edge and follow this edge until it reach a dead end. The sequence of edge traversed produce a curve. Then the algorithm start from an other vertex to extract an other curve. If while processing a curve several paths are possible, the algorithm choose one arbitrarily. When no more starting points are available, there may still be loops (closed paths). In this case an other curve is extracted starting from an arbitrary point. The algorithm stops when all seam edges have been extracted.
+
+  <b>Limitations:</b> The index of extracted curves is arbitrary. It is not guaranteed that extracting two times the same mesh produce the same set of curves because the algorithm is non-deterministic. There is also no way to assign color/values or any properties directly inside Blender. The plugin does not support mvg import because it would result in loss of data.
+
+ */
