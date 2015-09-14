@@ -60,7 +60,7 @@ void main(void)
     for(int i=0; i<3; ++i)
     {
         position_scr[i] = (viewportSize * gl_in[i*3].gl_Position.xy)
-                        / (2.0 * gl_in[i*3].gl_Position.z);
+                        / (2.0 * gl_in[i*3].gl_Position.w);
     }
     float area = abs(cross(vec3(position_scr[1] - position_scr[0], 0.0),
                            vec3(position_scr[2] - position_scr[0], 0.0)).z);

@@ -10,7 +10,7 @@ uniform samplerBuffer nodes;
 uniform float lineWidth;
 uniform vec4 wireframeColor;
 
-in vec3 frag_edgeDist_scr;
+noperspective in vec3 frag_edgeDist_scr;
 
 out vec4 out_color;
 

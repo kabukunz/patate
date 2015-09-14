@@ -28,7 +28,7 @@ out vec3 frag_linearBasis;
 out vec4 frag_position_obj;
 out vec3 frag_normal_obj;
 out vec3 frag_normal_view;
-out vec3 frag_edgeDist_scr;
+noperspective out vec3 frag_edgeDist_scr;
 flat out vec3 frag_vertices_obj[3];
 flat out vec3 frag_normEdges_obj[3];
 
