@@ -29,18 +29,6 @@ Eigen::Matrix4f orthographicProjection(
 
 
 Eigen::Matrix4f perspectiveProjection(
-        const Eigen::AlignedBox3f& viewBox) {
-    assert(!viewBox.isEmpty());
-
-    return orthographicProjection(
-        viewBox.min().x(), viewBox.max().x(),
-        viewBox.min().y(), viewBox.max().y(),
-        viewBox.min().z(), viewBox.max().z()
-    );
-}
-
-
-Eigen::Matrix4f perspectiveProjection(
         float l, float r, float b, float t, float n, float f) {
     float rpl = r + l;
     float tpb = t + b;
@@ -56,19 +44,6 @@ Eigen::Matrix4f perspectiveProjection(
              0,     0, -fpn/fmn, -2*f*n/fmn,
              0,     0,       -1,          0;
     return m;
-}
-
-
-Eigen::Matrix4f perspectiveProjection(
-        const Eigen::AlignedBox3f& viewBox, float dist) {
-    assert(!viewBox.isEmpty());
-    assert(viewBox.min().z() > 0.f);
-
-    return perspectiveProjection(
-        viewBox.min().x() / dist, viewBox.max().x() / dist,
-        viewBox.min().y() / dist, viewBox.max().y() / dist,
-        viewBox.min().z() / dist, viewBox.max().z() / dist
-    );
 }
 
 
