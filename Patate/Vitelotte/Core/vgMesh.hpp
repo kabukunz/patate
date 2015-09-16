@@ -451,6 +451,64 @@ VGMesh<_Scalar, _Dim, _Chan>::nUnknowns() const
 
 
 template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::
+    hasValidNode(Halfedge h) const
+{
+    for(unsigned ai = 0; ai < HALFEDGE_ATTRIB_COUNT; ++ai) {
+        HalfedgeAttribute attr(ai);
+        if(hasAttribute(attr) && halfedgeNode(h, attr).isValid()) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::
+    hasValidNode(Edge e) const
+{
+    return hasValidNode(halfedge(e, 0)) || hasValidNode(halfedge(e, 1));
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::
+    hasValidNode(Face f) const
+{
+    HalfedgeAroundFaceCirculator hit = halfedges(f);
+    HalfedgeAroundFaceCirculator hend = hit;
+    do {
+        if(hasValidNode(*hit)) {
+            return true;
+        }
+        ++hit;
+    } while(hit != hend);
+    return false;
+}
+
+
+template < typename _Scalar, int _Dim, int _Chan >
+bool
+VGMesh<_Scalar, _Dim, _Chan>::
+        hasValidNodeOnIncidentEdge(Vertex v) const {
+    HalfedgeAroundVertexCirculator hit = halfedges(v);
+    HalfedgeAroundVertexCirculator hend = hit;
+    do {
+        if(hasValidNode(edge(*hit))) {
+            return true;
+        }
+        ++hit;
+    } while(hit != hend);
+    return false;
+}
+
+
+
+template < typename _Scalar, int _Dim, int _Chan >
 void
 VGMesh<_Scalar, _Dim, _Chan>::
     setVertexNodes(Node node, Halfedge from, Halfedge to)

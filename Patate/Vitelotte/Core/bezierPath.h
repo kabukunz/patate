@@ -64,6 +64,24 @@ public:
         return seg;
     }
 
+    Vector eval(Scalar x) {
+        float y = 1 - x;
+        switch(type()) {
+        case BEZIER_EMPTY:
+            assert(false);
+            return Vector();
+        case BEZIER_LINEAR:
+            return y * point(0) + x * point(1);
+        case BEZIER_QUADRATIC:
+            return y*y * point(0) + 2*x*y * point(1) + x*x * point(2);
+        case BEZIER_CUBIC:
+            return   y*y*y * point(0)
+                 + 3*x*y*y * point(1)
+                 + 3*x*x*y * point(2)
+                 +   x*x*x * point(3);
+        }
+    }
+
     void split(Scalar pos, Self& head, Self& tail) {
         assert(m_type != BEZIER_EMPTY);
 
@@ -124,6 +142,7 @@ class BezierPath
 {
 public:
     typedef _Vector Vector;
+    typedef typename Vector::Scalar Scalar;
 
 public:
     static unsigned size(BezierSegmentType type) { return unsigned(type); }
@@ -171,6 +190,35 @@ public:
         }
 
         return si;
+    }
+
+    unsigned addSegment(const BezierSegment<Vector>& segment)
+    {
+        assert(segment.type() != BEZIER_EMPTY);
+
+        if(nPoints() == 0) {
+            m_points.push_back(segment.point(0));
+        } else {
+            assert(m_points.back() == segment.point(0));
+        }
+
+        unsigned si = nSegments();
+        Segment s;
+        s.type       = segment.type();
+        s.firstPoint = nPoints() - 1;
+        m_segments.push_back(s);
+
+        for(unsigned i = 1; i < segment.type(); ++i) {
+            m_points.push_back(segment.point(i));
+        }
+
+        return si;
+    }
+
+    Vector eval(Scalar x) const {
+        Scalar si;
+        Scalar sp = std::modf(x * nSegments(), &si);
+        return getSegment(si).eval(sp);
     }
 
     BezierSegment<Vector> getSegment(unsigned si) const {
