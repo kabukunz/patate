@@ -82,7 +82,7 @@ public:
         }
     }
 
-    void split(Scalar pos, Self& head, Self& tail) {
+    void split(Scalar pos, Self& head, Self& tail) const {
         assert(m_type != BEZIER_EMPTY);
 
         // All the points of de Casteljau Algorithm
