@@ -3,6 +3,7 @@
 #include <vector>
 #include <deque>
 #include <iomanip>
+#include <cmath>
 
 #include <Patate/vitelotte.h>
 
@@ -36,36 +37,15 @@ typedef BezierSegment<Vector> BSegment;
 typedef std::vector<Vector, Eigen::aligned_allocator<Vector> > VectorVector;
 
 
-//bool convexIntersectionHelper(const VectorVector& poly0, const VectorVector& poly1,
-//                        Scalar epsilon) {
-//    Vector from = poly0.back();
-//    for(VectorVector::const_iterator toIt = poly0.begin();
-//        toIt != poly0.end(); ++toIt) {
+Scalar lerp(Scalar a, Scalar from, Scalar to) {
+    return (1-a) * from + a * to;
+}
 
-//        Vector edge = *toIt - from;
-//        VectorVector::const_iterator pIt = poly1.begin();
-//        for(; pIt != poly1.end(); ++pIt) {
-//            if(det2(edge, *pIt - from) > -epsilon) {
-//                break;
-//            }
-//        }
-
-//        // Loop didn't break, so there is no vertex on the wrong side of the
-//        // edge, so there is no collision.
-//        if(pIt == poly1.end()) {
-//            return false;
-//        }
-
-//        from = *toIt;
-//    }
-//    return true;
-//}
-
-//bool convexIntersection(const VectorVector& poly0, const VectorVector& poly1,
-//                        Scalar epsilon) {
-//    return convexIntersectionHelper(poly0, poly1, epsilon)
-//        && convexIntersectionHelper(poly1, poly0, epsilon);
-//}
+Scalar ilerp(const Vector& p, const Vector& p0, const Vector& p1) {
+    Vector u = p1 - p0;
+    Vector v = p - p0;
+    return u.dot(v) / u.squaredNorm();
+}
 
 
 void freeTri(triangulateio* tri) {
@@ -191,8 +171,20 @@ struct CmpCoeff {
 
 class VGMeshBuilder {
 public:
-    typedef Eigen::Vector3i Segment;
-    typedef std::vector<Segment, Eigen::aligned_allocator<Segment> > SegmentVector;
+    typedef Eigen::Matrix<REAL, 2, 1> MVector;
+    typedef std::vector<MVector, Eigen::aligned_allocator<MVector> > MVectorVector;
+
+    struct CSeg {
+        int segId;
+        int from;
+        int to;
+        Scalar pFrom;
+        Scalar pTo;
+    };
+
+    typedef std::vector<CSeg> CSegVector;
+    typedef std::pair<int, int> PointPair;
+    typedef std::map<PointPair, int> CSegMap;
 
 public:
     VGMeshBuilder(const BezierArrangement& arrangement)
@@ -202,26 +194,25 @@ public:
         std::memset(&_tmesh, 0, sizeof(triangulateio));
 
         VectorVector points;
-        SegmentVector segments;
 
         // Add arrangment points:
         for(int i = 0; i < arrangement.nPoints(); ++i) {
             points.push_back(arrangement.point(i));
         }
 
-        int test = getSubSegId(123, 846);
-        assert(getSegId(test) == 123 && getSubId(test) == 846);
+        // Add a dummy CSeg, because triangle seems to not like index 0 and
+        // replace it by 1.
+        addCSeg(-1, -1, -1, 0, 0);
+
         // Subdivide and add segments:
         for(int i = 0; i < arrangement.nSegments(); ++i) {
             subdivideSegment(
                         points,
-                        segments,
                         arrangement.segment(i),
                         arrangement.segmentFrom(i),
                         arrangement.segmentTo(i),
-                        getSubSegId(i),
-                        8);
-            std::cout << "subdivide " << i << ": " << getSubSegId(i) << "\n";
+                        i, 0, 1, 8);
+//            std::cout << "subdivide " << i << ": " << getSubSegId(i) << "\n";
         }
 
 
@@ -232,14 +223,14 @@ public:
             _tmesh.pointlist[i*2 + 1] = points[i].y();
         }
 
-        _tmesh.numberofsegments = segments.size();
-        _tmesh.segmentlist = (int*)malloc(sizeof(int) * 2 * segments.size());
-        _tmesh.segmentmarkerlist = (int*)malloc(sizeof(int) * segments.size());
-        for(int i = 0; i < segments.size(); ++i) {
-            _tmesh.segmentlist[i*2 + 0] = segments[i](0);
-            _tmesh.segmentlist[i*2 + 1] = segments[i](1);
-            _tmesh.segmentmarkerlist[i] = segments[i](2);
-            std::cout << "Add segment: " << _tmesh.segmentmarkerlist[i] << "\n";
+        _tmesh.numberofsegments = _csegs.size();
+        _tmesh.segmentlist = (int*)malloc(sizeof(int) * 2 * _csegs.size());
+        _tmesh.segmentmarkerlist = (int*)malloc(sizeof(int) * _csegs.size());
+        for(int i = 0; i < _csegs.size(); ++i) {
+            _tmesh.segmentlist[i*2 + 0] = _csegs[i].from;
+            _tmesh.segmentlist[i*2 + 1] = _csegs[i].to;
+            _tmesh.segmentmarkerlist[i] = i;
+//            std::cout << "Add segment: " << _tmesh.segmentmarkerlist[i] << "\n";
         }
     }
 
@@ -259,99 +250,111 @@ public:
                         Vertex(_tmesh.trianglelist[i*3 + 2]));
         }
 
-        // TODO: Create curves.
-        typedef std::vector<Segment> SegVector;
-        SegVector segVector;
+        typedef Eigen::Vector3i Edge;
+        typedef std::vector<Edge, Eigen::aligned_allocator<Edge> > EdgeVector;
+        EdgeVector edgeVector;
         for(int i = 0; i < _tmesh.numberofsegments; ++i) {
-            Segment seg(
-                    _tmesh.segmentlist[i*2 + 0],
+            Edge ss(_tmesh.segmentlist[i*2 + 0],
                     _tmesh.segmentlist[i*2 + 1],
                     _tmesh.segmentmarkerlist[i]);
-            segVector.push_back(seg);
-            std::cout << "Segment " << i
-                      << ": " << _tmesh.segmentlist[i*2 + 0]
-                      << " - " << _tmesh.segmentlist[i*2 + 1]
-                      << ": " << getSegId(_tmesh.segmentmarkerlist[i])
-                      << ", " << getSubId(_tmesh.segmentmarkerlist[i]) << "\n";
+            edgeVector.push_back(ss);
+//            std::cout << "Edge " << i
+//                      << ": " << _tmesh.segmentlist[i*2 + 0]
+//                      << " - " << _tmesh.segmentlist[i*2 + 1]
+//                      << ": " << _tmesh.segmentmarkerlist[i] << "\n";
         }
 
-        std::sort(segVector.begin(), segVector.end(), CmpCoeff<Segment>(2));
+        std::sort(edgeVector.begin(), edgeVector.end(), CmpCoeff<Edge>(2));
 
-        // map a vertex of a subsegment to its (up to 2) neighbors
+        // map a vertex on a subsegment to its (up to 2) neighbors
         typedef std::map<int, Eigen::Vector2i> VxMap;
         VxMap vxMap;
-        int prevSeg = -1;
-        int vx = -1;
-        Curve curve;
 
-        // Iterate segments
-        SegVector::const_iterator segIt = segVector.begin();
-        while(segIt != segVector.end()) {
+        // for each segment
+        EdgeVector::const_iterator eIt = edgeVector.begin();
+        for(int segId = 0; segId < _arrangement->nSegments(); ++segId) {
+            int vx = _arrangement->segmentFrom(segId);
+            Curve curve = _mesh.addCurve(0);
+            _mesh.valueFunction(curve, Mesh::VALUE)
+                    .add(0, Mesh::Value(Eigen::internal::random(0., 1.),
+                                        Eigen::internal::random(0., 1.),
+                                        Eigen::internal::random(0., 1.),
+                                        1));
+            _mesh.valueFunction(curve, Mesh::VALUE)
+                    .add(1, Mesh::Value(Eigen::internal::random(0., 1.),
+                                        Eigen::internal::random(0., 1.),
+                                        Eigen::internal::random(0., 1.),
+                                        1));
+            _mesh.bezierPath(curve).addSegment(_arrangement->segment(segId));
 
-            int id = (*segIt)(2);
-            int segId = getSegId(id);
+//            std::cout << "Segment " << segId << ":\n";
 
-            // If we start to process an new segment, update the current vertex
-            if(prevSeg != segId) {
-                // Arrangement points have the same index in the triangulation
-                std::cout << "Start segment " << segId << "\n";
-                vx = _arrangement->segmentFrom(segId);
-                curve = _mesh.addCurve(0);
-                _mesh.valueFunction(curve, Mesh::VALUE)
-                        .add(0, Mesh::Value(Eigen::internal::random(0., 1.),
-                                            Eigen::internal::random(0., 1.),
-                                            Eigen::internal::random(0., 1.),
-                                            1));
-            }
+            // For each sub-segment (CSeg)
+            while(eIt != edgeVector.end()) {
+                int csegId = (*eIt)(2);
+                CSeg cseg = _csegs[csegId];
 
-            std::cout << "  Subegment: " << getSubId(id) << "\n";
-
-            // Add all edges belonging to the same subsegment to a map
-            //vxMap.clear();
-            while(segIt != segVector.end() && (*segIt)(2) == id) {
-                Segment seg = *segIt;
-                std::cout << "    Edge: " << seg(0)
-                          << " - " << seg(1)
-                          << ": " << getSegId(seg(2))
-                          << ", " << getSubId(seg(2)) << "\n";
-                for(int vi = 0; vi < 2; ++vi) {
-                    VxMap::iterator vit = vxMap.insert(
-                                std::make_pair(seg(vi), Eigen::Vector2i(-1, -1))).first;
-                    int i = (vit->second(0) == -1)? 0:
-                            (vit->second(1) == -1)? 1: 2;
-                    assert(i != 2);
-                    vit->second(i) = seg(!vi);
+                // Stop if we changed segment
+                if(cseg.segId != segId) {
+                    break;
                 }
-                ++segIt;
-            }
 
-            // Starting from vx, find and add all subsegment in order
-            VxMap::iterator fromIt = vxMap.find(vx);
-            while(vxMap.size() > 1) {
-                std::cout << "    Vertex " << vx
-                          << ": " << fromIt->second.transpose() << "\n";
-                assert(fromIt != vxMap.end() && fromIt->second(0) != -1
+//                std::cout << "  Cseg " << csegId << ": "
+//                          << cseg.from << ", " << cseg.to << "\n";
+
+                Vector csp0 = _mesh.position(Vertex(cseg.from));
+                Vector csp1 = _mesh.position(Vertex(cseg.to));
+
+                // Add all edges belonging to the same subsegment to a map
+                //vxMap.clear();
+                while(eIt != edgeVector.end() && (*eIt)(2) == csegId) {
+                    Edge e = *eIt;
+//                    std::cout << "    Edge: " << e(0)
+//                              << " - " << e(1)
+//                              << ": " << e(2) << "\n";
+                    for(int vi = 0; vi < 2; ++vi) {
+                        VxMap::iterator vit = vxMap.insert(
+                                    std::make_pair(e(vi), Eigen::Vector2i(-1, -1))).first;
+                        int i = (vit->second(0) == -1)? 0:
+                                (vit->second(1) == -1)? 1: 2;
+                        assert(i != 2);
+                        vit->second(i) = e(!vi);
+                    }
+                    ++eIt;
+                }
+
+                // Starting from vx, find and add all subsegment in order
+                VxMap::iterator fromIt = vxMap.find(vx);
+                while(vxMap.size() > 1) {
+//                    std::cout << "    Vertex " << vx
+//                              << ": " << fromIt->second.transpose() << "\n";
+                    assert(fromIt != vxMap.end() && fromIt->second(0) != -1
+                                                 && fromIt->second(1) == -1);
+                    int next = fromIt->second(0);
+
+                    // TODO: param values
+                    Vector ep0 = Eigen::Map<MVector>(&_tmesh.pointlist[2*vx]).cast<Scalar>();
+                    Vector ep1 = Eigen::Map<MVector>(&_tmesh.pointlist[2*next]).cast<Scalar>();
+                    Scalar pFrom = lerp(ilerp(ep0, csp0, csp1), cseg.pFrom, cseg.pTo);
+                    Scalar pTo   = lerp(ilerp(ep1, csp0, csp1), cseg.pFrom, cseg.pTo);
+                    _mesh.addHalfedgeToCurve(curve,
+                                             _mesh.findHalfedge(Vertex(vx), Vertex(next)),
+                                             pFrom, pTo);
+
+                    vxMap.erase(fromIt);
+                    fromIt = vxMap.find(next);
+                    if(fromIt->second(0) == vx) {
+                        std::swap(fromIt->second(0), fromIt->second(1));
+                    }
+                    assert(fromIt->second(1) == vx);
+                    fromIt->second(1) = -1;
+
+                    vx = next;
+                }
+                assert(fromIt != vxMap.end() && fromIt->second(0) == -1
                                              && fromIt->second(1) == -1);
-                int next = fromIt->second(0);
-                // TODO: param values
-                _mesh.addHalfedgeToCurve(curve,
-                                         _mesh.findHalfedge(Vertex(vx), Vertex(next)),
-                                         0, 0);
-                vxMap.erase(fromIt);
-                fromIt = vxMap.find(next);
-                if(fromIt->second(0) == vx) {
-                    std::swap(fromIt->second(0), fromIt->second(1));
-                }
-                assert(fromIt->second(1) == vx);
-                fromIt->second(1) = -1;
-
-                vx = next;
+                vxMap.clear();
             }
-            assert(fromIt != vxMap.end() && fromIt->second(0) == -1
-                                         && fromIt->second(1) == -1);
-            vxMap.clear();
-
-            prevSeg = segId;
         }
 
         return _mesh;
@@ -385,12 +388,13 @@ public:
         return false;
     }
 
-    int subdivideSegment(VectorVector& points,
-                          SegmentVector& segments,
+    void subdivideSegment(VectorVector& points,
                           const BSegment& segment,
                           int firstIndex,
                           int lastIndex,
-                          int segSubId,
+                          int segId,
+                          float pFrom,
+                          float pTo,
                           int maxDepth) {
         if(maxDepth && needSplit(segment)) {
             BSegment head;
@@ -398,15 +402,13 @@ public:
             segment.split(.5, head, tail);
             int mid = points.size();
             points.push_back(tail.point(0));
-            segSubId = subdivideSegment(points, segments, head, firstIndex, mid,
-                                        segSubId, maxDepth - 1);
-            segSubId = subdivideSegment(points, segments, tail, mid, lastIndex,
-                                        segSubId, maxDepth - 1);
+            subdivideSegment(points, head, firstIndex, mid, segId,
+                             pFrom, (pFrom + pTo) / 2, maxDepth - 1);
+            subdivideSegment(points, tail, mid, lastIndex, segId,
+                             (pFrom + pTo) / 2, pTo, maxDepth - 1);
         } else {
-            segments.push_back(Segment(firstIndex, lastIndex, segSubId));
-            ++segSubId;
+            addCSeg(firstIndex, lastIndex, segId, pFrom, pTo);
         }
-        return segSubId;
     }
 
     void refineCurves() {
@@ -417,9 +419,46 @@ public:
         // z: first index is 0
         // p: input is a PSLG
         // D: produce a conforming Delaunay triangulation
-        triangulate((char*)"zpD", &_tmesh, &delaunay, NULL);
+        // n: output neighbors of each triangles
+        triangulate((char*)"zpn", &_tmesh, &delaunay, NULL);
 
-        // TODO: add constraints around curves extremities / point constraints
+        // Add constraints around curves extremities / point constraints
+        std::vector<bool> mark(_arrangement->nPoints(), false);
+        std::vector<MVector> points;
+        for(int fi = 0; fi < delaunay.numberoftriangles; ++fi) {
+            for(int fvi = 0; fvi < 3; ++fvi) {
+                int vi = delaunay.trianglelist[fi*3 + fvi];
+                // Points of interest == points in the arrangement.
+                if(vi < _arrangement->nPoints() && !mark[vi]) {
+                    mark[vi] = true;
+                    addConstraintsAroundVertex(points, delaunay, vi, fi);
+                }
+            }
+        }
+        size_t pointlistSize = sizeof(REAL) * 2 * delaunay.numberofpoints;
+        size_t newPointsSize = sizeof(REAL) * 2 * points.size();
+        delaunay.pointlist = (REAL*)realloc(delaunay.pointlist,
+                                            pointlistSize + newPointsSize);
+        memcpy(delaunay.pointlist + 2 * delaunay.numberofpoints,
+               &points[0], newPointsSize);
+        delaunay.numberofpoints = delaunay.numberofpoints + points.size();
+
+#define FREE_PTR(_ptr) if(_ptr) { free(_ptr); _ptr = NULL; }
+        FREE_PTR(delaunay.pointattributelist)
+        FREE_PTR(delaunay.pointmarkerlist)
+        FREE_PTR(delaunay.triangleattributelist)
+        FREE_PTR(delaunay.trianglearealist)
+        FREE_PTR(delaunay.neighborlist)
+        FREE_PTR(delaunay.holelist)
+        FREE_PTR(delaunay.regionlist)
+        FREE_PTR(delaunay.edgelist)
+        FREE_PTR(delaunay.edgemarkerlist)
+        FREE_PTR(delaunay.normlist)
+        delaunay.numberofpointattributes = 0;
+        delaunay.numberoftriangleattributes = 0;
+        delaunay.numberofholes = 0;
+        delaunay.numberofregions = 0;
+        delaunay.numberofedges = 0;
 
         triangulateio mesh;
         std::memset(&mesh, 0, sizeof(triangulateio));
@@ -427,185 +466,169 @@ public:
         // Refine the previous mesh
         // z: first index is 0
         // p: take segments into account
-        // r: input is a mesh
+        // (not used due to the previous step) r: input is a mesh
         // q: Delaunay refinment
-        triangulate((char*)"zprq", &delaunay, &mesh, NULL);
+        triangulate((char*)"zpq", &delaunay, &mesh, NULL);
 
         std::swap(_tmesh, mesh);
+//        std::swap(_tmesh, delaunay);
         freeTri(&delaunay);
         freeTri(&mesh);
     }
 
-    int getSubSegId(int segId, int subId = 0) {
-        assert(segId >= 0 && subId >= 0);
-        assert(segId < (1<<16) && subId < (1<<16));
-        return (segId << 16) | subId;
+    void addConstraintsAroundVertex(std::vector<MVector>& points,
+                                    const triangulateio& mesh,
+                                    int vi, int fi) {
+        // Move clockwise around vi until a border or a complete loop.
+        // Find the right stating point in case of boundary vertex.
+        int fBegin = fi;
+        int lastFi = fi;
+        do {
+            // Find vi index in face
+            int fvi = findInnerIndex(mesh, vi, fi);
+            // Next face clockwise.
+            lastFi = fi;
+            fi = mesh.neighborlist[fi*3 + (fvi+2)%3];
+        } while(fi != -1 && fi != fBegin);
+        bool boundary = fi == -1;
+        fBegin = lastFi;
+        fi = fBegin;
+
+//        std::cout << "Vx " << vi << ": "
+//                  << Eigen::Map<MVector>(&mesh.pointlist[vi*2]).transpose() << "\n";
+
+        // Compute closest constaint distance and fill dirVector.
+        // Rotate counterclockwise. Should go over all the faces even in case
+        // of boundary because we took care of moving backward just before.
+        _dirVector.clear();
+        REAL minDist = std::numeric_limits<REAL>::infinity();
+        do {
+            // Find vi index in face
+            int fvi = findInnerIndex(mesh, vi, fi);
+
+            // Update distance
+            int v[3];
+            MVector p[3];
+            for(int i = 0; i < 3; ++i) {
+                v[i] = mesh.trianglelist[fi*3 + (fvi+i)%3];
+                p[i] = Eigen::Map<MVector>(&mesh.pointlist[v[i]*2]);
+            }
+            minDist = std::min(minDist, segDist(p[0], p[1], p[2]));
+//            if(boundary && fi == fBegin)
+//                std::cout << "  edge " << (p[1] - p[0]).transpose() << "\n";
+//            std::cout << "  edge " << (p[2] - p[0]).transpose() << "\n";
+
+            if(boundary && fi == fBegin && isCSeg(v[0], v[1])) {
+                _dirVector.push_back((p[1] - p[0]).normalized());
+//                std::cout << "  dir " << _dirVector.back().transpose() << "\n";
+            }
+            if(isCSeg(v[0], v[2])) {
+                _dirVector.push_back((p[2] - p[0]).normalized());
+//                std::cout << "  dir " << _dirVector.back().transpose() << "\n";
+            }
+
+            // Next face counterclockwise.
+            fi = mesh.neighborlist[fi*3 + (fvi+1)%3];
+        } while(fi != -1 && fi != fBegin);
+
+//        std::cout << "  Min dist: " << minDist << "\n";
+
+        bool point = false;
+        if(_dirVector.empty()) {
+            _dirVector.push_back(MVector::UnitX());
+            point = true;
+            // Point constaints need much higher tesselation.
+            minDist /= 8;
+        }
+        if(!boundary) {
+            _dirVector.push_back(_dirVector.front());
+        }
+
+        Scalar epsilon = 1.e-4;
+        MVector p = Eigen::Map<MVector>(&mesh.pointlist[vi*2]);
+        for(int i = 0; i < _dirVector.size() - 1; ++i) {
+            Scalar a0 = std::atan2(_dirVector[i+0].y(), _dirVector[i+0].x());
+            Scalar a1 = std::atan2(_dirVector[i+1].y(), _dirVector[i+1].x());
+            if(a1 < a0 + epsilon) a1 += 2 * M_PI;
+            Scalar b = a1 - a0;
+            int nSplit = std::floor((b + epsilon) / (M_PI / 3) + .5);
+//            std::cout << "  Arc " << _dirVector[i+0].transpose()
+//                      << " - " << _dirVector[i+1].transpose()
+//                      << ": " << b / M_PI * 180
+//                      << " (" << nSplit
+//                      << ", " << (b + epsilon) / (M_PI / 3) + .5 << ")\n";
+            for(int split = 1; split < nSplit + point; ++split) {
+                Scalar c = lerp(Scalar(split) / nSplit, a0, a1);
+                points.push_back(p + MVector(cos(c), sin(c)) * minDist / 3);
+//                std::cout << "    Add point: " << points.back().transpose()
+//                          << " (" << c / M_PI * 180 << ")\n";
+            }
+        }
     }
 
-    int getSegId(int subSegId) {
-        return subSegId >> 16;
+    int findInnerIndex(const triangulateio& mesh, int vi, int fi) {
+        int fvi = 0;
+        while(fvi != 3 && mesh.trianglelist[fi*3 + fvi] != vi) ++fvi;
+        assert(fvi != 3);
+        return fvi;
     }
 
-    int getSubId(int subSegId) {
-        return subSegId & 0xffff;
+    REAL segDist(const MVector& p, const MVector& p1, const MVector& p2) {
+        MVector u = p2 - p1;
+
+        MVector v1 = p1 - p;
+        REAL dot1 = u.dot(v1);
+        if(dot1 <= 0) return v1.norm();
+
+        MVector v2 = p2 - p;
+        REAL dot2 = u.dot(v1);
+        if(dot2 <= 0) return v2.norm();
+
+        return std::abs(det2(u, v1)) / u.norm();
     }
 
-//    bool isConstrained(Halfedge h) const {
-//        return _mesh.isBoundary(_mesh.edge(h)) || _mesh.curve(h).isValid();
-//    }
 
-//    bool isRefinable(Face f) const {
-//        unsigned nCons;
-//        Mesh::HalfedgeAroundFaceCirculator hit = _mesh.halfedges(f);
-//        Mesh::HalfedgeAroundFaceCirculator hEnd = hit;
-//        do {
-//            if(isConstrained(*hit)) {
-//                ++nCons;
-//            }
-//            if(nCons == 2) return false;
-//            ++hit;
-//        } while(hit != hEnd);
-//        return true;
-//    }
+    void addCSeg(int from, int to, int segId, Scalar pFrom, Scalar pTo) {
+        if(to < from) {
+            std::swap(from, to);
+            std::swap(pFrom, pTo);
+        }
+        _csegMap.insert(std::make_pair(PointPair(from, to), _csegs.size()));
+        _csegs.push_back(CSeg { segId, from, to, pFrom, pTo });
+    }
 
-//    unsigned refineTriangles(float arThresold) {
-//        FaceDeque toRefine;
-//        for(Mesh::FaceIterator fit = _mesh.facesBegin();
-//            fit != _mesh.facesEnd(); ++fit) {
-//            toRefine.push_back(*fit);
-//        }
+    bool isCSeg(int from, int to) {
+        if(to < from) {
+            std::swap(from, to);
+        }
+        return _csegMap.find(PointPair(from, to)) != _csegMap.end();
+    }
 
-//        unsigned count = 0;
-//        while(!toRefine.empty()) {
-//            Face f = toRefine.front();
-//            toRefine.pop_front();
-
-//            if(!isRefinable(f)) {
-//                continue;
-//            }
-
-//            // Aspect ratio
-//            Scalar l[3] = {
-//                edgeVector(f, 0).norm(),
-//                edgeVector(f, 1).norm(),
-//                edgeVector(f, 2).norm()
-//            };
-//            Scalar s = (l[0] + l[1] + l[2]) / 2;
-//            Scalar ar = l[0] * l[1] * l[2]
-//                      / (8 * (s - l[0]) * (s - l[1]) * (s - l[2]));
-
-//            if(ar > arThresold) {
-//                // Circumcenter
-//                Vector v1 = point(f, 1) - point(f, 0);
-//                Vector v2 = point(f, 2) - point(f, 0);
-//                Vector p(v2.y() * v1.squaredNorm() - v1.y() * v2.squaredNorm(),
-//                         v1.x() * v2.squaredNorm() - v2.x() * v1.squaredNorm());
-//                p /= 2 * (v1.x() * v2.y() - v1.y() * v2.x());
-//                p += point(f, 0);
-
-//                assert(abs((point(f, 0) - p).squaredNorm()
-//                         - (point(f, 1) - p).squaredNorm()) < _epsilon);
-//                assert(abs((point(f, 0) - p).squaredNorm()
-//                         - (point(f, 2) - p).squaredNorm()) < _epsilon);
-
-//                // Find the triangle / edge to refine
-//                Halfedge h = _mesh.halfedge(f);
-//                Halfedge hEnd = h;
-//                Vertex vx;
-//                do {
-//                    Vector p0 = _mesh.position(_mesh.fromVertex(h));
-//                    Vector p1 = _mesh.position(_mesh.toVertex(h));
-//                    Scalar det = det2(p1 - p0, p - p0);
-//                    if(det < _epsilon) {
-//                        if(isConstrained(h) || det > -_epsilon) {
-//                            if(_mesh.curve(h).isValid()) {
-//                                vx = _mesh.splitCurvedEdge(h, .5);
-//                            } else {
-//                                vx = _mesh.addVertex((p0 + p1) / 2);
-//                                _mesh.PatateCommon::SurfaceMesh::split(_mesh.edge(h), vx);
-//                            }
-//                            break;
-//                        }
-//                        h = _mesh.oppositeHalfedge(h);
-//                        hEnd = h;
-//                    }
-//                    h = _mesh.nextHalfedge(h);
-//                } while(!vx.isValid() && h != hEnd);
-
-//                // If we did not insert a vertex on an edge.
-//                if(!vx.isValid()) {
-//                    vx = _mesh.addVertex(p);
-//                    _mesh.split(_mesh.face(h), vx);
-//                }
-
-//                ++count;
-
-//                Mesh::FaceAroundVertexCirculator afit = _mesh.faces(vx);
-//                Mesh::FaceAroundVertexCirculator afEnd = afit;
-//                do {
-//                    addDirtyFace(*afit);
-//                    ++afit;
-//                } while(afit != afEnd);
-
-//                delaunay();
-//            }
-//        }
-
-//        return count;
-//    }
-
-//    bool isFixed(Vertex vx) const {
-//        Mesh::HalfedgeAroundVertexCirculator hit = _mesh.halfedges(vx);
-//        Mesh::HalfedgeAroundVertexCirculator hEnd = hit;
-//        do {
-//            if(isConstrained(*hit)) {
-//                return true;
-//            }
-//            ++hit;
-//        } while(hit != hEnd);
-
-//        return false;
-//    }
-
-//    void smooth(unsigned nPass) {
-//        Mesh::VectorMatrix pos;
-//        for(unsigned pass = 0; pass < nPass; ++pass) {
-//            pos = Mesh::VectorMatrix::Zero(_mesh._positionMatrix().rows(),
-//                                           _mesh._positionMatrix().cols());
-
-//            for(Mesh::VertexIterator vit = _mesh.verticesBegin();
-//                vit != _mesh.verticesEnd(); ++vit) {
-//                if(isFixed(*vit)) {
-//                    pos.col((*vit).idx()) = _mesh.position(*vit);
-//                    continue;
-//                }
-
-//                Mesh::VertexAroundVertexCirculator nit = _mesh.vertices(*vit);
-//                Mesh::VertexAroundVertexCirculator nEnd = nit;
-//                unsigned count = 0;
-//                do {
-//                    pos.col((*vit).idx()) += _mesh.position(*nit);
-//                    ++count;
-//                    ++nit;
-//                } while(nit != nEnd);
-
-//                pos.col((*vit).idx()) /= count;
-//            }
-//            _mesh._positionMatrix().swap(pos);
-
-//            for(Mesh::FaceIterator fit = _mesh.facesBegin();
-//                fit != _mesh.facesEnd(); ++fit) {
-//                addDirtyFace(*fit);
-//            }
-//            delaunay();
-//        }
-//    }
+    CSeg getCSeg(int from, int to) {
+        assert(isCSeg(from, to));
+        int i;
+        if(from < to) {
+            i = _csegMap.find(PointPair(from, to))->second;
+        } else {
+            i = _csegMap.find(PointPair(to, from))->second;
+        }
+        CSeg cseg = _csegs[i];
+        if(to < from) {
+            std::swap(cseg.from, cseg.to);
+            std::swap(cseg.pFrom, cseg.pTo);
+        }
+        return cseg;
+    }
 
 private:
     const BezierArrangement* _arrangement;
 
     triangulateio _tmesh;
     Mesh _mesh;
+
+    CSegVector _csegs;
+    CSegMap  _csegMap;
+    MVectorVector _dirVector;
 
     Scalar _quadraticThreshold2;
     Scalar _cubicThreshold2;
@@ -630,6 +653,7 @@ int main(int argc, char** argv) {
     unsigned pc1 = arr.addPoint(Vector(50, 50));
     unsigned pc2 = arr.addPoint(Vector(20, 70));
     unsigned pc3 = arr.addPoint(Vector(80, 20));
+    unsigned p0  = arr.addPoint(Vector(50, 10));
 
     unsigned sb0 = arr.addSegment(pb0, pb1);
     unsigned sb1 = arr.addSegment(pb1, pb2);
@@ -646,8 +670,9 @@ int main(int argc, char** argv) {
     builder.refineCurves();
 
     Mesh mesh = builder.mesh();
-    mesh.setAttributes(Mesh::LINEAR_FLAGS);
-    mesh.setNodesFromCurves();
+//    mesh.setAttributes(Mesh::LINEAR_FLAGS);
+//    mesh.setNodesFromCurves();
+//    mesh.finalize();
 
     std::ofstream out("refine.mvg");
     MVGWithCurvesWriter<Mesh>().write(out, mesh);
