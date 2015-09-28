@@ -5,6 +5,8 @@
 */
 
 
+using namespace Vitelotte {
+
 /*!
   \page vitelotte_user_manual_mvg_file_format_page The MVG File Format
 
@@ -128,4 +130,58 @@
   MVGWriter constructor takes the version of the MVG to produce as an optional parameter which default to the latest version (anyway, 1.0 is the only version existing right now).
 
 
+  \section Diffusion Curves extension
+
+  The class DCMesh add the concept of diffusion curves on top of VGMesh. In order to save and load the extra curves and point constraints informations, we designed an extension to the MVG file format.
+
+  Point constraints are declared with
+  \code
+  pvc V VALUE
+  pgc V GRADIENT
+  \endcode
+  where `pvc` declare a point value constraint and `pgc` a point gradient constraint. `V` is the vertex index of the constraint and `VALUE` / `GRADIENT` are space separated coefficients that describe a single value / gradient respectively. A vertex can be both a value and a gradient constraint.
+
+  Curves are slightly more complex. A curve is a sequence of connected edges with an associated parametrization. A curve is defined with
+  \code
+  c V0 X0 V1 X1 [V2 X2 ...]
+  \endcode
+  where `Vi` are vertex indices and `Xi` are the associated parametrization. For any `i`, `Vi - V(i+1)` *must* be an edge of the triangulation. Parameters `Xi` are expected to range from 0 to 1 and be strictly growing.
+
+  The declarations
+  \code
+  dcvTear C
+  dcgTear C
+  \endcode
+  mean that the curve of index `C` represent respectively a value and a gradient discontinuity. A curve can be both.
+
+  Value and gradient constraint on curve are defined with the following commands:
+  \code
+  dcv      C X0 VALUE0 [X1 VALUE1 ...]
+  dcvLeft  C X0 VALUE0 [X1 VALUE1 ...]
+  dcvRight C X0 VALUE0 [X1 VALUE1 ...]
+  dcg      C X0 GRADIENT0 [X1 GRADIENT1 ...]
+  dcgLeft  C X0 GRADIENT0 [X1 GRADIENT1 ...]
+  dcgRight C X0 GRADIENT0 [X1 GRADIENT1 ...]
+  \endcode
+  `dcv` family describe value constraintS and `dcg` gradient constraints. Variant without suffix is intended to be used with curves that do not represent a (value or gradient) discontinuity while the version with suffix permit to specify a different constraint on both side of a discontinuity, or to constrain only one side.
+
+  The syntax is similar for all these commands: `C` is the index of the constrained curve followed by one or more coordinate/value pair (or coordinate/gradient pair for value constraints). These pair represent samples of a function that is reconstructed through linear interpolation.
+
+  Finally, curves can have an associated Bezier path:
+  \code
+  bp C SVG_PATH
+  \endcode
+  One more time, `C` is the curve index. `SVG_PATH` is a simplified version of the svg path syntax:
+  - Only absolute coordinates are supported (so only uppercase commands).
+  - M (move) must be the first command and can not appear elsewhere.
+  - Other supported commands are L (line), Q (quadratic Bezier curve) and C (cubic Bezier curve).
+  - Commands and coordinates must be separated by whitespace(s), and only whitespace(s) (comma are not supported).
+
+  There is a simple example of a single segment cubic Bezier curve:
+  \code
+  bp 0 M -300 0 C 0 300 0 -300 300 0
+  \endcode
+
  */
+
+}
