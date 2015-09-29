@@ -229,13 +229,9 @@ void Editor::paintGL()
 
         Eigen::Matrix4f viewMatrix = m_camera.projectionMatrix();
 
-        // TODO: what to do about SRGB ?
         glDisable(GL_FRAMEBUFFER_SRGB);
 
         m_renderer.render(viewMatrix);
-
-//        m_renderer.renderWireframe(viewMatrix,
-//                                   zoom(), .5, Eigen::Vector4f(.5, .5, .5, 1.));
 
         glEnable(GL_FRAMEBUFFER_SRGB);
 

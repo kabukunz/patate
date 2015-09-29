@@ -151,7 +151,7 @@ public:
           ValueProj& valueProjection();
 
     ColorSpace screenColorSpace() const;
-    void setScreenColorSpace(ColorSpace cs) const;
+    void setScreenColorSpace(ColorSpace cs);
 
     void setResources(Resources* resources);
     void releaseGLResources();

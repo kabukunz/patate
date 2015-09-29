@@ -223,7 +223,7 @@ ColorSpace VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::screenColorSpace() const
 
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
-void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setScreenColorSpace(ColorSpace cs) const
+void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::setScreenColorSpace(ColorSpace cs)
 {
     m_screenColorSpace = cs;
 }

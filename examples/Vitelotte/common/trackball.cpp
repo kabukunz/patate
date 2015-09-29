@@ -178,6 +178,11 @@ void Trackball::setNearFarOffsets(float nearOffset, float farOffset) {
 }
 
 
+Trackball::State Trackball::state() const {
+    return _state;
+}
+
+
 bool Trackball::isIdle() const {
     return _state == Idle;
 }
