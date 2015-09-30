@@ -1,0 +1,41 @@
+/*
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+ file, You can obtain one at http://mozilla.org/MPL/2.0/.
+*/
+
+
+/*!
+  \page vitelotte_example_gen_mesh_page Create MVG from SVG
+
+  We provide an experimental tool called `gen_mesh` to create a `mvg`
+  file from a svg. It discretize the path in the svg and feed the result
+  to `triangle`, a library that compute high-quality Delaunay
+  refinements.
+
+  The basic usage is
+  \code
+  gen_mesh IN OUT
+  \endcode
+  where `IN` is the input `svg` and `OUT` is the resulting `mvg` mesh.
+  The following options are also supported:
+  - `-m MIN_DIST`: force subdivision of Bezier segments until their
+    length is smaller or equal to `MIN_DIST`.
+  - `-r ANGLE`: refine the mesh until no triangle has an angle smaller
+    than `ANGLE` (in degree), except for constrained corners. The
+    refinement algorithm is guaranteed to terminate for angles smaller
+    than 20.7 degrees (the default) and often work up to 33 degrees.
+  - `-s SNAP_DIST`: "snap" vertices, so that if two vertices in the
+    `svg` (i.e. segments extremities) are closer than `SNAP_DIST`, they
+    are merged.
+
+  \warning This tool is highly unstable with typical `svg` files. In
+  order to work correctly, it requires that the curves form an
+  arrangement, i.e. that the input does not contain intersection, except
+  at segments extremities. Some other cases may fail. For instance, two
+  similar curves close to each other can lead to intersections when
+  discretized even if they do not intersect (due to the fact that Bezier
+  curve are approximated by a polyline). This can be mitigated by using
+  the `-m` option.
+
+ */

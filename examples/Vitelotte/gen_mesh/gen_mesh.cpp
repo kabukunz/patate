@@ -1066,7 +1066,7 @@ void addRandomPoints(BezierArrangement& arr, unsigned nPoints) {
 
 
 void usage(const char* progName) {
-    std::cout << "Usage: " << progName << " IN OUT\n";
+    std::cout << "Usage: " << progName << " [-m MAX_LEN] [-r ANGLE] [-s SNAP_DIST] IN OUT\n";
     exit(1);
 }
 
