@@ -227,22 +227,23 @@ void Editor::paintGL()
     if(m_document) {
         doUpdateRenderers();
 
-        Eigen::Matrix4f viewMatrix = m_camera.projectionMatrix();
+        Eigen::Matrix4f viewMatrix = Eigen::Matrix4f::Identity();
+        Eigen::Matrix4f projMatrix = m_camera.projectionMatrix();
 
         glDisable(GL_FRAMEBUFFER_SRGB);
 
-        m_renderer.render(viewMatrix);
+        m_renderer.render(viewMatrix, projMatrix);
 
         glEnable(GL_FRAMEBUFFER_SRGB);
 
         Eigen::Vector2f viewportSize(width(), height());
-        m_lineRenderer.render(viewMatrix, viewportSize);
-        m_pointRenderer.render(viewMatrix, viewportSize);
+        m_lineRenderer.render(projMatrix, viewportSize);
+        m_pointRenderer.render(projMatrix, viewportSize);
 
         if(m_showWireframe)
         {
             m_nodeRenderer.update(m_document->getMesh(m_nodeMeshType),
-                                  viewMatrix, viewportSize);
+                                  projMatrix, viewportSize);
             m_nodeRenderer.render();
         }
     }

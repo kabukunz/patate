@@ -70,7 +70,7 @@ bool VGMeshRendererResources::initSolidShader(
         return false;
 
     unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
-    unif.normalMatrixLoc      = shader.getUniformLocation("normalMatrix");
+    unif.projMatrixLoc        = shader.getUniformLocation("projMatrix");
     unif.nodesLoc             = shader.getUniformLocation("nodes");
     unif.baseNodeIndexLoc     = shader.getUniformLocation("baseNodeIndex");
     unif.singularTrianglesLoc = shader.getUniformLocation("singularTriangles");
@@ -111,6 +111,7 @@ bool VGMeshRendererResources::initWireframeShader()
         return false;
 
     unif.viewMatrixLoc        = shader.getUniformLocation("viewMatrix");
+    unif.projMatrixLoc        = shader.getUniformLocation("projMatrix");
     unif.viewportSizeLoc      = shader.getUniformLocation("viewportSize");
     unif.smoothnessLoc        = shader.getUniformLocation("smoothness");
     unif.lineWidthLoc         = shader.getUniformLocation("lineWidth");
@@ -508,7 +509,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::drawGeometry(unsigned geomFlag
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(
-        const Eigen::Matrix4f& viewMatrix, float smoothness)
+        const Eigen::Matrix4f& viewMatrix, const Eigen::Matrix4f& projMatrix,
+        float smoothness)
 {
     PATATE_ASSERT_NO_GL_ERROR();
 
@@ -524,9 +526,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(
 
     shader.use();
 
-    Eigen::Matrix3f normalMatrix = viewMatrix.topLeftCorner<3, 3>();
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
-    glUniformMatrix3fv(unif.normalMatrixLoc, 1, false, normalMatrix.data());
+    glUniformMatrix4fv(unif.projMatrixLoc, 1, false, projMatrix.data());
     glUniform1i(unif.nodesLoc, NODES_TEXTURE_UNIT);
     glUniform1f(unif.smoothnessLoc, smoothness);
     glUniform1i(unif.enableShadingLoc, m_3d);
@@ -555,7 +556,8 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::render(
 
 template < class _Mesh, typename _PosProj, typename _ValueProj >
 void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
-        const Eigen::Matrix4f& viewMatrix, const Eigen::Vector2f& viewportSize,
+        const Eigen::Matrix4f& viewMatrix, const Eigen::Matrix4f& projMatrix,
+        const Eigen::Vector2f& viewportSize,
         float lineWidth, const Eigen::Vector4f& color, float smoothness)
 {
     PATATE_ASSERT_NO_GL_ERROR();
@@ -566,6 +568,7 @@ void VGMeshRenderer<_Mesh, _PosProj, _ValueProj>::renderWireframe(
     const Resources::WireframeUniforms& unif = m_resources->wireframeUniforms();
 
     glUniformMatrix4fv(unif.viewMatrixLoc, 1, false, viewMatrix.data());
+    glUniformMatrix4fv(unif.projMatrixLoc, 1, false, projMatrix.data());
     glUniform2fv(unif.viewportSizeLoc, 1, viewportSize.data());
     glUniform1f(unif.smoothnessLoc, smoothness);
     glUniform1f(unif.lineWidthLoc, lineWidth);

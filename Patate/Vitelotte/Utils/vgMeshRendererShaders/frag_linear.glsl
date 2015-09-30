@@ -60,10 +60,14 @@ void main(void)
         // Shading is done in linear RGB
         out_color.rgb = convertColor(out_color.rgb, meshColorSpace, 2);
 
+        // Uncomment to attach light to object
+//        vec3 n = normalize(frag_normal_obj);
         vec3 n = normalize(frag_normal_view);
         vec3 light = vec3(0.);
-        light = diffuse(n, normalize(vec3(-.2, 0, -1.))) * vec3(1., .9, .8) * .8
-              + diffuse(n, normalize(vec3( 1, .2,  .2))) * vec3(.8, .9, 1.) * .6;
+        light = diffuse(n, normalize(vec3(-0.2,  0.0,  1.0))) * vec3(1.0, 0.9, 0.8) * .8
+              + diffuse(n, normalize(vec3(-1.0,  0.2,  0.2))) * vec3(1.0, 1.0, 1.0) * .4
+              + diffuse(n, normalize(vec3(-0.2, -0.4, -1.0))) * vec3(0.8, 0.9, 1.0) * .6;
+        light /= 1.5;
 
         out_color.rgb = convertColor(light * out_color.rgb,
                                      1, screenColorSpace);

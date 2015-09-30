@@ -128,11 +128,10 @@ void View::paintGL() {
     if(m_mesh.nVertices()) {
         Eigen::Matrix4f projMatrix = m_trackball.computeProjectionMatrix();
         Eigen::Matrix4f viewMatrix = m_trackball.computeViewMatrix();
-        Eigen::Matrix4f trans = projMatrix * viewMatrix;
 
         if(m_wireMode < WIRE_ONLY_SIMPLE) {
             glDisable(GL_FRAMEBUFFER_SRGB);
-            m_renderer.render(trans);
+            m_renderer.render(viewMatrix, projMatrix);
         }
 
         Eigen::Vector2f viewportSize(width(), height());
@@ -141,14 +140,14 @@ void View::paintGL() {
         switch(m_wireMode) {
         case WIRE_SIMPLE:
         case WIRE_ONLY_SIMPLE: {
-            m_renderer.renderWireframe(trans, viewportSize, .5);
+            m_renderer.renderWireframe(viewMatrix, projMatrix, viewportSize, .5);
             break;
         }
         case WIRE_NODES:
         case WIRE_ONLY_NODES: {
             // Node renderer require some attributes.
             if((m_mesh.getAttributes() & Mesh::QUADRATIC_FLAGS) == Mesh::QUADRATIC_FLAGS) {
-                m_nodeRenderer.update(m_mesh, trans, viewportSize);
+                m_nodeRenderer.update(m_mesh, projMatrix*viewMatrix, viewportSize);
                 m_nodeRenderer.render();
             }
             break;

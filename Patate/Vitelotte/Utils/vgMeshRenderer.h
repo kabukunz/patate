@@ -32,7 +32,7 @@ public:
     struct SolidUniforms
     {
         GLint viewMatrixLoc;
-        GLint normalMatrixLoc;
+        GLint projMatrixLoc;
         GLint nodesLoc;
         GLint baseNodeIndexLoc;
         GLint singularTrianglesLoc;
@@ -45,6 +45,7 @@ public:
     struct WireframeUniforms
     {
         GLint viewMatrixLoc;
+        GLint projMatrixLoc;
         GLint viewportSizeLoc;
         GLfloat smoothnessLoc;
         GLint lineWidthLoc;
@@ -158,8 +159,10 @@ public:
     void updateBuffers(const Mesh& mesh);
 
     void drawGeometry(unsigned geomFlags);
-    void render(const Eigen::Matrix4f& viewMatrix, float smoothness = 8);
+    void render(const Eigen::Matrix4f& viewMatrix,
+                const Eigen::Matrix4f& projMatrix, float smoothness = 8);
     void renderWireframe(const Eigen::Matrix4f& viewMatrix,
+                         const Eigen::Matrix4f& projMatrix,
                          const Eigen::Vector2f& viewportSize, float lineWidth = 1,
                          const Eigen::Vector4f& color = Eigen::Vector4f(0, 0, 0, 1),
                          float smoothness = 8);

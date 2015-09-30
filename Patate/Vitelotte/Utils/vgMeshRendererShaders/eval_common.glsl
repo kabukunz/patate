@@ -9,6 +9,7 @@
 layout(triangles) in;
 
 uniform mat4 viewMatrix;
+uniform mat4 projMatrix;
 
 uniform samplerBuffer nodes;
 uniform int baseNodeIndex;
@@ -51,7 +52,7 @@ void main(void)
                       + eval_position_obj[8] * c1[2] * c2[0] * 3
                       + mid                  * c1[0] * c1[1] * c1[2] * 6;
 
-    gl_Position = viewMatrix * frag_position_obj;
+    gl_Position = projMatrix * viewMatrix * frag_position_obj;
     frag_index         = gl_PrimitiveID;
     frag_linearBasis   = gl_TessCoord;
     frag_normal_obj    = mat3(eval_normal_obj[0],

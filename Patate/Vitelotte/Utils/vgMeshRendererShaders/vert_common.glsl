@@ -7,7 +7,7 @@
 #version 410 core
 
 uniform mat4 viewMatrix;
-uniform mat3 normalMatrix;
+uniform mat4 projMatrix;
 
 in vec4 vx_position;
 in vec3 vx_normal;
@@ -18,8 +18,8 @@ out vec3 ctrl_normal_view;
 
 void main(void)
 {
-    gl_Position = viewMatrix * vx_position;
+    gl_Position = projMatrix * viewMatrix * vx_position;
     ctrl_position_obj = vx_position;
     ctrl_normal_obj = vx_normal;
-    ctrl_normal_view = normalMatrix * vx_normal;
+    ctrl_normal_view = (viewMatrix * vec4(vx_normal, 0.)).xyz;
 }

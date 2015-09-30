@@ -40,7 +40,7 @@ vec4 quadraticInterp(in vec4 colors[6])
 
 float diffuse(in vec3 n, in vec3 l)
 {
-    return clamp(dot(n, l), 0., 1.);
+    return clamp((dot(n, l) + 1.) / 2., 0., 1.);
 }
 
 
