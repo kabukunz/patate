@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     /// [Convert the mesh in 2D]
 
     // Discard the z coordinate
-    mesh.setNDims(2);
+    //mesh.setNDims(2);
 
     /// [Convert the mesh in 2D]
 
