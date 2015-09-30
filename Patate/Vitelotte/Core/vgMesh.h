@@ -64,8 +64,8 @@ public:
 
     typedef BezierSegment<Vector> CurvedEdge;
 
-protected:
     typedef Eigen::Matrix<Scalar, DimsAtCompileTime, Eigen::Dynamic> VectorMatrix;
+protected:
     typedef Eigen::Matrix<Scalar, CoeffsAtCompileTime, Eigen::Dynamic> NodeMatrix;
 
 public:
@@ -268,6 +268,8 @@ public:
 
     inline VectorXpr position(Vertex v)
     { assert(unsigned(v.idx()) < verticesSize()); return m_positions.col(v.idx()); }
+
+    inline VectorMatrix& _positionMatrix() { return m_positions; }
 
     using PatateCommon::SurfaceMesh::isValid;
     inline bool isValid(Node n) const;
@@ -481,6 +483,11 @@ public:
      */
     inline bool hasUnknowns() const;
     inline unsigned nUnknowns() const;
+
+    inline bool hasValidNode(Halfedge h) const;
+    inline bool hasValidNode(Edge e) const;
+    inline bool hasValidNode(Face f) const;
+    inline bool hasValidNodeOnIncidentEdge(Vertex v) const;
 
     /// \}
 
