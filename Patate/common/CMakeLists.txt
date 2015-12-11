@@ -13,4 +13,4 @@ FILE ( GLOB COMMON_IMPL
   ${CMAKE_CURRENT_SOURCE_DIR}/surface_mesh/*.hpp
 )
 
-add_library (PATATE_COMMON OBJECT ${COMMON_HEADERS} ${COMMON_IMPL})
+add_library (patate_common OBJECT ${COMMON_HEADERS} ${COMMON_IMPL})
