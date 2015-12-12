@@ -13,3 +13,4 @@ FILE ( GLOB VITELOTTE_IMPL
 )
 
 add_library (Vitelotte OBJECT ${VITELOTTE_HEADERS} ${VITELOTTE_IMPL})
+set_target_properties(Vitelotte PROPERTIES LINKER_LANGUAGE C++)

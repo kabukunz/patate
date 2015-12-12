@@ -28,3 +28,4 @@ if(OPENGL_FOUND)
 endif()
 
 add_library (patate_common OBJECT ${DEPS})
+set_target_properties(patate_common PROPERTIES LINKER_LANGUAGE C++)
