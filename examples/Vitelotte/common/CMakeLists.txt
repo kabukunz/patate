@@ -6,10 +6,6 @@ find_package(GLEW)
 
 find_package(PythonInterp 3.0)
 
-include_directories(
-    ${GLEW_INCLUDE_DIRS}
-)
-
 set(vitelotte_examples_common_SRCS
     orthographicCamera.cpp
     textFormatter.cpp
@@ -17,6 +13,11 @@ set(vitelotte_examples_common_SRCS
 )
 
 if(GLEW_FOUND)
+
+	include_directories(
+		${GLEW_INCLUDE_DIRS}
+	)
+	
     if(PYTHONINTERP_FOUND)
         set(vitelotte_examples_SHADERS
             ${PROJECT_SOURCE_DIR}/Vitelotte/common/shaders/vert_points.glsl
