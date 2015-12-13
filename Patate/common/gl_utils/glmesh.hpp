@@ -9,20 +9,6 @@
 #endif
 
 
-#ifdef __APPLE__
-    #include <OpenGL/gl3.h>
-    #include <OpenGL/gl3ext.h>
-
-    #define __gl_h_
-
-#else
-    #define GL_GLEXT_PROTOTYPES
-
-    #include <GL/gl.h>
-    #include <GL/glext.h>
-#endif
-
-
 
 namespace PatateCommon
 {

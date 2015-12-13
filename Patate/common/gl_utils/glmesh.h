@@ -7,6 +7,23 @@
 #ifndef _PATATE_COMMON_GL_UTILS_GLMESH_H
 #define _PATATE_COMMON_GL_UTILS_GLMESH_H
 
+#ifdef __APPLE__
+    #include <OpenGL/gl3.h>
+    #include <OpenGL/gl3ext.h>
+
+    #define __gl_h_
+
+#elif defined _MSC_VER
+    #include <Windows.h>
+    #include <GL/gl.h>
+
+#else
+    #define GL_GLEXT_PROTOTYPES
+
+    #include <GL/gl.h>
+    #include <GL/glext.h>
+#endif
+
 #include "Eigen/Dense"
 #include "Patate/common/surface_mesh/surfaceMesh.h"
 #include <vector>
