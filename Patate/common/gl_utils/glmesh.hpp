@@ -55,21 +55,21 @@ void GLTri3DMesh::initVBO(){
         // vertices
         glGenBuffers(1, &_vboVertArray);
         glBindBuffer(GL_ARRAY_BUFFER, _vboVertArray);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_vertices.size(), _vertices.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_vertices.size(), &(_vertices.front()), GL_STATIC_DRAW);
         glVertexAttribPointer( 0, Dim, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(0) );
         glEnableVertexAttribArray( 0 );
 
         // vertices
         glGenBuffers(1, &_vboNormalArray);
         glBindBuffer(GL_ARRAY_BUFFER, _vboNormalArray);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_normals.size(), _normals.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_normals.size(), &(_normals.front()), GL_STATIC_DRAW);
         glVertexAttribPointer( 1, Dim, GL_FLOAT, GL_TRUE, 0, (GLvoid*)(0) );
         glEnableVertexAttribArray( 1 );
 
         // indices
         glGenBuffers(1, &_vboFaceArray);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboFaceArray);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*_faces.size(), _faces.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*_faces.size(), &(_faces.front()), GL_STATIC_DRAW);
 
         glBindVertexArray(0);
 
