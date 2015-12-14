@@ -63,7 +63,7 @@ void GLTri3DMesh::initVBO(){
         glGenBuffers(1, &_vboNormalArray);
         glBindBuffer(GL_ARRAY_BUFFER, _vboNormalArray);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_normals.size(), &(_normals.front()), GL_STATIC_DRAW);
-        glVertexAttribPointer( 1, Dim, GL_FLOAT, GL_TRUE, 0, (GLvoid*)(0) );
+        glVertexAttribPointer( 1, Dim, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(0) );
         glEnableVertexAttribArray( 1 );
 
         // indices
@@ -97,15 +97,15 @@ void GLTri3DMesh::computeNormals(){
     // naive computation: just sum up all the faces contributions per vertex
     for(unsigned int i = 0; i < _faces.size(); i += 3){
 
-        VMap v0 (&(_vertices[_faces[i  ]]));
-        VMap v1 (&(_vertices[_faces[i+1]]));
-        VMap v2 (&(_vertices[_faces[i+2]]));
+        VMap v0 (&(_vertices[3*_faces[i  ]]));
+        VMap v1 (&(_vertices[3*_faces[i+1]]));
+        VMap v2 (&(_vertices[3*_faces[i+2]]));
 
         Vector n = (v1 - v0).cross((v2 - v0)).normalized();
 
-        VMap (&(_normals[_faces[i  ]])) += n;
-        VMap (&(_normals[_faces[i+1]])) += n;
-        VMap (&(_normals[_faces[i+2]])) += n;
+        VMap (&(_normals[3*_faces[i  ]])) += n;
+        VMap (&(_normals[3*_faces[i+1]])) += n;
+        VMap (&(_normals[3*_faces[i+2]])) += n;
     }
 
     for(unsigned int i = 0; i < _normals.size(); i += 3){
