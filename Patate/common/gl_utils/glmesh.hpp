@@ -101,7 +101,7 @@ void GLTri3DMesh::computeNormals(){
         VMap v1 (&(_vertices[3*_faces[i+1]]));
         VMap v2 (&(_vertices[3*_faces[i+2]]));
 
-        Vector n = (v1 - v0).cross((v2 - v0)).normalized();
+        Vector n = -(v1 - v0).cross((v2 - v0)).normalized();
 
         VMap (&(_normals[3*_faces[i  ]])) += n;
         VMap (&(_normals[3*_faces[i+1]])) += n;
