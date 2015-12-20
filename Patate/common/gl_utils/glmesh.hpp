@@ -122,6 +122,11 @@ GLTri3DMesh::getVertexMap(int id){
     return Eigen::Map<GLTri3DMesh::Vector>(&(_vertices.at(Dim*id)));
 }
 
+Eigen::Map<GLTri3DMesh::Vector>
+GLTri3DMesh::getNormalVectorMap(int id){
+    return Eigen::Map<GLTri3DMesh::Vector>(&(_normals.at(Dim*id)));
+}
+
 void GLTri3DMesh::computeNormals(){
     _normals.clear();
     _normals.resize(_vertices.size(), Scalar(0));

@@ -53,6 +53,7 @@ struct GLTri3DMesh{
     inline void drawIds();
 
     inline Eigen::Map<Vector> getVertexMap(int id);
+    inline Eigen::Map<Vector> getNormalVectorMap(int id);
 
 protected:
     inline void computeNormals();
