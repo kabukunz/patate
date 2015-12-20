@@ -15,6 +15,7 @@ namespace PatateCommon
 
 GLTri3DMesh::GLTri3DMesh()
     : _init(false),
+      _pickingInit(false),
       _vboFaceArray(0),
       _vboVertArray(0){
 
@@ -41,7 +42,7 @@ unsigned int GLTri3DMesh::nVertices() const{
 }
 
 
-void GLTri3DMesh::initVBO(){
+void GLTri3DMesh::initVBO(bool initForPicking){
     if (! _init){
         if(_vertices.empty() || _faces.empty()){
             _init = true;
@@ -50,6 +51,8 @@ void GLTri3DMesh::initVBO(){
         computeNormals();
 
         glGenVertexArrays(1, &_vao);
+
+        // set default render mode
         glBindVertexArray(_vao);
 
         // vertices
@@ -59,12 +62,28 @@ void GLTri3DMesh::initVBO(){
         glVertexAttribPointer( 0, Dim, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(0) );
         glEnableVertexAttribArray( 0 );
 
-        // vertices
+        // normals
         glGenBuffers(1, &_vboNormalArray);
         glBindBuffer(GL_ARRAY_BUFFER, _vboNormalArray);
         glBufferData(GL_ARRAY_BUFFER, sizeof(Scalar)*_normals.size(), &(_normals.front()), GL_STATIC_DRAW);
         glVertexAttribPointer( 1, Dim, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(0) );
         glEnableVertexAttribArray( 1 );
+
+        if (initForPicking) {
+            std::vector<GLuint> vids; vids.resize(nVertices());
+            {
+                int i = 0;
+                for(std::vector<GLuint>::iterator it = vids.begin();
+                    it != vids.end(); ++it, ++i) (*it) = i;
+            }
+            glGenBuffers(1, &_vboIdsArray);
+            glBindBuffer(GL_ARRAY_BUFFER, _vboIdsArray);
+            glBufferData(GL_ARRAY_BUFFER, sizeof(GLuint)*vids.size(), &(vids.front()), GL_STATIC_DRAW);
+            glVertexAttribPointer( 2, 1, GL_UNSIGNED_INT, GL_FALSE, 0, (GLvoid*)(0) );
+            glEnableVertexAttribArray( 2 );
+
+            _pickingInit = true;
+        }
 
         // indices
         glGenBuffers(1, &_vboFaceArray);
@@ -72,7 +91,6 @@ void GLTri3DMesh::initVBO(){
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*_faces.size(), &(_faces.front()), GL_STATIC_DRAW);
 
         glBindVertexArray(0);
-
         _init = true;
     }
 }
@@ -86,6 +104,22 @@ void GLTri3DMesh::draw(){
         glBindVertexArray(0);
 
     }
+}
+
+void GLTri3DMesh::drawIds(){
+    if (! _faces.empty()) {
+        if( ! _init ) initVBO();
+        if( ! _pickingInit ){
+            std::cerr << "Picking not initialized. Call initVBO(true) first"
+                      << std::endl;
+        }
+        draw();
+    }
+}
+
+Eigen::Map<GLTri3DMesh::Vector>
+GLTri3DMesh::getVertexMap(int id){
+    return Eigen::Map<GLTri3DMesh::Vector>(&(_vertices.at(Dim*id)));
 }
 
 void GLTri3DMesh::computeNormals(){

@@ -47,8 +47,12 @@ struct GLTri3DMesh{
     inline unsigned int nVertices() const;
 
     inline GLTri3DMesh();
-    inline void initVBO();
+    inline void initVBO(bool initForPicking = true);
     inline void draw();
+    // draw ids for picking
+    inline void drawIds();
+
+    inline Eigen::Map<Vector> getVertexMap(int id);
 
 protected:
     inline void computeNormals();
@@ -59,10 +63,10 @@ protected:
     VContainer _vertices;
     VContainer _normals;
     FContainer _faces;    //will be the index buffer
-    bool _init;
+    bool _init, _pickingInit;
 
     GLuint _vao;
-    GLuint _vboFaceArray, _vboVertArray, _vboNormalArray;
+    GLuint _vboFaceArray, _vboVertArray, _vboNormalArray, _vboIdsArray;
 };
 
 
