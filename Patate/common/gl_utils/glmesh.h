@@ -42,6 +42,29 @@ struct GLTri3DMesh{
     typedef Eigen::Matrix<Scalar, Dim, 1> Vector;
     typedef SurfaceMesh::Vertex           Vertex; // ids
 
+    //! \brief Embedded Point type compatible with Grenaille API
+    struct GrenaillePoint
+    {
+    public:
+        enum {Dim = GLTri3DMesh::Dim};
+        typedef typename GLTri3DMesh::Scalar Scalar;
+        typedef Eigen::Matrix<Scalar, Dim,   1>   VectorType;
+        typedef Eigen::Matrix<Scalar, Dim+1, 1>   HVectorType;
+        typedef Eigen::Matrix<Scalar, Dim, Dim>   MatrixType;
+
+        inline GrenaillePoint(int id, GLTri3DMesh &mesh)
+            : m_pos   (mesh.getVertexMap(id)),
+              m_normal(mesh.getNormalVectorMap(id)) {}
+
+        inline const Eigen::Map< VectorType >& pos()    const { return m_pos; }
+        inline const Eigen::Map< VectorType >& normal() const { return m_normal; }
+        inline Eigen::Map< VectorType >& pos()    { return m_pos; }
+        inline Eigen::Map< VectorType >& normal() { return m_normal; }
+    private:
+        Eigen::Map< VectorType > m_pos, m_normal;
+    };
+
+
     inline void addFace(const std::vector<Vertex>& vertices);
     inline void addVertex(const Vector& v);
     inline unsigned int nVertices() const;
