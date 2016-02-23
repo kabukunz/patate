@@ -9,9 +9,108 @@
 #endif
 
 
+#include <iterator>     // std::iterator, std::input_iterator_tag
+
+
 
 namespace PatateCommon
 {
+
+
+template<typename VertexContainer>
+struct GLTri3DMesh::_GrenailleIterator : public std::iterator<std::input_iterator_tag, int>
+{
+public:
+    typedef std::iterator<std::input_iterator_tag, int> Base;
+    // override default iterator members
+    typedef GLTri3DMesh::GrenaillePoint         value_type;
+    typedef Base::difference_type  difference_type;
+    typedef GLTri3DMesh::GrenaillePoint*        pointer;
+    typedef GLTri3DMesh::GrenaillePoint&        reference;
+
+private:
+    typename VertexContainer::iterator _vit, _vend;
+    typename VertexContainer::iterator _nit, _nend;
+
+public:
+
+    _GrenailleIterator(VertexContainer& vertices, VertexContainer& normals)
+        : _vit(vertices.begin()), _vend(vertices.end()),
+          _nit(normals.begin()),  _nend(normals.end()){}
+
+    _GrenailleIterator(typename VertexContainer::iterator end)
+        : _vit(end), _vend(end),
+          _nit(end),  _nend(end){}
+
+    _GrenailleIterator& operator++() {
+        for(int i = 0; i != Dim; ++i) {
+            ++_vit; assert(_vit != _vend);
+            ++_nit; assert(_nit != _nend);
+        }
+    return *this;
+    }
+    //Iterator operator++(int) {Iterator tmp(*this); operator++(); return tmp;}
+    bool operator==(const _GrenailleIterator& rhs) {return _vit==rhs._vit;}
+    bool operator!=(const _GrenailleIterator& rhs) {return _vit!=rhs._vit;}
+    const reference operator*() const {return value_type(*_vit, *_nit);}
+    reference operator*() {return value_type(*_vit, *_nit);}
+};
+
+
+template<typename VertexContainer>
+struct GLTri3DMesh::_VectorIterator : public std::iterator<std::input_iterator_tag, int>
+{
+public:
+    typedef std::iterator<std::input_iterator_tag, int> Base;
+    // override default iterator members
+    typedef Eigen::Map<GLTri3DMesh::Vector> value_type;
+    typedef Base::difference_type  difference_type;
+    typedef value_type*   pointer;
+    typedef Eigen::Map<GLTri3DMesh::Vector>        reference;
+    typedef Eigen::Map<const GLTri3DMesh::Vector>  const_reference;
+
+private:
+    typename VertexContainer::iterator _it, _end;
+
+public:
+
+    _VectorIterator(VertexContainer& data)
+        : _it(data.begin()), _end(data.end()){}
+
+    _VectorIterator(typename VertexContainer::iterator end)
+        : _it(end), _end(end){}
+
+    _VectorIterator& operator++() {
+        for(int i = 0; i != Dim; ++i) {
+            ++_it; assert(_it != _end);
+        }
+        return *this;
+    }
+
+    bool operator==(const _VectorIterator& rhs) {return _it==rhs._it;}
+    bool operator!=(const _VectorIterator& rhs) {return _it!=rhs._it;}
+    const_reference operator*() const {return const_reference(&(*_it));}
+    reference operator*() {return reference(&(*_it));}
+};
+
+GLTri3DMesh::grenailleIterator
+GLTri3DMesh::begin() { return grenailleIterator(_vertices, _normals); }
+
+GLTri3DMesh::grenailleIterator
+GLTri3DMesh::end()   { return grenailleIterator(_vertices.end()); }
+
+GLTri3DMesh::posIterator
+GLTri3DMesh::vertexBegin() { return posIterator(_vertices); }
+
+GLTri3DMesh::posIterator
+GLTri3DMesh::vertexEnd()   { return posIterator(_vertices.end()); }
+
+GLTri3DMesh::normalIterator
+GLTri3DMesh::normalBegin() { return normalIterator(_normals); }
+
+GLTri3DMesh::normalIterator
+GLTri3DMesh::normalEnd()   { return normalIterator(_normals.end()); }
+
 
 GLTri3DMesh::GLTri3DMesh()
     : _init(false),
@@ -125,6 +224,11 @@ GLTri3DMesh::getVertexMap(int id){
 Eigen::Map<GLTri3DMesh::Vector>
 GLTri3DMesh::getNormalVectorMap(int id){
     return Eigen::Map<GLTri3DMesh::Vector>(&(_normals.at(Dim*id)));
+}
+
+GLTri3DMesh::GrenaillePoint
+GLTri3DMesh::getGrenaillePoint(int id){
+    return GrenaillePoint(id, *this);
 }
 
 void GLTri3DMesh::computeNormals(){
