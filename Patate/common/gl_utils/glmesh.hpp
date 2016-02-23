@@ -137,7 +137,7 @@ void GLTri3DMesh::addVertex(const Vector &v){
 }
 
 unsigned int GLTri3DMesh::nVertices() const{
-    return _vertices.size();
+    return _vertices.size() / 3;
 }
 
 
@@ -169,7 +169,7 @@ void GLTri3DMesh::initVBO(bool initForPicking){
         glEnableVertexAttribArray( 1 );
 
         if (initForPicking) {
-            std::vector<GLuint> vids; vids.resize(nVertices());
+            std::vector<GLuint> vids; vids.resize(3*nVertices());
             {
                 int i = 0;
                 for(std::vector<GLuint>::iterator it = vids.begin();
