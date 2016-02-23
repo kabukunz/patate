@@ -121,6 +121,8 @@ public:
     inline void draw();
     // draw ids for picking
     inline void drawIds();
+    //! \brief Center geometry to the centroid
+    inline void translateToCentroid();
 
     inline Eigen::Map<Vector> getVertexMap(int id);
     inline Eigen::Map<Vector> getNormalVectorMap(int id);

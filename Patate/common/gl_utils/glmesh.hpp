@@ -10,6 +10,7 @@
 
 
 #include <iterator>     // std::iterator, std::input_iterator_tag
+#include <numeric>      // std::accumulate
 
 
 
@@ -192,6 +193,54 @@ void GLTri3DMesh::initVBO(bool initForPicking){
         glBindVertexArray(0);
         _init = true;
     }
+}
+
+#include <time.h>
+
+void GLTri3DMesh::translateToCentroid(){
+    _init = false;
+
+//#define COMPARE_TIMING
+#ifdef COMPARE_TIMING
+
+
+    clock_t start_t, end_t;
+    Vector center;
+
+    static const int N = 10000;
+
+    start_t = clock();
+    for (int i  = 0; i!= N; ++i)
+    center = std::accumulate(vertexBegin(), vertexEnd(),
+                             Vector::Zero().eval()) / Scalar(nVertices());
+    end_t = clock();
+    std::cout << "accumulate: "
+              <<  (double)(end_t - start_t) / CLOCKS_PER_SEC
+              << " --- " << center.transpose()
+              << std::endl;
+
+
+    start_t = clock();
+    for (int i  = 0; i!= N; ++i)
+    center =
+    Eigen::Map<const Eigen::Matrix <Scalar, Dim, Eigen::Dynamic> >
+            (_vertices.data(), Dim, nVertices())
+            .rowwise().sum() / Scalar(nVertices()) ;
+    end_t = clock();
+    std::cout << "eigen sum: "
+              <<  (double)(end_t - start_t) / CLOCKS_PER_SEC
+               << " --- " << center.transpose()
+              << std::endl;
+
+#else
+    Vector center = std::accumulate(vertexBegin(), vertexEnd(),
+                                    Vector::Zero().eval()) / Scalar(nVertices());
+
+#endif
+
+    for (posIterator it = vertexBegin(); it != vertexEnd(); ++it)
+       (*it) -= center;
+
 }
 
 void GLTri3DMesh::draw(){
