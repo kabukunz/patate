@@ -53,8 +53,7 @@ public:
     //Iterator operator++(int) {Iterator tmp(*this); operator++(); return tmp;}
     bool operator==(const _GrenailleIterator& rhs) {return _vit==rhs._vit;}
     bool operator!=(const _GrenailleIterator& rhs) {return _vit!=rhs._vit;}
-    const reference operator*() const {return value_type(*_vit, *_nit);}
-    reference operator*() {return value_type(*_vit, *_nit);}
+    value_type operator*() {return value_type(&(*_vit), &(*_nit));}
 };
 
 
