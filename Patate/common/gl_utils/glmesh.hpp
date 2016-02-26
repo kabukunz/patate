@@ -45,8 +45,8 @@ public:
 
     _GrenailleIterator& operator++() {
         for(int i = 0; i != Dim; ++i) {
-            ++_vit; assert(_vit != _vend);
-            ++_nit; assert(_nit != _nend);
+            assert(_vit != _vend); ++_vit;
+            assert(_nit != _nend); ++_nit;
         }
     return *this;
     }
@@ -82,7 +82,8 @@ public:
 
     _VectorIterator& operator++() {
         for(int i = 0; i != Dim; ++i) {
-            ++_it; assert(_it != _end);
+            assert(_it != _end);
+            ++_it;
         }
         return *this;
     }
@@ -92,6 +93,60 @@ public:
     const_reference operator*() const {return const_reference(&(*_it));}
     reference operator*() {return reference(&(*_it));}
 };
+
+
+template<typename VertexContainer>
+struct GLTri3DMesh::_FaceIterator : public std::iterator<std::input_iterator_tag, int>
+{
+public:
+    struct VertList {
+    private:
+        GLTri3DMesh::GrenaillePoint data [3];
+
+    public:
+        inline VertList(GLTri3DMesh::GrenaillePoint v0,
+                        GLTri3DMesh::GrenaillePoint v1,
+                        GLTri3DMesh::GrenaillePoint v2)
+            { data[0] = v0; data[1] = v1; data[2] = v2;}
+
+        inline GLTri3DMesh::GrenaillePoint& operator[](int i) { return data[i];}
+        inline const GLTri3DMesh::GrenaillePoint& operator[](int i) const { return data[i];}
+    };
+
+    typedef std::iterator<std::input_iterator_tag, int> Base;
+    // override default iterator members
+    typedef VertList               value_type;
+    typedef Base::difference_type  difference_type;
+    typedef VertList*              pointer;
+    typedef VertList&              reference;
+
+private:
+    typename FContainer::iterator _it, _end;
+    GLTri3DMesh &_mesh;
+
+
+public:
+
+    _FaceIterator(GLTri3DMesh &mesh, bool end)
+        : _it(end ? mesh._faces.end() : mesh._faces.begin()),
+          _end(mesh._faces.end()),
+          _mesh(mesh){}
+
+    _FaceIterator& operator++() {
+        for(int i = 0; i != 3; ++i) {
+            assert(_it != _end); ++_it;
+        }
+    return *this;
+    }
+    //Iterator operator++(int) {Iterator tmp(*this); operator++(); return tmp;}
+    bool operator==(const _FaceIterator& rhs) {return _it==rhs._it;}
+    bool operator!=(const _FaceIterator& rhs) {return _it!=rhs._it;}
+    value_type operator*() { return value_type(
+                    _mesh.getGrenaillePoint( *(_it) ),
+                    _mesh.getGrenaillePoint( *(_it+1) ),
+                    _mesh.getGrenaillePoint( *(_it+2) ));}
+};
+
 
 GLTri3DMesh::grenailleIterator
 GLTri3DMesh::begin() { return grenailleIterator(_vertices, _normals); }
@@ -110,6 +165,12 @@ GLTri3DMesh::normalBegin() { return normalIterator(_normals); }
 
 GLTri3DMesh::normalIterator
 GLTri3DMesh::normalEnd()   { return normalIterator(_normals.end()); }
+
+GLTri3DMesh::faceIterator
+GLTri3DMesh::faceBegin() { return faceIterator(*this, false); }
+
+GLTri3DMesh::faceIterator
+GLTri3DMesh::faceEnd()   { return faceIterator(*this, true); }
 
 
 GLTri3DMesh::GLTri3DMesh()
@@ -131,6 +192,25 @@ void GLTri3DMesh::addFace(const std::vector<Vertex> &vertices){
     for(int i = 0; i < 3; ++i) _faces[off+i] = vertices[i].idx();
 }
 
+
+void GLTri3DMesh::addFace(Vertex v0, Vertex v1, Vertex v2){
+
+    _init = false;
+    _faces.reserve(_faces.size() + 3);
+    _faces.push_back(v0.idx());
+    _faces.push_back(v1.idx());
+    _faces.push_back(v2.idx());
+}
+
+void GLTri3DMesh::addFace(int v0, int v1, int v2){
+
+    _init = false;
+    _faces.reserve(_faces.size() + 3);
+    _faces.push_back(v0);
+    _faces.push_back(v1);
+    _faces.push_back(v2);
+}
+
 void GLTri3DMesh::addVertex(const Vector &v){
     _init = false;
     std::copy (v.data(),v.data()+Dim,back_inserter(_vertices));
@@ -139,6 +219,7 @@ void GLTri3DMesh::addVertex(const Vector &v){
 unsigned int GLTri3DMesh::nVertices() const{
     return _vertices.size() / 3;
 }
+
 
 
 void GLTri3DMesh::initVBO(bool initForPicking){
@@ -192,6 +273,36 @@ void GLTri3DMesh::initVBO(bool initForPicking){
         glBindVertexArray(0);
         _init = true;
     }
+}
+
+void
+GLTri3DMesh::clearVBO(){
+
+    glDeleteVertexArrays (1, &_vao);
+    glDeleteBuffers (1, &_vboVertArray);
+    glDeleteBuffers (1, &_vboNormalArray);
+    if (_pickingInit) {
+        glDeleteBuffers (1, &_vboIdsArray);
+    }
+    glDeleteBuffers (1, &_vboFaceArray);
+
+//    glBindVertexArray(_vao);
+//    glBindBuffer(GL_ARRAY_BUFFER, _vboVertArray);
+//    glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+//    glBindBuffer(GL_ARRAY_BUFFER, _vboNormalArray);
+//    glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+
+//    if (_pickingInit) {
+//        glBindBuffer(GL_ARRAY_BUFFER, _vboIdsArray);
+//        glBufferData(GL_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+//    }
+
+//    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _vboFaceArray);
+//    glBufferData(GL_ELEMENT_ARRAY_BUFFER, 0, 0, GL_STATIC_DRAW);
+
+//    glBindVertexArray(0);
+//    glDeleteVertexArrays (1, _vao);
+    _init = false;
 }
 
 #include <time.h>

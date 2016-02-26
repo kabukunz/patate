@@ -66,6 +66,9 @@ protected:
     //! \brief Iterator binding internal vertices and normals representation
     template<typename VertexContainer> struct _VectorIterator;
 
+    //! \brief Iterator binding internal data in GrenaillePoint instances, and iterate by faces
+    template<typename VertexContainer> struct _FaceIterator;
+
 
 public:
     typedef _GrenailleIterator<VContainer>             grenailleIterator;
@@ -76,6 +79,9 @@ public:
 
     typedef _VectorIterator<VContainer>                normalIterator;
     typedef _VectorIterator<const VContainer>    const_normalIterator;
+
+    typedef _FaceIterator<VContainer>                  faceIterator;
+    typedef _FaceIterator<const VContainer>      const_faceIterator;
 
     //! \brief Embedded Point type compatible with Grenaille API
     struct GrenaillePoint
@@ -95,6 +101,17 @@ public:
             : m_pos   (Eigen::Map< VectorType >(v)),
               m_normal(Eigen::Map< VectorType >(n)) {}
 
+        inline GrenaillePoint()
+            : m_pos   (Eigen::Map< VectorType >(NULL)),
+              m_normal(Eigen::Map< VectorType >(NULL)) {}
+
+        //! \see http://eigen.tuxfamily.org/dox/group__TutorialMapClass.html
+        inline GrenaillePoint& operator=(GrenaillePoint& other){
+            new (&m_pos) Eigen::Map< VectorType >(other.m_pos.data(), Dim);
+            new (&m_normal) Eigen::Map< VectorType >(other.m_normal.data(), Dim);
+            return *this;
+        }
+
         inline const Eigen::Map< VectorType >& pos()    const { return m_pos; }
         inline const Eigen::Map< VectorType >& normal() const { return m_normal; }
         inline Eigen::Map< VectorType >& pos()    { return m_pos; }
@@ -103,7 +120,11 @@ public:
         Eigen::Map< VectorType > m_pos, m_normal;
     };
 
+    inline ~GLTri3DMesh() { clearVBO(); }
+
     inline void addFace(const std::vector<Vertex>& vertices);
+    inline void addFace(Vertex v0, Vertex v1, Vertex v2);
+    inline void addFace(int v0, int v1, int v2);
     inline void addVertex(const Vector& v);
     inline unsigned int nVertices() const;
 
@@ -116,8 +137,12 @@ public:
     inline normalIterator normalBegin();
     inline normalIterator normalEnd();
 
+    inline faceIterator faceBegin();
+    inline faceIterator faceEnd();
+
     inline GLTri3DMesh();
     inline void initVBO(bool initForPicking = true);
+    inline void clearVBO();
     inline void draw();
     // draw ids for picking
     inline void drawIds();
