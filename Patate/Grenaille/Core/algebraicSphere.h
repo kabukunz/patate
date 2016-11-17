@@ -99,7 +99,8 @@ public:
         m_ul = VectorType::Zero();
         m_uq = Scalar(0.0);
       
-        m_isNormalized = false;
+        // prevent to apply default Pratt norm leading to a division by zero
+        m_isNormalized = true;
     }
 
     /*! \brief Reading access to the basis center (evaluation position) */
@@ -215,7 +216,32 @@ public:
         return bReady && bPlanar;
     }
 
+    // TESTS
+    MULTIARCH inline AlgebraicSphere operator*(const Scalar a)
+    {
+        AlgebraicSphere s;
+        s.m_p = m_p;
+        s.m_ul = m_ul * a;
+        s.m_uc = m_uc * a;
+        s.m_uq = m_uq * a;
+        s.applyPrattNorm();
+        return s;
+    }
+
+    MULTIARCH inline AlgebraicSphere& operator*=(Scalar a)
+    {
+        m_ul *= a;
+        m_uc *= a;
+        m_uq *= a;
+        applyPrattNorm();
+        return *this;
+    }
+
+
+
 }; //class AlgebraicSphere
+
+
 
 #include "algebraicSphere.hpp"
 
