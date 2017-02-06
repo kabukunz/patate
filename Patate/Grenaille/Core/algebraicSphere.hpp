@@ -60,3 +60,19 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::primitiveGradient( const VectorType &_
         return (m_ul + Scalar(2.f) * m_uq * lq);
 }
 
+/**************************************************************************/
+/* Experimentation (CM)                                                   */
+/**************************************************************************/
+#ifdef PATATE_EXPERIMENTAL
+template < class DataPoint, class _WFunctor, typename T>
+void
+AlgebraicSphere<DataPoint, _WFunctor, T>::setParameters(const Scalar& uc, const VectorType& ul, const Scalar& uq, const VectorType& p)
+{
+    m_uc = uc;
+    m_ul = ul;
+    m_uq = uq;
+    m_p = p;
+    m_isNormalized = false;
+    Base::m_eCurrentState = STABLE;
+}
+#endif //PATATE_EXPERIMENTAL

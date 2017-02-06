@@ -204,28 +204,10 @@ public:
         return bReady && bPlanar;
     }
 
-    // TESTS
-    MULTIARCH inline AlgebraicSphere operator*(const Scalar a)
-    {
-        AlgebraicSphere s;
-        s.m_p = m_p;
-        s.m_ul = m_ul * a;
-        s.m_uc = m_uc * a;
-        s.m_uq = m_uq * a;
-        s.applyPrattNorm();
-        return s;
-    }
-
-    MULTIARCH inline AlgebraicSphere& operator*=(Scalar a)
-    {
-        m_ul *= a;
-        m_uc *= a;
-        m_uq *= a;
-        applyPrattNorm();
-        return *this;
-    }
-
-
+#ifdef PATATE_EXPERIMENTAL
+    //! \brief Set sphere parameters
+    MULTIARCH inline void setParameters(const Scalar& uc, const VectorType& ul, const Scalar& uq, const VectorType& p);
+#endif //PATATE_EXPERIMENTAL
 
 }; //class AlgebraicSphere
 

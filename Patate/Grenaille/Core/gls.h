@@ -65,37 +65,6 @@ public:
     MULTIARCH inline GLSParam() : m_t(0) {}
 
     /**************************************************************************/
-    /* Experimentation (CM)                                                   */
-    /**************************************************************************/
-
-    /*! \brief Constructor from tau, eta, kappa */
-    MULTIARCH inline void setParameters(const Scalar& tau, const VectorType& eta, const Scalar& kappa)
-    {
-        Base::m_uc = tau;
-        Base::m_ul = eta.normalized() * (Scalar(1) + Scalar(2)*tau*kappa);
-        Base::m_uq = kappa / Scalar(2);
-        Base::applyPrattNorm();
-        Base::m_eCurrentState = STABLE;
-    }
-
-    /*! \brief Change basis */
-    MULTIARCH inline void changeBasis(const VectorType& q)
-    {
-        Base::applyPrattNorm();
-
-        Scalar new_tau = Base::potential(q);
-        VectorType new_eta = Base::primitiveGradient(q);
-        //setParameters(new_tau, new_eta, kappa());
-        setParameters(new_tau, new_eta, kappa());
-        Base::applyPrattNorm();
-
-        /*
-        Base::m_uc = tau_tmp + std::sqrt(1.0 + 2.0 * tau_tmp * kappa_tmp) * eta_tmp.dot(p) + (kappa_tmp / 2.0) * p.squaredNorm();
-        Base::m_ul = std::sqrt(1.0 + 2.0 * tau_tmp * kappa_tmp) * eta_tmp + kappa_tmp * p;
-        */
-    }
-
-    /**************************************************************************/
     /* Initialization                                                         */
     /**************************************************************************/
     /*! \copydoc Concept::FittingProcedureConcept::setWeightFunc() */
