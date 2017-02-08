@@ -54,6 +54,14 @@ set(CMAKE_MAKE_PROGRAM ${CMAKE_MAKE_PROGRAM_SAVE})
 unset(CMAKE_MAKE_PROGRAM_SAVE) 
 unset(PATATE_MAKECOMMAND_PLACEHOLDER)
 
+# enable multi-threading
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    message("Compiling tests with OpenMP")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
 
 # Configure coverage
 if(CMAKE_COMPILER_IS_GNUCXX)
