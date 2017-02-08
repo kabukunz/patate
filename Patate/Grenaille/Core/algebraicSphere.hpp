@@ -75,4 +75,56 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::setParameters(const Scalar& uc, const 
     m_isNormalized = false;
     Base::m_eCurrentState = STABLE;
 }
+
+template < class DataPoint, class _WFunctor, typename T>
+void
+AlgebraicSphere<DataPoint, _WFunctor, T>::changeBasis(const VectorType& new_base)
+{
+    Scalar ulnb = m_ul.transpose() * new_base;
+    Scalar nbnb = new_base.transpose() * new_base;
+    setParameters(m_uc - ulnb + m_uq * nbnb,
+                  m_ul - 2.0 * m_uq * new_base,
+                  m_uq,
+                  new_base);
+    applyPrattNorm();
+}
+
+template < class DataPoint, class _WFunctor, typename T>
+AlgebraicSphere<DataPoint, _WFunctor, T>
+AlgebraicSphere<DataPoint, _WFunctor, T>::combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha)
+{
+    // same base
+    VectorType new_base = q2.m_p + alpha * (q1.m_p - q2.m_p);
+    AlgebraicSphere q1_new_base = q1;
+    AlgebraicSphere q2_new_base = q2;
+    q1_new_base.changeBasis(new_base);
+    q2_new_base.changeBasis(new_base);
+
+    // compute Salpha = S2 + alpha(S1 - S2)
+    Scalar new_uc       = q2_new_base.m_uc + alpha * (q1_new_base.m_uc - q2_new_base.m_uc);
+    VectorType new_ul   = q2_new_base.m_ul + alpha * (q1_new_base.m_ul - q2_new_base.m_ul);
+    Scalar new_uq       = q2_new_base.m_uq + alpha * (q1_new_base.m_uq - q2_new_base.m_uq);
+    VectorType new_p    = new_base;
+
+    setParameters(new_uc, new_ul, new_uq, new_p);
+    applyPrattNorm();
+}
+
+template < class DataPoint, class _WFunctor, typename T>
+typename DataPoint::Scalar
+AlgebraicSphere<DataPoint, _WFunctor, T>::distanceSegSphere(const VectorType& v0, const VectorType& v1)
+{
+    VectorType v0_centered = v0 - m_p;
+    VectorType v1_centered = v1 - m_p;
+
+    AlgebraicSphere prim;
+    prim.setParameters(0.0, 0.5 * m_ul + m_uq * v0_centered, (1.0/3.0) * m_uq, m_p);
+    applyPrattNorm();
+
+    // S(v0) + S'(v1 - v0)
+    Scalar norm = (v1 - v0).norm();
+
+    Scalar dist = (potential(v0_centered) + prim.potential(v1_centered - v0_centered)) * norm;
+    return dist;
+}
 #endif //PATATE_EXPERIMENTAL

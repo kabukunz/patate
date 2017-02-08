@@ -219,6 +219,16 @@ public:
 #ifdef PATATE_EXPERIMENTAL
     //! \brief Set sphere parameters
     MULTIARCH inline void setParameters(const Scalar& uc, const VectorType& ul, const Scalar& uq, const VectorType& p);
+
+    //! \brief Change basis of the algebraic sphere
+    MULTIARCH inline void changeBasis(const VectorType& new_base);
+
+    //! \brief Compute interpolation of two spheres
+    MULTIARCH inline AlgebraicSphere combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha);
+
+    //! \brief Compute the distance segment sphere
+    MULTIARCH inline Scalar distanceSegSphere(const VectorType& v0, const VectorType& v1);
+
 #endif //PATATE_EXPERIMENTAL
 
 }; //class AlgebraicSphere
