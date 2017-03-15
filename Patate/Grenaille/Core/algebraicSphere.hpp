@@ -78,35 +78,42 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::setParameters(const Scalar& uc, const 
 
 template < class DataPoint, class _WFunctor, typename T>
 void
-AlgebraicSphere<DataPoint, _WFunctor, T>::changeBasis(const VectorType& new_base)
+AlgebraicSphere<DataPoint, _WFunctor, T>::combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha)
 {
-    Scalar ulnb = m_ul.transpose() * new_base;
-    Scalar nbnb = new_base.transpose() * new_base;
-    setParameters(m_uc - ulnb + m_uq * nbnb,
-                  m_ul - 2.0 * m_uq * new_base,
-                  m_uq,
-                  new_base);
+    VectorType new_base = q1.m_p + alpha * (q2.m_p - q1.m_p);
+    AlgebraicSphere q1_new_base = q1;
+    AlgebraicSphere q2_new_base = q2;
+
+    // compute Salpha = S1 + alpha(S2 - S1)
+    Scalar new_uc       = q1_new_base.m_uc + alpha * (q2_new_base.m_uc - q1_new_base.m_uc);
+    VectorType new_ul   = q1_new_base.m_ul + alpha * (q2_new_base.m_ul - q1_new_base.m_ul);
+    Scalar new_uq       = q1_new_base.m_uq + alpha * (q2_new_base.m_uq - q1_new_base.m_uq);
+    VectorType new_p    = new_base;
+    new_ul.normalize();
+
+    setParameters(new_uc, new_ul, new_uq, new_p);
+
     applyPrattNorm();
 }
 
 template < class DataPoint, class _WFunctor, typename T>
-AlgebraicSphere<DataPoint, _WFunctor, T>
-AlgebraicSphere<DataPoint, _WFunctor, T>::combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha)
+void
+AlgebraicSphere<DataPoint, _WFunctor, T>::combine(const AlgebraicSphere& q0, const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar gamma1, Scalar gamma2)
 {
-    // same base
-    VectorType new_base = q2.m_p + alpha * (q1.m_p - q2.m_p);
+    VectorType new_base = gamma1 * q0.m_p + gamma2 * q1.m_p + (1.0 - gamma1 - gamma2) * q2.m_p;
+    AlgebraicSphere q0_new_base = q0;
     AlgebraicSphere q1_new_base = q1;
     AlgebraicSphere q2_new_base = q2;
-    q1_new_base.changeBasis(new_base);
-    q2_new_base.changeBasis(new_base);
 
-    // compute Salpha = S2 + alpha(S1 - S2)
-    Scalar new_uc       = q2_new_base.m_uc + alpha * (q1_new_base.m_uc - q2_new_base.m_uc);
-    VectorType new_ul   = q2_new_base.m_ul + alpha * (q1_new_base.m_ul - q2_new_base.m_ul);
-    Scalar new_uq       = q2_new_base.m_uq + alpha * (q1_new_base.m_uq - q2_new_base.m_uq);
+    // compute Salpha = gamma1 * S0 + gamma2 * S1 + (1.0 - gamma1 - gamma2) * S2
+    Scalar new_uc       = gamma1 * q0_new_base.m_uc + gamma2 * q1_new_base.m_uc + (1.0 - gamma1 - gamma2) * q2_new_base.m_uc;
+    VectorType new_ul   = gamma1 * q0_new_base.m_ul + gamma2 * q1_new_base.m_ul + (1.0 - gamma1 - gamma2) * q2_new_base.m_ul;
+    Scalar new_uq       = gamma1 * q0_new_base.m_uq + gamma2 * q1_new_base.m_uq + (1.0 - gamma1 - gamma2) * q2_new_base.m_uq;
     VectorType new_p    = new_base;
+    new_ul.normalize();
 
     setParameters(new_uc, new_ul, new_uq, new_p);
+
     applyPrattNorm();
 }
 
@@ -116,15 +123,46 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::distanceSegSphere(const VectorType& v0
 {
     VectorType v0_centered = v0 - m_p;
     VectorType v1_centered = v1 - m_p;
+    VectorType seg = v1_centered - v0_centered;
 
     AlgebraicSphere prim;
-    prim.setParameters(0.0, 0.5 * m_ul + m_uq * v0_centered, (1.0/3.0) * m_uq, m_p);
-    applyPrattNorm();
+    prim.setParameters(0.0, 0.5 * m_ul + m_uq * v0_centered, (1.0/3.0) * m_uq, VectorType::Zero()); //v0_centered
 
-    // S(v0) + S'(v1 - v0)
-    Scalar norm = (v1 - v0).norm();
+    Scalar norm = (v1 - v0).norm(); // v1 and v0 centered
 
-    Scalar dist = (potential(v0_centered) + prim.potential(v1_centered - v0_centered)) * norm;
+    // (S(v0) + S'(v1 - v0)) * norm(v1-v0)
+    Scalar dist = (potential(v0) + prim.potential(seg)) * norm;
+    //Scalar dist = (potential(v0_centered) + prim.potential(seg)) * norm;  // to have the same results than the poster
+                                                                            // eurographics 2017
     return dist;
 }
+
+template < class DataPoint, class _WFunctor, typename T>
+typename DataPoint::Scalar
+// https://en.wikipedia.org/wiki/Barycentric_coordinate_system
+AlgebraicSphere<DataPoint, _WFunctor, T>::distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2)
+{
+    VectorType v0_centered = v0 - m_p;
+    VectorType v1_centered = v1 - m_p;
+    VectorType v2_centered = v2 - m_p;
+
+    AlgebraicSphere prim;
+    /* \TODO{ Understand what has to be centered or not } */
+    /* \TODO{ How to factorize the formula } */
+    prim.setParameters(0.0, (1.0/6.0) * m_ul + (1.0/3.0) * m_uq * v2_centered, (1.0/12.0) * m_uq, VectorType::Zero());
+    Scalar residual = (1.0/12.0) * m_uq * (v1_centered - v2_centered).dot(v0_centered - v2_centered);
+    Scalar area = ( ( ( v0 - v1 ).cross( v2 - v0 ) ).norm() * 0.5 );
+
+    Scalar dist = 2.0 * area * (0.5 * potential(v2) + prim.potential(v0 - v2) + prim.potential(v1 - v2) + residual) ;
+    return dist;
+}
+
+template < class DataPoint, class _WFunctor, typename T>
+bool
+AlgebraicSphere<DataPoint, _WFunctor, T>::hasSameParameter(const AlgebraicSphere& q1) const
+{
+    Scalar epsilon = Eigen::NumTraits<Scalar>::dummy_precision();
+    return ((q1.m_uc - m_uc) < epsilon && (q1.m_ul - m_ul).norm() < epsilon && (q1.m_uq - m_uq) < epsilon);
+}
+
 #endif //PATATE_EXPERIMENTAL

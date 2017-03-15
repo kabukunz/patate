@@ -117,7 +117,7 @@ public:
         //m_uq is not changed
         m_p = newbasis;
         m_isNormalized = false;
-        applyPrattNorm();
+        //applyPrattNorm();
     }
 
     /*! \brief compute the Pratt norm of the implicit scalar field. */
@@ -125,12 +125,14 @@ public:
     {
         MULTIARCH_STD_MATH(sqrt);
         return sqrt(prattNorm2());
+        //return sqrt(std::abs(prattNorm2()));
     }
     
     /*! \brief compute the squared Pratt norm of the implicit scalar field. */
     MULTIARCH inline Scalar prattNorm2() const
     {
         return m_ul.squaredNorm() - Scalar(4.) * m_uc * m_uq;
+        //return m_ul.x() * m_ul.x() + m_ul.y() * m_ul.y() -  Scalar(4.) * m_uc * m_uq;
     }
 
     /*!
@@ -220,14 +222,21 @@ public:
     //! \brief Set sphere parameters
     MULTIARCH inline void setParameters(const Scalar& uc, const VectorType& ul, const Scalar& uq, const VectorType& p);
 
-    //! \brief Change basis of the algebraic sphere
-    MULTIARCH inline void changeBasis(const VectorType& new_base);
-
     //! \brief Compute interpolation of two spheres
-    MULTIARCH inline AlgebraicSphere combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha);
+    MULTIARCH inline void combine(const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar alpha);
+    MULTIARCH inline void combine(const AlgebraicSphere& q0, const AlgebraicSphere& q1, const AlgebraicSphere &q2, Scalar gamma1, Scalar gamma2);
 
     //! \brief Compute the distance segment sphere
     MULTIARCH inline Scalar distanceSegSphere(const VectorType& v0, const VectorType& v1);
+
+    //! \brief Compute the distance face sphere
+    MULTIARCH inline Scalar distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2);
+
+    /*!
+        \brief Used to know if two algebraic spheres are the same
+        \return true if the two algebraic spheres are the same
+    */
+    MULTIARCH inline bool hasSameParameter(const AlgebraicSphere& q1) const;
 
 #endif //PATATE_EXPERIMENTAL
 
