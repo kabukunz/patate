@@ -93,6 +93,43 @@ protected:
 
 };// class DistWeightFunc
 
+template <class DataPoint, class WeightKernel>
+class RIMLSWeightFunc
+{
+public:
+    /*! \brief Scalar type from DataPoint */
+    typedef typename DataPoint::Scalar Scalar;
+    /*! \brief Vector type from DataPoint */
+    typedef typename DataPoint::VectorType VectorType;
+
+    /*!
+        \brief Constructor
+    */
+    MULTIARCH inline RIMLSWeightFunc()
+    {
+
+    }
+
+    /*!
+        \brief Compute the weight of the given query with respect to its coordinates.
+    */
+    MULTIARCH inline Scalar w(const VectorType& _q, const DataPoint&  _d);
+
+
+    //MULTIARCH inline Scalar setSigmaR(const Scalar& r) { m_sigma_r = r; }
+    //MULTIARCH inline Scalar setSigmaR(const Scalar& n) { m_sigma_n = n; }
+
+protected:
+    int m_i;
+    VectorType m_x;
+    Scalar m_f;
+    VectorType m_grad_f;
+    Scalar m_sigma_r;
+    Scalar m_sigma_n;
+    Scalar m_hi;
+
+};// class RIMLSWeightFunc
+
 #include "weightFunc.hpp"
 
 }// namespace Grenaille

@@ -71,6 +71,9 @@ public:
     /*! \copydoc Concept::FittingProcedureConcept::addNeighbor() */
     MULTIARCH inline bool addNeighbor(const DataPoint &_nei);
 
+    /*! \todo */
+    MULTIARCH inline bool addNeighbor(const DataPoint &_nei, const Scalar w);
+
     /*! \copydoc Concept::FittingProcedureConcept::finalize() */
     MULTIARCH inline FIT_RESULT finalize();
     

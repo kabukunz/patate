@@ -89,7 +89,7 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::combine(const AlgebraicSphere& q1, con
     VectorType new_ul   = q1_new_base.m_ul + alpha * (q2_new_base.m_ul - q1_new_base.m_ul);
     Scalar new_uq       = q1_new_base.m_uq + alpha * (q2_new_base.m_uq - q1_new_base.m_uq);
     VectorType new_p    = new_base;
-    new_ul.normalize();
+    //new_ul.normalize(); // no need
 
     setParameters(new_uc, new_ul, new_uq, new_p);
 
@@ -131,30 +131,77 @@ AlgebraicSphere<DataPoint, _WFunctor, T>::distanceSegSphere(const VectorType& v0
     Scalar norm = (v1 - v0).norm(); // v1 and v0 centered
 
     // (S(v0) + S'(v1 - v0)) * norm(v1-v0)
-    Scalar dist = (potential(v0) + prim.potential(seg)) * norm;
-    //Scalar dist = (potential(v0_centered) + prim.potential(seg)) * norm;  // to have the same results than the poster
-                                                                            // eurographics 2017
+    Scalar dist = (potential(v0) + prim.potential(seg)) * norm; // to have the same results than the short paper
+                                                                // eurographics 2017 (2)
+
+
+    //Scalar dist = (potential(v0_centered) + prim.potential(seg)) * norm;  // to have the same results than the short paper
+                                                                            // eurographics 2017 (1)
     return dist;
 }
 
 template < class DataPoint, class _WFunctor, typename T>
 typename DataPoint::Scalar
 // https://en.wikipedia.org/wiki/Barycentric_coordinate_system
-AlgebraicSphere<DataPoint, _WFunctor, T>::distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2)
+AlgebraicSphere<DataPoint, _WFunctor, T>::distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2, const VectorType& n, Scalar gradient_weight, Scalar min_radius, Scalar max_radius)
 {
     VectorType v0_centered = v0 - m_p;
     VectorType v1_centered = v1 - m_p;
     VectorType v2_centered = v2 - m_p;
 
     AlgebraicSphere prim;
-    /* \TODO{ Understand what has to be centered or not } */
-    /* \TODO{ How to factorize the formula } */
+    // \TODO{ Understand what has to be centered or not }
+    // \TODO{ How to factorize the formula }
     prim.setParameters(0.0, (1.0/6.0) * m_ul + (1.0/3.0) * m_uq * v2_centered, (1.0/12.0) * m_uq, VectorType::Zero());
     Scalar residual = (1.0/12.0) * m_uq * (v1_centered - v2_centered).dot(v0_centered - v2_centered);
-    Scalar area = ( ( ( v0 - v1 ).cross( v2 - v0 ) ).norm() * 0.5 );
+    Scalar area = ( ( ( v1 - v0 ).cross( v2 - v0 ) ).norm() * 0.5 );
 
-    Scalar dist = 2.0 * area * (0.5 * potential(v2) + prim.potential(v0 - v2) + prim.potential(v1 - v2) + residual) ;
+    Scalar dist = 0.0;
+    dist = 2.0 * area * (0.5 * potential(v2) + prim.potential(v0 - v2) + prim.potential(v1 - v2) + residual) ;
+
+    // test
+    //gradient_weight = 1.0 - ((radius() - min_radius) / (max_radius - min_radius));
+    //gradient_weight = ((radius() - min_radius) / (max_radius - min_radius));
+    //gradient_weight = (radius() / (max_radius - min_radius));
+
+    // adding gradient
+    //dist += gradient_weight * (1.0 - ( m_ul.dot(n) + 2.0 * m_uq * v2.dot(n) - 2.0 * m_uq * basisCenter().dot(n) +
+    //                m_uq * (v0 - v2).dot(n) + m_uq * (v1 - v0).dot(n) +
+    //                (1.0/3.0) * m_uq * (v0 + v2 - 2.0 * v1).dot(n)));
+
     return dist;
+}
+
+template < class DataPoint, class _WFunctor, typename T>
+typename DataPoint::Scalar
+// https://en.wikipedia.org/wiki/Barycentric_coordinate_system
+AlgebraicSphere<DataPoint, _WFunctor, T>::gradientFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2, const VectorType& n, Scalar gradient_weight, Scalar min_radius, Scalar max_radius)
+{
+    Scalar dist_gradient = 0.0;
+    Scalar dt = 0.01;
+    VectorType grad;
+    for (Scalar gamma2 = 0.0; gamma2 <= 1.0; gamma2 += dt) // we go through the face
+    {
+        for (Scalar gamma1 = 0.0; gamma1 <= 1.0 - gamma2; gamma1 += dt)
+        {
+            grad = m_ul + 2.0 * m_uq * (gamma1 * v0 + gamma2 * v1 + (1.0 - gamma1 - gamma2) * v2);
+            grad.normalize();
+            //dist_gradient += gradient_weight * (1.0 - grad.dot(n));
+            dist_gradient += (1.0 - grad.dot(n));
+        }
+    }
+    return dist_gradient;
+    //test
+    //gradient_weight = 1.0 - ((radius() - min_radius) / (max_radius - min_radius));
+    //gradient_weight = (radius() - min_radius) / (max_radius - min_radius);
+    //gradient_weight = (radius() / (max_radius - min_radius));
+
+    // adding gradient
+    //Scalar dist = gradient_weight * (1.0 - ( m_ul.dot(n) + 2.0 * m_uq * v2.dot(n) - 2.0 * m_uq * basisCenter().dot(n) +
+    //                m_uq * (v0 - v2).dot(n) + m_uq * (v1 - v0).dot(n) +
+    //                (1.0/3.0) * m_uq * (v0 + v2 - 2.0 * v1).dot(n)));
+
+    //return dist;
 }
 
 template < class DataPoint, class _WFunctor, typename T>

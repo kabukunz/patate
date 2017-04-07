@@ -68,6 +68,7 @@ public:
     MULTIARCH inline Scalar ddf(const Scalar& _x) const { return Scalar(12.)*_x*_x - Scalar(4.); }
 };//class SmoothWeightKernel
 
+
 }// namespace Grenaille
 
 

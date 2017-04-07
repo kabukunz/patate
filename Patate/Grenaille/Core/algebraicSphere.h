@@ -230,7 +230,8 @@ public:
     MULTIARCH inline Scalar distanceSegSphere(const VectorType& v0, const VectorType& v1);
 
     //! \brief Compute the distance face sphere
-    MULTIARCH inline Scalar distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2);
+    MULTIARCH inline Scalar distanceFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2, const VectorType& n, Scalar gradient_weight, Scalar min_radius, Scalar max_radius);
+    MULTIARCH inline Scalar gradientFaceSphere(const VectorType& v0, const VectorType& v1, const VectorType& v2, const VectorType& n, Scalar gradient_weight, Scalar min_radius, Scalar max_radius);
 
     /*!
         \brief Used to know if two algebraic spheres are the same

@@ -48,6 +48,30 @@ OrientedSphereFit<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei)
     return false;
 }
 
+// TODO
+template < class DataPoint, class _WFunctor, typename T>
+bool
+OrientedSphereFit<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei, const Scalar w)
+{
+    // centered basis
+    VectorType q = _nei.pos() - Base::basisCenter();
+
+    if (w > Scalar(0.))
+    {
+        // increment matrix
+        m_sumP     += q * w;
+        m_sumN     += _nei.normal() * w;
+        m_sumDotPN += w * _nei.normal().dot(q);
+        m_sumDotPP += w * q.squaredNorm();
+        m_sumW     += w;
+
+        /*! \todo Handle add of multiple similar neighbors (maybe user side)*/
+        ++(Base::m_nbNeighbors);
+        return true;
+    }
+
+    return false;
+}
 
 template < class DataPoint, class _WFunctor, typename T>
 FIT_RESULT
