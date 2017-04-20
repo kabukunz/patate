@@ -22,7 +22,7 @@ OrientedSphereFit<DataPoint, _WFunctor, T>::init(const VectorType& _evalPos)
 }
 
 template < class DataPoint, class _WFunctor, typename T>
-bool 
+typename OrientedSphereFit<DataPoint, _WFunctor, T>::Scalar
 OrientedSphereFit<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei)
 {
     // centered basis
@@ -42,10 +42,10 @@ OrientedSphereFit<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei)
 
         /*! \todo Handle add of multiple similar neighbors (maybe user side)*/
         ++(Base::m_nbNeighbors);
-        return true;
+        return w;
     }
 
-    return false;
+    return 0.0;
 }
 
 // TODO

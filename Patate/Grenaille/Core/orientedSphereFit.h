@@ -69,7 +69,7 @@ public:
     /* Processing                                                             */
     /**************************************************************************/
     /*! \copydoc Concept::FittingProcedureConcept::addNeighbor() */
-    MULTIARCH inline bool addNeighbor(const DataPoint &_nei);
+    MULTIARCH inline Scalar addNeighbor(const DataPoint &_nei);
 
     /*! \todo */
     MULTIARCH inline bool addNeighbor(const DataPoint &_nei, const Scalar w);
