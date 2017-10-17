@@ -605,11 +605,11 @@ public:
 protected:
     // FIXME: Would likely be better to use a hash map, but this is only
     // available in C++11...
-    typedef std::pair<Vertex, Gradient> VertexGradientPair;
+    typedef std::pair<const Vertex, Gradient> VertexGradientPair;
     typedef std::map<Vertex, Gradient, std::less<Vertex>,
                      Eigen::aligned_allocator<VertexGradientPair> > VertexGradientMap;
 
-    typedef std::pair<Edge, CurvedEdge> EdgeCurvePair;
+    typedef std::pair<const Edge, CurvedEdge> EdgeCurvePair;
     typedef std::map<Edge, CurvedEdge, std::less<Edge>,
                      Eigen::aligned_allocator<EdgeCurvePair> >  CurvedEdgesMap;
 

@@ -29,7 +29,7 @@ public:
     typedef _Value Value;
 
 private:
-    typedef std::pair<float, Value> FloatValuePair;
+    typedef std::pair<const float, Value> FloatValuePair;
     typedef std::map<float, Value, std::less<float>, Eigen::aligned_allocator<FloatValuePair> > Samples;
 
 public:

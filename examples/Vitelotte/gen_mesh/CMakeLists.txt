@@ -14,7 +14,10 @@ set(vitelotte_gen_mesh_SRCS
     pugixml.cpp
     gen_mesh.cpp
 )
-add_definitions(-DNO_TIMER -DLINUX -DTRILIBRARY -DANSI_DECLARATORS)
+if(UNIX AND NOT APPLE)
+    add_definitions(-DLINUX)
+endif()
+add_definitions(-DNO_TIMER -DTRILIBRARY -DANSI_DECLARATORS)
 add_executable(gen_mesh ${vitelotte_gen_mesh_SRCS})
 add_dependencies(vitelotte_examples gen_mesh)
 
