@@ -24,6 +24,10 @@ endif()
 if(NOT mvg_editor_MISSING)
     set(CMAKE_AUTOMOC ON)
 
+    if(${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION} VERSION_GREATER "3.9")
+        cmake_policy(SET CMP0071 NEW)
+    endif()
+
     # Remove a warning triggred by Qt.
     if(CMAKE_COMPILER_IS_GNUCXX)
         set(CMAKE_CXX_FLAGS "-Wno-long-long ${CMAKE_CXX_FLAGS}")
