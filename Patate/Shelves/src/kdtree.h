@@ -11,9 +11,8 @@
 #ifndef _SHELVES_KDTREE_
 #define _SHELVES_KDTREE_
 
-#include "bbox.h"
-
 #include "Eigen/Core"
+#include "Eigen/Geometry"
 
 #include <limits>
 #include <iostream>
@@ -28,66 +27,7 @@
 
 namespace Shelves{
 
-/*!
-  <h3>Generation</h3>
-  You can create the KdTree in two way :
-   - Simple pass construction : easy to use, but use a full vertices memory
-   copy :
-   \code
-    std::vector < KdTree<float>::VectorType > data(60);
-    int i = 0;
 
-    for ( ; i != 30; i++ )
-        data.push_back(KdTree<float>::VectorType::Random());
-
-    data.push_back(KdTree<float>::VectorType(0.5,0.5,0.5));   // we must find this vertex
-    i++;
-
-    for ( ; i != 60; i++ )
-        data.push_back(KdTree<float>::VectorType::Random());
-
-    KdTree<float> t ( data ); // Memory copy
-   \endcode
-
-   - Per-vertex pass construction : more code, but avoid copy, and so better
-   performances are expected :
-    \code
-    KdTree<float> t ( 60 );
-    int i = 0;
-
-    for ( ; i != 30; i++ )
-        t.set( i ,KdTree<float>::VectorType::Random() );
-
-    t.set(i, KdTree<float>::VectorType(0.5,0.5,0.5));   // we must find this vertex
-    i++;
-
-    for ( ; i != 60; i++ )
-        t.set( i ,KdTree<float>::VectorType::Random() );
-
-    t.finalize();  // the real creation of the KdTree
-    \endcode
-    This version is expected to be more efficient.
-
-
-  <h3>Closest-Point query</h3>
-    It is important to note that in the case of multiple neighbors request,
-    the result isn't sorted (see HeapMaxPriorityQueue for more explanations).
-    So if you want to get the closest point, you must perform a single request.
-
-    You must specify the size of the request using setMaxNofNeighbors.
-
-    \code
-    t.setMaxNofNeighbors(1);
-    t.doQueryK( vec3(0,0,0) );
-    vec3 result           = t.getNeighbor( 0 ).p;
-    unsigned int resultId = t.getNeighborId( 0 );
-
-    cout << resultId << endl;
-    cout << result(0) << " " << result(1) << " " << result(2) << endl;
-    cout << t.getNeighborSquaredDistance( 0 ) << endl;
-    \endcode
-    \ingroup groupGeometry
-  */
 template<typename _Scalar, typename _Index = int >
 class KdTree
 {
@@ -114,7 +54,7 @@ public:
     static constexpr Index invalidIndex() { return -1; }
 
     typedef Eigen::Matrix<Scalar,3,1> VectorType;
-    typedef AABB3D<Scalar> AxisAlignedBoxType;
+    typedef Eigen::AlignedBox<Scalar,3> AxisAlignedBoxType;
 
     typedef std::vector<KdNode>      NodeList;
     typedef std::vector<VectorType>  PointList;
@@ -122,7 +62,7 @@ public:
 
     inline const NodeList&   _getNodes   (void) { return mNodes;   }
     inline const PointList&  _getPoints  (void) { return mPoints;  }
-    inline const PointList&  _getIndices (void) { return mIndices;  }
+    inline const IndexList&  _getIndices (void) { return mIndices;  }
 
 
 public:
@@ -142,7 +82,6 @@ public:
          // this is ok since the memory has been reserved at construction time
         mPoints.push_back(p);
         mIndices.push_back(mIndices.size());
-        mAABB.extendTo(p);
     }
 
     inline void add(Scalar *position){
@@ -180,7 +119,7 @@ public:
     template<typename IndexContainer = std::vector<Index> >
     inline void
     doQueryDistIndices(const VectorType& queryPoint,
-                       float sqdist,
+                       Scalar sqdist,
                        IndexContainer& result){
         _doQueryDistIndicesWithFunctor(queryPoint,
                                       sqdist,
@@ -221,6 +160,7 @@ protected:
     inline
     unsigned int split(int start, int end, unsigned int dim, Scalar splitValue);
 
+    template <bool rootCall = false>
     void createTree(unsigned int nodeId,
                     unsigned int start,
                     unsigned int end,
@@ -235,7 +175,7 @@ protected:
     template<typename Functor >
     inline void
     _doQueryDistIndicesWithFunctor(const VectorType& queryPoint,
-                                   float sqdist,
+                                   Scalar sqdist,
                                    Functor f);
 protected:
 
@@ -262,7 +202,6 @@ KdTree<Scalar, Index>::KdTree(const PointList& points,
                        unsigned int maxDepth)
     : mPoints(points),
       mIndices(points.size()),
-      mAABB(points.cbegin(), points.cend()),
       _nofPointsPerCell(nofPointsPerCell),
       _maxDepth(maxDepth)
 {
@@ -296,7 +235,7 @@ KdTree<Scalar, Index>::finalize()
     mNodes.push_back(KdNode());
     mNodes.back().leaf = 0;
     std::cout << "create tree" << std::endl;
-    createTree(0, 0, mPoints.size(), 1, _nofPointsPerCell, _maxDepth);
+    createTree<true>(0, 0, mPoints.size(), 1, _nofPointsPerCell, _maxDepth);
     std::cout << "create tree ... DONE (" << mPoints.size() << " points)" << std::endl;
 }
 
@@ -401,7 +340,7 @@ template<typename Functor >
 void
 KdTree<Scalar, Index>::_doQueryDistIndicesWithFunctor(
         const VectorType& queryPoint,
-        float sqdist,
+        Scalar sqdist,
         Functor f)
 {
     mNodeStack[0].nodeId = 0;
@@ -427,8 +366,8 @@ KdTree<Scalar, Index>::_doQueryDistIndicesWithFunctor(
             else
             {
                 // replace the stack top by the farthest and push the closest
-                Scalar new_off = queryPoint[node.dim] - node.splitValue;
-                if (new_off < 0.)
+                Scalar new_off = queryPoint[node.dim] - Scalar(node.splitValue);
+                if (new_off < Scalar(0.))
                 {
                     mNodeStack[count].nodeId  = node.firstChildId;
                     qnode.nodeId = node.firstChildId+1;
@@ -490,14 +429,21 @@ unsigned int KdTree<Scalar, Index>::split(int start, int end, unsigned int dim, 
    is more expensive than the gain it provides and the memory consumption is x4 higher !
 */
 template<typename Scalar, typename Index>
-void KdTree<Scalar, Index>::createTree(unsigned int nodeId, unsigned int start, unsigned int end, unsigned int level, unsigned int targetCellSize, unsigned int targetMaxDepth)
+template<bool rootCall>
+void KdTree<Scalar, Index>::createTree(unsigned int nodeId,
+                                       unsigned int start, unsigned int end,
+                                       unsigned int level,
+                                       unsigned int targetCellSize,
+                                       unsigned int targetMaxDepth)
 {
 
     KdNode& node = mNodes[nodeId];
     AxisAlignedBoxType aabb;
     //aabb.Set(mPoints[start]);
     for (unsigned int i=start ; i<end ; ++i)
-        aabb.extendTo(mPoints[i]);
+        aabb.extend(mPoints[i]);
+
+    if ( rootCall ) mAABB = aabb;
 
     VectorType diag =  Scalar(0.5) * (aabb.max()- aabb.min());
     typename VectorType::Index dim;
