@@ -1,0 +1,11 @@
+
+
+d_x(p-x) = +Id   ... not -Id  ???
+=> ça voudrait dire que y'a des signes - presque partout ? 
+
+
+
+
+
+
+DistWeightFunc need const DataPoint&  /*attributes*/   

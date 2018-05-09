@@ -4,11 +4,17 @@
  file, You can obtain one at http://mozilla.org/MPL/2.0/.
 */
 
-
 template < class DataPoint, class _WFunctor, typename T>
 void
 MlsSphereFitDer<DataPoint, _WFunctor, T>::init(const VectorType& _evalPos)
 {
+// Some operations in addNeighbor() cannot compile in Scale Differentiation
+// mode only because Eigen find matrix size problem, even though these
+// operations theoretically happen when Space Differentiation mode is used.
+// TODO: find more flexible accessors, or use Constexpr If (c++17)
+static_assert(Base::isSpaceDer(),"This extension cannot be used with scale \
+differentiation only due to compile time checking errors.");
+
     Base::init(_evalPos);
 
     m_d2Uc = Matrix::Zero(),
@@ -35,13 +41,21 @@ MlsSphereFitDer<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei)
         VectorType q = _nei.pos() - Base::basisCenter();
 
         // compute weight derivatives
+        Scalar w = Base::m_w.w(q, _nei);
+        ScalarArray dw = ScalarArray::Zero();
         Matrix d2w = Matrix::Zero();
 
         if (Base::isScaleDer())
+        {
+            dw[0] = Base::m_w.scaledw(q, _nei);
             d2w(0,0) = Base::m_w.scaled2w(q, _nei);
+        }
 
         if (Base::isSpaceDer())
+        {
+            dw.template tail<Dim>() = Base::m_w.spacedw(q, _nei).transpose();
             d2w.template bottomRightCorner<Dim,Dim>() = Base::m_w.spaced2w(q, _nei);
+        }
 
         if (Base::isScaleDer() && Base::isSpaceDer())
         {
@@ -52,11 +66,40 @@ MlsSphereFitDer<DataPoint, _WFunctor, T>::addNeighbor(const DataPoint& _nei)
         m_d2SumDotPN += d2w * _nei.normal().dot(q);
         m_d2SumDotPP += d2w * q.squaredNorm();
         m_d2SumW     += d2w;
-
         for(int i=0; i<Dim; ++i)
         {
             m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim) += d2w * q[i];
             m_d2SumN.template block<DerDim,DerDim>(0,i*DerDim) += d2w * _nei.normal()[i];
+        }
+
+        if (Base::isSpaceDer())
+        {
+            m_d2SumDotPP.template bottomRightCorner<Dim,Dim>() -= Scalar(4.) * dw.template tail<Dim>().transpose() * q.transpose();
+            m_d2SumDotPP.template bottomRightCorner<Dim,Dim>().diagonal().array() += Scalar(2.) * w;
+
+            m_d2SumDotPN.template bottomRightCorner<Dim,Dim>() -= dw.template tail<Dim>().transpose() * _nei.normal().transpose() +
+                                                                  _nei.normal() * dw.template tail<Dim>();
+
+            for(int i=0; i<Dim; ++i)
+            {
+                m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim).template bottomRightCorner<Dim,Dim>().col(i) -= dw.template tail<Dim>().transpose();
+                m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim).template bottomRightCorner<Dim,Dim>().row(i) -= dw.template tail<Dim>();
+            }
+        }
+        if (Base::isSpaceDer() && Base::isScaleDer())
+        {
+            m_d2SumDotPP.template bottomLeftCorner<Dim,1>() -= Scalar(2.) * dw[0] * q;
+            m_d2SumDotPP.template topRightCorner<1,Dim>() = m_d2SumDotPP.template bottomLeftCorner<Dim,1>().transpose();
+
+            m_d2SumDotPN.template bottomLeftCorner<Dim,1>() -= dw[0] * _nei.normal();
+            m_d2SumDotPN.template topRightCorner<1,Dim>() = m_d2SumDotPN.template bottomLeftCorner<Dim,1>().transpose();
+
+            for(int i=0; i<Dim; ++i)
+            {
+                m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim).template topRightCorner<1,Dim>()[i] -= dw[0];
+                m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim).template bottomLeftCorner<Dim,1>() =
+                    m_d2SumP.template block<DerDim,DerDim>(0,i*DerDim).template topRightCorner<1,Dim>();
+            }
         }
     }
     return bResult;

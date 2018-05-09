@@ -154,7 +154,7 @@ OrientedSphereDer<DataPoint, _WFunctor, T, Type>::addNeighbor(const DataPoint  &
             dw[0] = Base::m_w.scaledw(q, _nei);
 
         if (Type & FitSpaceDer)
-            dw.template tail<int(DataPoint::Dim)>() = -Base::m_w.spacedw(q, _nei).transpose();
+            dw.template tail<int(DataPoint::Dim)>() = Base::m_w.spacedw(q, _nei).transpose();
 
         // increment
         m_dSumW     += dw;
@@ -162,6 +162,15 @@ OrientedSphereDer<DataPoint, _WFunctor, T, Type>::addNeighbor(const DataPoint  &
         m_dSumN     += _nei.normal() * dw;
         m_dSumDotPN += dw * _nei.normal().dot(q);
         m_dSumDotPP += dw * q.squaredNorm();
+
+        if (isSpaceDer())
+        {
+            Scalar w = Base::m_w.w(q, _nei);
+
+            m_dSumDotPN.template tail<DataPoint::Dim>() -= w * _nei.normal();
+            m_dSumDotPP.template tail<DataPoint::Dim>() -= Scalar(2.) * w * q;
+            m_dSumP.template rightCols<DataPoint::Dim>().diagonal().array() -= w;
+        }
 
         return true;
     }
