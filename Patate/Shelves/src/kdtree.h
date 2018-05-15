@@ -60,14 +60,15 @@ public:
     typedef std::vector<VectorType>  PointList;
     typedef std::vector<Index>       IndexList;
 
-    inline const NodeList&   _getNodes   (void) { return mNodes;   }
-    inline const PointList&  _getPoints  (void) { return mPoints;  }
-    inline const IndexList&  _getIndices (void) { return mIndices;  }
+    inline const NodeList&   _getNodes   (void) const { return mNodes;   }
+    inline const PointList&  _getPoints  (void) const { return mPoints;  }
+    inline const IndexList&  _getIndices (void) const { return mIndices;  }
 
 
 public:
     //! Create the Kd-Tree using memory copy.
-    KdTree(const PointList& points,
+    template <typename BeginIterator, typename EndIterator>
+    KdTree(BeginIterator itBegin, EndIterator itEnd,
            unsigned int nofPointsPerCell = KD_POINT_PER_CELL,
            unsigned int maxDepth = KD_MAX_DEPTH );
 
@@ -197,14 +198,16 @@ protected:
   \see KdTree(unsigned int size, unsigned int nofPointsPerCell, unsigned int maxDepth)
   */
 template<typename Scalar, typename Index>
-KdTree<Scalar, Index>::KdTree(const PointList& points,
-                       unsigned int nofPointsPerCell,
-                       unsigned int maxDepth)
-    : mPoints(points),
-      mIndices(points.size()),
-      _nofPointsPerCell(nofPointsPerCell),
+template<typename BeginIterator, typename EndIterator>
+KdTree<Scalar, Index>::KdTree(BeginIterator itBegin,
+                              EndIterator itEnd,
+                              unsigned int nofPointsPerCell,
+                              unsigned int maxDepth)
+    : _nofPointsPerCell(nofPointsPerCell),
       _maxDepth(maxDepth)
 {
+    std::copy (itBegin, itEnd, std::back_inserter( mPoints ));
+    mIndices.resize( mPoints.size() );
     std::iota (mIndices.begin(), mIndices.end(), 0); // Fill with 0, 1, ..., 99.
     finalize();
 }
