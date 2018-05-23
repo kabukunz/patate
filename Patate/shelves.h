@@ -17,6 +17,7 @@
 // not supported on cuda
 #ifndef __CUDACC__
 #include "Shelves/src/kdtree.h"
+#include "Shelves/src/boundedHeapPriorityQueue.h"
 #endif
 
 
