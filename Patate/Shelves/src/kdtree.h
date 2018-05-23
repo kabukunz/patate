@@ -32,6 +32,7 @@ template<typename _Scalar, typename _Index = int >
 class KdTree
 {
 public:
+    //! \brief Internal representation of a Node
     struct KdNode
     {
         union {
@@ -55,6 +56,12 @@ public:
 
     typedef Eigen::Matrix<Scalar,3,1> VectorType;
     typedef Eigen::AlignedBox<Scalar,3> AxisAlignedBoxType;
+
+    struct KnnQuery
+    {
+        VectorType q;   //! <\brief Query point
+        unsigned int n; //! <\brief Number of neighbors
+    };
 
     typedef std::vector<KdNode>      NodeList;
     typedef std::vector<VectorType>  PointList;
