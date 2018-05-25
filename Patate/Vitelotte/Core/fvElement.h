@@ -107,7 +107,7 @@ public:
     {
         assert(bi < 9);
 
-        Scalar v;
+        Scalar v = -1;
         unsigned i = bi % 3;
         switch(bi/3)
         {
