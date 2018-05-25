@@ -181,6 +181,12 @@ GLTri3DMesh::GLTri3DMesh()
 
 }
 
+void GLTri3DMesh::setFrom(const GLTri3DMesh &input){
+    _init = false;
+    _faces    = input._faces;
+    _vertices = input._vertices;
+}
+
 void GLTri3DMesh::addFace(const std::vector<Vertex> &vertices){
     assert(vertices.size() == 3);
 

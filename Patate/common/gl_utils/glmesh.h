@@ -141,6 +141,7 @@ public:
     inline faceIterator faceEnd();
 
     inline GLTri3DMesh();
+    inline void setFrom(const GLTri3DMesh& input);
     inline void initVBO(bool initForPicking = true);
     inline void clearVBO();
     inline void draw();
