@@ -210,3 +210,30 @@ MlsSphereFitDer<DataPoint, _WFunctor, T>::dNormal() const
 
     return result/gradNorm - grad*grad.transpose()/(gradNorm*gradNorm)*result;
 }
+
+template < class DataPoint, class _WFunctor, typename T>
+typename MlsSphereFitDer<DataPoint, _WFunctor, T>::Matrix
+MlsSphereFitDer<DataPoint, _WFunctor, T>::hessian() const
+{
+    // Compute the 2nd order derivative of the scalar field (in centered basis):
+    //   the spatial derivative: d2_x2(s) = d2_x2(uc) + d_x(ul) + d_x(ul)^T + 2 uq I
+    //   the cross derivatives:  d2_xt(s) = d2_xt(uc) + d_t(ul)
+    //   the scale derivative:   d2_t2(s) = d2_t2(uc)
+
+    Matrix hessian = m_d2Uc;
+
+    if(Base::isSpaceDer())
+    {
+        hessian.template bottomRightCorner<Dim,Dim>() += Base::m_dUl.template bottomRightCorner<Dim,Dim>() +
+                                                         Base::m_dUl.template bottomRightCorner<Dim,Dim>().transpose();
+        hessian.template bottomRightCorner<Dim,Dim>().diagonal().array() += Scalar(2) * Base::m_uq;
+
+        if(Base::isScaleDer())
+        {
+            hessian.template bottomLeftCorner<Dim,1>() += Base::m_dUl.template bottomLeftCorner<Dim,1>();
+            hessian.template topRightCorner<1,Dim>() = hessian.template bottomLeftCorner<Dim,1>().transpose();
+        }
+    }
+
+    return hessian;
+}

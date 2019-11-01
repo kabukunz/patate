@@ -118,8 +118,11 @@ public:
     /*! \brief Value of the normal of the primitive at the evaluation point */
     MULTIARCH inline VectorType normal() const;
 
-    /*! \brief Returns the second derivatives of the scalar field at the evaluation point */
+    /*! \brief Returns the derivatives of the normal at the evaluation point */
     MULTIARCH inline VectorArray dNormal() const;
+
+    /*! \brief Returns the second derivatives of the scalar field at the evaluation point */
+    MULTIARCH inline Matrix hessian() const;
 
 }; //class MlsSphereFitDer
 
