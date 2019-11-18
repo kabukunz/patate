@@ -111,6 +111,18 @@ OrientedSphereFit<DataPoint, _WFunctor, T>::finalize ()
     return Base::m_eCurrentState;
 }
 
+template < class DataPoint, class _WFunctor, typename T>
+typename OrientedSphereFit<DataPoint, _WFunctor, T>::Scalar
+OrientedSphereFit<DataPoint, _WFunctor, T>::residualMean() const
+{
+//    return m_sumW + m_sumW * Base::m_ul.squaredNorm()
+//           + Scalar(4) * Base::m_uq * Base::m_uq * m_sumDotPP
+//           + Scalar(4) * Base::m_uq * Base::m_ul.dot(m_sumP)
+//           - Scalar(2) * Base::m_ul.dot(m_sumN)
+//           - Scalar(4) * Base::m_uq * m_sumDotPN;
+    return m_sumW * (Base::m_ul.squaredNorm() - Scalar(4) * Base::m_uq * Base::m_uc + 1 )
+           - Scalar(2) * (Base::m_ul.dot(m_sumN) + Scalar(2) * Base::m_uq * m_sumDotPN );
+}
 
 namespace internal
 {

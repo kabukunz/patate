@@ -76,6 +76,18 @@ public:
     /*! \copydoc Concept::FittingProcedureConcept::finalize() */
     MULTIARCH inline FIT_RESULT finalize();
 
+    /**************************************************************************/
+    /* Use results                                                            */
+    /**************************************************************************/
+
+    /*!
+        \brief Returns the weighted sum of squared residuals of the fit
+
+        Residuals are the norm of the difference between the gradient of the
+        fitted sphere and the normal at neighboring points.
+    */
+    MULTIARCH inline Scalar residualMean() const;
+
 }; //class OrientedSphereFit
 
 
